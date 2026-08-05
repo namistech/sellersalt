@@ -1,0 +1,194 @@
+// Anadash data model
+// Multi-tenant from day one: every business-data table carries organizationId,
+// even though the UI only exposes a single org per user for now.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Identity & tenancy ----------
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  connectors  Connector[]
+  searchConfigs SearchConfig[]
+  prospects   Prospect[]
+  jobs        Job[]
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole @default(OWNER)
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// ---------- Marketplace connectors ----------
+// One row per (organization, marketplace) connection. Etsy is connector #1;
+// Amazon/AliExpress/Shopify sourcing etc. reuse this same table + a `type` discriminator.
+
+model Connector {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           ConnectorType
+  label          String   // user-facing name, e.g. "Etsy - Netdrix Sourcing"
+  // Secrets are encrypted at rest (see src/lib/encryption.ts) before being stored here.
+  encryptedCredentials String
+  status         ConnectorStatus @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  searchConfigs SearchConfig[]
+  jobs         Job[]
+
+  @@index([organizationId])
+}
+
+enum ConnectorType {
+  ETSY
+  // AMAZON, ALIEXPRESS, SHOPIFY_SOURCING, etc. added as phase 2 connectors ship
+}
+
+enum ConnectorStatus {
+  ACTIVE
+  ERROR
+  DISABLED
+}
+
+// ---------- User-defined search / prospecting configs ----------
+// This replaces the old .env keyword list — now editable per-org in the dashboard.
+
+model SearchConfig {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  name           String
+  keywords       String[] // e.g. ["digital planner", "svg bundle"]
+  minPrice       Float
+  maxPrice       Float
+  minShopAgeMonths Float  @default(12)
+  maxShopAgeMonths Float  @default(24)
+  minReviewCount   Int    @default(20)
+  scheduleCron   String?  // null = manual run only
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connector    Connector    @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  jobs         Job[]
+  prospects    Prospect[]
+
+  @@index([organizationId])
+}
+
+// ---------- Jobs (background runs, replaces the old cron-only script) ----------
+
+model Job {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  searchConfigId String
+  status         JobStatus @default(QUEUED)
+  triggeredBy    JobTrigger @default(USER)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  resultCount    Int?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connector    Connector    @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  searchConfig SearchConfig @relation(fields: [searchConfigId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum JobTrigger {
+  USER
+  SCHEDULE
+}
+
+// ---------- Prospects (the actual output data, replaces the Google Sheet) ----------
+
+model Prospect {
+  id             String   @id @default(cuid())
+  organizationId String
+  searchConfigId String
+  marketplace    ConnectorType @default(ETSY)
+  keyword        String
+  shopName       String
+  shopUrl        String
+  shopAgeMonths  Float
+  reviewCount    Int
+  activeListings Int
+  reviewRatio    Float
+  reviewVelocity Float
+  listingTitle   String
+  listingUrl     String
+  price          Float
+  status         ProspectStatus @default(PENDING_REVIEW)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  searchConfig SearchConfig @relation(fields: [searchConfigId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+enum ProspectStatus {
+  PENDING_REVIEW
+  SHORTLISTED
+  CONTACTED
+  REJECTED
+}

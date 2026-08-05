@@ -1,0 +1,48 @@
+# Reference compose file — useful for local dev with `docker compose up`.
+# On Coolify, deploy `web` and `worker` as two separate Application resources
+# (each pointing at its own Dockerfile below), plus Postgres and Redis as
+# Coolify-managed Database resources. That gives independent scaling/restarts
+# and matches how your other Netdrix services are already set up.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: anadash
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: anadash
+    volumes:
+      - anadash_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - anadash_redis_data:/data
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  anadash_postgres_data:
+  anadash_redis_data:
