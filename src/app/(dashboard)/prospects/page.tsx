@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ProspectTable, type ProspectRow } from "../prospect-table";
 
 interface Connector {
   id: string;
@@ -13,28 +14,13 @@ interface SearchConfig {
   keywords: string[];
   minPrice: number;
   maxPrice: number;
-}
-interface Prospect {
-  id: string;
-  keyword: string;
-  shopName: string;
-  shopUrl: string;
-  shopAgeMonths: number;
-  reviewCount: number;
-  activeListings: number;
-  reviewRatio: number;
-  reviewVelocity: number;
-  listingTitle: string;
-  listingUrl: string;
-  price: number;
-  status: string;
   createdAt: string;
 }
 
 export default function ProspectsPage() {
   const [connectors, setConnectors] = useState<Connector[]>([]);
   const [searchConfigs, setSearchConfigs] = useState<SearchConfig[]>([]);
-  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
@@ -99,6 +85,15 @@ export default function ProspectsPage() {
     loadAll();
   }
 
+  async function handleToggleFavorite(id: string, next: boolean) {
+    setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: next } : p)));
+    await fetch(`/api/prospects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isFavorite: next }),
+    });
+  }
+
   if (!loading && connectors.length === 0) {
     return (
       <div>
@@ -117,9 +112,9 @@ export default function ProspectsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Prospects</h1>
           <p className="mt-1 text-sm text-muted">
-            Sourcing leads matched against your filters. Review Ratio and Review Velocity are
-            proxy signals based on review volume — Etsy's public API doesn't expose true sales
-            counts, so treat these as leads to verify, not confirmed winners.
+            Results are grouped under the search that found them. Total Sales and Sales/Listing
+            come from Etsy's real lifetime sales count for the shop. Rev Ratio and Rev Velocity
+            are secondary engagement signals, not sales figures.
           </p>
         </div>
         {!showForm && (
@@ -206,77 +201,43 @@ export default function ProspectsPage() {
         </form>
       )}
 
-      {searchConfigs.length > 0 && (
-        <div className="card mb-6">
-          <h2 className="mb-3 text-sm font-semibold text-ink">Saved searches</h2>
-          <div className="divide-y divide-line">
-            {searchConfigs.map((s) => (
-              <div key={s.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                <div>
-                  <div className="text-sm font-medium text-ink">{s.name}</div>
-                  <div className="text-xs text-muted">
-                    {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice}
+      {loading ? (
+        <p className="text-sm text-muted">Loading…</p>
+      ) : searchConfigs.length === 0 ? (
+        <p className="text-sm text-muted">No saved searches yet. Click "New search" to create one.</p>
+      ) : (
+        <div className="space-y-6">
+          {searchConfigs.map((s) => {
+            const rows = prospects.filter((p) => (p as any).searchConfigId === s.id);
+            return (
+              <div key={s.id} className="card">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-ink">{s.name}</div>
+                    <div className="text-xs text-muted">
+                      {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice}
+                    </div>
                   </div>
+                  <button
+                    onClick={() => handleRun(s.id)}
+                    disabled={running === s.id}
+                    className="btn-secondary shrink-0"
+                  >
+                    {running === s.id ? "Queuing…" : "Run now"}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleRun(s.id)}
-                  disabled={running === s.id}
-                  className="btn-secondary"
-                >
-                  {running === s.id ? "Queuing…" : "Run now"}
-                </button>
+                <div className="overflow-x-auto">
+                  <ProspectTable
+                    rows={rows}
+                    onToggleFavorite={handleToggleFavorite}
+                    emptyMessage='No results yet. Click "Run now" — check the Jobs page for progress.'
+                  />
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
-
-      <div className="card overflow-x-auto">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Results ({prospects.length})</h2>
-        {prospects.length === 0 ? (
-          <p className="text-sm text-muted">
-            No results yet. Save a search above, then hit "Run now" — results appear here once the
-            job finishes (check the Jobs page for progress).
-          </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 pr-4">Shop</th>
-                <th className="py-2 pr-4">Shop age</th>
-                <th className="py-2 pr-4">Reviews</th>
-                <th className="py-2 pr-4">Listings</th>
-                <th className="py-2 pr-4">Rev ratio</th>
-                <th className="py-2 pr-4">Rev velocity</th>
-                <th className="py-2 pr-4">Listing</th>
-                <th className="py-2 pr-4">Price</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {prospects.map((p) => (
-                <tr key={p.id}>
-                  <td className="py-2 pr-4">
-                    <a href={p.shopUrl} target="_blank" rel="noreferrer" className="font-medium text-accent hover:underline">
-                      {p.shopName}
-                    </a>
-                  </td>
-                  <td className="py-2 pr-4 tabular-nums">{p.shopAgeMonths}mo</td>
-                  <td className="py-2 pr-4 tabular-nums">{p.reviewCount}</td>
-                  <td className="py-2 pr-4 tabular-nums">{p.activeListings}</td>
-                  <td className="py-2 pr-4 tabular-nums">{p.reviewRatio}</td>
-                  <td className="py-2 pr-4 tabular-nums">{p.reviewVelocity}/mo</td>
-                  <td className="py-2 pr-4 max-w-xs truncate">
-                    <a href={p.listingUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-                      {p.listingTitle}
-                    </a>
-                  </td>
-                  <td className="py-2 pr-4 tabular-nums">${p.price.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </div>
   );
 }

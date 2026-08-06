@@ -15,21 +15,26 @@ export interface ProspectResult {
   keyword: string;
   shopName: string;
   shopUrl: string;
+  shopIconUrl?: string;
   shopAgeMonths: number;
   reviewCount: number;
   activeListings: number;
   reviewRatio: number;
   reviewVelocity: number;
+  totalSales?: number;
+  reviewAverage?: number;
+  numFavorers?: number;
+  avgSellingRatio?: number;
+  estDailySales?: number;
   listingTitle: string;
   listingUrl: string;
+  listingImageUrl?: string;
   price: number;
 }
 
 export interface MarketplaceConnector {
   type: string;
-  /** Validate stored credentials still work (used by the "Test connection" button). */
   testConnection(credentials: Record<string, string>): Promise<{ ok: boolean; message?: string }>;
-  /** Run a full prospecting pass for one search config, returning matches only. */
   runSearch(
     credentials: Record<string, string>,
     config: SearchConfigInput

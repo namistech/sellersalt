@@ -1,11 +1,6 @@
 import { createEtsyClient } from "./client";
 import type { MarketplaceConnector, ProspectResult, SearchConfigInput } from "../types";
 
-// Data-honesty note (carried over from the phase-1 script): Etsy's public API does
-// not expose a shop's lifetime sales count. reviewRatio / reviewVelocity are proxy
-// signals built from review_count, a real documented field — not a stand-in for
-// verified sales volume. Surface that caveat in the UI wherever these are shown.
-
 function computeShopAgeMonths(createdTimestamp: number): number {
   const diffMs = Date.now() - createdTimestamp * 1000;
   return Math.round((diffMs / (30.44 * 24 * 60 * 60 * 1000)) * 10) / 10;
@@ -21,6 +16,16 @@ function computeReviewVelocity(reviewCount: number, shopAgeMonths: number): numb
   return Math.round((reviewCount / shopAgeMonths) * 10) / 10;
 }
 
+function computeAvgSellingRatio(totalSales: number, activeListings: number): number {
+  if (!activeListings) return 0;
+  return Math.round((totalSales / activeListings) * 100) / 100;
+}
+
+function computeEstDailySales(totalSales: number, shopAgeMonths: number): number {
+  if (!shopAgeMonths) return 0;
+  return Math.round((totalSales / (shopAgeMonths * 30.44)) * 100) / 100;
+}
+
 function priceFromListing(listing: any): number | null {
   const p = listing.price;
   if (!p || typeof p.amount !== "number" || !p.divisor) return null;
@@ -32,7 +37,7 @@ export const etsyConnector: MarketplaceConnector = {
 
   async testConnection(credentials) {
     try {
-     const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret); 
+      const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
       await client.ping();
       return { ok: true };
     } catch (err: any) {
@@ -56,7 +61,7 @@ export const etsyConnector: MarketplaceConnector = {
         });
         listings = data?.results ?? [];
       } catch {
-        continue; // skip this keyword, don't crash the whole run
+        continue;
       }
 
       for (const listing of listings) {
@@ -77,6 +82,7 @@ export const etsyConnector: MarketplaceConnector = {
         const shopAgeMonths = computeShopAgeMonths(shop.created_timestamp);
         const reviewCount = shop.review_count ?? 0;
         const activeListings = shop.listing_active_count ?? 0;
+        const totalSales = shop.transaction_sold_count ?? 0;
 
         if (shopAgeMonths < config.minShopAgeMonths || shopAgeMonths > config.maxShopAgeMonths) continue;
         if (reviewCount < config.minReviewCount) continue;
@@ -84,17 +90,32 @@ export const etsyConnector: MarketplaceConnector = {
         const price = priceFromListing(listing);
         if (price === null || price < config.minPrice || price > config.maxPrice) continue;
 
+        let listingImageUrl: string | undefined;
+        try {
+          const imgData = await client.getListingImages(listing.listing_id);
+          listingImageUrl = imgData?.results?.[0]?.url_170x135;
+        } catch {
+          listingImageUrl = undefined;
+        }
+
         results.push({
           keyword,
           shopName: shop.shop_name ?? "",
           shopUrl: shop.url || `https://www.etsy.com/shop/${shop.shop_name}`,
+          shopIconUrl: shop.icon_url_fullxfull ?? undefined,
           shopAgeMonths,
           reviewCount,
           activeListings,
           reviewRatio: computeReviewRatio(reviewCount, activeListings),
           reviewVelocity: computeReviewVelocity(reviewCount, shopAgeMonths),
+          totalSales,
+          reviewAverage: shop.review_average ?? undefined,
+          numFavorers: shop.num_favorers ?? undefined,
+          avgSellingRatio: computeAvgSellingRatio(totalSales, activeListings),
+          estDailySales: computeEstDailySales(totalSales, shopAgeMonths),
           listingTitle: listing.title ?? "",
           listingUrl: listing.url || `https://www.etsy.com/listing/${listing.listing_id}`,
+          listingImageUrl,
           price,
         });
       }
