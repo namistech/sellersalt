@@ -1,3 +1,160 @@
+// Anadash data model
+// Multi-tenant from day one: every business-data table carries organizationId,
+// even though the UI only exposes a single org per user for now.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Identity & tenancy ----------
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships Membership[]
+  connectors  Connector[]
+  searchConfigs SearchConfig[]
+  prospects   Prospect[]
+  jobs        Job[]
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships Membership[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole @default(OWNER)
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// ---------- Marketplace connectors ----------
+
+model Connector {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           ConnectorType
+  label          String
+  encryptedCredentials String
+  status         ConnectorStatus @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  searchConfigs SearchConfig[]
+  jobs         Job[]
+
+  @@index([organizationId])
+}
+
+enum ConnectorType {
+  ETSY
+}
+
+enum ConnectorStatus {
+  ACTIVE
+  ERROR
+  DISABLED
+}
+
+// ---------- User-defined search / prospecting configs ----------
+
+model SearchConfig {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  name           String
+  keywords       String[]
+  minPrice       Float
+  maxPrice       Float
+  minShopAgeMonths Float  @default(12)
+  maxShopAgeMonths Float  @default(24)
+  minReviewCount   Int    @default(20)
+  scheduleCron   String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connector    Connector    @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  jobs         Job[]
+  prospects    Prospect[]
+
+  @@index([organizationId])
+}
+
+// ---------- Jobs ----------
+
+model Job {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  searchConfigId String
+  status         JobStatus @default(QUEUED)
+  triggeredBy    JobTrigger @default(USER)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  resultCount    Int?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connector    Connector    @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  searchConfig SearchConfig @relation(fields: [searchConfigId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum JobTrigger {
+  USER
+  SCHEDULE
+}
+
+// ---------- Prospects ----------
+
 model Prospect {
   id             String   @id @default(cuid())
   organizationId String
@@ -31,4 +188,11 @@ model Prospect {
   @@index([organizationId])
   @@index([status])
   @@index([isFavorite])
+}
+
+enum ProspectStatus {
+  PENDING_REVIEW
+  SHORTLISTED
+  CONTACTED
+  REJECTED
 }
