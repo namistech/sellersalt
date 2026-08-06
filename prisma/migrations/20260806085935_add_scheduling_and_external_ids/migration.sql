@@ -1,4 +1,3 @@
-cat > <path>/migration.sql << 'EOF'
 /*
   Warnings:
 
@@ -15,4 +14,3 @@ CREATE INDEX "Prospect_shopExternalId_idx" ON "Prospect"("shopExternalId");
 
 -- CreateIndex
 CREATE INDEX "Prospect_listingExternalId_idx" ON "Prospect"("listingExternalId");
-EOF
