@@ -6,12 +6,12 @@ const ETSY_BASE_URL = "https://openapi.etsy.com/v3/application";
 // Etsy's hard limit is 10 req/sec per key. Each Etsy connector instance gets its
 // own queue so one org's run can't starve another's — created per-call rather than
 // module-level singleton, since credentials (and therefore rate budgets) are per-org.
-export function createEtsyClient(apiKey: string) {
+export function createEtsyClient(apiKey: string, sharedSecret?: string) {
   const queue = new PQueue({ intervalCap: 8, interval: 1000, carryoverConcurrencyCount: true });
 
   const http = axios.create({
     baseURL: ETSY_BASE_URL,
-    headers: { "x-api-key": apiKey },
+    headers: { "x-api-key": sharedSecret ? `${apiKey}:${sharedSecret}` : apiKey },
     timeout: 15000,
   });
 

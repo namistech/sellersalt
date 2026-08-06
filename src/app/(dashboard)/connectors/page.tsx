@@ -23,6 +23,7 @@ export default function ConnectorsPage() {
   const [showForm, setShowForm] = useState(false);
   const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [sharedSecret, setSharedSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -47,7 +48,7 @@ export default function ConnectorsPage() {
       body: JSON.stringify({
         type: "ETSY",
         label: label || "Etsy",
-        credentials: { apiKey },
+        credentials: { apiKey, sharedSecret },
       }),
     });
     const data = await res.json();
@@ -59,6 +60,7 @@ export default function ConnectorsPage() {
     setShowForm(false);
     setLabel("");
     setApiKey("");
+    setSharedSecret("");
     loadConnectors();
   }
 
@@ -108,6 +110,17 @@ export default function ConnectorsPage() {
             <p className="mt-1 text-xs text-muted">
               Stored encrypted. From your Etsy Developer App dashboard.
             </p>
+          </div>
+          <div>
+            <label className="label" htmlFor="sharedSecret">Etsy Shared Secret</label>
+            <input
+              id="sharedSecret"
+              className="input"
+              required
+              value={sharedSecret}
+              onChange={(e) => setSharedSecret(e.target.value)}
+              placeholder="Paste your Etsy Developer App shared secret"
+            />
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <div className="flex gap-2">

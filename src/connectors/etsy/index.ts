@@ -32,7 +32,7 @@ export const etsyConnector: MarketplaceConnector = {
 
   async testConnection(credentials) {
     try {
-      const client = createEtsyClient(credentials.apiKey);
+     const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret); 
       await client.ping();
       return { ok: true };
     } catch (err: any) {
