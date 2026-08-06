@@ -41,7 +41,7 @@ export const etsyConnector: MarketplaceConnector = {
   },
 
   async runSearch(credentials, config: SearchConfigInput): Promise<ProspectResult[]> {
-    const client = createEtsyClient(credentials.apiKey);
+    const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
     const results: ProspectResult[] = [];
     const shopCache = new Map<string, any | null>();
 
