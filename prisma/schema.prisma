@@ -161,6 +161,8 @@ model Prospect {
   searchConfigId String
   marketplace    ConnectorType @default(ETSY)
   keyword        String
+  shopExternalId    String
+  listingExternalId String
   shopName       String
   shopUrl        String
   shopIconUrl    String?
@@ -188,6 +190,8 @@ model Prospect {
   @@index([organizationId])
   @@index([status])
   @@index([isFavorite])
+  @@index([shopExternalId])
+  @@index([listingExternalId])
 }
 
 enum ProspectStatus {

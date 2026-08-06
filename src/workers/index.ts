@@ -1,7 +1,3 @@
-// Standalone worker process. Deployed as its own Coolify service (see SETUP.md),
-// separate from the Next.js web app, so a slow/failed scrape run never blocks or
-// slows down the dashboard.
-
 import { Worker } from "bullmq";
 import { prisma } from "../lib/db";
 import { connection, PROSPECTING_QUEUE_NAME, type ProspectingJobData } from "../lib/queue";
@@ -13,7 +9,15 @@ console.log("Anadash worker starting, listening on queue:", PROSPECTING_QUEUE_NA
 const worker = new Worker<ProspectingJobData>(
   PROSPECTING_QUEUE_NAME,
   async (job) => {
-    const { jobId, organizationId, connectorId, searchConfigId } = job.data;
+    const { organizationId, connectorId, searchConfigId } = job.data;
+    let jobId = job.data.jobId;
+
+    if (!jobId) {
+      const created = await prisma.job.create({
+        data: { organizationId, connectorId, searchConfigId, status: "QUEUED", triggeredBy: "SCHEDULE" },
+      });
+      jobId = created.id;
+    }
 
     await prisma.job.update({
       where: { id: jobId },
@@ -45,6 +49,8 @@ const worker = new Worker<ProspectingJobData>(
             searchConfigId,
             marketplace: connectorRow.type as any,
             keyword: r.keyword,
+            shopExternalId: r.shopExternalId,
+            listingExternalId: r.listingExternalId,
             shopName: r.shopName,
             shopUrl: r.shopUrl,
             shopIconUrl: r.shopIconUrl,
@@ -75,7 +81,7 @@ const worker = new Worker<ProspectingJobData>(
         where: { id: jobId },
         data: { status: "FAILED", finishedAt: new Date(), errorMessage: err.message ?? String(err) },
       });
-      throw err; // let BullMQ record it as a failed job too
+      throw err;
     }
   },
   { connection, concurrency: 3 }

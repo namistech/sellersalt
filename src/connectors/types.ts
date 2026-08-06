@@ -13,6 +13,7 @@ export interface SearchConfigInput {
 
 export interface ProspectResult {
   keyword: string;
+  shopExternalId: string;
   shopName: string;
   shopUrl: string;
   shopIconUrl?: string;
@@ -26,6 +27,7 @@ export interface ProspectResult {
   numFavorers?: number;
   avgSellingRatio?: number;
   estDailySales?: number;
+  listingExternalId: string;
   listingTitle: string;
   listingUrl: string;
   listingImageUrl?: string;

@@ -100,6 +100,7 @@ export const etsyConnector: MarketplaceConnector = {
 
         results.push({
           keyword,
+          shopExternalId: String(shopId),
           shopName: shop.shop_name ?? "",
           shopUrl: shop.url || `https://www.etsy.com/shop/${shop.shop_name}`,
           shopIconUrl: shop.icon_url_fullxfull ?? undefined,
@@ -113,6 +114,7 @@ export const etsyConnector: MarketplaceConnector = {
           numFavorers: shop.num_favorers ?? undefined,
           avgSellingRatio: computeAvgSellingRatio(totalSales, activeListings),
           estDailySales: computeEstDailySales(totalSales, shopAgeMonths),
+          listingExternalId: String(listing.listing_id),
           listingTitle: listing.title ?? "",
           listingUrl: listing.url || `https://www.etsy.com/listing/${listing.listing_id}`,
           listingImageUrl,

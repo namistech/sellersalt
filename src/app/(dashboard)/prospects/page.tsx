@@ -14,7 +14,23 @@ interface SearchConfig {
   keywords: string[];
   minPrice: number;
   maxPrice: number;
+  scheduleCron: string | null;
   createdAt: string;
+}
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  MANUAL: "Manual only",
+  EVERY_6_HOURS: "Every 6 hours",
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+};
+
+function frequencyFromCron(cron: string | null): string {
+  if (!cron) return "MANUAL";
+  if (cron === "0 */6 * * *") return "EVERY_6_HOURS";
+  if (cron === "0 6 * * *") return "DAILY";
+  if (cron === "0 6 * * 1") return "WEEKLY";
+  return "MANUAL";
 }
 
 export default function ProspectsPage() {
@@ -24,6 +40,7 @@ export default function ProspectsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
+  const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -35,6 +52,7 @@ export default function ProspectsPage() {
     minShopAgeMonths: 12,
     maxShopAgeMonths: 24,
     minReviewCount: 20,
+    scheduleFrequency: "MANUAL",
   });
 
   async function loadAll() {
@@ -85,6 +103,17 @@ export default function ProspectsPage() {
     loadAll();
   }
 
+  async function handleScheduleChange(searchConfigId: string, scheduleFrequency: string) {
+    setSavingSchedule(searchConfigId);
+    await fetch(`/api/search-configs/${searchConfigId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scheduleFrequency }),
+    });
+    setSavingSchedule(null);
+    loadAll();
+  }
+
   async function handleToggleFavorite(id: string, next: boolean) {
     setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: next } : p)));
     await fetch(`/api/prospects/${id}`, {
@@ -112,9 +141,9 @@ export default function ProspectsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-ink">Prospects</h1>
           <p className="mt-1 text-sm text-muted">
-            Results are grouped under the search that found them. Total Sales and Sales/Listing
-            come from Etsy's real lifetime sales count for the shop. Rev Ratio and Rev Velocity
-            are secondary engagement signals, not sales figures.
+            Results are grouped under the search that found them. Set a search to run on a
+            schedule to build up trend history automatically — Total Sales and Sales/Listing
+            come from Etsy's real lifetime sales count for the shop.
           </p>
         </div>
         {!showForm && (
@@ -186,10 +215,24 @@ export default function ProspectsPage() {
             </div>
           </div>
 
-          <div className="w-40">
-            <label className="label">Min reviews</label>
-            <input type="number" className="input" value={form.minReviewCount}
-              onChange={(e) => setForm({ ...form, minReviewCount: Number(e.target.value) })} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Min reviews</label>
+              <input type="number" className="input" value={form.minReviewCount}
+                onChange={(e) => setForm({ ...form, minReviewCount: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="label">Run automatically</label>
+              <select
+                className="input"
+                value={form.scheduleFrequency}
+                onChange={(e) => setForm({ ...form, scheduleFrequency: e.target.value })}
+              >
+                {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {error && <p className="text-sm text-danger">{error}</p>}
@@ -218,13 +261,25 @@ export default function ProspectsPage() {
                       {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice}
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRun(s.id)}
-                    disabled={running === s.id}
-                    className="btn-secondary shrink-0"
-                  >
-                    {running === s.id ? "Queuing…" : "Run now"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="input !w-auto py-1.5 text-xs"
+                      value={frequencyFromCron(s.scheduleCron)}
+                      disabled={savingSchedule === s.id}
+                      onChange={(e) => handleScheduleChange(s.id, e.target.value)}
+                    >
+                      {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleRun(s.id)}
+                      disabled={running === s.id}
+                      className="btn-secondary shrink-0"
+                    >
+                      {running === s.id ? "Queuing…" : "Run now"}
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <ProspectTable
