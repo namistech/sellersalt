@@ -2,68 +2,86 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
-import { ThemeToggle } from "./theme-toggle";
+import {
+  LayoutDashboard,
+  Search,
+  Radar,
+  TrendingUp,
+  XCircle,
+  Star,
+  Plug,
+  Briefcase,
+  Settings,
+} from "lucide-react";
 
-const NAV = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/prospects", label: "Prospects" },
-  { href: "/spy", label: "Spy on Competitor" },
-  { href: "/trends", label: "Trends" },
-  { href: "/inactive", label: "Dropped shops" },
-  { href: "/favorites", label: "Favorites" },
-  { href: "/connectors", label: "Connectors" },
-  { href: "/jobs", label: "Jobs" },
-  { href: "/settings", label: "Settings" },
+const NAV_GROUPS = [
+  {
+    label: "Product hunting",
+    items: [
+      { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+      { href: "/prospects", label: "Prospects", icon: Search },
+      { href: "/spy", label: "Spy on Competitor", icon: Radar },
+      { href: "/trends", label: "Trends", icon: TrendingUp },
+      { href: "/inactive", label: "Dropped shops", icon: XCircle },
+      { href: "/favorites", label: "Favorites", icon: Star },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { href: "/connectors", label: "Connectors", icon: Plug },
+      { href: "/jobs", label: "Jobs", icon: Briefcase },
+      { href: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
-export function Sidebar({
-  userName,
-  organizationName,
-}: {
-  userName?: string | null;
-  organizationName?: string | null;
-}) {
+export function Sidebar({ organizationName }: { organizationName?: string | null }) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-60 flex-col justify-between border-r border-line bg-surface px-4 py-6">
-      <div>
-        <div className="mb-8 px-2">
+    <aside className="flex w-64 flex-col border-r border-line bg-surface px-3 py-5">
+      <div className="mb-6 px-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-ink text-sm font-bold text-white dark:bg-white dark:text-ink">
+            A
+          </div>
           <div className="text-lg font-semibold tracking-tight text-ink">Anadash</div>
-          {organizationName && (
-            <div className="mt-0.5 truncate text-xs text-muted">{organizationName}</div>
-          )}
         </div>
-
-        <nav className="space-y-1">
-          {NAV.map((item) => {
-            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`block rounded-sm px-3 py-2 text-sm font-medium transition ${
-                  active ? "bg-accent-soft text-accent" : "text-ink hover:bg-paper"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        {organizationName && (
+          <div className="mt-1 truncate pl-10 text-xs text-muted">{organizationName}</div>
+        )}
       </div>
 
-      <div className="border-t border-line pt-4">
-        <div className="mb-2 truncate px-2 text-xs text-muted">{userName}</div>
-        <ThemeToggle />
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full rounded-sm px-3 py-2 text-left text-sm text-muted transition hover:bg-paper hover:text-ink"
-        >
-          Sign out
-        </button>
-      </div>
+      <nav className="flex-1 space-y-6 overflow-y-auto">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              {group.label}
+            </div>
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+                      active
+                        ? "bg-accent-soft text-accent"
+                        : "text-ink hover:bg-paper"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
     </aside>
   );
 }

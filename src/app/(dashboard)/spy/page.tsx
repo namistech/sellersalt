@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { SpyTabs } from "./spy-tabs";
 
 export default function SpyOnCompetitorPage() {
   const router = useRouter();
@@ -37,34 +38,37 @@ export default function SpyOnCompetitorPage() {
   }
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="w-full max-w-lg text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Spy on Competitor</h1>
-        <p className="mt-2 text-sm text-muted">
-          Paste any Etsy shop URL to pull up its full profile and start tracking its sales over time.
-        </p>
+    <div>
+      <SpyTabs active="find" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="w-full max-w-lg text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Spy on Competitor</h1>
+          <p className="mt-2 text-sm text-muted">
+            Paste any Etsy shop URL to pull up its full profile and start tracking its sales over time.
+          </p>
 
-        <form onSubmit={handleSubmit} className="card mt-6">
-          <label className="label text-left" htmlFor="shopUrl">
-            Shop URL
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="shopUrl"
-              className="input"
-              required
-              placeholder="https://www.etsy.com/shop/ShopName"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-            <button type="submit" disabled={loading} className="btn-primary shrink-0">
-              <Search className="mr-1.5 inline h-4 w-4" />
-              {loading ? "Searching…" : "Start spying"}
-            </button>
-          </div>
-          {error && <p className="mt-3 text-left text-sm text-danger">{error}</p>}
-          {message && <p className="mt-3 text-left text-sm text-success">{message}</p>}
-        </form>
+          <form onSubmit={handleSubmit} className="card mt-6">
+            <label className="label text-left" htmlFor="shopUrl">
+              Shop URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="shopUrl"
+                className="input"
+                required
+                placeholder="https://www.etsy.com/shop/ShopName"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <button type="submit" disabled={loading} className="btn-primary shrink-0">
+                <Search className="mr-1.5 inline h-4 w-4" />
+                {loading ? "Searching…" : "Start spying"}
+              </button>
+            </div>
+            {error && <p className="mt-3 text-left text-sm text-danger">{error}</p>}
+            {message && <p className="mt-3 text-left text-sm text-success">{message}</p>}
+          </form>
+        </div>
       </div>
     </div>
   );

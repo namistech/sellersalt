@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   XAxis,
@@ -26,6 +26,7 @@ import {
   scoreFavorites,
   overallCompetitionRating,
   levelMeta,
+  demandMeta,
 } from "@/lib/competition-scoring";
 
 interface TopListing {
@@ -119,19 +120,11 @@ export default function ShopDetailPage() {
     const ageLevel = scoreShopAgeMonths(shop.shopAgeMonths);
     const salesLevel = scoreTotalSales(shop.totalSales ?? 0);
     const reviewLevel = scoreReviewCount(shop.reviewCount);
-    const velocityLevel = scoreEstDailySales(shop.estDailySales);
-    const sellThroughLevel = scoreSellThrough(shop.avgSellingRatio);
     const listingsLevel = scoreActiveListings(shop.activeListings);
     const favoritesLevel = scoreFavorites(shop.numFavorers ?? 0);
-    const overall = overallCompetitionRating([
-      ageLevel,
-      salesLevel,
-      reviewLevel,
-      velocityLevel,
-      sellThroughLevel,
-      listingsLevel,
-      favoritesLevel,
-    ]);
+    const velocityLevel = scoreEstDailySales(shop.estDailySales);
+    const sellThroughLevel = scoreSellThrough(shop.avgSellingRatio);
+    const overall = overallCompetitionRating([ageLevel, salesLevel, reviewLevel, listingsLevel, favoritesLevel]);
     return { ageLevel, salesLevel, reviewLevel, velocityLevel, sellThroughLevel, listingsLevel, favoritesLevel, overall };
   }, [data]);
 
@@ -146,6 +139,11 @@ export default function ShopDetailPage() {
 
   const { shop, keywords, topListings, watch } = data;
 
+  // Fall back to a listing photo as the cover when Etsy doesn't expose a shop
+  // banner for this shop (common — banners are optional on Etsy's side, not
+  // something we failed to fetch).
+  const coverImage = shop.shopBannerUrl || topListings[0]?.imageUrl;
+
   const trendData = (watch?.snapshots ?? []).map((s) => ({
     date: new Date(s.capturedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
     sales: s.totalSales ?? 0,
@@ -159,18 +157,15 @@ export default function ShopDetailPage() {
   ];
   const isTracking = watch?.isActive ?? false;
   const hasTrendHistory = trendData.length >= 2;
+  const overallMeta = levelMeta(scored.overall);
 
   return (
     <div>
       {/* Banner + header */}
       <div className="mb-6 overflow-hidden rounded-lg border border-line">
         <div
-          className="h-28 w-full bg-gradient-to-br from-accent/25 to-accent-soft sm:h-36"
-          style={
-            shop.shopBannerUrl
-              ? { backgroundImage: `url(${shop.shopBannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : undefined
-          }
+          className="h-32 w-full bg-gradient-to-br from-accent/25 to-accent-soft bg-cover bg-center sm:h-40"
+          style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
         />
         <div className="flex flex-wrap items-start justify-between gap-4 bg-surface p-4">
           <div className="flex items-center gap-4">
@@ -202,8 +197,25 @@ export default function ShopDetailPage() {
         </div>
       </div>
 
+      {/* Competition rating — separated, most important card */}
+      <div
+        className={`mb-6 flex items-center gap-5 rounded-lg border-2 p-5 ${overallMeta.bg}`}
+        style={{ borderColor: "currentColor" }}
+      >
+        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/70 dark:bg-black/20 ${overallMeta.text}`}>
+          <Target className="h-6 w-6" />
+        </div>
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted">Overall competition rating</div>
+          <div className={`text-xl font-bold ${overallMeta.text}`}>{overallMeta.label}</div>
+          <p className="mt-0.5 text-xs text-muted">
+            Based on this shop's age, lifetime sales, reviews, catalog size, and favorites.
+          </p>
+        </div>
+      </div>
+
       {/* Stat cards */}
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+      <div className="mb-2 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         <ScoredStatCard icon={DollarSign} label="Total sales" value={shop.totalSales ?? "—"} level={scored.salesLevel} />
         <ScoredStatCard icon={Package} label="Active listings" value={shop.activeListings} level={scored.listingsLevel} />
         <ScoredStatCard
@@ -214,18 +226,31 @@ export default function ShopDetailPage() {
           level={scored.reviewLevel}
         />
         <ScoredStatCard icon={Calendar} label="Shop age" value={`${shop.shopAgeMonths}mo`} level={scored.ageLevel} />
-        <ScoredStatCard icon={ShoppingBag} label="Sales / listing" value={shop.avgSellingRatio} level={scored.sellThroughLevel} />
-        <ScoredStatCard icon={TrendingUp} label="Est. daily sales" value={shop.estDailySales} level={scored.velocityLevel} />
-        <ScoredStatCard icon={Heart} label="Favorites" value={shop.numFavorers ?? "—"} level={scored.favoritesLevel} />
         <ScoredStatCard
-          icon={Target}
-          label="Competition rating"
-          value={levelMeta(scored.overall).label.replace(" (Recommended)", "")}
-          level={scored.overall}
+          icon={ShoppingBag}
+          label="Sales / listing"
+          value={shop.avgSellingRatio}
+          level={scored.sellThroughLevel}
+          metaFn={demandMeta}
         />
+        <ScoredStatCard
+          icon={TrendingUp}
+          label="Est. daily sales"
+          value={shop.estDailySales}
+          level={scored.velocityLevel}
+          metaFn={demandMeta}
+        />
+        <div className="sm:col-span-1 md:col-span-2">
+          <ScoredStatCard icon={Heart} label="Favorites" value={shop.numFavorers ?? "—"} level={scored.favoritesLevel} />
+        </div>
       </div>
+      <p className="mb-6 text-xs text-muted">
+        Age, sales, reviews, listings, and favorites score how entrenched <em>this shop</em> is.
+        Sales/listing and est. daily sales are a separate signal — how strong current buyer
+        demand is in this category, regardless of whether this particular shop is easy to beat.
+      </p>
 
-      {/* Sales tracking graph — before search terms, per spec */}
+      {/* Sales tracking graph */}
       <div className="card mb-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Sales tracking</h2>
@@ -242,38 +267,52 @@ export default function ShopDetailPage() {
 
         {hasTrendHistory ? (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-              <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+            <AreaChart data={trendData}>
+              <defs>
+                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="reviewsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#16A34A" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#16A34A" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="listingsGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#D97706" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#D97706" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgb(228 228 231)" }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="sales" name="Total sales" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="reviews" name="Reviews" stroke="#16A34A" strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="listings" name="Listings" stroke="#D97706" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
+              <Area type="monotone" dataKey="sales" name="Total sales" stroke="#2563EB" strokeWidth={2} fill="url(#salesGrad)" />
+              <Area type="monotone" dataKey="reviews" name="Reviews" stroke="#16A34A" strokeWidth={2} fill="url(#reviewsGrad)" />
+              <Area type="monotone" dataKey="listings" name="Listings" stroke="#D97706" strokeWidth={2} fill="url(#listingsGrad)" />
+            </AreaChart>
           </ResponsiveContainer>
         ) : (
           <div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={currentSnapshotBar}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-                <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="value" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgb(228 228 231)" }} />
+                <Bar dataKey="value" fill="#2563EB" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
             <p className="mt-3 text-xs text-muted">
               {isTracking
-                ? "Tracking is active — checking daily. The trend line fills in once there are a couple of snapshots to compare."
+                ? "Tracking is active — checking daily. The trend fills in once there are a couple of snapshots to compare."
                 : "Showing this shop's current numbers. Start tracking to build a real trend over time — checked once a day."}
             </p>
           </div>
         )}
       </div>
 
-      {/* Search terms — long-tail phrases only */}
+      {/* Search terms */}
       <div className="card mb-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Popular search terms</h2>

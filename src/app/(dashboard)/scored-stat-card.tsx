@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { levelMeta, type ScoreLevel } from "@/lib/competition-scoring";
+import { levelMeta, type MetaFn, type ScoreLevel } from "@/lib/competition-scoring";
 
 export function ScoredStatCard({
   icon: Icon,
@@ -7,14 +7,16 @@ export function ScoredStatCard({
   value,
   sub,
   level,
+  metaFn = levelMeta,
 }: {
   icon: LucideIcon;
   label: string;
   value: string | number;
   sub?: string;
   level?: ScoreLevel;
+  metaFn?: MetaFn;
 }) {
-  const meta = level ? levelMeta(level) : null;
+  const meta = level ? metaFn(level) : null;
 
   return (
     <div className={`card ${meta ? `${meta.bg} ${meta.ring}` : ""}`}>

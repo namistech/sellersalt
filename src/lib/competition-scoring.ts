@@ -6,12 +6,14 @@
 
 export type ScoreLevel = "easy" | "moderate" | "hard";
 
-interface LevelMeta {
+export interface LevelMeta {
   label: string;
   bg: string;
   text: string;
   ring: string;
 }
+
+export type MetaFn = (level: ScoreLevel) => LevelMeta;
 
 const LEVEL_META: Record<ScoreLevel, LevelMeta> = {
   easy: {
@@ -36,6 +38,36 @@ const LEVEL_META: Record<ScoreLevel, LevelMeta> = {
 
 export function levelMeta(level: ScoreLevel): LevelMeta {
   return LEVEL_META[level];
+}
+
+// Same easy/moderate/hard buckets as competition difficulty, but for stats where a
+// higher value is good news for the category (buyer demand), not bad news for a
+// newcomer (competition strength) — so the color mapping is inverted: "hard"
+// (highest sales velocity) reads as strong demand (green), not as a shop that's
+// hard to beat (red).
+const DEMAND_META: Record<ScoreLevel, LevelMeta> = {
+  easy: {
+    label: "Low demand",
+    bg: "bg-zinc-50 dark:bg-zinc-900/40",
+    text: "text-zinc-600 dark:text-zinc-400",
+    ring: "ring-1 ring-inset ring-zinc-200 dark:ring-zinc-800",
+  },
+  moderate: {
+    label: "Moderate demand",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    text: "text-amber-700 dark:text-amber-400",
+    ring: "ring-1 ring-inset ring-amber-200 dark:ring-amber-900",
+  },
+  hard: {
+    label: "High demand",
+    bg: "bg-green-50 dark:bg-green-950/40",
+    text: "text-green-700 dark:text-green-400",
+    ring: "ring-1 ring-inset ring-green-200 dark:ring-green-900",
+  },
+};
+
+export function demandMeta(level: ScoreLevel): LevelMeta {
+  return DEMAND_META[level];
 }
 
 function fromThresholds(value: number, easyMax: number, moderateMax: number): ScoreLevel {
