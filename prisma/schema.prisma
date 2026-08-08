@@ -159,6 +159,7 @@ model Prospect {
   id             String   @id @default(cuid())
   organizationId String
   searchConfigId String
+  jobId          String?
   marketplace    ConnectorType @default(ETSY)
   keyword        String
   shopExternalId    String
@@ -192,6 +193,7 @@ model Prospect {
   @@index([isFavorite])
   @@index([shopExternalId])
   @@index([listingExternalId])
+  @@index([jobId])
 }
 
 enum ProspectStatus {

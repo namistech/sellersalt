@@ -47,6 +47,7 @@ const worker = new Worker<ProspectingJobData>(
           data: results.map((r) => ({
             organizationId,
             searchConfigId,
+            jobId,
             marketplace: connectorRow.type as any,
             keyword: r.keyword,
             shopExternalId: r.shopExternalId,
