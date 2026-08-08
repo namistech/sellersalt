@@ -1,16 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { DollarSign, Package, Star, Calendar, Heart, TrendingUp, Target, ShoppingBag, Copy, Check } from "lucide-react";
+import { ScoredStatCard } from "../../scored-stat-card";
+import {
+  scoreShopAgeMonths,
+  scoreTotalSales,
+  scoreReviewCount,
+  scoreEstDailySales,
+  scoreSellThrough,
+  scoreActiveListings,
+  scoreFavorites,
+  overallCompetitionRating,
+  levelMeta,
+} from "@/lib/competition-scoring";
 
-interface Listing {
+interface TopListing {
   listingExternalId: string;
-  listingTitle: string;
-  listingUrl: string;
-  listingImageUrl: string | null;
+  title: string;
   price: number;
-  lastSeenAt: string;
+  url: string;
+  imageUrl?: string;
 }
 
 interface Snapshot {
@@ -26,22 +49,21 @@ interface ShopDetail {
     shopName: string;
     shopUrl: string;
     shopIconUrl: string | null;
+    shopBannerUrl?: string;
     shopAgeMonths: number;
     reviewCount: number;
     reviewAverage: number | null;
     activeListings: number;
     totalSales: number | null;
     numFavorers: number | null;
-    avgSellingRatio: number | null;
-    estDailySales: number | null;
+    avgSellingRatio: number;
+    estDailySales: number;
     badges: string[];
   };
   keywords: Array<{ term: string; count: number }>;
-  listings: Listing[];
+  topListings: TopListing[];
   watch: { isActive: boolean; startedAt: string; snapshots: Snapshot[] } | null;
 }
-
-type SortOption = "recent" | "price-desc" | "price-asc";
 
 export default function ShopDetailPage() {
   const params = useParams();
@@ -49,19 +71,18 @@ export default function ShopDetailPage() {
 
   const [data, setData] = useState<ShopDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [tab, setTab] = useState<"overview" | "track">("overview");
-  const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/shops/${shopExternalId}`);
-    if (res.status === 404) {
-      setNotFound(true);
+    const json = await res.json();
+    if (!res.ok) {
+      setErrorMsg(json.error ?? "Something went wrong.");
       setLoading(false);
       return;
     }
-    const json = await res.json();
     setData(json);
     setLoading(false);
   }
@@ -85,229 +106,235 @@ export default function ShopDetailPage() {
     load();
   }
 
+  async function handleCopyKeywords() {
+    if (!data) return;
+    await navigator.clipboard.writeText(data.keywords.map((k) => k.term).join("\n"));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const scored = useMemo(() => {
+    if (!data) return null;
+    const { shop } = data;
+    const ageLevel = scoreShopAgeMonths(shop.shopAgeMonths);
+    const salesLevel = scoreTotalSales(shop.totalSales ?? 0);
+    const reviewLevel = scoreReviewCount(shop.reviewCount);
+    const velocityLevel = scoreEstDailySales(shop.estDailySales);
+    const sellThroughLevel = scoreSellThrough(shop.avgSellingRatio);
+    const listingsLevel = scoreActiveListings(shop.activeListings);
+    const favoritesLevel = scoreFavorites(shop.numFavorers ?? 0);
+    const overall = overallCompetitionRating([
+      ageLevel,
+      salesLevel,
+      reviewLevel,
+      velocityLevel,
+      sellThroughLevel,
+      listingsLevel,
+      favoritesLevel,
+    ]);
+    return { ageLevel, salesLevel, reviewLevel, velocityLevel, sellThroughLevel, listingsLevel, favoritesLevel, overall };
+  }, [data]);
+
   if (loading) return <p className="text-sm text-muted">Loading…</p>;
-  if (notFound || !data) {
+  if (errorMsg || !data || !scored) {
     return (
       <div className="card">
-        <p className="text-sm text-muted">
-          This shop isn't in your data yet — it needs to show up in a Prospects search first.
-        </p>
+        <p className="text-sm text-muted">{errorMsg ?? "Shop not found."}</p>
       </div>
     );
   }
 
-  const { shop, keywords, listings, watch } = data;
+  const { shop, keywords, topListings, watch } = data;
 
-  const sortedListings = [...listings].sort((a, b) => {
-    if (sortBy === "price-asc") return a.price - b.price;
-    if (sortBy === "price-desc") return b.price - a.price;
-    return new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime();
-  });
-  const visibleListings = sortedListings.slice(0, 12);
-
-  const chartData = (watch?.snapshots ?? []).map((s) => ({
+  const trendData = (watch?.snapshots ?? []).map((s) => ({
     date: new Date(s.capturedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
     sales: s.totalSales ?? 0,
+    reviews: s.reviewCount,
+    listings: s.activeListings,
   }));
+  const currentSnapshotBar = [
+    { name: "Sales", value: shop.totalSales ?? 0 },
+    { name: "Reviews", value: shop.reviewCount },
+    { name: "Listings", value: shop.activeListings },
+  ];
+  const isTracking = watch?.isActive ?? false;
+  const hasTrendHistory = trendData.length >= 2;
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {shop.shopIconUrl ? (
-            <img
-              src={shop.shopIconUrl}
-              alt=""
-              className="h-16 w-16 rounded-full object-cover ring-2 ring-line"
-            />
-          ) : (
-            <div className="h-16 w-16 rounded-full bg-line" />
-          )}
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-ink">{shop.shopName}</h1>
-            {shop.badges.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {shop.badges.map((b) => (
-                  <span key={b} className="badge bg-accent-soft text-accent">
-                    {b}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <a href={shop.shopUrl} target="_blank" rel="noreferrer" className="btn-primary shrink-0">
-          Visit shop ↗
-        </a>
-      </div>
-
-      <div className="mb-6 flex gap-1 border-b border-line">
-        <button
-          onClick={() => setTab("overview")}
-          className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
-            tab === "overview" ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
-          }`}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setTab("track")}
-          className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition ${
-            tab === "track" ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink"
-          }`}
-        >
-          Spy on Competitor
-        </button>
-      </div>
-
-      {tab === "overview" && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            <StatCard label="Total sales" value={shop.totalSales ?? "—"} />
-            <StatCard label="Active listings" value={shop.activeListings} />
-            <StatCard
-              label="Reviews"
-              value={shop.reviewCount}
-              sub={shop.reviewAverage != null ? `${shop.reviewAverage.toFixed(1)}★ avg` : undefined}
-            />
-            <StatCard label="Shop age" value={`${shop.shopAgeMonths}mo`} />
-            <StatCard label="Sales / listing" value={shop.avgSellingRatio ?? "—"} />
-            <StatCard label="Est. daily sales" value={shop.estDailySales ?? "—"} />
-            <StatCard label="Favorites" value={shop.numFavorers ?? "—"} />
-          </div>
-
-          <div className="card">
-            <h2 className="mb-3 text-sm font-semibold text-ink">Popular search terms</h2>
-            {keywords.length === 0 ? (
-              <p className="text-sm text-muted">Not enough listing data yet.</p>
+      {/* Banner + header */}
+      <div className="mb-6 overflow-hidden rounded-lg border border-line">
+        <div
+          className="h-28 w-full bg-gradient-to-br from-accent/25 to-accent-soft sm:h-36"
+          style={
+            shop.shopBannerUrl
+              ? { backgroundImage: `url(${shop.shopBannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : undefined
+          }
+        />
+        <div className="flex flex-wrap items-start justify-between gap-4 bg-surface p-4">
+          <div className="flex items-center gap-4">
+            {shop.shopIconUrl ? (
+              <img
+                src={shop.shopIconUrl}
+                alt=""
+                className="-mt-10 h-16 w-16 rounded-full object-cover ring-4 ring-surface"
+              />
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((k) => (
-                  <span
-                    key={k.term}
-                    className="badge border border-line bg-paper text-ink"
-                    style={{ fontSize: `${Math.min(0.95, 0.7 + k.count * 0.03)}rem` }}
-                  >
-                    {k.term} <span className="ml-1 text-muted">{k.count}</span>
-                  </span>
-                ))}
-              </div>
+              <div className="-mt-10 h-16 w-16 rounded-full bg-line ring-4 ring-surface" />
             )}
-            <p className="mt-3 text-xs text-muted">
-              Extracted from listing titles we've captured for this shop — not the platform's own tag data.
-            </p>
-          </div>
-
-          <div className="card">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">Listings we've tracked</h2>
-              <select
-                className="input !w-auto py-1 text-xs"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-              >
-                <option value="recent">Recently seen</option>
-                <option value="price-desc">Price: high to low</option>
-                <option value="price-asc">Price: low to high</option>
-              </select>
-            </div>
-            {listings.length === 0 ? (
-              <p className="text-sm text-muted">No listings captured yet.</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                  {visibleListings.map((l) => (
-                    <a
-                      key={l.listingExternalId}
-                      href={l.listingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group block overflow-hidden rounded-md border border-line transition hover:border-accent"
-                    >
-                      {l.listingImageUrl ? (
-                        <img src={l.listingImageUrl} alt="" className="h-32 w-full object-cover" />
-                      ) : (
-                        <div className="h-32 w-full bg-line" />
-                      )}
-                      <div className="p-2">
-                        <div className="truncate text-xs text-ink group-hover:text-accent">{l.listingTitle}</div>
-                        <div className="mt-0.5 text-xs font-medium text-muted">${l.price.toFixed(2)}</div>
-                      </div>
-                    </a>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-ink">{shop.shopName}</h1>
+              {shop.badges.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {shop.badges.map((b) => (
+                    <span key={b} className="badge bg-accent-soft text-accent">
+                      {b}
+                    </span>
                   ))}
                 </div>
-                <p className="mt-3 text-xs text-muted">
-                  Showing listings found through your searches, not the shop's full catalog.{" "}
-                  <a href={shop.shopUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
-                    Show all on Etsy ↗
-                  </a>
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {tab === "track" && (
-        <div className="card">
-          {!watch || !watch.isActive ? (
-            <div className="relative overflow-hidden rounded-lg">
-              <div
-                className="absolute inset-0 opacity-60 blur-2xl"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(37,99,235,0.35), rgba(37,99,235,0.05))",
-                }}
-              />
-              <div className="relative flex flex-col items-center justify-center gap-4 py-16 text-center">
-                <h2 className="text-lg font-semibold text-ink">Start tracking this shop's sales</h2>
-                <p className="max-w-md text-sm text-muted">
-                  We'll check back on {shop.shopName} once a day and build a real sales trend
-                  graph over time — no manual re-running needed.
-                </p>
-                <button onClick={handleStartTracking} disabled={trackingBusy} className="btn-primary">
-                  {trackingBusy ? "Starting…" : "Start tracking sales"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-ink">Sales trend — {shop.shopName}</h2>
-                <button onClick={handleStopTracking} disabled={trackingBusy} className="btn-secondary">
-                  {trackingBusy ? "Stopping…" : "Stop tracking"}
-                </button>
-              </div>
-              {chartData.length < 2 ? (
-                <p className="text-sm text-muted">
-                  Tracking started. We check daily — the graph fills in once there are a couple of
-                  snapshots to compare.
-                </p>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-                    <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                    <Line type="monotone" dataKey="sales" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
               )}
             </div>
+          </div>
+          <a href={shop.shopUrl} target="_blank" rel="noreferrer" className="btn-primary shrink-0">
+            Visit shop ↗
+          </a>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <ScoredStatCard icon={DollarSign} label="Total sales" value={shop.totalSales ?? "—"} level={scored.salesLevel} />
+        <ScoredStatCard icon={Package} label="Active listings" value={shop.activeListings} level={scored.listingsLevel} />
+        <ScoredStatCard
+          icon={Star}
+          label="Reviews"
+          value={shop.reviewCount}
+          sub={shop.reviewAverage != null ? `${shop.reviewAverage.toFixed(1)}★ avg` : undefined}
+          level={scored.reviewLevel}
+        />
+        <ScoredStatCard icon={Calendar} label="Shop age" value={`${shop.shopAgeMonths}mo`} level={scored.ageLevel} />
+        <ScoredStatCard icon={ShoppingBag} label="Sales / listing" value={shop.avgSellingRatio} level={scored.sellThroughLevel} />
+        <ScoredStatCard icon={TrendingUp} label="Est. daily sales" value={shop.estDailySales} level={scored.velocityLevel} />
+        <ScoredStatCard icon={Heart} label="Favorites" value={shop.numFavorers ?? "—"} level={scored.favoritesLevel} />
+        <ScoredStatCard
+          icon={Target}
+          label="Competition rating"
+          value={levelMeta(scored.overall).label.replace(" (Recommended)", "")}
+          level={scored.overall}
+        />
+      </div>
+
+      {/* Sales tracking graph — before search terms, per spec */}
+      <div className="card mb-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink">Sales tracking</h2>
+          {isTracking ? (
+            <button onClick={handleStopTracking} disabled={trackingBusy} className="btn-secondary">
+              {trackingBusy ? "Stopping…" : "Stop tracking"}
+            </button>
+          ) : (
+            <button onClick={handleStartTracking} disabled={trackingBusy} className="btn-primary">
+              {trackingBusy ? "Starting…" : "Start tracking the shop"}
+            </button>
           )}
         </div>
-      )}
-    </div>
-  );
-}
 
-function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
-  return (
-    <div className="card">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums text-ink">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}
+        {hasTrendHistory ? (
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
+              <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
+              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Line type="monotone" dataKey="sales" name="Total sales" stroke="#2563EB" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="reviews" name="Reviews" stroke="#16A34A" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey="listings" name="Listings" stroke="#D97706" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={currentSnapshotBar}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
+                <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Bar dataKey="value" fill="#2563EB" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="mt-3 text-xs text-muted">
+              {isTracking
+                ? "Tracking is active — checking daily. The trend line fills in once there are a couple of snapshots to compare."
+                : "Showing this shop's current numbers. Start tracking to build a real trend over time — checked once a day."}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Search terms — long-tail phrases only */}
+      <div className="card mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink">Popular search terms</h2>
+          {keywords.length > 0 && (
+            <button onClick={handleCopyKeywords} className="btn-secondary !py-1.5 !px-3 text-xs">
+              {copied ? <Check className="mr-1 inline h-3.5 w-3.5" /> : <Copy className="mr-1 inline h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy all"}
+            </button>
+          )}
+        </div>
+        {keywords.length === 0 ? (
+          <p className="text-sm text-muted">Not enough listing data yet to extract search terms.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {keywords.map((k) => (
+              <span key={k.term} className="badge border border-line bg-paper text-ink">
+                {k.term} <span className="ml-1 text-muted">{k.count}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="mt-3 text-xs text-muted">
+          Long-tail phrases extracted from listing titles — single-word tags are excluded.
+        </p>
+      </div>
+
+      {/* Best sellers */}
+      <div className="card">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Best sellers</h2>
+        {topListings.length === 0 ? (
+          <p className="text-sm text-muted">No listings found for this shop.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              {topListings.map((l) => (
+                <a
+                  key={l.listingExternalId}
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group block overflow-hidden rounded-md border border-line transition hover:border-accent"
+                >
+                  {l.imageUrl ? (
+                    <img src={l.imageUrl} alt="" className="h-32 w-full object-cover" />
+                  ) : (
+                    <div className="h-32 w-full bg-line" />
+                  )}
+                  <div className="p-2">
+                    <div className="truncate text-xs text-ink group-hover:text-accent">{l.title}</div>
+                    <div className="mt-0.5 text-xs font-medium text-muted">${l.price.toFixed(2)}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-muted">
+              Ranked by Etsy's own relevance score — Etsy doesn't expose per-listing sales counts publicly, so this
+              isn't a confirmed sales ranking.
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

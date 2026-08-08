@@ -40,11 +40,21 @@ export interface ShopStats {
   shopName: string;
   shopUrl: string;
   shopIconUrl?: string;
+  shopBannerUrl?: string;
+  shopAgeMonths: number;
   totalSales?: number;
   reviewCount: number;
   reviewAverage?: number;
   activeListings: number;
   numFavorers?: number;
+}
+
+export interface TopListing {
+  listingExternalId: string;
+  title: string;
+  price: number;
+  url: string;
+  imageUrl?: string;
 }
 
 export interface MarketplaceConnector {
@@ -54,5 +64,14 @@ export interface MarketplaceConnector {
     credentials: Record<string, string>,
     config: SearchConfigInput
   ): Promise<ProspectResult[]>;
+  /** Cheap single-shop refetch, used for scheduled tracking. */
   getShopStats?(credentials: Record<string, string>, shopExternalId: string): Promise<ShopStats | null>;
+  /** Resolves a shop by its handle/name (from a pasted URL) to full stats. */
+  getShopByName?(credentials: Record<string, string>, shopName: string): Promise<ShopStats | null>;
+  /** The shop's own current listing catalog, ranked by the marketplace's own relevance score. */
+  getShopTopListings?(
+    credentials: Record<string, string>,
+    shopExternalId: string,
+    limit: number
+  ): Promise<TopListing[]>;
 }

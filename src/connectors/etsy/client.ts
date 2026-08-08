@@ -3,6 +3,9 @@ import PQueue from "p-queue";
 
 const ETSY_BASE_URL = "https://openapi.etsy.com/v3/application";
 
+// Etsy's hard limit is 10 req/sec per key. Each Etsy connector instance gets its
+// own queue so one org's run can't starve another's — created per-call rather than
+// module-level singleton, since credentials (and therefore rate budgets) are per-org.
 export function createEtsyClient(apiKey: string, sharedSecret?: string) {
   const queue = new PQueue({ intervalCap: 8, interval: 1000, carryoverConcurrencyCount: true });
 
@@ -34,5 +37,11 @@ export function createEtsyClient(apiKey: string, sharedSecret?: string) {
       }),
     getShop: (shopId: number | string) => get(`/shops/${shopId}`),
     getListingImages: (listingId: number | string) => get(`/listings/${listingId}/images`),
+    searchShopsByName: (shopName: string) => get("/shops", { shop_name: shopName }),
+    // The shop's own current catalog, not a keyword search — sort_on=score is
+    // Etsy's own relevance ranking, the closest honest proxy we have for
+    // "best sellers" without per-listing sales data.
+    getShopListings: (shopId: number | string, limit: number) =>
+      get(`/shops/${shopId}/listings/active`, { limit, sort_on: "score", sort_order: "desc" }),
   };
 }

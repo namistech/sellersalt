@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { startShopWatch, stopShopWatch } from "@/lib/queue";
+import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 
 async function requireOrg() {
   const session = await getServerSession(authOptions);
@@ -14,22 +15,30 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
   const organizationId = await requireOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const connector = await prisma.connector.findFirst({ where: { organizationId, status: "ACTIVE" } });
-  if (!connector) return NextResponse.json({ error: "No active connector on this workspace." }, { status: 400 });
+  const active = await getActiveConnectorWithCredentials(organizationId);
+  if (!active) return NextResponse.json({ error: "No active connector on this workspace." }, { status: 400 });
 
-  const recentProspect = await prisma.prospect.findFirst({
+  // Shop name for the record: prefer existing Prospect data, fall back to a
+  // live lookup — a shop tracked via "Spy on Competitor" won't have either yet.
+  let shopName = (await prisma.prospect.findFirst({
     where: { organizationId, shopExternalId },
     orderBy: { createdAt: "desc" },
-  });
-  if (!recentProspect) return NextResponse.json({ error: "Shop not found in your data." }, { status: 404 });
+  }))?.shopName;
+
+  if (!shopName && active.connector.getShopStats) {
+    const stats = await active.connector.getShopStats(active.credentials, shopExternalId);
+    if (!stats) return NextResponse.json({ error: "Shop not found." }, { status: 404 });
+    shopName = stats.shopName;
+  }
+  if (!shopName) return NextResponse.json({ error: "Shop not found." }, { status: 404 });
 
   const watch = await prisma.shopWatch.upsert({
     where: { organizationId_shopExternalId: { organizationId, shopExternalId } },
     create: {
       organizationId,
-      connectorId: connector.id,
+      connectorId: active.connectorRow.id,
       shopExternalId,
-      shopName: recentProspect.shopName,
+      shopName,
       isActive: true,
     },
     update: { isActive: true },
@@ -38,7 +47,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
   await startShopWatch({
     shopWatchId: watch.id,
     organizationId,
-    connectorId: connector.id,
+    connectorId: active.connectorRow.id,
     shopExternalId,
   });
 
