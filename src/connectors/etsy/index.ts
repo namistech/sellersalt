@@ -125,4 +125,25 @@ export const etsyConnector: MarketplaceConnector = {
 
     return results;
   },
+
+  async getShopStats(credentials, shopExternalId) {
+    try {
+      const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
+      const shop = await client.getShop(shopExternalId);
+      if (!shop) return null;
+      return {
+        shopExternalId: String(shop.shop_id),
+        shopName: shop.shop_name ?? "",
+        shopUrl: shop.url || `https://www.etsy.com/shop/${shop.shop_name}`,
+        shopIconUrl: shop.icon_url_fullxfull ?? undefined,
+        totalSales: shop.transaction_sold_count ?? undefined,
+        reviewCount: shop.review_count ?? 0,
+        reviewAverage: shop.review_average ?? undefined,
+        activeListings: shop.listing_active_count ?? 0,
+        numFavorers: shop.num_favorers ?? undefined,
+      };
+    } catch {
+      return null;
+    }
+  },
 };

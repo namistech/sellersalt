@@ -3,11 +3,33 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-ink: 11 12 14;
+    --color-paper: 250 250 250;
+    --color-surface: 255 255 255;
+    --color-line: 228 228 231;
+    --color-muted: 113 113 122;
+    --color-accent-soft: 239 244 255;
+  }
+
+  .dark {
+    --color-ink: 244 244 245;
+    --color-paper: 9 9 11;
+    --color-surface: 24 24 27;
+    --color-line: 39 39 42;
+    --color-muted: 161 161 170;
+    --color-accent-soft: 30 41 71;
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
-    @apply bg-paper text-ink;
+    @apply bg-paper text-ink transition-colors duration-150;
   }
   :focus-visible {
     @apply outline outline-2 outline-offset-2 outline-accent;
@@ -16,16 +38,16 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-ink px-4 py-2 text-sm font-medium text-white transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 disabled:pointer-events-none dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-accent dark:hover:text-white;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-line bg-white px-4 py-2 text-sm font-medium text-ink transition hover:border-ink disabled:opacity-40 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition hover:border-ink disabled:opacity-40 disabled:pointer-events-none;
   }
   .card {
-    @apply rounded-lg border border-line bg-white p-5;
+    @apply rounded-lg border border-line bg-surface p-5;
   }
   .input {
-    @apply w-full rounded-sm border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none;
+    @apply w-full rounded-sm border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none;
   }
   .label {
     @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted;

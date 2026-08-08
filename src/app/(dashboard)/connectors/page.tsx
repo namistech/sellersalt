@@ -12,9 +12,7 @@ interface Connector {
 
 const AVAILABLE_TYPES = [
   { type: "ETSY", name: "Etsy", available: true },
-  { type: "AMAZON", name: "Amazon", available: false },
-  { type: "ALIEXPRESS", name: "AliExpress", available: false },
-  { type: "SHOPIFY_SOURCING", name: "Shopify Sourcing", available: false },
+  { type: "EBAY", name: "eBay", available: false },
 ];
 
 export default function ConnectorsPage() {

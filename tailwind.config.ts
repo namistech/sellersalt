@@ -1,20 +1,19 @@
 import type { Config } from "tailwindcss";
 
-// Design tokens: black/white/gray base, blue accent (Netdrix default), applied
-// with restraint — the accent is reserved for primary actions and live-data states,
-// not decoration.
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#0B0C0E",
-        paper: "#FAFAFA",
-        line: "#E4E4E7",
-        muted: "#71717A",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        line: "rgb(var(--color-line) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
         accent: {
           DEFAULT: "#2563EB",
-          soft: "#EFF4FF",
+          soft: "rgb(var(--color-accent-soft) / <alpha-value>)",
           dark: "#1D4ED8",
         },
         success: "#16A34A",

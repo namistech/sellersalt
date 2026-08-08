@@ -1,5 +1,6 @@
-// Shared shape every marketplace connector (Etsy now; Amazon/AliExpress/Shopify
-// sourcing later) implements. Keeping this stable is what makes phase 2 additive
+// Shared shape every marketplace connector implements. Anadash currently targets
+// Etsy (live) and eBay (planned) as a focused product-hunting tool across the two
+// platforms — keeping this interface stable is what makes eBay additive later
 // instead of a rewrite.
 
 export interface SearchConfigInput {
@@ -34,6 +35,18 @@ export interface ProspectResult {
   price: number;
 }
 
+export interface ShopStats {
+  shopExternalId: string;
+  shopName: string;
+  shopUrl: string;
+  shopIconUrl?: string;
+  totalSales?: number;
+  reviewCount: number;
+  reviewAverage?: number;
+  activeListings: number;
+  numFavorers?: number;
+}
+
 export interface MarketplaceConnector {
   type: string;
   testConnection(credentials: Record<string, string>): Promise<{ ok: boolean; message?: string }>;
@@ -41,4 +54,5 @@ export interface MarketplaceConnector {
     credentials: Record<string, string>,
     config: SearchConfigInput
   ): Promise<ProspectResult[]>;
+  getShopStats?(credentials: Record<string, string>, shopExternalId: string): Promise<ShopStats | null>;
 }

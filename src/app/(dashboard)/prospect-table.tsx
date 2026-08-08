@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 export interface ProspectRow {
   id: string;
   keyword: string;
+  shopExternalId: string;
   shopName: string;
   shopUrl: string;
   shopIconUrl: string | null;
@@ -110,19 +112,29 @@ export function ProspectTable({
         {sorted.map((p) => (
           <tr key={p.id}>
             <td className="py-2 pr-4">
-              <a
-                href={p.shopUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 font-medium text-accent hover:underline"
-              >
-                {p.shopIconUrl ? (
-                  <img src={p.shopIconUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-                ) : (
-                  <span className="h-6 w-6 rounded-full bg-line" />
-                )}
-                {p.shopName}
-              </a>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/shops/${p.shopExternalId}`}
+                  className="flex items-center gap-2 font-medium text-accent hover:underline"
+                >
+                  {p.shopIconUrl ? (
+                    <img src={p.shopIconUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <span className="h-6 w-6 rounded-full bg-line" />
+                  )}
+                  {p.shopName}
+                </Link>
+                <a
+                  href={p.shopUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open shop on Etsy"
+                  className="text-muted hover:text-ink"
+                  title="Open on Etsy"
+                >
+                  ↗
+                </a>
+              </div>
             </td>
             <td className="py-2 pr-4 tabular-nums">{p.shopAgeMonths}mo</td>
             <td className="py-2 pr-4 tabular-nums">{p.reviewCount}</td>

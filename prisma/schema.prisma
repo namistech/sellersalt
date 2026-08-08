@@ -25,6 +25,7 @@ model Organization {
   searchConfigs SearchConfig[]
   prospects   Prospect[]
   jobs        Job[]
+  shopWatches ShopWatch[]
 }
 
 enum Plan {
@@ -78,6 +79,7 @@ model Connector {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   searchConfigs SearchConfig[]
   jobs         Job[]
+  shopWatches  ShopWatch[]
 
   @@index([organizationId])
 }
@@ -201,4 +203,38 @@ enum ProspectStatus {
   SHORTLISTED
   CONTACTED
   REJECTED
+}
+
+// ---------- Shop tracking ("Spy on Competitor") ----------
+
+model ShopWatch {
+  id             String   @id @default(cuid())
+  organizationId String
+  connectorId    String
+  shopExternalId String
+  shopName       String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  connector    Connector       @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  snapshots    ShopSnapshot[]
+
+  @@unique([organizationId, shopExternalId])
+  @@index([organizationId])
+}
+
+model ShopSnapshot {
+  id             String   @id @default(cuid())
+  shopWatchId    String
+  totalSales     Int?
+  reviewCount    Int
+  reviewAverage  Float?
+  activeListings Int
+  numFavorers    Int?
+  capturedAt     DateTime @default(now())
+
+  shopWatch ShopWatch @relation(fields: [shopWatchId], references: [id], onDelete: Cascade)
+
+  @@index([shopWatchId])
 }
