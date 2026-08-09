@@ -59,7 +59,9 @@ export async function POST(req: Request) {
     }
   }
 
-  const connector = await prisma.connector.findFirst({ where: { id: connectorId, organizationId } });
+  const connector = await prisma.connector.findFirst({
+    where: { id: connectorId, OR: [{ organizationId }, { organizationId: null }] },
+  });
   if (!connector) return NextResponse.json({ error: "Connector not found." }, { status: 404 });
 
   const config = await prisma.searchConfig.create({

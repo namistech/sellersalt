@@ -17,12 +17,21 @@ export async function GET() {
   const organizationId = await requireOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Platform connectors (organizationId: null) are available to every org by
+  // default — this is what lets a customer start searching without ever
+  // connecting anything themselves. Org-owned connectors are an opt-in extra.
   const connectors = await prisma.connector.findMany({
-    where: { organizationId },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, type: true, label: true, status: true, createdAt: true },
+    where: { OR: [{ organizationId }, { organizationId: null }] },
+    orderBy: [{ organizationId: "desc" }, { createdAt: "desc" }], // org-owned first, then platform
+    select: { id: true, type: true, label: true, status: true, organizationId: true, createdAt: true },
   });
-  return NextResponse.json({ connectors });
+
+  return NextResponse.json({
+    connectors: connectors.map((c: (typeof connectors)[number]) => ({
+      ...c,
+      scope: c.organizationId ? "own" : "platform",
+    })),
+  });
 }
 
 export async function POST(req: Request) {
@@ -32,7 +41,7 @@ export async function POST(req: Request) {
   const limitCheck = await checkLimit(organizationId, "connectors");
   if (!limitCheck.allowed) {
     return NextResponse.json(
-      { error: `Your plan allows up to ${limitCheck.limit} connector(s). Upgrade to add more.` },
+      { error: `Your plan allows up to ${limitCheck.limit} of your own connector(s). Upgrade to add more.` },
       { status: 403 }
     );
   }

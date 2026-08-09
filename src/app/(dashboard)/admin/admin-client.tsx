@@ -16,6 +16,14 @@ interface Package {
   _count: { organizations: number };
 }
 
+interface PlatformConnector {
+  id: string;
+  type: string;
+  label: string;
+  status: string;
+  createdAt: string;
+}
+
 interface OrgRow {
   id: string;
   name: string;
@@ -36,6 +44,11 @@ const FIELDS: { key: keyof Package; label: string }[] = [
 export function AdminPackagesClient() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const [platformConnectors, setPlatformConnectors] = useState<PlatformConnector[]>([]);
+  const [showConnectorForm, setShowConnectorForm] = useState(false);
+  const [connectorForm, setConnectorForm] = useState({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
+  const [connectorError, setConnectorError] = useState<string | null>(null);
+  const [connectorSaving, setConnectorSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Package>>({});
@@ -46,10 +59,15 @@ export function AdminPackagesClient() {
   });
 
   async function loadAll() {
-    const [pRes, oRes] = await Promise.all([fetch("/api/admin/packages"), fetch("/api/admin/organizations")]);
-    const [pData, oData] = await Promise.all([pRes.json(), oRes.json()]);
+    const [pRes, oRes, cRes] = await Promise.all([
+      fetch("/api/admin/packages"),
+      fetch("/api/admin/organizations"),
+      fetch("/api/admin/platform-connectors"),
+    ]);
+    const [pData, oData, cData] = await Promise.all([pRes.json(), oRes.json(), cRes.json()]);
     setPackages(pData.packages ?? []);
     setOrgs(oData.organizations ?? []);
+    setPlatformConnectors(cData.connectors ?? []);
     setLoading(false);
   }
 
@@ -94,10 +112,83 @@ export function AdminPackagesClient() {
     loadAll();
   }
 
+  async function handleAddConnector(e: React.FormEvent) {
+    e.preventDefault();
+    setConnectorError(null);
+    setConnectorSaving(true);
+    const res = await fetch("/api/admin/platform-connectors", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "ETSY",
+        label: connectorForm.label,
+        credentials: { apiKey: connectorForm.apiKey, sharedSecret: connectorForm.sharedSecret },
+      }),
+    });
+    const data = await res.json();
+    setConnectorSaving(false);
+    if (!res.ok) {
+      setConnectorError(data.error ?? "Failed to add connector.");
+      return;
+    }
+    setShowConnectorForm(false);
+    setConnectorForm({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
+    loadAll();
+  }
+
+  async function handleRemoveConnector(id: string) {
+    if (!confirm("Remove this platform connector? Every customer currently relying on it (with no key of their own) will lose access until you add a replacement.")) return;
+    await fetch(`/api/admin/platform-connectors/${id}`, { method: "DELETE" });
+    loadAll();
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading…</p>;
 
   return (
     <div className="space-y-8">
+      <div className="card">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Platform connectors</h2>
+            <p className="text-xs text-muted">Shared by every customer by default — this is what lets users search without connecting anything themselves.</p>
+          </div>
+          {!showConnectorForm && (
+            <button className="btn-secondary" onClick={() => setShowConnectorForm(true)}>Add connector</button>
+          )}
+        </div>
+
+        {showConnectorForm && (
+          <form onSubmit={handleAddConnector} className="mb-4 space-y-3 rounded-md border border-line p-3">
+            <input className="input" placeholder="Label" value={connectorForm.label} onChange={(e) => setConnectorForm({ ...connectorForm, label: e.target.value })} required />
+            <input className="input" placeholder="Etsy API key (keystring)" value={connectorForm.apiKey} onChange={(e) => setConnectorForm({ ...connectorForm, apiKey: e.target.value })} required />
+            <input className="input" placeholder="Etsy Shared Secret" value={connectorForm.sharedSecret} onChange={(e) => setConnectorForm({ ...connectorForm, sharedSecret: e.target.value })} required />
+            {connectorError && <p className="text-sm text-danger">{connectorError}</p>}
+            <div className="flex gap-2">
+              <button type="submit" disabled={connectorSaving} className="btn-primary">{connectorSaving ? "Testing…" : "Connect"}</button>
+              <button type="button" className="btn-secondary" onClick={() => setShowConnectorForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
+
+        {platformConnectors.length === 0 ? (
+          <p className="text-sm text-muted">No platform connector yet — customers can't search until one is added.</p>
+        ) : (
+          <div className="divide-y divide-line">
+            {platformConnectors.map((c) => (
+              <div key={c.id} className="flex items-center justify-between py-2">
+                <div>
+                  <div className="text-sm font-medium text-ink">{c.label}</div>
+                  <div className="text-xs text-muted">{c.type} · added {new Date(c.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`badge ${c.status === "ACTIVE" ? "bg-green-50 text-success" : "bg-red-50 text-danger"}`}>{c.status}</span>
+                  <button onClick={() => handleRemoveConnector(c.id)} className="text-sm text-muted hover:text-danger">Remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="card overflow-x-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Packages</h2>

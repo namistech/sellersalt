@@ -1,19 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 
 interface Connector {
   id: string;
   type: string;
   label: string;
   status: string;
+  scope: "platform" | "own";
   createdAt: string;
 }
-
-const AVAILABLE_TYPES = [
-  { type: "ETSY", name: "Etsy", available: true },
-  { type: "EBAY", name: "eBay", available: false },
-];
 
 export default function ConnectorsPage() {
   const [connectors, setConnectors] = useState<Connector[]>([]);
@@ -35,6 +32,9 @@ export default function ConnectorsPage() {
   useEffect(() => {
     loadConnectors();
   }, []);
+
+  const platformConnectors = connectors.filter((c) => c.scope === "platform");
+  const ownConnectors = connectors.filter((c) => c.scope === "own");
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -63,110 +63,122 @@ export default function ConnectorsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Remove this connector? Existing prospect data is kept, but scheduled runs using it will stop.")) return;
+    if (!confirm("Remove this connector? Your searches will fall back to Anadash's shared connection.")) return;
     await fetch(`/api/connectors/${id}`, { method: "DELETE" });
     loadConnectors();
   }
 
   return (
     <div>
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Connectors</h1>
-          <p className="mt-1 text-sm text-muted">Connect marketplaces to source prospects from.</p>
-        </div>
-        {!showForm && (
-          <button className="btn-primary" onClick={() => setShowForm(true)}>
-            Add connector
-          </button>
-        )}
+      <header className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Connectors</h1>
+        <p className="mt-1 text-sm text-muted">
+          Anadash connects marketplaces for you — nothing to set up. This page is only for
+          customers who want to use their own dedicated API key.
+        </p>
       </header>
-
-      {showForm && (
-        <form onSubmit={handleAdd} className="card mb-6 max-w-md space-y-4">
-          <h2 className="text-sm font-semibold text-ink">Connect Etsy</h2>
-          <div>
-            <label className="label" htmlFor="label">Label</label>
-            <input
-              id="label"
-              className="input"
-              placeholder="Etsy - Netdrix Sourcing"
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="apiKey">Etsy API key (keystring)</label>
-            <input
-              id="apiKey"
-              className="input"
-              required
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Paste your Etsy Developer App keystring"
-            />
-            <p className="mt-1 text-xs text-muted">
-              Stored encrypted. From your Etsy Developer App dashboard.
-            </p>
-          </div>
-          <div>
-            <label className="label" htmlFor="sharedSecret">Etsy Shared Secret</label>
-            <input
-              id="sharedSecret"
-              className="input"
-              required
-              value={sharedSecret}
-              onChange={(e) => setSharedSecret(e.target.value)}
-              placeholder="Paste your Etsy Developer App shared secret"
-            />
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? "Testing connection…" : "Connect"}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
 
       {loading ? (
         <p className="text-sm text-muted">Loading…</p>
-      ) : connectors.length === 0 ? (
-        <p className="text-sm text-muted">No connectors yet. Add one to get started.</p>
       ) : (
-        <div className="card divide-y divide-line">
-          {connectors.map((c) => (
-            <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-              <div>
-                <div className="text-sm font-medium text-ink">{c.label}</div>
-                <div className="text-xs text-muted">{c.type} · connected {new Date(c.createdAt).toLocaleDateString()}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`badge ${c.status === "ACTIVE" ? "bg-green-50 text-success" : "bg-red-50 text-danger"}`}>
-                  {c.status}
-                </span>
-                <button onClick={() => handleDelete(c.id)} className="text-sm text-muted hover:text-danger">
-                  Remove
-                </button>
-              </div>
+        <div className="card mb-6">
+          <h2 className="mb-3 text-sm font-semibold text-ink">Available to you</h2>
+          {platformConnectors.length === 0 ? (
+            <p className="text-sm text-muted">
+              No marketplace is connected yet — contact us if searches aren't working.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {platformConnectors.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 text-sm text-ink">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  {c.type} — provided by Anadash, ready to use
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      <div className="mt-8">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Coming in phase 2</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {AVAILABLE_TYPES.filter((t) => !t.available).map((t) => (
-            <div key={t.type} className="card opacity-50">
-              <div className="text-sm font-medium text-ink">{t.name}</div>
-              <div className="mt-1 text-xs text-muted">Not yet available</div>
-            </div>
-          ))}
+      <div className="card">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Your own connector (optional)</h2>
+            <p className="text-xs text-muted">For dedicated rate limits instead of the shared connection above.</p>
+          </div>
+          {!showForm && (
+            <button className="btn-secondary" onClick={() => setShowForm(true)}>
+              Add your own
+            </button>
+          )}
         </div>
+
+        {showForm && (
+          <form onSubmit={handleAdd} className="mb-4 max-w-md space-y-4 rounded-md border border-line p-3">
+            <div>
+              <label className="label" htmlFor="label">Label</label>
+              <input
+                id="label"
+                className="input"
+                placeholder="Etsy - My Own Key"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="apiKey">Etsy API key (keystring)</label>
+              <input
+                id="apiKey"
+                className="input"
+                required
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="sharedSecret">Etsy Shared Secret</label>
+              <input
+                id="sharedSecret"
+                className="input"
+                required
+                value={sharedSecret}
+                onChange={(e) => setSharedSecret(e.target.value)}
+              />
+            </div>
+            {error && <p className="text-sm text-danger">{error}</p>}
+            <div className="flex gap-2">
+              <button type="submit" disabled={saving} className="btn-primary">
+                {saving ? "Testing connection…" : "Connect"}
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {ownConnectors.length === 0 ? (
+          <p className="text-sm text-muted">You're using Anadash's shared connection — no own key added.</p>
+        ) : (
+          <div className="divide-y divide-line">
+            {ownConnectors.map((c) => (
+              <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div>
+                  <div className="text-sm font-medium text-ink">{c.label}</div>
+                  <div className="text-xs text-muted">{c.type} · connected {new Date(c.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`badge ${c.status === "ACTIVE" ? "bg-green-50 text-success" : "bg-red-50 text-danger"}`}>
+                    {c.status}
+                  </span>
+                  <button onClick={() => handleDelete(c.id)} className="text-sm text-muted hover:text-danger">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

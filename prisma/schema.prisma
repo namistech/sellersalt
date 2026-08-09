@@ -72,7 +72,11 @@ enum MembershipRole {
 
 model Connector {
   id             String   @id @default(cuid())
-  organizationId String
+  // Nullable: null means this is a platform-owned connector, shared by every
+  // paying org (the normal case — customers don't bring their own API key,
+  // they just use the service). Non-null means an org brought its own key,
+  // an opt-in premium option, not something a regular user is asked to do.
+  organizationId String?
   type           ConnectorType
   label          String   // user-facing name, e.g. "Etsy - Netdrix Sourcing"
   // Secrets are encrypted at rest (see src/lib/encryption.ts) before being stored here.
@@ -81,7 +85,7 @@ model Connector {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   searchConfigs SearchConfig[]
   jobs         Job[]
   shopWatches  ShopWatch[]
