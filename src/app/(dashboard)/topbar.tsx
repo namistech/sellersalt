@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { ChevronDown, LogOut, Settings as SettingsIcon, User } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 
 const TITLES: Record<string, string> = {
@@ -60,6 +60,12 @@ export function TopBar({ userName, userEmail }: { userName?: string | null; user
 
           {menuOpen && (
             <div className="absolute right-0 top-full z-10 mt-2 w-48 rounded-md border border-line bg-surface py-1 shadow-lg">
+              <a
+                href="/settings/profile"
+                className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper"
+              >
+                <User className="h-4 w-4" /> Profile
+              </a>
               <a
                 href="/settings"
                 className="flex items-center gap-2 px-3 py-2 text-sm text-ink hover:bg-paper"

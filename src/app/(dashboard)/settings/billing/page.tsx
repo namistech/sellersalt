@@ -8,7 +8,7 @@ export default async function BillingPage() {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return null;
 
-  const [currentPackage, allPackages, connectors, searchConfigs, scheduledSearches, trackedShops, prospects] =
+  const [currentPackage, allPackages, connectors, searchConfigs, scheduledSearches, trackedShops, prospects, activeProviders] =
     await Promise.all([
       getOrgPackage(organizationId),
       prisma.package.findMany({ where: { isCustom: false }, orderBy: { priceUsd: "asc" } }),
@@ -17,6 +17,7 @@ export default async function BillingPage() {
       checkLimit(organizationId, "scheduledSearches"),
       checkLimit(organizationId, "trackedShops"),
       checkLimit(organizationId, "prospectsThisMonth"),
+      prisma.paymentProvider.findMany({ where: { isActive: true }, select: { provider: true, label: true } }),
     ]);
 
   const usageRows = [
@@ -35,6 +36,15 @@ export default async function BillingPage() {
           Self-serve payment isn't wired up yet — upgrades go through us directly for now.
         </p>
       </header>
+
+      {activeProviders.length > 0 && (
+        <div className="mb-6 flex items-center gap-2 text-xs text-muted">
+          <span>Accepted payment methods:</span>
+          {activeProviders.map((p: (typeof activeProviders)[number]) => (
+            <span key={p.provider} className="badge bg-accent-soft text-accent">{p.label}</span>
+          ))}
+        </div>
+      )}
 
       <div className="card mb-6">
         <h2 className="mb-4 text-sm font-semibold text-ink">

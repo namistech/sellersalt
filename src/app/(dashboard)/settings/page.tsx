@@ -19,15 +19,19 @@ export default async function SettingsPage() {
 
       <div className="space-y-6">
         <div className="card max-w-lg">
+          <h2 className="mb-1 text-sm font-semibold text-ink">Profile</h2>
+          <p className="mb-4 text-sm text-muted">Your name, workspace name, and password.</p>
+          <Link href="/settings/profile" className="btn-secondary">
+            Go to profile
+          </Link>
+        </div>
+
+        <div className="card max-w-lg">
           <h2 className="mb-4 text-sm font-semibold text-ink">Workspace</h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted">Name</dt>
               <dd className="font-medium text-ink">{org?.name ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted">Plan</dt>
-              <dd className="font-medium text-ink">{org?.plan ?? "FREE"}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted">Signed in as</dt>

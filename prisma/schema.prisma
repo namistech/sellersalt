@@ -284,3 +284,28 @@ model Package {
 
   organizations Organization[]
 }
+
+// ---------- Payment providers ----------
+// Platform-level, not per-org — Anadash itself is the merchant of record.
+// Credentials are stored encrypted at rest, same pattern as marketplace
+// Connector. Live checkout/webhook handling per provider is a separate,
+// later increment — this is the admin-side "store the credentials, mark
+// which ones are active" foundation that unlocks it without a schema change.
+
+model PaymentProvider {
+  id       String              @id @default(cuid())
+  provider PaymentProviderType @unique
+  label    String
+  isActive Boolean             @default(false)
+  encryptedCredentials String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentProviderType {
+  STRIPE
+  PAYPAL
+  SAFEPAY
+  PAYFAST
+}

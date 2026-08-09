@@ -24,6 +24,63 @@ interface PlatformConnector {
   createdAt: string;
 }
 
+interface PaymentProviderRow {
+  id: string;
+  provider: string;
+  label: string;
+  isActive: boolean;
+  hasCredentials: boolean;
+  updatedAt: string;
+}
+
+const PAYMENT_PROVIDERS: Array<{
+  key: string;
+  name: string;
+  region: string;
+  fields: Array<{ key: string; label: string; placeholder?: string }>;
+}> = [
+  {
+    key: "STRIPE",
+    name: "Stripe",
+    region: "International",
+    fields: [
+      { key: "secretKey", label: "Secret key", placeholder: "sk_live_..." },
+      { key: "publishableKey", label: "Publishable key", placeholder: "pk_live_..." },
+      { key: "webhookSecret", label: "Webhook signing secret", placeholder: "whsec_..." },
+    ],
+  },
+  {
+    key: "PAYPAL",
+    name: "PayPal",
+    region: "International",
+    fields: [
+      { key: "clientId", label: "Client ID" },
+      { key: "clientSecret", label: "Client secret" },
+      { key: "mode", label: "Mode (sandbox / live)", placeholder: "live" },
+    ],
+  },
+  {
+    key: "SAFEPAY",
+    name: "Safepay",
+    region: "Pakistan",
+    fields: [
+      { key: "apiKey", label: "API key" },
+      { key: "secretKey", label: "Secret key" },
+      { key: "environment", label: "Environment (sandbox / production)", placeholder: "production" },
+    ],
+  },
+  {
+    key: "PAYFAST",
+    name: "PayFast",
+    region: "Pakistan",
+    fields: [
+      { key: "merchantId", label: "Merchant ID" },
+      { key: "merchantKey", label: "Merchant key" },
+      { key: "passphrase", label: "Passphrase" },
+    ],
+  },
+];
+
 interface OrgRow {
   id: string;
   name: string;
@@ -49,6 +106,11 @@ export function AdminPackagesClient() {
   const [connectorForm, setConnectorForm] = useState({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
   const [connectorError, setConnectorError] = useState<string | null>(null);
   const [connectorSaving, setConnectorSaving] = useState(false);
+  const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [providerCreds, setProviderCreds] = useState<Record<string, string>>({});
+  const [providerSaving, setProviderSaving] = useState(false);
+  const [providerError, setProviderError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Package>>({});
@@ -59,15 +121,17 @@ export function AdminPackagesClient() {
   });
 
   async function loadAll() {
-    const [pRes, oRes, cRes] = await Promise.all([
+    const [pRes, oRes, cRes, payRes] = await Promise.all([
       fetch("/api/admin/packages"),
       fetch("/api/admin/organizations"),
       fetch("/api/admin/platform-connectors"),
+      fetch("/api/admin/payment-providers"),
     ]);
-    const [pData, oData, cData] = await Promise.all([pRes.json(), oRes.json(), cRes.json()]);
+    const [pData, oData, cData, payData] = await Promise.all([pRes.json(), oRes.json(), cRes.json(), payRes.json()]);
     setPackages(pData.packages ?? []);
     setOrgs(oData.organizations ?? []);
     setPlatformConnectors(cData.connectors ?? []);
+    setPaymentProviders(payData.providers ?? []);
     setLoading(false);
   }
 
@@ -142,6 +206,45 @@ export function AdminPackagesClient() {
     loadAll();
   }
 
+  function startEditProvider(providerKey: string) {
+    setEditingProvider(providerKey);
+    setProviderCreds({});
+    setProviderError(null);
+  }
+
+  async function handleSaveProvider(providerKey: string, label: string) {
+    setProviderError(null);
+    setProviderSaving(true);
+    const res = await fetch("/api/admin/payment-providers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: providerKey, label, credentials: providerCreds, isActive: true }),
+    });
+    const data = await res.json();
+    setProviderSaving(false);
+    if (!res.ok) {
+      setProviderError(data.error ?? "Failed to save.");
+      return;
+    }
+    setEditingProvider(null);
+    loadAll();
+  }
+
+  async function handleToggleProvider(id: string, next: boolean) {
+    await fetch(`/api/admin/payment-providers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: next }),
+    });
+    loadAll();
+  }
+
+  async function handleRemoveProvider(id: string) {
+    if (!confirm("Remove these credentials? Customers will no longer see this as an accepted payment method.")) return;
+    await fetch(`/api/admin/payment-providers/${id}`, { method: "DELETE" });
+    loadAll();
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading…</p>;
 
   return (
@@ -189,6 +292,92 @@ export function AdminPackagesClient() {
           </div>
         )}
       </div>
+
+      <div className="card">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-ink">Payment providers</h2>
+          <p className="text-xs text-muted">
+            Credentials are stored encrypted. Adding one here doesn't turn on live checkout yet —
+            that's a separate build per provider — but it's saved and ready the moment it is.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {PAYMENT_PROVIDERS.map((pp) => {
+            const existing = paymentProviders.find((row) => row.provider === pp.key);
+            const isEditing = editingProvider === pp.key;
+            return (
+              <div key={pp.key} className="rounded-md border border-line p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-ink">{pp.name}</div>
+                    <div className="text-xs text-muted">{pp.region}</div>
+                  </div>
+                  {existing?.hasCredentials ? (
+                    <span className={`badge ${existing.isActive ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
+                      {existing.isActive ? "Active" : "Saved, inactive"}
+                    </span>
+                  ) : (
+                    <span className="badge bg-gray-100 text-muted">Not configured</span>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-2">
+                    {pp.fields.map((f) => (
+                      <input
+                        key={f.key}
+                        className="input"
+                        placeholder={f.placeholder ?? f.label}
+                        value={providerCreds[f.key] ?? ""}
+                        onChange={(e) => setProviderCreds({ ...providerCreds, [f.key]: e.target.value })}
+                      />
+                    ))}
+                    {providerError && <p className="text-xs text-danger">{providerError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveProvider(pp.key, pp.name)}
+                        disabled={providerSaving}
+                        className="btn-primary !py-1.5 !px-3 text-xs"
+                      >
+                        {providerSaving ? "Saving…" : "Save"}
+                      </button>
+                      <button onClick={() => setEditingProvider(null)} className="btn-secondary !py-1.5 !px-3 text-xs">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => startEditProvider(pp.key)} className="text-sm text-accent hover:underline">
+                      {existing?.hasCredentials ? "Update credentials" : "Add credentials"}
+                    </button>
+                    {existing?.hasCredentials && (
+                      <>
+                        <span className="text-line">·</span>
+                        <button
+                          onClick={() => handleToggleProvider(existing.id, !existing.isActive)}
+                          className="text-sm text-muted hover:text-ink"
+                        >
+                          {existing.isActive ? "Deactivate" : "Activate"}
+                        </button>
+                        <span className="text-line">·</span>
+                        <button
+                          onClick={() => handleRemoveProvider(existing.id)}
+                          className="text-sm text-muted hover:text-danger"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="card overflow-x-auto">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink">Packages</h2>
