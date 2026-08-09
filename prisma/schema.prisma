@@ -45,6 +45,7 @@ model User {
   updatedAt    DateTime @updatedAt
 
   memberships Membership[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Membership {
@@ -308,4 +309,40 @@ enum PaymentProviderType {
   PAYPAL
   SAFEPAY
   PAYFAST
+}
+
+// ---------- Email (SMTP) ----------
+// Platform-level, singleton in practice — one SMTP config sends all
+// transactional email (password reset, invites, alerts). Swapping providers
+// later (Titan -> a dedicated transactional service) is just updating these
+// fields, no code change and no redeploy.
+
+model EmailSettings {
+  id           String   @id @default(cuid())
+  host         String
+  port         Int
+  secure       Boolean  @default(true)
+  username     String
+  encryptedPassword String
+  fromEmail    String
+  fromName     String   @default("Anadash")
+  isActive     Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+// ---------- Password reset ----------
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  // Store a hash of the token, never the raw value — same principle as a
+  // password hash, so a DB read alone can't be used to reset someone's account.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

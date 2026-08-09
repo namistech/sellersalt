@@ -24,6 +24,18 @@ interface PlatformConnector {
   createdAt: string;
 }
 
+interface EmailSettingsData {
+  id: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  fromEmail: string;
+  fromName: string;
+  isActive: boolean;
+  hasPassword: boolean;
+}
+
 interface PaymentProviderRow {
   id: string;
   provider: string;
@@ -111,6 +123,14 @@ export function AdminPackagesClient() {
   const [providerCreds, setProviderCreds] = useState<Record<string, string>>({});
   const [providerSaving, setProviderSaving] = useState(false);
   const [providerError, setProviderError] = useState<string | null>(null);
+  const [emailSettings, setEmailSettings] = useState<EmailSettingsData | null>(null);
+  const [emailForm, setEmailForm] = useState({
+    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "Anadash", isActive: false,
+  });
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailTestMessage, setEmailTestMessage] = useState<string | null>(null);
+  const [emailTesting, setEmailTesting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Package>>({});
@@ -121,17 +141,24 @@ export function AdminPackagesClient() {
   });
 
   async function loadAll() {
-    const [pRes, oRes, cRes, payRes] = await Promise.all([
+    const [pRes, oRes, cRes, payRes, emailRes] = await Promise.all([
       fetch("/api/admin/packages"),
       fetch("/api/admin/organizations"),
       fetch("/api/admin/platform-connectors"),
       fetch("/api/admin/payment-providers"),
+      fetch("/api/admin/email-settings"),
     ]);
-    const [pData, oData, cData, payData] = await Promise.all([pRes.json(), oRes.json(), cRes.json(), payRes.json()]);
+    const [pData, oData, cData, payData, emailData] = await Promise.all([
+      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(),
+    ]);
     setPackages(pData.packages ?? []);
     setOrgs(oData.organizations ?? []);
     setPlatformConnectors(cData.connectors ?? []);
     setPaymentProviders(payData.providers ?? []);
+    if (emailData.settings) {
+      setEmailSettings(emailData.settings);
+      setEmailForm((f) => ({ ...f, ...emailData.settings, password: "" }));
+    }
     setLoading(false);
   }
 
@@ -245,6 +272,33 @@ export function AdminPackagesClient() {
     loadAll();
   }
 
+  async function handleSaveEmailSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailError(null);
+    setEmailSaving(true);
+    const res = await fetch("/api/admin/email-settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(emailForm),
+    });
+    const data = await res.json();
+    setEmailSaving(false);
+    if (!res.ok) {
+      setEmailError(data.error ?? "Failed to save.");
+      return;
+    }
+    loadAll();
+  }
+
+  async function handleTestEmail() {
+    setEmailTestMessage(null);
+    setEmailTesting(true);
+    const res = await fetch("/api/admin/email-settings/test", { method: "POST" });
+    const data = await res.json();
+    setEmailTesting(false);
+    setEmailTestMessage(res.ok ? "Test email sent — check your inbox." : `Failed: ${data.error}`);
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading…</p>;
 
   return (
@@ -291,6 +345,58 @@ export function AdminPackagesClient() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card max-w-lg">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-ink">Email (SMTP)</h2>
+          <p className="text-xs text-muted">
+            Powers password reset, team invites, and search alerts. Swap providers anytime — no
+            redeploy needed.
+          </p>
+        </div>
+        <form onSubmit={handleSaveEmailSettings} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <input className="input" placeholder="SMTP host" value={emailForm.host} onChange={(e) => setEmailForm({ ...emailForm, host: e.target.value })} required />
+            <input className="input" type="number" placeholder="Port" value={emailForm.port} onChange={(e) => setEmailForm({ ...emailForm, port: Number(e.target.value) })} required />
+          </div>
+          <input className="input" placeholder="Username" value={emailForm.username} onChange={(e) => setEmailForm({ ...emailForm, username: e.target.value })} required />
+          <input
+            className="input"
+            type="password"
+            placeholder={emailSettings?.hasPassword ? "Password (leave blank to keep current)" : "Password"}
+            value={emailForm.password}
+            onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input className="input" placeholder="From email" value={emailForm.fromEmail} onChange={(e) => setEmailForm({ ...emailForm, fromEmail: e.target.value })} required />
+            <input className="input" placeholder="From name" value={emailForm.fromName} onChange={(e) => setEmailForm({ ...emailForm, fromName: e.target.value })} />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input type="checkbox" checked={emailForm.secure} onChange={(e) => setEmailForm({ ...emailForm, secure: e.target.checked })} />
+            Use TLS (port 465) — uncheck for STARTTLS (port 587)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input type="checkbox" checked={emailForm.isActive} onChange={(e) => setEmailForm({ ...emailForm, isActive: e.target.checked })} />
+            Active
+          </label>
+          {emailError && <p className="text-sm text-danger">{emailError}</p>}
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={emailSaving} className="btn-primary">
+              {emailSaving ? "Saving…" : "Save"}
+            </button>
+            {emailSettings && (
+              <button type="button" onClick={handleTestEmail} disabled={emailTesting} className="btn-secondary">
+                {emailTesting ? "Sending…" : "Send test email"}
+              </button>
+            )}
+          </div>
+          {emailTestMessage && (
+            <p className={`text-sm ${emailTestMessage.startsWith("Failed") ? "text-danger" : "text-success"}`}>
+              {emailTestMessage}
+            </p>
+          )}
+        </form>
       </div>
 
       <div className="card">
