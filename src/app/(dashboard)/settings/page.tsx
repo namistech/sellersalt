@@ -48,12 +48,12 @@ export default async function SettingsPage() {
           </Link>
         </div>
 
-        <div className="card max-w-lg opacity-60">
+        <div className="card max-w-lg">
           <h2 className="mb-1 text-sm font-semibold text-ink">Team members</h2>
-          <p className="text-sm text-muted">
-            Invite teammates to this workspace. Coming soon — the workspace model already
-            supports multiple members, this just needs the invite flow.
-          </p>
+          <p className="mb-4 text-sm text-muted">Invite people to this workspace.</p>
+          <Link href="/settings/team" className="btn-secondary">
+            Go to team
+          </Link>
         </div>
       </div>
     </div>

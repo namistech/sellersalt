@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 
 interface Dropped {
   searchConfigName: string;
@@ -26,15 +27,40 @@ export default function InactivePage() {
       });
   }, []);
 
+  function handleExport() {
+    const header = "Shop,From Search,Last Known Sales,Last Known Reviews,Last Seen";
+    const rows = dropped.map((d) =>
+      [d.shopName, d.searchConfigName, d.lastKnownTotalSales ?? "", d.lastKnownReviewCount, d.lastSeenAt]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `anadash-dropped-shops-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Dropped shops</h1>
-        <p className="mt-1 text-sm text-muted">
-          Shops that matched a search's previous run but not its most recent one. This could
-          mean deactivated, on vacation, or just drifted outside your price/age/review
-          filters — worth a manual check, not a confirmed fact.
-        </p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Dropped shops</h1>
+          <p className="mt-1 text-sm text-muted">
+            Shops that matched a search's previous run but not its most recent one. This could
+            mean deactivated, on vacation, or just drifted outside your price/age/review
+            filters — worth a manual check, not a confirmed fact.
+          </p>
+        </div>
+        {dropped.length > 0 && (
+          <button className="btn-secondary shrink-0" onClick={handleExport}>
+            <Download className="mr-1.5 inline h-4 w-4" />
+            Export CSV
+          </button>
+        )}
       </header>
 
       {loading ? (

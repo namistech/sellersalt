@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 
 interface Trend {
   shopExternalId: string;
@@ -34,14 +35,39 @@ export default function TrendsPage() {
   const gaining = trends.filter((t) => (t.salesGrowth ?? 0) > 0);
   const declining = trends.filter((t) => (t.salesGrowth ?? 0) < 0);
 
+  function handleExport() {
+    const header = "Shop,Last Sales,Sales Change,Last Reviews,Review Change,Snapshots,Tracked Since";
+    const rows = trends.map((t) =>
+      [t.shopName, t.lastTotalSales ?? "", t.salesGrowth ?? "", t.lastReviewCount, t.reviewGrowth, t.snapshotCount, t.firstSeenAt]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    const csv = [header, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `anadash-trends-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Trends</h1>
-        <p className="mt-1 text-sm text-muted">
-          Shops seen across two or more of your scheduled runs, compared first-seen to
-          most-recent. Sales growth is real (Etsy's lifetime sales count), not estimated.
-        </p>
+      <header className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">Trends</h1>
+          <p className="mt-1 text-sm text-muted">
+            Shops seen across two or more of your scheduled runs, compared first-seen to
+            most-recent. Sales growth is real (Etsy's lifetime sales count), not estimated.
+          </p>
+        </div>
+        {trends.length > 0 && (
+          <button className="btn-secondary shrink-0" onClick={handleExport}>
+            <Download className="mr-1.5 inline h-4 w-4" />
+            Export CSV
+          </button>
+        )}
       </header>
 
       {loading ? (

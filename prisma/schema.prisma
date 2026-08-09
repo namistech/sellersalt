@@ -28,6 +28,7 @@ model Organization {
   jobs        Job[]
   shopWatches ShopWatch[]
   package     Package?     @relation(fields: [packageId], references: [id])
+  invites     Invite[]
 }
 
 enum Plan {
@@ -345,4 +346,28 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ---------- Team invites ----------
+
+model Invite {
+  id              String         @id @default(cuid())
+  organizationId  String
+  email           String
+  role            MembershipRole @default(MEMBER)
+  tokenHash       String         @unique
+  status          InviteStatus   @default(PENDING)
+  invitedByUserId String
+  expiresAt       DateTime
+  createdAt       DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
 }

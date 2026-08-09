@@ -9,12 +9,40 @@ import {
 } from "../lib/queue";
 import { decrypt } from "../lib/encryption";
 import { getConnector } from "../connectors/registry";
+import { sendEmail } from "../lib/send-email";
 
 console.log("Anadash worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
+
+async function notifyNewProspects(organizationId: string, searchConfigName: string, count: number) {
+  try {
+    const members = await prisma.membership.findMany({
+      where: { organizationId },
+      include: { user: { select: { email: true } } },
+    });
+    const appUrl = process.env.NEXTAUTH_URL ?? "";
+    await Promise.all(
+      members.map((m: (typeof members)[number]) =>
+        sendEmail({
+          to: m.user.email,
+          subject: `Anadash: "${searchConfigName}" found ${count} new prospect${count === 1 ? "" : "s"}`,
+          html: `
+            <p>Your scheduled search <strong>${searchConfigName}</strong> just found ${count} new prospect${count === 1 ? "" : "s"}.</p>
+            <p><a href="${appUrl}/prospects">View them in your dashboard</a></p>
+          `,
+          text: `"${searchConfigName}" found ${count} new prospects: ${appUrl}/prospects`,
+        })
+      )
+    );
+  } catch (err) {
+    // Never let a notification failure affect the job's own success/failure status.
+    console.error("Failed to send new-prospects notification:", err);
+  }
+}
 
 async function handleProspectingJob(job: { data: ProspectingJobData }) {
   const { organizationId, connectorId, searchConfigId } = job.data;
   let jobId = job.data.jobId;
+  const isScheduled = !job.data.jobId;
 
   if (!jobId) {
     const created = await prisma.job.create({
@@ -81,6 +109,12 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
       where: { id: jobId },
       data: { status: "SUCCESS", finishedAt: new Date(), resultCount: results.length },
     });
+
+    // Only notify for scheduled (unattended) runs — a manual "Run now" click
+    // means the user is already watching the Jobs page for the result.
+    if (isScheduled && results.length > 0) {
+      await notifyNewProspects(organizationId, searchConfig.name, results.length);
+    }
   } catch (err: any) {
     await prisma.job.update({
       where: { id: jobId },

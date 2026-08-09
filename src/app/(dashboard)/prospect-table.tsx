@@ -63,6 +63,8 @@ export function ProspectTable({
 }) {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 25;
 
   const sorted = useMemo(() => {
     if (!sortKey) return rows;
@@ -73,7 +75,12 @@ export function ProspectTable({
     });
   }, [rows, sortKey, sortDir]);
 
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, pageCount - 1);
+  const paginated = sorted.slice(clampedPage * PAGE_SIZE, clampedPage * PAGE_SIZE + PAGE_SIZE);
+
   function handleSort(key: SortKey) {
+    setPage(0); // sorting changes the ordering, so start back at page 1
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -87,6 +94,7 @@ export function ProspectTable({
   }
 
   return (
+    <>
     <table className="w-full text-sm">
       <thead>
         <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
@@ -109,7 +117,7 @@ export function ProspectTable({
         </tr>
       </thead>
       <tbody className="divide-y divide-line">
-        {sorted.map((p) => (
+        {paginated.map((p) => (
           <tr key={p.id}>
             <td className="py-2 pr-4">
               <div className="flex items-center gap-2">
@@ -173,5 +181,32 @@ export function ProspectTable({
         ))}
       </tbody>
     </table>
+    {pageCount > 1 && (
+      <div className="mt-3 flex items-center justify-between text-xs text-muted">
+        <span>
+          Showing {clampedPage * PAGE_SIZE + 1}–{Math.min((clampedPage + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            className="btn-secondary !py-1 !px-2 text-xs disabled:opacity-40"
+            disabled={clampedPage === 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+          >
+            Prev
+          </button>
+          <span>
+            Page {clampedPage + 1} of {pageCount}
+          </span>
+          <button
+            className="btn-secondary !py-1 !px-2 text-xs disabled:opacity-40"
+            disabled={clampedPage >= pageCount - 1}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
