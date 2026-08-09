@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 import { ProspectTable, type ProspectRow } from "../prospect-table";
 
 interface Connector {
@@ -31,6 +32,45 @@ function frequencyFromCron(cron: string | null): string {
   if (cron === "0 6 * * *") return "DAILY";
   if (cron === "0 6 * * 1") return "WEEKLY";
   return "MANUAL";
+}
+
+const CSV_COLUMNS: Array<{ key: keyof ProspectRow; label: string }> = [
+  { key: "shopName", label: "Shop" },
+  { key: "shopUrl", label: "Shop URL" },
+  { key: "shopAgeMonths", label: "Shop Age (mo)" },
+  { key: "reviewCount", label: "Reviews" },
+  { key: "activeListings", label: "Active Listings" },
+  { key: "totalSales", label: "Total Sales" },
+  { key: "avgSellingRatio", label: "Sales/Listing" },
+  { key: "estDailySales", label: "Est Daily Sales" },
+  { key: "listingTitle", label: "Listing" },
+  { key: "listingUrl", label: "Listing URL" },
+  { key: "price", label: "Price" },
+];
+
+function toCsv(rows: ProspectRow[]): string {
+  const header = CSV_COLUMNS.map((c) => c.label).join(",");
+  const body = rows
+    .map((r) =>
+      CSV_COLUMNS.map((c) => {
+        const val = r[c.key];
+        const str = val == null ? "" : String(val);
+        return `"${str.replace(/"/g, '""')}"`;
+      }).join(",")
+    )
+    .join("\n");
+  return `${header}\n${body}`;
+}
+
+function downloadCsv(filename: string, rows: ProspectRow[]) {
+  const csv = toCsv(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function ProspectsPage() {
@@ -65,11 +105,15 @@ export default function ProspectsPage() {
     setConnectors(cData.connectors ?? []);
     setSearchConfigs(sData.searchConfigs ?? []);
     setProspects(pData.prospects ?? []);
+    if (!form.connectorId && cData.connectors?.length > 0) {
+      setForm((f) => ({ ...f, connectorId: cData.connectors[0].id }));
+    }
     setLoading(false);
   }
 
   useEffect(() => {
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleCreateConfig(e: React.FormEvent) {
@@ -105,11 +149,15 @@ export default function ProspectsPage() {
 
   async function handleScheduleChange(searchConfigId: string, scheduleFrequency: string) {
     setSavingSchedule(searchConfigId);
-    await fetch(`/api/search-configs/${searchConfigId}`, {
+    const res = await fetch(`/api/search-configs/${searchConfigId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scheduleFrequency }),
     });
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Failed to update schedule.");
+    }
     setSavingSchedule(null);
     loadAll();
   }
@@ -146,41 +194,57 @@ export default function ProspectsPage() {
             come from Etsy's real lifetime sales count for the shop.
           </p>
         </div>
-        {!showForm && (
-          <button className="btn-primary shrink-0" onClick={() => setShowForm(true)}>
-            New search
-          </button>
-        )}
+        <div className="flex gap-2">
+          {prospects.length > 0 && (
+            <button
+              className="btn-secondary"
+              onClick={() => downloadCsv(`anadash-prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospects)}
+            >
+              <Download className="mr-1.5 inline h-4 w-4" />
+              Export CSV
+            </button>
+          )}
+          {!showForm && (
+            <button className="btn-primary shrink-0" onClick={() => setShowForm(true)}>
+              New search
+            </button>
+          )}
+        </div>
       </header>
 
       {showForm && (
         <form onSubmit={handleCreateConfig} className="card mb-6 space-y-4">
           <h2 className="text-sm font-semibold text-ink">Define a search</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Connector</label>
-              <select
-                className="input"
-                required
-                value={form.connectorId}
-                onChange={(e) => setForm({ ...form, connectorId: e.target.value })}
-              >
-                <option value="">Select…</option>
-                {connectors.map((c) => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
+
+          <div>
+            <label className="label">Connector</label>
+            <div className="flex flex-wrap gap-2">
+              {connectors.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setForm({ ...form, connectorId: c.id })}
+                  className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
+                    form.connectorId === c.id
+                      ? "border-accent bg-accent-soft text-accent"
+                      : "border-line text-ink hover:border-ink"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="label">Search name</label>
-              <input
-                className="input"
-                required
-                placeholder="Digital downloads - Q1"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
+          </div>
+
+          <div>
+            <label className="label">Search name</label>
+            <input
+              className="input"
+              required
+              placeholder="Digital downloads - Q1"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
           </div>
 
           <div>

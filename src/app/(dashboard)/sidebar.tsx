@@ -12,6 +12,7 @@ import {
   Plug,
   Briefcase,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -36,8 +37,12 @@ const NAV_GROUPS = [
   },
 ];
 
-export function Sidebar({ organizationName }: { organizationName?: string | null }) {
+export function Sidebar({ organizationName, isAdmin }: { organizationName?: string | null; isAdmin?: boolean }) {
   const pathname = usePathname();
+
+  const groups = isAdmin
+    ? [...NAV_GROUPS, { label: "Admin", items: [{ href: "/admin", label: "Packages", icon: ShieldCheck }] }]
+    : NAV_GROUPS;
 
   return (
     <aside className="flex w-64 flex-col border-r border-line bg-surface px-3 py-5">
@@ -54,7 +59,7 @@ export function Sidebar({ organizationName }: { organizationName?: string | null
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto">
-        {NAV_GROUPS.map((group) => (
+        {groups.map((group) => (
           <div key={group.label}>
             <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted">
               {group.label}

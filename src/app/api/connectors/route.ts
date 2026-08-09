@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { getConnector } from "@/connectors/registry";
+import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
   const session = await getServerSession(authOptions);
@@ -27,6 +28,14 @@ export async function GET() {
 export async function POST(req: Request) {
   const organizationId = await requireOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limitCheck = await checkLimit(organizationId, "connectors");
+  if (!limitCheck.allowed) {
+    return NextResponse.json(
+      { error: `Your plan allows up to ${limitCheck.limit} connector(s). Upgrade to add more.` },
+      { status: 403 }
+    );
+  }
 
   const body = await req.json();
   const { type, label, credentials } = body as {

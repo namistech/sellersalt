@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { upsertSchedule, removeSchedule, SCHEDULE_FREQUENCIES } from "@/lib/queue";
+import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { scheduleFrequency } = await req.json();
   const freqKey = scheduleFrequency && scheduleFrequency in SCHEDULE_FREQUENCIES ? scheduleFrequency : "MANUAL";
   const cronPattern = SCHEDULE_FREQUENCIES[freqKey];
+
+  if (cronPattern && !config.scheduleCron) {
+    const scheduleLimit = await checkLimit(organizationId, "scheduledSearches");
+    if (!scheduleLimit.allowed) {
+      return NextResponse.json(
+        { error: `Your plan allows up to ${scheduleLimit.limit} scheduled (recurring) searches. Upgrade to add more.` },
+        { status: 403 }
+      );
+    }
+  }
 
   await prisma.searchConfig.update({ where: { id }, data: { scheduleCron: cronPattern } });
 

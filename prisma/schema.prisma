@@ -17,6 +17,7 @@ model Organization {
   id        String   @id @default(cuid())
   name      String
   plan      Plan     @default(FREE)
+  packageId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -26,6 +27,7 @@ model Organization {
   prospects   Prospect[]
   jobs        Job[]
   shopWatches ShopWatch[]
+  package     Package?     @relation(fields: [packageId], references: [id])
 }
 
 enum Plan {
@@ -65,12 +67,15 @@ enum MembershipRole {
 }
 
 // ---------- Marketplace connectors ----------
+// One row per (organization, marketplace) connection. Etsy is connector #1;
+// Amazon/AliExpress/Shopify sourcing etc. reuse this same table + a `type` discriminator.
 
 model Connector {
   id             String   @id @default(cuid())
   organizationId String
   type           ConnectorType
-  label          String
+  label          String   // user-facing name, e.g. "Etsy - Netdrix Sourcing"
+  // Secrets are encrypted at rest (see src/lib/encryption.ts) before being stored here.
   encryptedCredentials String
   status         ConnectorStatus @default(ACTIVE)
   createdAt      DateTime @default(now())
@@ -86,6 +91,7 @@ model Connector {
 
 enum ConnectorType {
   ETSY
+  // AMAZON, ALIEXPRESS, SHOPIFY_SOURCING, etc. added as phase 2 connectors ship
 }
 
 enum ConnectorStatus {
@@ -95,19 +101,20 @@ enum ConnectorStatus {
 }
 
 // ---------- User-defined search / prospecting configs ----------
+// This replaces the old .env keyword list — now editable per-org in the dashboard.
 
 model SearchConfig {
   id             String   @id @default(cuid())
   organizationId String
   connectorId    String
   name           String
-  keywords       String[]
+  keywords       String[] // e.g. ["digital planner", "svg bundle"]
   minPrice       Float
   maxPrice       Float
   minShopAgeMonths Float  @default(12)
   maxShopAgeMonths Float  @default(24)
   minReviewCount   Int    @default(20)
-  scheduleCron   String?
+  scheduleCron   String?  // null = manual run only
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -120,7 +127,7 @@ model SearchConfig {
   @@index([organizationId])
 }
 
-// ---------- Jobs ----------
+// ---------- Jobs (background runs, replaces the old cron-only script) ----------
 
 model Job {
   id             String   @id @default(cuid())
@@ -155,7 +162,7 @@ enum JobTrigger {
   SCHEDULE
 }
 
-// ---------- Prospects ----------
+// ---------- Prospects (the actual output data, replaces the Google Sheet) ----------
 
 model Prospect {
   id             String   @id @default(cuid())
@@ -164,6 +171,9 @@ model Prospect {
   jobId          String?
   marketplace    ConnectorType @default(ETSY)
   keyword        String
+  // External marketplace IDs — present on every row, including historical ones,
+  // so repeated runs of the same search naturally form a time series per shop
+  // and per listing without needing a separate snapshot table.
   shopExternalId    String
   listingExternalId String
   shopName       String
@@ -174,6 +184,8 @@ model Prospect {
   activeListings Int
   reviewRatio    Float
   reviewVelocity Float
+  // Real lifetime sales count (Etsy's transaction_sold_count) where the marketplace
+  // exposes it — not a proxy. avgSellingRatio/estDailySales are derived from this.
   totalSales      Int?
   reviewAverage   Float?
   numFavorers     Int?
@@ -206,6 +218,11 @@ enum ProspectStatus {
 }
 
 // ---------- Shop tracking ("Spy on Competitor") ----------
+// Independent of SearchConfig: a user can start tracking any shop they find in
+// Prospects, regardless of which search surfaced it. A repeatable BullMQ job
+// (one per ShopWatch) re-fetches just that shop's stats on a schedule and
+// appends a ShopSnapshot — the interactive sales-trend graph on the shop page
+// is built entirely from this table.
 
 model ShopWatch {
   id             String   @id @default(cuid())
@@ -237,4 +254,29 @@ model ShopSnapshot {
   shopWatch ShopWatch @relation(fields: [shopWatchId], references: [id], onDelete: Cascade)
 
   @@index([shopWatchId])
+}
+
+// ---------- Packages (plan tiers) ----------
+// Replaces hardcoded plan limits with DB-editable rows, so pricing/limits can
+// change without a redeploy. Three standard tiers (Free/Pro/Agency) seed
+// automatically on first use; isCustom rows are one-off overrides an admin
+// assigns to a specific org (special deals, beta customers, etc.).
+
+model Package {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  name     String
+  priceUsd Float   @default(0)
+  isCustom Boolean @default(false)
+
+  maxConnectors        Int @default(1)
+  maxSearchConfigs     Int @default(3)
+  maxScheduledSearches Int @default(1)
+  maxTrackedShops      Int @default(5)
+  maxProspectsPerMonth Int @default(200)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organizations Organization[]
 }

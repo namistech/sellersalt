@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { upsertSchedule, SCHEDULE_FREQUENCIES } from "@/lib/queue";
+import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
   const session = await getServerSession(authOptions);
@@ -25,6 +26,14 @@ export async function POST(req: Request) {
   const organizationId = await requireOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const configLimit = await checkLimit(organizationId, "searchConfigs");
+  if (!configLimit.allowed) {
+    return NextResponse.json(
+      { error: `Your plan allows up to ${configLimit.limit} saved searches. Upgrade to add more.` },
+      { status: 403 }
+    );
+  }
+
   const body = await req.json();
   const {
     connectorId, name, keywords, minPrice, maxPrice,
@@ -37,6 +46,18 @@ export async function POST(req: Request) {
 
   const freqKey = scheduleFrequency && scheduleFrequency in SCHEDULE_FREQUENCIES ? scheduleFrequency : "MANUAL";
   const cronPattern = SCHEDULE_FREQUENCIES[freqKey];
+
+  if (cronPattern) {
+    const scheduleLimit = await checkLimit(organizationId, "scheduledSearches");
+    if (!scheduleLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: `Your plan allows up to ${scheduleLimit.limit} scheduled (recurring) searches. Save this as manual-only, or upgrade.`,
+        },
+        { status: 403 }
+      );
+    }
+  }
 
   const connector = await prisma.connector.findFirst({ where: { id: connectorId, organizationId } });
   if (!connector) return NextResponse.json({ error: "Connector not found." }, { status: 404 });

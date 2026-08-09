@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { startShopWatch } from "@/lib/queue";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
+import { checkLimit } from "@/lib/plan-limits";
 
 function extractEtsyShopName(url: string): string | null {
   try {
@@ -41,6 +42,19 @@ export async function POST(req: Request) {
   const stats = await active.connector.getShopByName(active.credentials, shopName);
   if (!stats) {
     return NextResponse.json({ error: `Couldn't find a shop named "${shopName}" on Etsy.` }, { status: 404 });
+  }
+
+  const existingWatch = await prisma.shopWatch.findUnique({
+    where: { organizationId_shopExternalId: { organizationId, shopExternalId: stats.shopExternalId } },
+  });
+  if (!existingWatch || !existingWatch.isActive) {
+    const limitCheck = await checkLimit(organizationId, "trackedShops");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: `Your plan allows tracking up to ${limitCheck.limit} shop(s) at once. Upgrade to track more.` },
+        { status: 403 }
+      );
+    }
   }
 
   const watch = await prisma.shopWatch.upsert({

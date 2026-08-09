@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { startShopWatch, stopShopWatch } from "@/lib/queue";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
+import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
   const session = await getServerSession(authOptions);
@@ -15,11 +16,26 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
   const organizationId = await requireOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const existingWatch = await prisma.shopWatch.findUnique({
+    where: { organizationId_shopExternalId: { organizationId, shopExternalId } },
+  });
+
+  // Only enforce the limit for genuinely new watches — re-activating a
+  // previously-stopped one doesn't grow the active count beyond what it
+  // already was when this shop was first tracked.
+  if (!existingWatch || !existingWatch.isActive) {
+    const limitCheck = await checkLimit(organizationId, "trackedShops");
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: `Your plan allows tracking up to ${limitCheck.limit} shop(s) at once. Upgrade to track more.` },
+        { status: 403 }
+      );
+    }
+  }
+
   const active = await getActiveConnectorWithCredentials(organizationId);
   if (!active) return NextResponse.json({ error: "No active connector on this workspace." }, { status: 400 });
 
-  // Shop name for the record: prefer existing Prospect data, fall back to a
-  // live lookup — a shop tracked via "Spy on Competitor" won't have either yet.
   let shopName = (await prisma.prospect.findFirst({
     where: { organizationId, shopExternalId },
     orderBy: { createdAt: "desc" },
