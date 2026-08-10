@@ -1,0 +1,48 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { checkLimit } from "@/lib/plan-limits";
+import { createConnectToken } from "@/lib/store-connect-token";
+import { getSetting } from "@/lib/app-settings";
+
+const SCOPES = "read_orders,read_products";
+
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
+  const organizationId = (session?.user as any)?.organizationId as string | undefined;
+  if (!organizationId) return NextResponse.redirect(new URL("/login", req.url));
+
+  const url = new URL(req.url);
+  const shopInput = url.searchParams.get("shop");
+  const label = url.searchParams.get("label") ?? shopInput ?? "";
+
+  if (!shopInput) {
+    return NextResponse.redirect(new URL("/settings/channels?error=missing_shop", req.url));
+  }
+
+  const limitCheck = await checkLimit(organizationId, "sellerChannels");
+  if (!limitCheck.allowed) {
+    return NextResponse.redirect(new URL("/settings/channels?error=limit_reached", req.url));
+  }
+
+  const clientId = await getSetting("shopify_client_id");
+  if (!clientId) {
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_not_configured", req.url));
+  }
+
+  // Accept either a bare shop name ("mystore") or a full myshopify.com URL.
+  const shopDomain = shopInput.includes(".myshopify.com")
+    ? shopInput.replace(/^https?:\/\//, "").replace(/\/$/, "")
+    : `${shopInput}.myshopify.com`;
+
+  const token = createConnectToken({ organizationId, storeUrl: `https://${shopDomain}`, label });
+  const appUrl = process.env.NEXTAUTH_URL ?? url.origin;
+
+  const authorizeUrl = new URL(`https://${shopDomain}/admin/oauth/authorize`);
+  authorizeUrl.searchParams.set("client_id", clientId);
+  authorizeUrl.searchParams.set("scope", SCOPES);
+  authorizeUrl.searchParams.set("redirect_uri", `${appUrl}/api/seller-channels/shopify/callback`);
+  authorizeUrl.searchParams.set("state", token);
+
+  return NextResponse.redirect(authorizeUrl);
+}

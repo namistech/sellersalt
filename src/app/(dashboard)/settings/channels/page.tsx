@@ -32,6 +32,7 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [wooStoreUrl, setWooStoreUrl] = useState("");
+  const [shopifyShop, setShopifyShop] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
@@ -67,7 +68,16 @@ export default function ChannelsPage() {
     if (params.get("connected")) setBannerMessage("Store connected successfully.");
     if (params.get("error") === "limit_reached") setBannerMessage("Your plan's store limit is reached — upgrade to connect more.");
     if (params.get("error") === "invalid_store_url") setBannerMessage("That doesn't look like a valid store URL.");
+    if (params.get("error") === "shopify_not_configured") setBannerMessage("Shopify isn't configured yet — an admin needs to add the Client ID/Secret first.");
+    if (params.get("error")?.startsWith("shopify_")) setBannerMessage("Couldn't connect to Shopify — the connection was rejected or the code was invalid. Try again.");
   }, []);
+
+  function handleConnectShopify(e: React.FormEvent) {
+    e.preventDefault();
+    if (!shopifyShop.trim()) return;
+    setConnecting(true);
+    window.location.href = `/api/seller-channels/shopify/connect?shop=${encodeURIComponent(shopifyShop.trim())}&label=${encodeURIComponent(shopifyShop.trim())}`;
+  }
 
   function handleConnectWoo(e: React.FormEvent) {
     e.preventDefault();
@@ -128,13 +138,25 @@ export default function ChannelsPage() {
 
         <div className="card">
           <h2 className="mb-1 text-sm font-semibold text-ink">Connect Shopify</h2>
-          <p className="mb-4 text-xs text-muted">Coming soon — needs a one-time app registration on our side.</p>
-          <div className="flex flex-wrap gap-2">
-            <a href={links.shopify_affiliate_url} target="_blank" rel="noreferrer" className="btn-secondary">
-              <ExternalLink className="mr-1.5 inline h-4 w-4" />
-              Create a Shopify store
-            </a>
-          </div>
+          <p className="mb-4 text-xs text-muted">
+            You'll be taken to Shopify to log in and approve — nothing to copy or paste.
+          </p>
+          <form onSubmit={handleConnectShopify} className="mb-3 flex gap-2">
+            <input
+              className="input"
+              required
+              placeholder="mystore or mystore.myshopify.com"
+              value={shopifyShop}
+              onChange={(e) => setShopifyShop(e.target.value)}
+            />
+            <button type="submit" disabled={connecting} className="btn-primary shrink-0">
+              {connecting ? "Redirecting…" : "Connect"}
+            </button>
+          </form>
+          <a href={links.shopify_affiliate_url} target="_blank" rel="noreferrer" className="text-sm text-accent hover:underline">
+            <ExternalLink className="mr-1 inline h-3.5 w-3.5" />
+            Don't have a Shopify store? Create one
+          </a>
         </div>
       </div>
 
