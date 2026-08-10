@@ -29,6 +29,7 @@ model Organization {
   shopWatches ShopWatch[]
   package     Package?     @relation(fields: [packageId], references: [id])
   invites     Invite[]
+  sellerChannels SellerChannel[]
 }
 
 enum Plan {
@@ -280,6 +281,7 @@ model Package {
   maxScheduledSearches Int @default(1)
   maxTrackedShops      Int @default(5)
   maxProspectsPerMonth Int @default(200)
+  maxSellerChannels    Int @default(2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -370,4 +372,56 @@ enum InviteStatus {
   PENDING
   ACCEPTED
   REVOKED
+}
+
+// ---------- Seller channels ----------
+// Deliberately separate from Connector (which is platform-wide research data,
+// shared across customers). A SellerChannel is one specific customer's own
+// authenticated store — their own credentials, their own data. Powers both
+// the Unified Analytics Dashboard (read) and, later, Cross-Listing (write).
+// Never conflate this with Connector even though both may reference "Etsy" —
+// one is market-wide research, this is one customer's own account.
+
+model SellerChannel {
+  id             String   @id @default(cuid())
+  organizationId String
+  platform       SellerChannelPlatform
+  label          String
+  storeUrl       String
+  encryptedCredentials String
+  status         ConnectorStatus @default(ACTIVE)
+  lastSyncedAt   DateTime?
+  lastSyncError  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orders       SellerOrder[]
+
+  @@index([organizationId])
+}
+
+enum SellerChannelPlatform {
+  SHOPIFY
+  WOOCOMMERCE
+  ETSY_SELLER
+  EBAY_SELLER
+}
+
+model SellerOrder {
+  id              String   @id @default(cuid())
+  sellerChannelId String
+  externalOrderId String
+  orderNumber     String?
+  totalAmount     Float
+  currency        String
+  status          String
+  placedAt        DateTime
+  createdAt       DateTime @default(now())
+
+  sellerChannel SellerChannel @relation(fields: [sellerChannelId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerChannelId, externalOrderId])
+  @@index([sellerChannelId])
+  @@index([placedAt])
 }

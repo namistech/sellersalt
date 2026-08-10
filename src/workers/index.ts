@@ -4,12 +4,15 @@ import {
   connection,
   PROSPECTING_QUEUE_NAME,
   TRACK_SHOP_JOB_NAME,
+  SYNC_SELLER_CHANNEL_JOB_NAME,
   type ProspectingJobData,
   type ShopWatchJobData,
+  type SellerChannelSyncJobData,
 } from "../lib/queue";
 import { decrypt } from "../lib/encryption";
 import { getConnector } from "../connectors/registry";
 import { sendEmail } from "../lib/send-email";
+import { syncSellerChannel } from "../lib/sync-seller-channel";
 
 console.log("Anadash worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
 
@@ -152,6 +155,9 @@ const worker = new Worker(
   async (job) => {
     if (job.name === TRACK_SHOP_JOB_NAME) {
       await handleShopWatchJob(job as { data: ShopWatchJobData });
+    } else if (job.name === SYNC_SELLER_CHANNEL_JOB_NAME) {
+      const { sellerChannelId } = job.data as SellerChannelSyncJobData;
+      await syncSellerChannel(sellerChannelId);
     } else {
       await handleProspectingJob(job as { data: ProspectingJobData });
     }

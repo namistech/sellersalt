@@ -10,6 +10,7 @@ const DEFAULT_PACKAGES = [
     maxScheduledSearches: 1,
     maxTrackedShops: 5,
     maxProspectsPerMonth: 200,
+    maxSellerChannels: 1,
   },
   {
     key: "PRO",
@@ -20,6 +21,7 @@ const DEFAULT_PACKAGES = [
     maxScheduledSearches: 10,
     maxTrackedShops: 50,
     maxProspectsPerMonth: 5000,
+    maxSellerChannels: 5,
   },
   {
     key: "AGENCY",
@@ -30,6 +32,7 @@ const DEFAULT_PACKAGES = [
     maxScheduledSearches: 50,
     maxTrackedShops: 250,
     maxProspectsPerMonth: 50000,
+    maxSellerChannels: 25,
   },
 ];
 
@@ -60,7 +63,13 @@ export async function getOrgPackage(organizationId: string) {
   return free;
 }
 
-export type LimitResource = "connectors" | "searchConfigs" | "scheduledSearches" | "trackedShops" | "prospectsThisMonth";
+export type LimitResource =
+  | "connectors"
+  | "searchConfigs"
+  | "scheduledSearches"
+  | "trackedShops"
+  | "prospectsThisMonth"
+  | "sellerChannels";
 
 export async function checkLimit(
   organizationId: string,
@@ -96,6 +105,10 @@ export async function checkLimit(
       limit = pkg.maxProspectsPerMonth;
       break;
     }
+    case "sellerChannels":
+      current = await prisma.sellerChannel.count({ where: { organizationId, status: "ACTIVE" } });
+      limit = pkg.maxSellerChannels;
+      break;
   }
 
   return { allowed: current < limit, limit, current };

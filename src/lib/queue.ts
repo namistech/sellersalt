@@ -9,6 +9,7 @@ export const PROSPECTING_QUEUE_NAME = "prospecting";
 export const RUN_SEARCH_JOB_NAME = "run-search";
 export const SCHEDULED_SEARCH_JOB_NAME = "scheduled-search";
 export const TRACK_SHOP_JOB_NAME = "track-shop";
+export const SYNC_SELLER_CHANNEL_JOB_NAME = "sync-seller-channel";
 
 export interface ProspectingJobData {
   jobId?: string;
@@ -24,7 +25,11 @@ export interface ShopWatchJobData {
   shopExternalId: string;
 }
 
-export const prospectingQueue = new Queue<ProspectingJobData | ShopWatchJobData>(
+export interface SellerChannelSyncJobData {
+  sellerChannelId: string;
+}
+
+export const prospectingQueue = new Queue<ProspectingJobData | ShopWatchJobData | SellerChannelSyncJobData>(
   PROSPECTING_QUEUE_NAME,
   {
     connection,
@@ -94,6 +99,27 @@ export async function startShopWatch(params: {
 export async function stopShopWatch(shopWatchId: string) {
   const repeatables = await prospectingQueue.getRepeatableJobs();
   const existing = repeatables.filter((r) => r.id === `watch-${shopWatchId}`);
+  for (const r of existing) {
+    await prospectingQueue.removeRepeatableByKey(r.key);
+  }
+}
+
+// Offset from SHOP_WATCH_CRON (7am) so both daily jobs don't compete for the
+// same minute across every customer at once.
+const SELLER_CHANNEL_SYNC_CRON = "0 8 * * *";
+
+export async function startSellerChannelSync(sellerChannelId: string) {
+  await stopSellerChannelSync(sellerChannelId);
+  await prospectingQueue.add(
+    SYNC_SELLER_CHANNEL_JOB_NAME,
+    { sellerChannelId },
+    { repeat: { pattern: SELLER_CHANNEL_SYNC_CRON }, jobId: `sync-${sellerChannelId}` }
+  );
+}
+
+export async function stopSellerChannelSync(sellerChannelId: string) {
+  const repeatables = await prospectingQueue.getRepeatableJobs();
+  const existing = repeatables.filter((r) => r.id === `sync-${sellerChannelId}`);
   for (const r of existing) {
     await prospectingQueue.removeRepeatableByKey(r.key);
   }

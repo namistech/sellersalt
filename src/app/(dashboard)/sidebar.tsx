@@ -13,6 +13,8 @@ import {
   Briefcase,
   Settings,
   ShieldCheck,
+  BarChart3,
+  Store,
 } from "lucide-react";
 
 const NAV_GROUPS = [
@@ -25,6 +27,13 @@ const NAV_GROUPS = [
       { href: "/trends", label: "Trends", icon: TrendingUp },
       { href: "/inactive", label: "Dropped shops", icon: XCircle },
       { href: "/favorites", label: "Favorites", icon: Star },
+    ],
+  },
+  {
+    label: "Your stores",
+    items: [
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/settings/channels", label: "Connected stores", icon: Store },
     ],
   },
   {
