@@ -34,9 +34,15 @@ export async function setSetting(key: SettingKey, value: string): Promise<void> 
   const def = SETTING_DEFINITIONS.find((d) => d.key === key);
   if (!def) throw new Error(`Unknown setting key "${key}".`);
 
+  // A saved value like "shopify.pxf.io/9gO2v3" (no protocol) renders as a
+  // broken relative link in <a href>. Normalize any *_url key to always have
+  // a scheme, so a bare-domain paste can't silently break a button later.
+  const normalized =
+    key.endsWith("_url") && !/^https?:\/\//i.test(value) ? `https://${value}` : value;
+
   await prisma.appSetting.upsert({
     where: { key },
-    create: { key, value: def.isSecret ? encrypt(value) : value, isSecret: def.isSecret },
-    update: { value: def.isSecret ? encrypt(value) : value },
+    create: { key, value: def.isSecret ? encrypt(normalized) : normalized, isSecret: def.isSecret },
+    update: { value: def.isSecret ? encrypt(normalized) : normalized },
   });
 }

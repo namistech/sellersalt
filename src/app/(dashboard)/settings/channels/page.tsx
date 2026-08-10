@@ -28,6 +28,14 @@ const PLATFORM_LABELS: Record<string, string> = {
 const FALLBACK_SHOPIFY_AFFILIATE_URL = "https://shopify.pxf.io/9gO2v3";
 const FALLBACK_ORDER_URL = "https://netdrix.com/?fluent-form=8";
 
+// Defensive normalization even though setSetting() now does this on save too
+// — a value saved before that fix (e.g. "shopify.pxf.io/9gO2v3" with no
+// protocol) would otherwise render as a broken relative link.
+function normalizeUrl(value: string, fallback: string): string {
+  if (!value) return fallback;
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,9 +62,9 @@ export default function ChannelsPage() {
     const data = await res.json();
     if (data.settings) {
       setLinks({
-        shopify_affiliate_url: data.settings.shopify_affiliate_url || FALLBACK_SHOPIFY_AFFILIATE_URL,
-        netdrix_shopify_order_url: data.settings.netdrix_shopify_order_url || FALLBACK_ORDER_URL,
-        netdrix_woocommerce_order_url: data.settings.netdrix_woocommerce_order_url || FALLBACK_ORDER_URL,
+        shopify_affiliate_url: normalizeUrl(data.settings.shopify_affiliate_url, FALLBACK_SHOPIFY_AFFILIATE_URL),
+        netdrix_shopify_order_url: normalizeUrl(data.settings.netdrix_shopify_order_url, FALLBACK_ORDER_URL),
+        netdrix_woocommerce_order_url: normalizeUrl(data.settings.netdrix_woocommerce_order_url, FALLBACK_ORDER_URL),
       });
     }
   }

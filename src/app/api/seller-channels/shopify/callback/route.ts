@@ -8,6 +8,15 @@ import { getSetting } from "@/lib/app-settings";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { startSellerChannelSync } from "@/lib/queue";
 
+// Built from NEXTAUTH_URL, never req.url/url.origin — see the WooCommerce
+// connect route for why (reflects the container's internal 0.0.0.0 address
+// behind Coolify's proxy, not the public domain).
+function appUrl(): string {
+  const url = process.env.NEXTAUTH_URL;
+  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
+  return url;
+}
+
 // Standard Shopify OAuth HMAC verification: every query param except hmac,
 // sorted and joined, HMAC-SHA256'd with the app's client secret, compared to
 // the hmac Shopify sent. This is how we know the redirect genuinely came
@@ -31,22 +40,22 @@ export async function GET(req: Request) {
   const state = url.searchParams.get("state");
 
   if (!code || !shop || !state) {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_callback_incomplete", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_callback_incomplete", appUrl()));
   }
 
   const clientId = await getSetting("shopify_client_id");
   const clientSecret = await getSetting("shopify_client_secret");
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_not_configured", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_not_configured", appUrl()));
   }
 
   if (!verifyShopifyHmac(url.searchParams, clientSecret)) {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_invalid_signature", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_invalid_signature", appUrl()));
   }
 
   const payload = verifyConnectToken(state);
   if (!payload) {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_invalid_state", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_invalid_state", appUrl()));
   }
 
   let accessToken: string;
@@ -59,7 +68,7 @@ export async function GET(req: Request) {
     accessToken = tokenRes.data.access_token;
     if (!accessToken) throw new Error("No access_token in response.");
   } catch {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_token_exchange_failed", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_token_exchange_failed", appUrl()));
   }
 
   const credentials = { accessToken };
@@ -68,7 +77,7 @@ export async function GET(req: Request) {
   const connector = getSellerChannelConnector("SHOPIFY");
   const test = await connector.testConnection(credentials, storeUrl);
   if (!test.ok) {
-    return NextResponse.redirect(new URL("/settings/channels?error=shopify_token_invalid", url.origin));
+    return NextResponse.redirect(new URL("/settings/channels?error=shopify_token_invalid", appUrl()));
   }
 
   const channel = await prisma.sellerChannel.upsert({
@@ -90,5 +99,5 @@ export async function GET(req: Request) {
 
   await startSellerChannelSync(channel.id);
 
-  return NextResponse.redirect(new URL("/settings/channels?connected=1", url.origin));
+  return NextResponse.redirect(new URL("/settings/channels?connected=1", appUrl()));
 }
