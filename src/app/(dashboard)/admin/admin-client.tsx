@@ -24,6 +24,15 @@ interface PlatformConnector {
   createdAt: string;
 }
 
+interface SiteSettingRow {
+  key: string;
+  label: string;
+  isSecret: boolean;
+  hasValue: boolean;
+  value?: string;
+  updatedAt: string | null;
+}
+
 interface EmailSettingsData {
   id: string;
   host: string;
@@ -131,6 +140,9 @@ export function AdminPackagesClient() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailTestMessage, setEmailTestMessage] = useState<string | null>(null);
   const [emailTesting, setEmailTesting] = useState(false);
+  const [siteSettings, setSiteSettings] = useState<SiteSettingRow[]>([]);
+  const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
+  const [settingSaving, setSettingSaving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Package>>({});
@@ -141,15 +153,16 @@ export function AdminPackagesClient() {
   });
 
   async function loadAll() {
-    const [pRes, oRes, cRes, payRes, emailRes] = await Promise.all([
+    const [pRes, oRes, cRes, payRes, emailRes, settingsRes] = await Promise.all([
       fetch("/api/admin/packages"),
       fetch("/api/admin/organizations"),
       fetch("/api/admin/platform-connectors"),
       fetch("/api/admin/payment-providers"),
       fetch("/api/admin/email-settings"),
+      fetch("/api/admin/settings"),
     ]);
-    const [pData, oData, cData, payData, emailData] = await Promise.all([
-      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(),
+    const [pData, oData, cData, payData, emailData, settingsData] = await Promise.all([
+      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(), settingsRes.json(),
     ]);
     setPackages(pData.packages ?? []);
     setOrgs(oData.organizations ?? []);
@@ -159,6 +172,7 @@ export function AdminPackagesClient() {
       setEmailSettings(emailData.settings);
       setEmailForm((f) => ({ ...f, ...emailData.settings, password: "" }));
     }
+    setSiteSettings(settingsData.settings ?? []);
     setLoading(false);
   }
 
@@ -299,10 +313,59 @@ export function AdminPackagesClient() {
     setEmailTestMessage(res.ok ? "Test email sent — check your inbox." : `Failed: ${data.error}`);
   }
 
+  async function handleSaveSetting(key: string) {
+    const value = settingDrafts[key];
+    if (!value?.trim()) return;
+    setSettingSaving(key);
+    await fetch("/api/admin/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+    setSettingSaving(null);
+    setSettingDrafts((d) => ({ ...d, [key]: "" }));
+    loadAll();
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading…</p>;
 
   return (
     <div className="space-y-8">
+      <div className="card max-w-2xl">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-ink">Site settings</h2>
+          <p className="text-xs text-muted">
+            Links and platform app credentials used across the app — edit here, no deploy needed.
+          </p>
+        </div>
+        <div className="divide-y divide-line">
+          {siteSettings.map((s) => (
+            <div key={s.key} className="py-3 first:pt-0 last:pb-0">
+              <label className="label" htmlFor={s.key}>{s.label}</label>
+              <div className="flex gap-2">
+                <input
+                  id={s.key}
+                  className="input"
+                  type={s.isSecret ? "password" : "text"}
+                  placeholder={s.isSecret ? (s.hasValue ? "Set — enter a new value to replace" : "Not set") : s.value}
+                  value={settingDrafts[s.key] ?? ""}
+                  onChange={(e) => setSettingDrafts((d) => ({ ...d, [s.key]: e.target.value }))}
+                />
+                <button
+                  onClick={() => handleSaveSetting(s.key)}
+                  disabled={settingSaving === s.key || !settingDrafts[s.key]?.trim()}
+                  className="btn-secondary shrink-0"
+                >
+                  {settingSaving === s.key ? "Saving…" : "Save"}
+                </button>
+              </div>
+              {!s.isSecret && s.hasValue && <p className="mt-1 text-xs text-muted">Current: {s.value}</p>}
+              {s.isSecret && <p className="mt-1 text-xs text-muted">{s.hasValue ? "Value is set (hidden)." : "Not set yet."}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="card">
         <div className="mb-4 flex items-center justify-between">
           <div>

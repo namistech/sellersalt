@@ -426,3 +426,17 @@ model SellerOrder {
   @@index([sellerChannelId])
   @@index([placedAt])
 }
+
+// ---------- App settings ----------
+// Generic key-value store for admin-editable config (affiliate links, order
+// form URLs, platform app credentials like Shopify's Client ID/Secret).
+// Deliberately generic rather than one field per setting, so adding a new
+// configurable value never needs a schema migration — just a new key.
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   // encrypted at rest when isSecret is true
+  isSecret  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}

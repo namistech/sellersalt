@@ -21,11 +21,12 @@ const PLATFORM_LABELS: Record<string, string> = {
   EBAY_SELLER: "eBay (your shop)",
 };
 
-// Placeholders — swap for real URLs once available (Shopify affiliate link,
-// and real Netdrix order-form URLs for custom store builds).
-const SHOPIFY_AFFILIATE_URL = "https://www.shopify.com/";
-const ORDER_SHOPIFY_STORE_URL = "mailto:hello@netdrix.com?subject=Order%20a%20custom%20Shopify%20store";
-const ORDER_WOOCOMMERCE_STORE_URL = "mailto:hello@netdrix.com?subject=Order%20a%20custom%20WooCommerce%20store";
+// Real URLs. Netdrix's order form is one form shared for both platforms for
+// now — swap in dedicated URLs later if you build separate ones.
+// Fallback values, used only until an admin sets the real ones — that's the
+// whole point of moving these into /admin instead of hardcoding them here.
+const FALLBACK_SHOPIFY_AFFILIATE_URL = "https://shopify.pxf.io/9gO2v3";
+const FALLBACK_ORDER_URL = "https://netdrix.com/?fluent-form=8";
 
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -34,6 +35,11 @@ export default function ChannelsPage() {
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [links, setLinks] = useState({
+    shopify_affiliate_url: FALLBACK_SHOPIFY_AFFILIATE_URL,
+    netdrix_shopify_order_url: FALLBACK_ORDER_URL,
+    netdrix_woocommerce_order_url: FALLBACK_ORDER_URL,
+  });
 
   async function loadChannels() {
     const res = await fetch("/api/seller-channels");
@@ -42,8 +48,21 @@ export default function ChannelsPage() {
     setLoading(false);
   }
 
+  async function loadLinks() {
+    const res = await fetch("/api/settings/public");
+    const data = await res.json();
+    if (data.settings) {
+      setLinks({
+        shopify_affiliate_url: data.settings.shopify_affiliate_url || FALLBACK_SHOPIFY_AFFILIATE_URL,
+        netdrix_shopify_order_url: data.settings.netdrix_shopify_order_url || FALLBACK_ORDER_URL,
+        netdrix_woocommerce_order_url: data.settings.netdrix_woocommerce_order_url || FALLBACK_ORDER_URL,
+      });
+    }
+  }
+
   useEffect(() => {
     loadChannels();
+    loadLinks();
     const params = new URLSearchParams(window.location.search);
     if (params.get("connected")) setBannerMessage("Store connected successfully.");
     if (params.get("error") === "limit_reached") setBannerMessage("Your plan's store limit is reached — upgrade to connect more.");
@@ -111,7 +130,7 @@ export default function ChannelsPage() {
           <h2 className="mb-1 text-sm font-semibold text-ink">Connect Shopify</h2>
           <p className="mb-4 text-xs text-muted">Coming soon — needs a one-time app registration on our side.</p>
           <div className="flex flex-wrap gap-2">
-            <a href={SHOPIFY_AFFILIATE_URL} target="_blank" rel="noreferrer" className="btn-secondary">
+            <a href={links.shopify_affiliate_url} target="_blank" rel="noreferrer" className="btn-secondary">
               <ExternalLink className="mr-1.5 inline h-4 w-4" />
               Create a Shopify store
             </a>
@@ -122,8 +141,8 @@ export default function ChannelsPage() {
       <div className="mb-6 card">
         <h2 className="mb-3 text-sm font-semibold text-ink">Don't have a store yet?</h2>
         <div className="flex flex-wrap gap-2">
-          <a href={ORDER_SHOPIFY_STORE_URL} className="btn-secondary">Order a custom Shopify store</a>
-          <a href={ORDER_WOOCOMMERCE_STORE_URL} className="btn-secondary">Order a custom WooCommerce store</a>
+          <a href={`${links.netdrix_shopify_order_url}&ref=anadash_shopify`} className="btn-secondary">Order a custom Shopify store</a>
+          <a href={`${links.netdrix_woocommerce_order_url}&ref=anadash_woocommerce`} className="btn-secondary">Order a custom WooCommerce store</a>
         </div>
       </div>
 
