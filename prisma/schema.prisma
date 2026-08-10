@@ -398,6 +398,7 @@ model SellerChannel {
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   orders       SellerOrder[]
 
+  @@unique([organizationId, storeUrl])
   @@index([organizationId])
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw, Trash2 } from "lucide-react";
+import { RefreshCw, Trash2, ExternalLink } from "lucide-react";
 
 interface Channel {
   id: string;
@@ -21,14 +21,19 @@ const PLATFORM_LABELS: Record<string, string> = {
   EBAY_SELLER: "eBay (your shop)",
 };
 
+// Placeholders — swap for real URLs once available (Shopify affiliate link,
+// and real Netdrix order-form URLs for custom store builds).
+const SHOPIFY_AFFILIATE_URL = "https://www.shopify.com/";
+const ORDER_SHOPIFY_STORE_URL = "mailto:hello@netdrix.com?subject=Order%20a%20custom%20Shopify%20store";
+const ORDER_WOOCOMMERCE_STORE_URL = "mailto:hello@netdrix.com?subject=Order%20a%20custom%20WooCommerce%20store";
+
 export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [wooStoreUrl, setWooStoreUrl] = useState("");
+  const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
   async function loadChannels() {
     const res = await fetch("/api/seller-channels");
@@ -39,31 +44,19 @@ export default function ChannelsPage() {
 
   useEffect(() => {
     loadChannels();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("connected")) setBannerMessage("Store connected successfully.");
+    if (params.get("error") === "limit_reached") setBannerMessage("Your plan's store limit is reached — upgrade to connect more.");
+    if (params.get("error") === "invalid_store_url") setBannerMessage("That doesn't look like a valid store URL.");
   }, []);
 
-  async function handleConnect(e: React.FormEvent) {
+  function handleConnectWoo(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setSaving(true);
-    const res = await fetch("/api/seller-channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        platform: "WOOCOMMERCE",
-        label: form.label || form.storeUrl,
-        storeUrl: form.storeUrl,
-        credentials: { consumerKey: form.consumerKey, consumerSecret: form.consumerSecret },
-      }),
-    });
-    const data = await res.json();
-    setSaving(false);
-    if (!res.ok) {
-      setError(data.error ?? "Failed to connect.");
-      return;
-    }
-    setShowForm(false);
-    setForm({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
-    loadChannels();
+    if (!wooStoreUrl.trim()) return;
+    setConnecting(true);
+    // Full-page navigation, not fetch — this is a real redirect to the
+    // customer's own store login/approval screen, not an API call.
+    window.location.href = `/api/seller-channels/woocommerce/connect?storeUrl=${encodeURIComponent(wooStoreUrl.trim())}&label=${encodeURIComponent(wooStoreUrl.trim())}`;
   }
 
   async function handleSync(id: string) {
@@ -81,56 +74,57 @@ export default function ChannelsPage() {
 
   return (
     <div>
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Connected stores</h1>
-          <p className="mt-1 text-sm text-muted">
-            Connect your own shops to see them in your Unified Analytics dashboard.
-          </p>
-        </div>
-        {!showForm && (
-          <button className="btn-primary shrink-0" onClick={() => setShowForm(true)}>
-            Connect a store
-          </button>
-        )}
+      <header className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-ink">Connected stores</h1>
+        <p className="mt-1 text-sm text-muted">
+          Connect your own shops to see them in your Unified Analytics dashboard.
+        </p>
       </header>
 
-      {showForm && (
-        <form onSubmit={handleConnect} className="card mb-6 max-w-lg space-y-4">
-          <h2 className="text-sm font-semibold text-ink">Connect WooCommerce</h2>
-          <p className="text-xs text-muted">
-            In your WordPress admin: WooCommerce → Settings → Advanced → REST API → Add key
-            (with Read permissions). Paste the key and secret below.
-          </p>
-          <div>
-            <label className="label" htmlFor="label">Label</label>
-            <input id="label" className="input" placeholder="My WooCommerce Store" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="storeUrl">Store URL</label>
-            <input id="storeUrl" className="input" required placeholder="https://mystore.com" value={form.storeUrl} onChange={(e) => setForm({ ...form, storeUrl: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="consumerKey">Consumer Key</label>
-            <input id="consumerKey" className="input" required value={form.consumerKey} onChange={(e) => setForm({ ...form, consumerKey: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="consumerSecret">Consumer Secret</label>
-            <input id="consumerSecret" type="password" className="input" required value={form.consumerSecret} onChange={(e) => setForm({ ...form, consumerSecret: e.target.value })} />
-          </div>
-          {error && <p className="text-sm text-danger">{error}</p>}
-          <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? "Testing connection…" : "Connect"}
-            </button>
-            <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-          </div>
-        </form>
+      {bannerMessage && (
+        <div className="card mb-6">
+          <p className="text-sm text-ink">{bannerMessage}</p>
+        </div>
       )}
 
-      <div className="card mb-6 opacity-60">
-        <h2 className="mb-1 text-sm font-semibold text-ink">Shopify &amp; Etsy (your shop)</h2>
-        <p className="text-sm text-muted">Coming soon — needs a store-authorization flow specific to each platform.</p>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-ink">Connect WooCommerce</h2>
+          <p className="mb-4 text-xs text-muted">
+            You'll be taken to your own store to log in and approve — nothing to copy or paste.
+          </p>
+          <form onSubmit={handleConnectWoo} className="flex gap-2">
+            <input
+              className="input"
+              required
+              placeholder="https://mystore.com"
+              value={wooStoreUrl}
+              onChange={(e) => setWooStoreUrl(e.target.value)}
+            />
+            <button type="submit" disabled={connecting} className="btn-primary shrink-0">
+              {connecting ? "Redirecting…" : "Connect"}
+            </button>
+          </form>
+        </div>
+
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-ink">Connect Shopify</h2>
+          <p className="mb-4 text-xs text-muted">Coming soon — needs a one-time app registration on our side.</p>
+          <div className="flex flex-wrap gap-2">
+            <a href={SHOPIFY_AFFILIATE_URL} target="_blank" rel="noreferrer" className="btn-secondary">
+              <ExternalLink className="mr-1.5 inline h-4 w-4" />
+              Create a Shopify store
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="mb-6 card">
+        <h2 className="mb-3 text-sm font-semibold text-ink">Don't have a store yet?</h2>
+        <div className="flex flex-wrap gap-2">
+          <a href={ORDER_SHOPIFY_STORE_URL} className="btn-secondary">Order a custom Shopify store</a>
+          <a href={ORDER_WOOCOMMERCE_STORE_URL} className="btn-secondary">Order a custom WooCommerce store</a>
+        </div>
       </div>
 
       {loading ? (
