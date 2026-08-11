@@ -10,6 +10,10 @@ interface ConnectPayload {
   organizationId: string;
   storeUrl: string;
   label: string;
+  // Only used by Etsy's PKCE OAuth flow — carries the code_verifier through
+  // the redirect so the callback can complete the token exchange. Other
+  // platforms (Shopify, WooCommerce) don't use this field.
+  codeVerifier?: string;
   exp: number; // unix seconds
 }
 

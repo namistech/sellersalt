@@ -30,6 +30,7 @@ model Organization {
   package     Package?     @relation(fields: [packageId], references: [id])
   invites     Invite[]
   sellerChannels SellerChannel[]
+  crossListings CrossListing[]
 }
 
 enum Plan {
@@ -397,6 +398,7 @@ model SellerChannel {
 
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   orders       SellerOrder[]
+  crossListingEntries CrossListingEntry[]
 
   @@unique([organizationId, storeUrl])
   @@index([organizationId])
@@ -439,4 +441,43 @@ model AppSetting {
   value     String   // encrypted at rest when isSecret is true
   isSecret  Boolean  @default(false)
   updatedAt DateTime @updatedAt
+}
+
+// ---------- Cross-listing ----------
+// Foundation only in this round — the data model, not the actual push/sync
+// logic yet. A CrossListing groups one logical product across multiple
+// SellerChannel connections (e.g. the same item on both a customer's Etsy
+// shop and their WooCommerce store). One entry is flagged isSource — the
+// platform treated as the source of truth when fields conflict.
+
+model CrossListing {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entries      CrossListingEntry[]
+
+  @@index([organizationId])
+}
+
+model CrossListingEntry {
+  id                String    @id @default(cuid())
+  crossListingId    String
+  sellerChannelId   String
+  externalListingId String?   // null until actually pushed/created on that platform
+  isSource          Boolean   @default(false)
+  lastPushedAt      DateTime?
+  lastPushError     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  crossListing  CrossListing  @relation(fields: [crossListingId], references: [id], onDelete: Cascade)
+  sellerChannel SellerChannel @relation(fields: [sellerChannelId], references: [id], onDelete: Cascade)
+
+  @@unique([crossListingId, sellerChannelId])
+  @@index([crossListingId])
+  @@index([sellerChannelId])
 }

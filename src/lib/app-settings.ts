@@ -10,6 +10,8 @@ export const SETTING_DEFINITIONS = [
   { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
   { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
   { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
+  { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for cross-listing)", isSecret: false },
+  { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
 ] as const;
 
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];

@@ -1,12 +1,12 @@
 import type { SellerChannelConnector } from "./types";
 import { woocommerceConnector } from "./woocommerce";
 import { shopifyConnector } from "./shopify";
+import { etsySellerConnector } from "./etsy-seller";
 
 const REGISTRY: Record<string, SellerChannelConnector> = {
   WOOCOMMERCE: woocommerceConnector,
   SHOPIFY: shopifyConnector,
-  // ETSY_SELLER lands here as its own implementation — needs write-scope
-  // OAuth distinct from the existing research Connector.
+  ETSY_SELLER: etsySellerConnector,
 };
 
 export function getSellerChannelConnector(platform: string): SellerChannelConnector {

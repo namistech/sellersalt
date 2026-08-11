@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
   const authorizeUrl = new URL(`${storeUrl}/wc-auth/v1/authorize`);
   authorizeUrl.searchParams.set("app_name", "Anadash");
-  authorizeUrl.searchParams.set("scope", "read");
+  authorizeUrl.searchParams.set("scope", "read_write");
   authorizeUrl.searchParams.set("user_id", token);
   authorizeUrl.searchParams.set("return_url", `${appUrl()}/settings/channels?connected=1`);
   authorizeUrl.searchParams.set("callback_url", `${appUrl()}/api/seller-channels/woocommerce/callback`);
