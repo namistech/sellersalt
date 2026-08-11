@@ -21,16 +21,9 @@ const PLATFORM_LABELS: Record<string, string> = {
   EBAY_SELLER: "eBay (your shop)",
 };
 
-// Real URLs. Netdrix's order form is one form shared for both platforms for
-// now — swap in dedicated URLs later if you build separate ones.
-// Fallback values, used only until an admin sets the real ones — that's the
-// whole point of moving these into /admin instead of hardcoding them here.
 const FALLBACK_SHOPIFY_AFFILIATE_URL = "https://shopify.pxf.io/9gO2v3";
 const FALLBACK_ORDER_URL = "https://netdrix.com/?fluent-form=8";
 
-// Defensive normalization even though setSetting() now does this on save too
-// — a value saved before that fix (e.g. "shopify.pxf.io/9gO2v3" with no
-// protocol) would otherwise render as a broken relative link.
 function normalizeUrl(value: string, fallback: string): string {
   if (!value) return fallback;
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
@@ -40,6 +33,10 @@ export default function ChannelsPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [wooStoreUrl, setWooStoreUrl] = useState("");
+  const [showManualWoo, setShowManualWoo] = useState(false);
+  const [manualWoo, setManualWoo] = useState({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
+  const [manualWooError, setManualWooError] = useState<string | null>(null);
+  const [manualWooSaving, setManualWooSaving] = useState(false);
   const [shopifyShop, setShopifyShop] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -91,9 +88,32 @@ export default function ChannelsPage() {
     e.preventDefault();
     if (!wooStoreUrl.trim()) return;
     setConnecting(true);
-    // Full-page navigation, not fetch — this is a real redirect to the
-    // customer's own store login/approval screen, not an API call.
     window.location.href = `/api/seller-channels/woocommerce/connect?storeUrl=${encodeURIComponent(wooStoreUrl.trim())}&label=${encodeURIComponent(wooStoreUrl.trim())}`;
+  }
+
+  async function handleManualWooConnect(e: React.FormEvent) {
+    e.preventDefault();
+    setManualWooError(null);
+    setManualWooSaving(true);
+    const res = await fetch("/api/seller-channels", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        platform: "WOOCOMMERCE",
+        label: manualWoo.label || manualWoo.storeUrl,
+        storeUrl: manualWoo.storeUrl,
+        credentials: { consumerKey: manualWoo.consumerKey, consumerSecret: manualWoo.consumerSecret },
+      }),
+    });
+    const data = await res.json();
+    setManualWooSaving(false);
+    if (!res.ok) {
+      setManualWooError(data.error ?? "Failed to connect.");
+      return;
+    }
+    setShowManualWoo(false);
+    setManualWoo({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
+    loadChannels();
   }
 
   async function handleSync(id: string) {
@@ -142,6 +162,55 @@ export default function ChannelsPage() {
               {connecting ? "Redirecting…" : "Connect"}
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={() => setShowManualWoo((s) => !s)}
+            className="mt-3 text-xs text-muted hover:text-ink"
+          >
+            {showManualWoo ? "Hide manual connection" : "Having trouble connecting? Connect manually"}
+          </button>
+
+          {showManualWoo && (
+            <form onSubmit={handleManualWooConnect} className="mt-3 space-y-3 rounded-md border border-line p-3">
+              <p className="text-xs text-muted">
+                In your WordPress admin: WooCommerce → Settings → Advanced → REST API → Add key
+                (Read permissions). Paste the key and secret below.
+              </p>
+              <input
+                className="input"
+                placeholder="Label (optional)"
+                value={manualWoo.label}
+                onChange={(e) => setManualWoo({ ...manualWoo, label: e.target.value })}
+              />
+              <input
+                className="input"
+                required
+                placeholder="https://mystore.com"
+                value={manualWoo.storeUrl}
+                onChange={(e) => setManualWoo({ ...manualWoo, storeUrl: e.target.value })}
+              />
+              <input
+                className="input"
+                required
+                placeholder="Consumer Key"
+                value={manualWoo.consumerKey}
+                onChange={(e) => setManualWoo({ ...manualWoo, consumerKey: e.target.value })}
+              />
+              <input
+                className="input"
+                required
+                type="password"
+                placeholder="Consumer Secret"
+                value={manualWoo.consumerSecret}
+                onChange={(e) => setManualWoo({ ...manualWoo, consumerSecret: e.target.value })}
+              />
+              {manualWooError && <p className="text-sm text-danger">{manualWooError}</p>}
+              <button type="submit" disabled={manualWooSaving} className="btn-secondary w-full">
+                {manualWooSaving ? "Testing connection…" : "Connect manually"}
+              </button>
+            </form>
+          )}
         </div>
 
         <div className="card">
