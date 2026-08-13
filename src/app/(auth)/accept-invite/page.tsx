@@ -125,7 +125,7 @@ export default function AcceptInvitePage() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mb-1 text-xl font-semibold tracking-tight text-ink">Anadash</div>
+          <div className="mb-1 text-xl font-semibold tracking-tight text-ink">SellerSalt</div>
           <p className="text-sm text-muted">Join a workspace</p>
         </div>
         <Suspense fallback={<p className="text-center text-sm text-muted">Loading…</p>}>

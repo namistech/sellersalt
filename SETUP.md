@@ -1,6 +1,6 @@
-# Deploying Anadash on Coolify
+# Deploying SellerSalt on Coolify
 
-Anadash runs as **three Coolify resources** under one project, plus your Etsy API
+SellerSalt runs as **three Coolify resources** under one project, plus your Etsy API
 key from the app you already submitted for review:
 
 1. **Postgres** — Coolify-managed Database resource
@@ -75,7 +75,7 @@ these over Coolify's internal network.
 2. Deploy `anadash-worker`.
 3. Visit `https://anadash.netdrix.com`, sign up (creates your workspace).
 4. Go to **Connectors → Add connector**, paste your Etsy Keystring once your
-   Anadash app is approved.
+   SellerSalt app is approved.
 5. Go to **Prospects → New search**, define keywords/price/filters, save, hit
    **Run now**. Watch progress on the **Jobs** page — the worker picks it up
    off the Redis queue within seconds.

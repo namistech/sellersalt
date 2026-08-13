@@ -12,7 +12,7 @@ export async function POST() {
 
   const result = await sendEmail({
     to: session.user.email,
-    subject: "Anadash SMTP test",
+    subject: "SellerSalt SMTP test",
     html: "<p>If you're reading this, your SMTP settings work.</p>",
     text: "If you're reading this, your SMTP settings work.",
   });

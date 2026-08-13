@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     secure: Boolean(secure),
     username,
     fromEmail,
-    fromName: fromName || "Anadash",
+    fromName: fromName || "SellerSalt",
     isActive: Boolean(isActive),
     ...(password ? { encryptedPassword: encrypt(password) } : {}),
   };

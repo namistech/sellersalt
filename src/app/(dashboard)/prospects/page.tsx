@@ -198,7 +198,7 @@ export default function ProspectsPage() {
           {prospects.length > 0 && (
             <button
               className="btn-secondary"
-              onClick={() => downloadCsv(`anadash-prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospects)}
+              onClick={() => downloadCsv(`sellersalt-prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospects)}
             >
               <Download className="mr-1.5 inline h-4 w-4" />
               Export CSV

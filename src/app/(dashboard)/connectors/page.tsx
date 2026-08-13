@@ -63,7 +63,7 @@ export default function ConnectorsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Remove this connector? Your searches will fall back to Anadash's shared connection.")) return;
+    if (!confirm("Remove this connector? Your searches will fall back to SellerSalt's shared connection.")) return;
     await fetch(`/api/connectors/${id}`, { method: "DELETE" });
     loadConnectors();
   }
@@ -73,7 +73,7 @@ export default function ConnectorsPage() {
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Connectors</h1>
         <p className="mt-1 text-sm text-muted">
-          Anadash connects marketplaces for you — nothing to set up. This page is only for
+          SellerSalt connects marketplaces for you — nothing to set up. This page is only for
           customers who want to use their own dedicated API key.
         </p>
       </header>
@@ -92,7 +92,7 @@ export default function ConnectorsPage() {
               {platformConnectors.map((c) => (
                 <div key={c.id} className="flex items-center gap-2 text-sm text-ink">
                   <CheckCircle2 className="h-4 w-4 text-success" />
-                  {c.type} — provided by Anadash, ready to use
+                  {c.type} — provided by SellerSalt, ready to use
                 </div>
               ))}
             </div>
@@ -158,7 +158,7 @@ export default function ConnectorsPage() {
         )}
 
         {ownConnectors.length === 0 ? (
-          <p className="text-sm text-muted">You're using Anadash's shared connection — no own key added.</p>
+          <p className="text-sm text-muted">You're using SellerSalt's shared connection — no own key added.</p>
         ) : (
           <div className="divide-y divide-line">
             {ownConnectors.map((c) => (

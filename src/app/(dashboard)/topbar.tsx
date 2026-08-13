@@ -21,7 +21,7 @@ const TITLES: Record<string, string> = {
 function titleFor(pathname: string): string {
   if (TITLES[pathname]) return TITLES[pathname];
   const base = "/" + pathname.split("/")[1];
-  return TITLES[base] ?? "Anadash";
+  return TITLES[base] ?? "SellerSalt";
 }
 
 export function TopBar({ userName, userEmail }: { userName?: string | null; userEmail?: string | null }) {

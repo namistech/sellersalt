@@ -1,4 +1,4 @@
-# CLAUDE.md — Anadash Project Context
+# CLAUDE.md — SellerSalt Project Context
 
 Read this file fully before doing anything else in this project. It replaces
 needing to re-explain context every session.
@@ -95,7 +95,7 @@ optional peer dependency).
   per-component classes — new pages get it for free using existing tokens
   (`text-ink`, `bg-surface`, `bg-paper`, `border-line`, `text-muted`).
 - **Marketing homepage** has its own separate design system, scoped under
-  `.anadash-marketing` in `src/app/marketing.css` — never touches the
+  `.sellersalt-marketing` in `src/app/marketing.css` — never touches the
   dashboard's tokens. Pricing pulls live from the real `Package` table.
 - **Admin gate**: `ADMIN_EMAILS` env var (comma-separated allowlist), not a
   real role system.

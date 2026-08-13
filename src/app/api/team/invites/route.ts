@@ -53,12 +53,12 @@ export async function POST(req: Request) {
 
   const result = await sendEmail({
     to: normalizedEmail,
-    subject: `You've been invited to join ${org.name} on Anadash`,
+    subject: `You've been invited to join ${org.name} on SellerSalt`,
     html: `
-      <p>You've been invited to join <strong>${org.name}</strong> on Anadash.</p>
+      <p>You've been invited to join <strong>${org.name}</strong> on SellerSalt.</p>
       <p><a href="${acceptUrl}">Click here to accept the invite</a> — this link expires in 7 days.</p>
     `,
-    text: `You've been invited to join ${org.name} on Anadash: ${acceptUrl}`,
+    text: `You've been invited to join ${org.name} on SellerSalt: ${acceptUrl}`,
   });
 
   if (!result.sent) {

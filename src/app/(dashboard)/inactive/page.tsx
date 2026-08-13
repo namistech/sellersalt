@@ -39,7 +39,7 @@ export default function InactivePage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `anadash-dropped-shops-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `sellersalt-dropped-shops-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

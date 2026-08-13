@@ -124,7 +124,7 @@ export function AdminPackagesClient() {
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [platformConnectors, setPlatformConnectors] = useState<PlatformConnector[]>([]);
   const [showConnectorForm, setShowConnectorForm] = useState(false);
-  const [connectorForm, setConnectorForm] = useState({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
+  const [connectorForm, setConnectorForm] = useState({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
   const [connectorError, setConnectorError] = useState<string | null>(null);
   const [connectorSaving, setConnectorSaving] = useState(false);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
@@ -134,7 +134,7 @@ export function AdminPackagesClient() {
   const [providerError, setProviderError] = useState<string | null>(null);
   const [emailSettings, setEmailSettings] = useState<EmailSettingsData | null>(null);
   const [emailForm, setEmailForm] = useState({
-    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "Anadash", isActive: false,
+    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "SellerSalt", isActive: false,
   });
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -237,7 +237,7 @@ export function AdminPackagesClient() {
       return;
     }
     setShowConnectorForm(false);
-    setConnectorForm({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
+    setConnectorForm({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
     loadAll();
   }
 

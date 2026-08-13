@@ -17,14 +17,14 @@ interface PackageData {
 const FAQS = [
   {
     q: "Do I need my own Etsy API key?",
-    a: "No. Anadash works completely out-of-the-box. You don't need an Etsy developer key or technical setup.",
+    a: "No. SellerSalt works completely out-of-the-box. You don't need an Etsy developer key or technical setup.",
   },
   {
     q: "Is the sales data real or estimated?",
-    a: "Anadash uses verified lifetime sales numbers directly extracted from shop data and updated through automated daily tracking.",
+    a: "SellerSalt uses verified lifetime sales numbers directly extracted from shop data and updated through automated daily tracking.",
   },
   {
-    q: "Can e-commerce agencies use Anadash for clients?",
+    q: "Can e-commerce agencies use SellerSalt for clients?",
     a: "Yes. The Agency plan supports multi-seat teams and up to 100 concurrently tracked shops for sourcing clients.",
   },
 ];
@@ -76,7 +76,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
   const agency = pkg("AGENCY");
 
   return (
-    <div className="anadash-marketing" data-theme={theme}>
+    <div className="sellersalt-marketing" data-theme={theme}>
       <div className="bg-graphic bg-graphic-1" />
       <div className="bg-graphic bg-graphic-2" />
       <div className="bg-graphic bg-graphic-3" />
@@ -95,12 +95,12 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <div className="container nav-container">
           <a href="/" className="logo">
             <div className="logo-icon" />
-            Anadash
+            SellerSalt
           </a>
           <nav aria-label="Main Navigation">
             <ul className="nav-links">
               <li><a href="#features">Features</a></li>
-              <li><a href="#comparison">Why Anadash</a></li>
+              <li><a href="#comparison">Why SellerSalt</a></li>
               <li><a href="#calculator">Difficulty Tool</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
@@ -150,7 +150,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <div className="mockup-header">
               <div className="dot" /><div className="dot" /><div className="dot" />
               <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: 12, fontWeight: 500 }}>
-                anadash.com/app/shop-intelligence
+                sellersalt.com/app/shop-intelligence
               </span>
             </div>
             <div className="mockup-body">
@@ -215,7 +215,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <div className="container">
           <div className="section-header">
             <h2>Designed Specifically for Sourcing Decisions</h2>
-            <p>While SEO tools help you rewrite product tags, Anadash helps you decide whether to enter a market and how to beat top sellers.</p>
+            <p>While SEO tools help you rewrite product tags, SellerSalt helps you decide whether to enter a market and how to beat top sellers.</p>
           </div>
 
           <div className="features-grid">
@@ -257,7 +257,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       <section id="comparison" className="comparison-section">
         <div className="container">
           <div className="section-header">
-            <h2>How Anadash Compares</h2>
+            <h2>How SellerSalt Compares</h2>
             <p>Built for e-commerce sourcing and market entry—not basic keyword optimization.</p>
           </div>
 
@@ -265,7 +265,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <thead>
               <tr>
                 <th>Feature / Capability</th>
-                <th style={{ color: "var(--accent)" }}>Anadash</th>
+                <th style={{ color: "var(--accent)" }}>SellerSalt</th>
                 <th>Traditional Keyword SEO Tools</th>
               </tr>
             </thead>
@@ -304,7 +304,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <div className="container">
           <div className="section-header">
             <h2>Live Competition Difficulty Simulator</h2>
-            <p>Test how Anadash evaluates market feasibility before investing in new product inventory.</p>
+            <p>Test how SellerSalt evaluates market feasibility before investing in new product inventory.</p>
           </div>
 
           <div className="calc-box">
@@ -395,7 +395,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 <li>✓ Multi-seat team support</li>
               </ul>
               <a
-                href="mailto:hello@netdrix.com?subject=Anadash%20Agency%20Plan%20Inquiry"
+                href="mailto:hello@netdrix.com?subject=SellerSalt%20Agency%20Plan%20Inquiry"
                 className="btn btn-secondary"
               >
                 Contact Sales
@@ -409,7 +409,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <div className="container">
           <div className="section-header">
             <h2>Frequently Asked Questions</h2>
-            <p>Answers to common questions about Anadash, data accuracy, and sourcing.</p>
+            <p>Answers to common questions about SellerSalt, data accuracy, and sourcing.</p>
           </div>
 
           <div className="faq-container">
@@ -431,7 +431,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
           <div className="footer-grid">
             <div>
               <div className="logo" style={{ marginBottom: 16 }}>
-                <div className="logo-icon" /> Anadash
+                <div className="logo-icon" /> SellerSalt
               </div>
               <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", maxWidth: 280, lineHeight: 1.5 }}>
                 Real-time competitor intelligence and product sourcing platform for Etsy sellers, dropshippers, and global export hubs.
@@ -443,7 +443,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               <ul>
                 <li><a href="#features">Shop Intelligence</a></li>
                 <li><a href="#calculator">Difficulty Tool</a></li>
-                <li><a href="#comparison">Why Anadash</a></li>
+                <li><a href="#comparison">Why SellerSalt</a></li>
                 <li><a href="#pricing">Pricing</a></li>
               </ul>
             </div>
@@ -473,7 +473,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
           </div>
 
           <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 24, textAlign: "center", fontSize: "0.82rem", color: "var(--text-muted)" }}>
-            &copy; {new Date().getFullYear()} Anadash. All rights reserved.
+            &copy; {new Date().getFullYear()} SellerSalt. All rights reserved.
           </div>
         </div>
       </footer>

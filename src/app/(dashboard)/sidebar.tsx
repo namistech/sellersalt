@@ -60,7 +60,7 @@ export function Sidebar({ organizationName, isAdmin }: { organizationName?: stri
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-ink text-sm font-bold text-white dark:bg-white dark:text-ink">
             A
           </div>
-          <div className="text-lg font-semibold tracking-tight text-ink">Anadash</div>
+          <div className="text-lg font-semibold tracking-tight text-ink">SellerSalt</div>
         </div>
         {organizationName && (
           <div className="mt-1 truncate pl-10 text-xs text-muted">{organizationName}</div>

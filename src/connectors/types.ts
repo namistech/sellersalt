@@ -1,4 +1,4 @@
-// Shared shape every marketplace connector implements. Anadash currently targets
+// Shared shape every marketplace connector implements. SellerSalt currently targets
 // Etsy (live) and eBay (planned) as a focused product-hunting tool across the two
 // platforms — keeping this interface stable is what makes eBay additive later
 // instead of a rewrite.

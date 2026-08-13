@@ -1,4 +1,4 @@
-// Anadash's own competition-difficulty heuristic — not an Etsy metric, not an
+// SellerSalt's own competition-difficulty heuristic — not an Etsy metric, not an
 // industry-standard benchmark. Thresholds are editorial judgment calls meant to
 // give a quick "should a newcomer bother competing with this shop" read. Green =
 // weaker/newer competitor (opportunity), red = established/strong competitor

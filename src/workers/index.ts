@@ -14,7 +14,7 @@ import { getConnector } from "../connectors/registry";
 import { sendEmail } from "../lib/send-email";
 import { syncSellerChannel } from "../lib/sync-seller-channel";
 
-console.log("Anadash worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
+console.log("SellerSalt worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
 
 async function notifyNewProspects(organizationId: string, searchConfigName: string, count: number) {
   try {
@@ -27,7 +27,7 @@ async function notifyNewProspects(organizationId: string, searchConfigName: stri
       members.map((m: (typeof members)[number]) =>
         sendEmail({
           to: m.user.email,
-          subject: `Anadash: "${searchConfigName}" found ${count} new prospect${count === 1 ? "" : "s"}`,
+          subject: `SellerSalt: "${searchConfigName}" found ${count} new prospect${count === 1 ? "" : "s"}`,
           html: `
             <p>Your scheduled search <strong>${searchConfigName}</strong> just found ${count} new prospect${count === 1 ? "" : "s"}.</p>
             <p><a href="${appUrl}/prospects">View them in your dashboard</a></p>

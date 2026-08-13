@@ -100,7 +100,7 @@ export default async function BillingPage() {
                 </button>
               ) : (
                 <a
-                  href={`mailto:hello@netdrix.com?subject=Upgrade to ${pkg.name}&body=I'd like to upgrade my Anadash workspace to the ${pkg.name} plan.`}
+                  href={`mailto:hello@netdrix.com?subject=Upgrade to ${pkg.name}&body=I'd like to upgrade my SellerSalt workspace to the ${pkg.name} plan.`}
                   className="btn-primary block w-full text-center"
                 >
                   {pkg.priceUsd > currentPackage.priceUsd ? "Upgrade" : "Switch"} to {pkg.name}

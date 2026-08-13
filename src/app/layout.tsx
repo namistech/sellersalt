@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Anadash",
+  title: "SellerSalt",
   description: "Product hunting for Etsy and eBay sellers — find winning shops and products in one dashboard.",
 };
 

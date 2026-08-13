@@ -240,8 +240,8 @@ export default function ChannelsPage() {
       <div className="mb-6 card">
         <h2 className="mb-3 text-sm font-semibold text-ink">Don't have a store yet?</h2>
         <div className="flex flex-wrap gap-2">
-          <a href={`${links.netdrix_shopify_order_url}&ref=anadash_shopify`} className="btn-secondary">Order a custom Shopify store</a>
-          <a href={`${links.netdrix_woocommerce_order_url}&ref=anadash_woocommerce`} className="btn-secondary">Order a custom WooCommerce store</a>
+          <a href={`${links.netdrix_shopify_order_url}&ref=sellersalt_shopify`} className="btn-secondary">Order a custom Shopify store</a>
+          <a href={`${links.netdrix_woocommerce_order_url}&ref=sellersalt_woocommerce`} className="btn-secondary">Order a custom WooCommerce store</a>
         </div>
       </div>
 

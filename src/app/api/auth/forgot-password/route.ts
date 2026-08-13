@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
 
   // Same response whether or not the account exists — a different response
-  // would let someone probe which emails have accounts on Anadash.
+  // would let someone probe which emails have accounts on SellerSalt.
   if (!user) {
     return NextResponse.json(GENERIC_RESPONSE);
   }
@@ -34,9 +34,9 @@ export async function POST(req: Request) {
 
   const result = await sendEmail({
     to: user.email,
-    subject: "Reset your Anadash password",
+    subject: "Reset your SellerSalt password",
     html: `
-      <p>Someone requested a password reset for your Anadash account.</p>
+      <p>Someone requested a password reset for your SellerSalt account.</p>
       <p><a href="${resetUrl}">Click here to set a new password</a> — this link expires in 1 hour.</p>
       <p>If you didn't request this, you can safely ignore this email.</p>
     `,
