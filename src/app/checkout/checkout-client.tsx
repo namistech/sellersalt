@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, Eye, EyeOff } from "lucide-react";
 
 interface PackageData {
   key: string;
@@ -27,6 +28,9 @@ export function CheckoutClient({
   preselectedKey: string;
   availableProviders: string[];
 }) {
+  const { data: session, status: sessionStatus, update: updateSession } = useSession();
+  const isAuthenticated = sessionStatus === "authenticated";
+
   const [selectedKey, setSelectedKey] = useState(preselectedKey);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +42,15 @@ export function CheckoutClient({
     trialPriceUsd: number | null;
     priceUsd: number;
   } | null>(null);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+
+  // Account section — signup is the default for new visitors, with a
+  // "log in instead" toggle for people who already have an account.
+  const [accountMode, setAccountMode] = useState<"signup" | "login">("signup");
+  const [accountForm, setAccountForm] = useState({ name: "", organizationName: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
 
   const selected = packages.find((p) => p.key === selectedKey) ?? packages[0];
   const others = packages.filter((p) => p.key !== selected.key);
@@ -75,6 +88,46 @@ export function CheckoutClient({
   const displayTrialPriceUsd = appliedCoupon ? appliedCoupon.trialPriceUsd : selected.trialPriceUsd;
   const displayPriceUsd = appliedCoupon ? appliedCoupon.priceUsd : selected.priceUsd;
 
+  async function handleAccountSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setAccountError(null);
+    setAccountSubmitting(true);
+
+    if (accountMode === "signup") {
+      const res = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(accountForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAccountError(data.error ?? "Something went wrong.");
+        setAccountSubmitting(false);
+        return;
+      }
+    }
+
+    // Same call establishes the session for both signup (right after account
+    // creation) and login — no full-page redirect, so the payment section
+    // below just becomes available in place once this resolves.
+    const signInRes = await signIn("credentials", {
+      email: accountForm.email,
+      password: accountForm.password,
+      redirect: false,
+    });
+    setAccountSubmitting(false);
+
+    if (signInRes?.error) {
+      setAccountError(
+        accountMode === "signup"
+          ? "Account created, but sign-in failed. Try logging in below."
+          : "That email and password don't match an account."
+      );
+      return;
+    }
+    await updateSession();
+  }
+
   async function handleCheckout(provider: string) {
     setError(null);
     setLoadingProvider(provider);
@@ -108,8 +161,89 @@ export function CheckoutClient({
       <div className="mx-auto max-w-xl px-6 py-14">
         <h1 className="mb-2 text-2xl font-semibold tracking-tight text-ink">Start your subscription</h1>
         <p className="mb-8 text-sm text-muted">
-          One step left — pick your plan and payment method to get started.
+          {isAuthenticated
+            ? "One step left — pick your plan and payment method to get started."
+            : "Create your account and pick a plan — takes under a minute."}
         </p>
+
+        {/* Account section — collapses to a simple confirmation once signed in */}
+        {isAuthenticated ? (
+          <div className="mb-6 flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3">
+            <span className="text-sm text-ink">
+              Signed in as <span className="font-medium">{session?.user?.email}</span>
+            </span>
+          </div>
+        ) : (
+          <div className="mb-6 rounded-xl border border-line bg-surface p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-ink">
+                {accountMode === "signup" ? "Create your account" : "Log in"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountMode((m) => (m === "signup" ? "login" : "signup"));
+                  setAccountError(null);
+                }}
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                {accountMode === "signup" ? "Already have an account? Log in" : "Need an account? Sign up"}
+              </button>
+            </div>
+
+            <form onSubmit={handleAccountSubmit} className="space-y-3">
+              {accountMode === "signup" && (
+                <>
+                  <input
+                    className="input"
+                    placeholder="Workspace name"
+                    value={accountForm.organizationName}
+                    onChange={(e) => setAccountForm({ ...accountForm, organizationName: e.target.value })}
+                  />
+                  <input
+                    className="input"
+                    placeholder="Your name"
+                    value={accountForm.name}
+                    onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                  />
+                </>
+              )}
+              <input
+                type="email"
+                required
+                className="input"
+                placeholder="Email"
+                value={accountForm.email}
+                onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                autoComplete="email"
+              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={accountMode === "signup" ? 8 : undefined}
+                  className="input pr-10"
+                  placeholder="Password"
+                  value={accountForm.password}
+                  onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
+                  autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {accountError && <p className="text-sm text-danger">{accountError}</p>}
+              <button type="submit" disabled={accountSubmitting} className="btn-primary w-full">
+                {accountSubmitting ? "Please wait…" : accountMode === "signup" ? "Continue" : "Log in"}
+              </button>
+            </form>
+          </div>
+        )}
 
         <div className="mb-6 rounded-xl border-2 border-accent bg-surface p-6">
           <div className="mb-1 flex items-center justify-between">
@@ -169,14 +303,28 @@ export function CheckoutClient({
             {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
           </div>
 
-          <ul className="mt-5 space-y-2 text-sm text-ink">
-            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxConnectors} active connectors</li>
-            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxSearchConfigs} saved searches</li>
-            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxTrackedShops} tracked shops</li>
-            <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxProspectsPerMonth.toLocaleString()} prospect lookups / month</li>
-          </ul>
+          <button
+            type="button"
+            onClick={() => setFeaturesOpen((o) => !o)}
+            className="mt-5 flex w-full items-center justify-between text-sm font-medium text-ink"
+          >
+            What's included
+            <ChevronDown className={`h-4 w-4 transition-transform ${featuresOpen ? "rotate-180" : ""}`} />
+          </button>
+          {featuresOpen && (
+            <ul className="mt-3 space-y-2 text-sm text-ink">
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxConnectors} active connectors</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxSearchConfigs} saved searches</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxTrackedShops} tracked shops</li>
+              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxProspectsPerMonth.toLocaleString()} prospect lookups / month</li>
+            </ul>
+          )}
 
-          {availableProviders.length > 0 ? (
+          {!isAuthenticated ? (
+            <p className="mt-6 text-center text-xs text-muted">
+              Create your account above to continue to payment.
+            </p>
+          ) : availableProviders.length > 0 ? (
             <div className="mt-6 space-y-2">
               {availableProviders.map((provider, i) => (
                 <button

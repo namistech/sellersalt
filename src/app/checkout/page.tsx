@@ -11,15 +11,18 @@ export default async function CheckoutPage({
 }) {
   const { plan } = await searchParams;
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
 
-  const organizationId = (session.user as any)?.organizationId as string | undefined;
-  if (!organizationId) redirect("/login");
-
-  // Already paying — no reason to see checkout again, straight to the app.
-  const existingSub = await prisma.subscription.findUnique({ where: { organizationId } });
-  if (existingSub && (existingSub.status === "ACTIVE" || existingSub.status === "TRIALING")) {
-    redirect("/dashboard");
+  // Only redirect existing, already-paying sessions away — new visitors
+  // (no session yet) are exactly who this page needs to serve, since
+  // account creation now happens ON checkout, not before it.
+  if (session) {
+    const organizationId = (session.user as any)?.organizationId as string | undefined;
+    if (organizationId) {
+      const existingSub = await prisma.subscription.findUnique({ where: { organizationId } });
+      if (existingSub && (existingSub.status === "ACTIVE" || existingSub.status === "TRIALING")) {
+        redirect("/dashboard");
+      }
+    }
   }
 
   const packages = await prisma.package.findMany({
