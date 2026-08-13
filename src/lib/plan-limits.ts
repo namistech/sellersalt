@@ -2,20 +2,24 @@ import { prisma } from "./db";
 
 const DEFAULT_PACKAGES = [
   {
-    key: "FREE",
-    name: "Free",
-    priceUsd: 0,
-    maxConnectors: 1,
-    maxSearchConfigs: 3,
-    maxScheduledSearches: 1,
-    maxTrackedShops: 5,
-    maxProspectsPerMonth: 200,
+    key: "STARTED",
+    name: "Started",
+    priceUsd: 19,
+    trialDays: 3,
+    trialPriceUsd: 1,
+    maxConnectors: 2,
+    maxSearchConfigs: 5,
+    maxScheduledSearches: 2,
+    maxTrackedShops: 10,
+    maxProspectsPerMonth: 500,
     maxSellerChannels: 1,
   },
   {
     key: "PRO",
     name: "Pro",
     priceUsd: 49,
+    trialDays: 3,
+    trialPriceUsd: 1,
     maxConnectors: 3,
     maxSearchConfigs: 20,
     maxScheduledSearches: 10,
@@ -27,6 +31,8 @@ const DEFAULT_PACKAGES = [
     key: "AGENCY",
     name: "Agency",
     priceUsd: 199,
+    trialDays: 3,
+    trialPriceUsd: 1,
     maxConnectors: 10,
     maxSearchConfigs: 100,
     maxScheduledSearches: 50,
@@ -56,11 +62,11 @@ export async function getOrgPackage(organizationId: string) {
   if (org.package) return org.package;
 
   // No package assigned yet (e.g. an org created before this system existed) —
-  // fall back to Free and assign it so future lookups don't repeat this.
+  // fall back to Started and assign it so future lookups don't repeat this.
   await ensureDefaultPackages();
-  const free = await prisma.package.findUniqueOrThrow({ where: { key: "FREE" } });
-  await prisma.organization.update({ where: { id: organizationId }, data: { packageId: free.id } });
-  return free;
+  const started = await prisma.package.findUniqueOrThrow({ where: { key: "STARTED" } });
+  await prisma.organization.update({ where: { id: organizationId }, data: { packageId: started.id } });
+  return started;
 }
 
 export type LimitResource =

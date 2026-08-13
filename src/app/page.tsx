@@ -8,25 +8,25 @@ import { MarketingHomepage } from "./marketing-homepage";
 
 // Driven by NEXTAUTH_URL rather than hardcoded, so a future domain change is
 // a one-line env var update, not a code hunt across meta tags.
-const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
+const SITE_URL = process.env.NEXTAUTH_URL ?? "https://anadash.com";
 
 export const metadata: Metadata = {
-  title: "SellerSalt — Real-Time Etsy Competitor Intelligence & Product Sourcing Tool",
+  title: "Anadash — Real-Time Etsy Competitor Intelligence & Product Sourcing Tool",
   description:
-    "SellerSalt helps global Etsy sellers, dropshippers, and e-commerce exporters find winning products using real lifetime sales data. Zero setup, no Etsy API key required.",
+    "Anadash helps global Etsy sellers, dropshippers, and e-commerce exporters find winning products using real lifetime sales data. Zero setup, no Etsy API key required.",
   keywords:
     "Etsy product research, Etsy competitor spy tool, Etsy market analysis, dropshipping product finder, Etsy sales tracker, e-commerce sourcing Pakistan US EU",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "SellerSalt — Etsy Competitor Intelligence & Sourcing",
+    title: "Anadash — Etsy Competitor Intelligence & Sourcing",
     description:
       "Uncover verified Etsy shop sales, daily listing trends, and low-competition product niches. No API key required.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SellerSalt — Etsy Sourcing Intelligence",
+    title: "Anadash — Etsy Sourcing Intelligence",
     description: "Real sales data for Etsy sellers and exporters. Track shops daily and spot winning niches.",
   },
 };
@@ -36,7 +36,7 @@ const JSON_LD = {
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      name: "SellerSalt",
+      name: "Anadash",
       operatingSystem: "Web-based",
       applicationCategory: "BusinessApplication",
       offers: { "@type": "AggregateOffer", priceCurrency: "USD", lowPrice: "0", highPrice: "199", offerCount: "3" },
@@ -47,13 +47,13 @@ const JSON_LD = {
       mainEntity: [
         {
           "@type": "Question",
-          name: "Do I need my own Etsy API key to use SellerSalt?",
-          acceptedAnswer: { "@type": "Answer", text: "No. SellerSalt works out of the box. You do not need to apply for or configure your own Etsy API key." },
+          name: "Do I need my own Etsy API key to use Anadash?",
+          acceptedAnswer: { "@type": "Answer", text: "No. Anadash works out of the box. You do not need to apply for or configure your own Etsy API key." },
         },
         {
           "@type": "Question",
-          name: "Is the sales data on SellerSalt real or estimated?",
-          acceptedAnswer: { "@type": "Answer", text: "SellerSalt provides verified lifetime sales data directly from Etsy shop sources and daily automated tracking, avoiding speculative keyword estimation algorithms." },
+          name: "Is the sales data on Anadash real or estimated?",
+          acceptedAnswer: { "@type": "Answer", text: "Anadash provides verified lifetime sales data directly from Etsy shop sources and daily automated tracking, avoiding speculative keyword estimation algorithms." },
         },
       ],
     },
@@ -68,7 +68,7 @@ export default async function RootPage() {
 
   await ensureDefaultPackages();
   const packages = await prisma.package.findMany({
-    where: { key: { in: ["FREE", "PRO", "AGENCY"] } },
+    where: { key: { in: ["STARTED", "PRO", "AGENCY"] } },
     select: {
       key: true,
       name: true,
@@ -77,6 +77,8 @@ export default async function RootPage() {
       maxSearchConfigs: true,
       maxTrackedShops: true,
       maxProspectsPerMonth: true,
+      trialDays: true,
+      trialPriceUsd: true,
     },
   });
 

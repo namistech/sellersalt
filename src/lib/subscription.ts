@@ -40,9 +40,9 @@ export async function upsertSubscription(params: {
   if (grantsAccess) {
     await prisma.organization.update({ where: { id: params.organizationId }, data: { packageId: params.packageId } });
   } else {
-    const free = await prisma.package.findUnique({ where: { key: "FREE" } });
-    if (free) {
-      await prisma.organization.update({ where: { id: params.organizationId }, data: { packageId: free.id } });
+    const started = await prisma.package.findUnique({ where: { key: "STARTED" } });
+    if (started) {
+      await prisma.organization.update({ where: { id: params.organizationId }, data: { packageId: started.id } });
     }
   }
 

@@ -22,18 +22,35 @@ export async function getOrCreatePaypalPlan(packageId: string): Promise<string |
     productId = productRes.data.id;
   }
 
+  const hasTrial = Boolean(pkg.trialDays && pkg.trialPriceUsd !== null && pkg.trialPriceUsd !== undefined);
+
+  // PayPal supports multiple sequential billing cycles on one Plan — a
+  // TRIAL tenure cycle first (real charge, not $0, per the founder's
+  // decision to charge a genuine trial fee rather than a $0 hold), then an
+  // infinite REGULAR cycle at the full price once the trial cycle completes.
+  const billingCycles: any[] = [];
+  let sequence = 1;
+  if (hasTrial) {
+    billingCycles.push({
+      frequency: { interval_unit: "DAY", interval_count: pkg.trialDays },
+      tenure_type: "TRIAL",
+      sequence: sequence++,
+      total_cycles: 1,
+      pricing_scheme: { fixed_price: { value: (pkg.trialPriceUsd as number).toFixed(2), currency_code: "USD" } },
+    });
+  }
+  billingCycles.push({
+    frequency: { interval_unit: "MONTH", interval_count: 1 },
+    tenure_type: "REGULAR",
+    sequence: sequence,
+    total_cycles: 0,
+    pricing_scheme: { fixed_price: { value: pkg.priceUsd.toFixed(2), currency_code: "USD" } },
+  });
+
   const planRes = await c.post("/v1/billing/plans", {
     product_id: productId,
     name: `SellerSalt ${pkg.name}`,
-    billing_cycles: [
-      {
-        frequency: { interval_unit: "MONTH", interval_count: 1 },
-        tenure_type: "REGULAR",
-        sequence: 1,
-        total_cycles: 0,
-        pricing_scheme: { fixed_price: { value: pkg.priceUsd.toFixed(2), currency_code: "USD" } },
-      },
-    ],
+    billing_cycles: billingCycles,
     payment_preferences: { auto_bill_outstanding: true, payment_failure_threshold: 3 },
   });
 

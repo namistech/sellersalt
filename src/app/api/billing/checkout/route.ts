@@ -39,24 +39,45 @@ export async function POST(req: Request) {
       customerId = customer.id;
     }
 
+    const hasTrial = Boolean(pkg.trialDays && pkg.trialPriceUsd !== null && pkg.trialPriceUsd !== undefined);
+
+    // Stripe's native trial_period_days charges $0 during the trial — that's
+    // not what we want. Instead: a one-time line item charges the real
+    // trial fee immediately, and the recurring subscription price is
+    // deferred via trial_period_days so its first real charge lands when
+    // the trial ends. Together these produce "$1 now, full price later."
+    const lineItems: any[] = [];
+    if (hasTrial) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: { name: `SellerSalt — ${pkg.name} (${pkg.trialDays}-day trial)` },
+          unit_amount: Math.round((pkg.trialPriceUsd as number) * 100),
+        },
+        quantity: 1,
+      });
+    }
+    lineItems.push({
+      price_data: {
+        currency: "usd",
+        product_data: { name: `SellerSalt — ${pkg.name}` },
+        unit_amount: Math.round(pkg.priceUsd * 100),
+        recurring: { interval: "month" },
+      },
+      quantity: 1,
+    });
+
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: `SellerSalt — ${pkg.name}` },
-            unit_amount: Math.round(pkg.priceUsd * 100),
-            recurring: { interval: "month" },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       success_url: `${appUrl()}/settings/billing?checkout=success`,
       cancel_url: `${appUrl()}/settings/billing?checkout=cancelled`,
       metadata: { organizationId, packageId: pkg.id },
-      subscription_data: { metadata: { organizationId, packageId: pkg.id } },
+      subscription_data: {
+        metadata: { organizationId, packageId: pkg.id },
+        trial_period_days: hasTrial ? pkg.trialDays! : undefined,
+      },
     });
 
     return NextResponse.json({ url: checkoutSession.url });
