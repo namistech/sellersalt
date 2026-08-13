@@ -292,6 +292,14 @@ model Package {
   paypalProductId String?
   paypalPlanId    String?
 
+  // Trial billing — all current plans use a small immediate charge (not
+  // $0) as both a card-verification step and genuine trial fee, then
+  // convert to the full recurring price automatically when the trial ends.
+  // Nullable because not every package needs to be trial-gated (e.g. a
+  // future promotional or invite-only tier might skip this).
+  trialDays     Int?
+  trialPriceUsd Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -318,6 +326,11 @@ model PaymentProvider {
   mode     PaymentProviderMode @default(SANDBOX)
   encryptedLiveCredentials    String?
   encryptedSandboxCredentials String?
+  // Lower number = shown first / treated as default. Only meaningful among
+  // active providers — the lowest-priority active one is the "recommended"
+  // option on the Billing page, others show as secondary alternatives in
+  // ascending priority order.
+  priority Int @default(100)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
