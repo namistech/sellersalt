@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getStripeClient } from "@/lib/payment-providers/stripe-client";
 import { getPaypalContext, paypalClient } from "@/lib/payment-providers/paypal-client";
-import { getOrCreatePaypalPlan } from "@/lib/payment-providers/paypal-plans";
+import { getOrCreatePaypalPlan, createDiscountedPaypalPlan } from "@/lib/payment-providers/paypal-plans";
+import { validateCoupon, applyCouponDiscount, redeemCoupon } from "@/lib/coupons";
 
 function appUrl(): string {
   const url = process.env.NEXTAUTH_URL;
@@ -17,10 +18,23 @@ export async function POST(req: Request) {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { packageKey, provider } = (await req.json()) as { packageKey: string; provider: "STRIPE" | "PAYPAL" };
+  const { packageKey, provider, couponCode } = (await req.json()) as {
+    packageKey: string;
+    provider: "STRIPE" | "PAYPAL";
+    couponCode?: string;
+  };
   const pkg = await prisma.package.findUnique({ where: { key: packageKey } });
   if (!pkg) return NextResponse.json({ error: "Package not found." }, { status: 404 });
   if (pkg.priceUsd <= 0) return NextResponse.json({ error: "This package doesn't require checkout." }, { status: 400 });
+
+  let couponId: string | null = null;
+  let prices = { trialPriceUsd: pkg.trialPriceUsd, priceUsd: pkg.priceUsd };
+  if (couponCode) {
+    const result = await validateCoupon(couponCode);
+    if ("error" in result) return NextResponse.json({ error: result.error }, { status: 400 });
+    couponId = result.coupon.id;
+    prices = applyCouponDiscount(pkg, result.coupon);
+  }
 
   const org = await prisma.organization.findUniqueOrThrow({ where: { id: organizationId } });
   const existingSub = await prisma.subscription.findUnique({ where: { organizationId } });
@@ -39,7 +53,7 @@ export async function POST(req: Request) {
       customerId = customer.id;
     }
 
-    const hasTrial = Boolean(pkg.trialDays && pkg.trialPriceUsd !== null && pkg.trialPriceUsd !== undefined);
+    const hasTrial = Boolean(pkg.trialDays && prices.trialPriceUsd !== null && prices.trialPriceUsd !== undefined);
 
     // Stripe's native trial_period_days charges $0 during the trial — that's
     // not what we want. Instead: a one-time line item charges the real
@@ -52,7 +66,7 @@ export async function POST(req: Request) {
         price_data: {
           currency: "usd",
           product_data: { name: `SellerSalt — ${pkg.name} (${pkg.trialDays}-day trial)` },
-          unit_amount: Math.round((pkg.trialPriceUsd as number) * 100),
+          unit_amount: Math.round((prices.trialPriceUsd as number) * 100),
         },
         quantity: 1,
       });
@@ -61,7 +75,7 @@ export async function POST(req: Request) {
       price_data: {
         currency: "usd",
         product_data: { name: `SellerSalt — ${pkg.name}` },
-        unit_amount: Math.round(pkg.priceUsd * 100),
+        unit_amount: Math.round(prices.priceUsd * 100),
         recurring: { interval: "month" },
       },
       quantity: 1,
@@ -80,6 +94,7 @@ export async function POST(req: Request) {
       },
     });
 
+    if (couponId) await redeemCoupon(couponId);
     return NextResponse.json({ url: checkoutSession.url });
   }
 
@@ -87,7 +102,9 @@ export async function POST(req: Request) {
     const ctx = await getPaypalContext();
     if (!ctx) return NextResponse.json({ error: "PayPal isn't configured yet." }, { status: 400 });
 
-    const planId = await getOrCreatePaypalPlan(pkg.id);
+    const planId = couponId
+      ? await createDiscountedPaypalPlan(pkg.id, prices)
+      : await getOrCreatePaypalPlan(pkg.id);
     if (!planId) return NextResponse.json({ error: "Couldn't set up PayPal plan." }, { status: 500 });
 
     const c = paypalClient(ctx);
@@ -105,6 +122,7 @@ export async function POST(req: Request) {
     const approveLink = subRes.data.links?.find((l: any) => l.rel === "approve")?.href;
     if (!approveLink) return NextResponse.json({ error: "PayPal didn't return an approval link." }, { status: 500 });
 
+    if (couponId) await redeemCoupon(couponId);
     return NextResponse.json({ url: approveLink });
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/send-email";
 
 // One signup = one User + one Organization + one OWNER Membership.
 // This is the "single org per user today, schema ready for more" pattern:
@@ -38,6 +39,14 @@ export async function POST(req: Request) {
       },
     },
   });
+
+  // Non-blocking — degrades gracefully like every other transactional email
+  // in this app if SMTP isn't configured, never fails the signup itself.
+  sendEmail({
+    to: normalizedEmail,
+    subject: "Welcome to SellerSalt",
+    html: `<p>Hi${name ? ` ${name}` : ""},</p><p>Your SellerSalt account is ready. One step left — pick a plan to activate your workspace.</p>`,
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true });
 }

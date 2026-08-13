@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { AuthLayout } from "../auth-layout";
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get("plan");
   const [form, setForm] = useState({ name: "", organizationName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export default function SignupPage() {
       setError("Account created, but sign-in failed. Try signing in manually.");
       return;
     }
-    router.push("/dashboard");
+    router.push(planParam ? `/checkout?plan=${encodeURIComponent(planParam)}` : "/checkout");
     router.refresh();
   }
 
