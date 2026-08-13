@@ -30,13 +30,6 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: "Your stores",
-    items: [
-      { href: "/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/settings/channels", label: "Connected stores", icon: Store },
-    ],
-  },
-  {
     label: "Workspace",
     items: [
       { href: "/connectors", label: "Connectors", icon: Plug },
@@ -46,11 +39,22 @@ const NAV_GROUPS = [
   },
 ];
 
+// Shopify/WooCommerce/cross-listing work is admin-only for now — MVP is
+// staying Etsy-focused for customers. Kept in the codebase, just not
+// surfaced, so this is additive to re-enable later rather than a rebuild.
+const ADMIN_ONLY_GROUP = {
+  label: "Your stores (admin)",
+  items: [
+    { href: "/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/settings/channels", label: "Connected stores", icon: Store },
+  ],
+};
+
 export function Sidebar({ organizationName, isAdmin }: { organizationName?: string | null; isAdmin?: boolean }) {
   const pathname = usePathname();
 
   const groups = isAdmin
-    ? [...NAV_GROUPS, { label: "Admin", items: [{ href: "/admin", label: "Packages", icon: ShieldCheck }] }]
+    ? [...NAV_GROUPS, ADMIN_ONLY_GROUP, { label: "Admin", items: [{ href: "/admin", label: "Packages", icon: ShieldCheck }] }]
     : NAV_GROUPS;
 
   return (

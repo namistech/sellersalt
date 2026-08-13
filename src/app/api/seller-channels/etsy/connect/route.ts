@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import crypto from "node:crypto";
 import { authOptions } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/is-admin";
 import { checkLimit } from "@/lib/plan-limits";
 import { createConnectToken } from "@/lib/store-connect-token";
 import { getSetting } from "@/lib/app-settings";
@@ -22,6 +23,7 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.redirect(new URL("/login", appUrl()));
+  if (!isAdminEmail(session?.user?.email)) return NextResponse.redirect(new URL("/dashboard", appUrl()));
 
   const limitCheck = await checkLimit(organizationId, "sellerChannels");
   if (!limitCheck.allowed) {

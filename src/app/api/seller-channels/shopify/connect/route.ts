@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/is-admin";
 import { checkLimit } from "@/lib/plan-limits";
 import { createConnectToken } from "@/lib/store-connect-token";
 import { getSetting } from "@/lib/app-settings";
@@ -20,6 +21,7 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.redirect(new URL("/login", appUrl()));
+  if (!isAdminEmail(session?.user?.email)) return NextResponse.redirect(new URL("/dashboard", appUrl()));
 
   const url = new URL(req.url);
   const shopInput = url.searchParams.get("shop");

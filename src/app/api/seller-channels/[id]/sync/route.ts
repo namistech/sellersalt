@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { syncSellerChannel } from "@/lib/sync-seller-channel";
+import { requireAdminOrg } from "@/lib/require-admin-org";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  const organizationId = (session?.user as any)?.organizationId as string | undefined;
+  const organizationId = await requireAdminOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const channel = await prisma.sellerChannel.findFirst({ where: { id, organizationId } });

@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { checkLimit } from "@/lib/plan-limits";
 import { startSellerChannelSync } from "@/lib/queue";
-
-async function requireOrg() {
-  const session = await getServerSession(authOptions);
-  return (session?.user as any)?.organizationId as string | undefined;
-}
+import { requireAdminOrg } from "@/lib/require-admin-org";
 
 export async function GET() {
-  const organizationId = await requireOrg();
+  const organizationId = await requireAdminOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const channels = await prisma.sellerChannel.findMany({
@@ -28,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const organizationId = await requireOrg();
+  const organizationId = await requireAdminOrg();
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const limitCheck = await checkLimit(organizationId, "sellerChannels");
