@@ -1,5 +1,5 @@
 {
-  "name": "sellersalt",
+  "name": "anadash",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -26,7 +26,8 @@
     "p-queue": "^8.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "stripe": "^22.5.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

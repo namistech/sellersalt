@@ -2,8 +2,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getOrgPackage, checkLimit } from "@/lib/plan-limits";
+import { CheckoutButtons } from "./checkout-buttons";
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const { checkout } = await searchParams;
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return null;
@@ -20,6 +26,10 @@ export default async function BillingPage() {
       prisma.paymentProvider.findMany({ where: { isActive: true }, select: { provider: true, label: true } }),
     ]);
 
+  const checkoutCapableProviders = activeProviders
+    .map((p: (typeof activeProviders)[number]) => p.provider)
+    .filter((p: string) => p === "STRIPE" || p === "PAYPAL");
+
   const usageRows = [
     { label: "Connectors", ...connectors },
     { label: "Saved searches", ...searchConfigs },
@@ -32,10 +42,22 @@ export default async function BillingPage() {
     <div>
       <header className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Billing</h1>
-        <p className="mt-1 text-sm text-muted">
-          Self-serve payment isn't wired up yet — upgrades go through us directly for now.
-        </p>
+        <p className="mt-1 text-sm text-muted">Manage your plan and payment method.</p>
       </header>
+
+      {checkout === "success" && (
+        <div className="mb-6 card border-success">
+          <p className="text-sm text-ink">
+            Payment received — your plan updates automatically within a few seconds once the payment
+            provider confirms it (webhook-driven, not instant on this page load).
+          </p>
+        </div>
+      )}
+      {checkout === "cancelled" && (
+        <div className="mb-6 card">
+          <p className="text-sm text-muted">Checkout was cancelled — no charge was made.</p>
+        </div>
+      )}
 
       {activeProviders.length > 0 && (
         <div className="mb-6 flex items-center gap-2 text-xs text-muted">
@@ -99,12 +121,13 @@ export default async function BillingPage() {
                   Current plan
                 </button>
               ) : (
-                <a
-                  href={`mailto:hello@netdrix.com?subject=Upgrade to ${pkg.name}&body=I'd like to upgrade my SellerSalt workspace to the ${pkg.name} plan.`}
-                  className="btn-primary block w-full text-center"
-                >
-                  {pkg.priceUsd > currentPackage.priceUsd ? "Upgrade" : "Switch"} to {pkg.name}
-                </a>
+                <CheckoutButtons
+                  packageKey={pkg.key}
+                  packageName={pkg.name}
+                  currentPackageName={currentPackage.name}
+                  isUpgrade={pkg.priceUsd > currentPackage.priceUsd}
+                  availableProviders={checkoutCapableProviders}
+                />
               )}
             </div>
           );

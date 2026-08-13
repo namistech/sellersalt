@@ -31,6 +31,7 @@ model Organization {
   invites     Invite[]
   sellerChannels SellerChannel[]
   crossListings CrossListing[]
+  subscription Subscription?
 }
 
 enum Plan {
@@ -284,10 +285,18 @@ model Package {
   maxProspectsPerMonth Int @default(200)
   maxSellerChannels    Int @default(2)
 
+  // Cached after first PayPal checkout for this package — PayPal requires a
+  // pre-created Plan resource, unlike Stripe's fully dynamic inline pricing.
+  // Created lazily rather than requiring manual PayPal dashboard setup per
+  // package, so DB-edited pricing stays the single source of truth.
+  paypalProductId String?
+  paypalPlanId    String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   organizations Organization[]
+  subscriptions Subscription[]
 }
 
 // ---------- Payment providers ----------
@@ -302,10 +311,21 @@ model PaymentProvider {
   provider PaymentProviderType @unique
   label    String
   isActive Boolean             @default(false)
-  encryptedCredentials String
+  // Mode is which credential set is currently used for real calls — separate
+  // from isActive (whether the provider is enabled at all). Both credential
+  // sets can be stored simultaneously so switching modes for testing doesn't
+  // require re-entering keys every time.
+  mode     PaymentProviderMode @default(SANDBOX)
+  encryptedLiveCredentials    String?
+  encryptedSandboxCredentials String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum PaymentProviderMode {
+  LIVE
+  SANDBOX
 }
 
 enum PaymentProviderType {
@@ -313,6 +333,52 @@ enum PaymentProviderType {
   PAYPAL
   SAFEPAY
   PAYFAST
+}
+
+// ---------- Subscriptions ----------
+// One row per org's current subscription state. Driven by webhooks, not by
+// the initial checkout response — renewals, failures, and cancellations all
+// happen asynchronously and must be reflected here for Organization.packageId
+// to stay correct.
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String             @unique
+  packageId            String
+  provider             PaymentProviderType
+  providerCustomerId   String?
+  providerSubscriptionId String?          @unique
+  status               SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  package      Package      @relation(fields: [packageId], references: [id])
+
+  @@index([organizationId])
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+// Idempotency log — every provider can retry-deliver the same webhook event.
+// Without recording which externalEventId we've already processed, a retried
+// "payment succeeded" event could double-process a subscription activation.
+model PaymentWebhookEvent {
+  id             String   @id @default(cuid())
+  provider       PaymentProviderType
+  externalEventId String
+  type           String
+  processedAt    DateTime @default(now())
+
+  @@unique([provider, externalEventId])
 }
 
 // ---------- Email (SMTP) ----------

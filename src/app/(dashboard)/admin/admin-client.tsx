@@ -50,7 +50,9 @@ interface PaymentProviderRow {
   provider: string;
   label: string;
   isActive: boolean;
-  hasCredentials: boolean;
+  mode: "LIVE" | "SANDBOX";
+  hasLiveCredentials: boolean;
+  hasSandboxCredentials: boolean;
   updatedAt: string;
 }
 
@@ -65,9 +67,9 @@ const PAYMENT_PROVIDERS: Array<{
     name: "Stripe",
     region: "International",
     fields: [
-      { key: "secretKey", label: "Secret key", placeholder: "sk_live_..." },
-      { key: "publishableKey", label: "Publishable key", placeholder: "pk_live_..." },
-      { key: "webhookSecret", label: "Webhook signing secret", placeholder: "whsec_..." },
+      { key: "secretKey", label: "Secret key" },
+      { key: "publishableKey", label: "Publishable key" },
+      { key: "webhookSecret", label: "Webhook signing secret" },
     ],
   },
   {
@@ -77,7 +79,7 @@ const PAYMENT_PROVIDERS: Array<{
     fields: [
       { key: "clientId", label: "Client ID" },
       { key: "clientSecret", label: "Client secret" },
-      { key: "mode", label: "Mode (sandbox / live)", placeholder: "live" },
+      { key: "webhookId", label: "Webhook ID" },
     ],
   },
   {
@@ -87,7 +89,6 @@ const PAYMENT_PROVIDERS: Array<{
     fields: [
       { key: "apiKey", label: "API key" },
       { key: "secretKey", label: "Secret key" },
-      { key: "environment", label: "Environment (sandbox / production)", placeholder: "production" },
     ],
   },
   {
@@ -124,17 +125,18 @@ export function AdminPackagesClient() {
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [platformConnectors, setPlatformConnectors] = useState<PlatformConnector[]>([]);
   const [showConnectorForm, setShowConnectorForm] = useState(false);
-  const [connectorForm, setConnectorForm] = useState({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
+  const [connectorForm, setConnectorForm] = useState({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
   const [connectorError, setConnectorError] = useState<string | null>(null);
   const [connectorSaving, setConnectorSaving] = useState(false);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [editingCredMode, setEditingCredMode] = useState<"LIVE" | "SANDBOX">("SANDBOX");
   const [providerCreds, setProviderCreds] = useState<Record<string, string>>({});
   const [providerSaving, setProviderSaving] = useState(false);
   const [providerError, setProviderError] = useState<string | null>(null);
   const [emailSettings, setEmailSettings] = useState<EmailSettingsData | null>(null);
   const [emailForm, setEmailForm] = useState({
-    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "SellerSalt", isActive: false,
+    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "Anadash", isActive: false,
   });
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -237,7 +239,7 @@ export function AdminPackagesClient() {
       return;
     }
     setShowConnectorForm(false);
-    setConnectorForm({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
+    setConnectorForm({ label: "Anadash Etsy", apiKey: "", sharedSecret: "" });
     loadAll();
   }
 
@@ -247,8 +249,9 @@ export function AdminPackagesClient() {
     loadAll();
   }
 
-  function startEditProvider(providerKey: string) {
+  function startEditProvider(providerKey: string, credMode: "LIVE" | "SANDBOX") {
     setEditingProvider(providerKey);
+    setEditingCredMode(credMode);
     setProviderCreds({});
     setProviderError(null);
   }
@@ -259,7 +262,7 @@ export function AdminPackagesClient() {
     const res = await fetch("/api/admin/payment-providers", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: providerKey, label, credentials: providerCreds, isActive: true }),
+      body: JSON.stringify({ provider: providerKey, label, credentials: providerCreds, credentialMode: editingCredMode }),
     });
     const data = await res.json();
     setProviderSaving(false);
@@ -276,6 +279,16 @@ export function AdminPackagesClient() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: next }),
+    });
+    loadAll();
+  }
+
+  async function handleSwitchMode(id: string, nextMode: "LIVE" | "SANDBOX") {
+    if (nextMode === "LIVE" && !confirm("Switch to LIVE mode? Real charges will process with real money from this point on.")) return;
+    await fetch(`/api/admin/payment-providers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: nextMode }),
     });
     loadAll();
   }
@@ -466,8 +479,9 @@ export function AdminPackagesClient() {
         <div className="mb-4">
           <h2 className="text-sm font-semibold text-ink">Payment providers</h2>
           <p className="text-xs text-muted">
-            Credentials are stored encrypted. Adding one here doesn't turn on live checkout yet —
-            that's a separate build per provider — but it's saved and ready the moment it is.
+            Credentials are stored encrypted, separately for sandbox and live — switch modes anytime
+            without re-entering keys. Stripe and PayPal power real checkout once active; Safepay and
+            PayFast are credential storage only for now.
           </p>
         </div>
 
@@ -475,6 +489,7 @@ export function AdminPackagesClient() {
           {PAYMENT_PROVIDERS.map((pp) => {
             const existing = paymentProviders.find((row) => row.provider === pp.key);
             const isEditing = editingProvider === pp.key;
+            const currentMode = existing?.mode ?? "SANDBOX";
             return (
               <div key={pp.key} className="rounded-md border border-line p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -482,22 +497,43 @@ export function AdminPackagesClient() {
                     <div className="text-sm font-medium text-ink">{pp.name}</div>
                     <div className="text-xs text-muted">{pp.region}</div>
                   </div>
-                  {existing?.hasCredentials ? (
-                    <span className={`badge ${existing.isActive ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
-                      {existing.isActive ? "Active" : "Saved, inactive"}
-                    </span>
-                  ) : (
-                    <span className="badge bg-gray-100 text-muted">Not configured</span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {existing && (
+                      <span className={`badge ${currentMode === "LIVE" ? "bg-red-50 text-danger" : "bg-amber-50 text-amber-700"}`}>
+                        {currentMode === "LIVE" ? "LIVE" : "Sandbox"}
+                      </span>
+                    )}
+                    {existing?.isActive ? (
+                      <span className="badge bg-green-50 text-success">Active</span>
+                    ) : (
+                      <span className="badge bg-gray-100 text-muted">Inactive</span>
+                    )}
+                  </div>
                 </div>
 
                 {isEditing ? (
                   <div className="space-y-2">
+                    <div className="mb-1 flex rounded-md border border-line p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setEditingCredMode("SANDBOX")}
+                        className={`flex-1 rounded py-1 ${editingCredMode === "SANDBOX" ? "bg-amber-50 font-medium text-amber-700" : "text-muted"}`}
+                      >
+                        Sandbox keys
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCredMode("LIVE")}
+                        className={`flex-1 rounded py-1 ${editingCredMode === "LIVE" ? "bg-red-50 font-medium text-danger" : "text-muted"}`}
+                      >
+                        Live keys
+                      </button>
+                    </div>
                     {pp.fields.map((f) => (
                       <input
                         key={f.key}
                         className="input"
-                        placeholder={f.placeholder ?? f.label}
+                        placeholder={f.label}
                         value={providerCreds[f.key] ?? ""}
                         onChange={(e) => setProviderCreds({ ...providerCreds, [f.key]: e.target.value })}
                       />
@@ -509,7 +545,7 @@ export function AdminPackagesClient() {
                         disabled={providerSaving}
                         className="btn-primary !py-1.5 !px-3 text-xs"
                       >
-                        {providerSaving ? "Saving…" : "Save"}
+                        {providerSaving ? "Saving…" : `Save ${editingCredMode === "LIVE" ? "live" : "sandbox"} keys`}
                       </button>
                       <button onClick={() => setEditingProvider(null)} className="btn-secondary !py-1.5 !px-3 text-xs">
                         Cancel
@@ -517,28 +553,49 @@ export function AdminPackagesClient() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => startEditProvider(pp.key)} className="text-sm text-accent hover:underline">
-                      {existing?.hasCredentials ? "Update credentials" : "Add credentials"}
-                    </button>
-                    {existing?.hasCredentials && (
-                      <>
-                        <span className="text-line">·</span>
-                        <button
-                          onClick={() => handleToggleProvider(existing.id, !existing.isActive)}
-                          className="text-sm text-muted hover:text-ink"
-                        >
-                          {existing.isActive ? "Deactivate" : "Activate"}
-                        </button>
-                        <span className="text-line">·</span>
-                        <button
-                          onClick={() => handleRemoveProvider(existing.id)}
-                          className="text-sm text-muted hover:text-danger"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={existing?.hasSandboxCredentials ? "text-success" : "text-muted"}>
+                        {existing?.hasSandboxCredentials ? "✓" : "—"} Sandbox
+                      </span>
+                      <span className={existing?.hasLiveCredentials ? "text-success" : "text-muted"}>
+                        {existing?.hasLiveCredentials ? "✓" : "—"} Live
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button onClick={() => startEditProvider(pp.key, "SANDBOX")} className="text-sm text-accent hover:underline">
+                        {existing?.hasSandboxCredentials ? "Update sandbox" : "Add sandbox"}
+                      </button>
+                      <span className="text-line">·</span>
+                      <button onClick={() => startEditProvider(pp.key, "LIVE")} className="text-sm text-accent hover:underline">
+                        {existing?.hasLiveCredentials ? "Update live" : "Add live"}
+                      </button>
+                      {existing && (
+                        <>
+                          <span className="text-line">·</span>
+                          <button
+                            onClick={() => handleSwitchMode(existing.id, currentMode === "LIVE" ? "SANDBOX" : "LIVE")}
+                            className="text-sm text-muted hover:text-ink"
+                          >
+                            Switch to {currentMode === "LIVE" ? "sandbox" : "live"}
+                          </button>
+                          <span className="text-line">·</span>
+                          <button
+                            onClick={() => handleToggleProvider(existing.id, !existing.isActive)}
+                            className="text-sm text-muted hover:text-ink"
+                          >
+                            {existing.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          <span className="text-line">·</span>
+                          <button
+                            onClick={() => handleRemoveProvider(existing.id)}
+                            className="text-sm text-muted hover:text-danger"
+                          >
+                            Remove
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
