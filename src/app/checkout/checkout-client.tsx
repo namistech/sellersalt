@@ -49,6 +49,7 @@ export function CheckoutClient({
   const [selectedKey, setSelectedKey] = useState(preselectedKey);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutOpened, setCheckoutOpened] = useState(false);
 
   // Coupon state
   const [couponInput, setCouponInput] = useState("");
@@ -169,9 +170,16 @@ export function CheckoutClient({
         setLoadingProvider(null);
         return;
       }
-      window.location.href = data.url;
+      const win = window.open(data.url, "_blank", "noopener,noreferrer");
+      if (!win) {
+        // Popup blocked — fall back to same-tab navigation so checkout still completes.
+        window.location.href = data.url;
+        return;
+      }
+      setCheckoutOpened(true);
     } catch {
       setError("Network error starting checkout. Please try again.");
+    } finally {
       setLoadingProvider(null);
     }
   }
@@ -627,6 +635,11 @@ export function CheckoutClient({
                       </Button>
                     ))}
 
+                    {checkoutOpened && (
+                      <Alert variant="success">
+                        Checkout opened in a new tab. Complete your payment there — you can return to this page once it's confirmed.
+                      </Alert>
+                    )}
                     {error && <Alert variant="danger">{error}</Alert>}
                   </div>
                 ) : (

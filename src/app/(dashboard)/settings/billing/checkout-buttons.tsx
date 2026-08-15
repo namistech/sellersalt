@@ -18,9 +18,11 @@ export function CheckoutButtons({
 }) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openedProvider, setOpenedProvider] = useState<string | null>(null);
 
   async function handleCheckout(provider: "STRIPE" | "PAYPAL" | "SAFEPAY" | "PAYFAST") {
     setError(null);
+    setOpenedProvider(null);
     setLoadingProvider(provider);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -34,9 +36,16 @@ export function CheckoutButtons({
         setLoadingProvider(null);
         return;
       }
-      window.location.href = data.url;
+      const win = window.open(data.url, "_blank", "noopener,noreferrer");
+      if (!win) {
+        // Popup blocked — fall back to same-tab navigation so checkout still completes.
+        window.location.href = data.url;
+        return;
+      }
+      setOpenedProvider(provider);
     } catch {
       setError("Network error starting checkout.");
+    } finally {
       setLoadingProvider(null);
     }
   }
@@ -104,6 +113,11 @@ export function CheckoutButtons({
         >
           Pay with GoPayFast
         </Button>
+      )}
+      {openedProvider && (
+        <Alert variant="success">
+          Checkout opened in a new tab. Complete your payment there — this page will update automatically once it's confirmed.
+        </Alert>
       )}
       {error && <Alert variant="danger">{error}</Alert>}
     </div>

@@ -65,6 +65,14 @@ export function ChannelsClient() {
 
   useEffect(() => {
     loadChannels();
+    function handleFocus() {
+      loadChannels();
+    }
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("connected")) {
       setBannerMessage({ text: "Etsy shop connected successfully! Your shop data will begin syncing automatically.", variant: "success" });
@@ -82,7 +90,21 @@ export function ChannelsClient() {
 
   function handleConnectEtsy() {
     setConnecting(true);
-    window.location.href = "/api/seller-channels/etsy/connect";
+    const win = window.open(
+      "/api/seller-channels/etsy/connect",
+      "etsy-connect",
+      "width=620,height=760,noopener,noreferrer"
+    );
+    if (!win) {
+      // Popup blocked — fall back to same-tab navigation so connection still completes.
+      window.location.href = "/api/seller-channels/etsy/connect";
+      return;
+    }
+    setBannerMessage({
+      text: "Etsy authorization opened in a new tab. Approve access there, then return here — this list refreshes automatically.",
+      variant: "success",
+    });
+    setConnecting(false);
   }
 
   async function handleSync(id: string) {
