@@ -16,11 +16,13 @@ import {
   Trash2,
   Flame,
   TrendingUp,
+  ArrowRight,
+  Compass,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui";
 import type { AssistantMessage } from "@/services/assistant/types";
 
-const SUGGESTED_CHIPS = [
+const SUGGESTED_QUERIES = [
   "What are my best opportunities today?",
   "What changed since yesterday?",
   "Show me emerging winners.",
@@ -40,6 +42,7 @@ export function FloatingAssistant() {
   const [assistantName, setAssistantName] = useState("SaltBot");
   const [inputQuery, setInputQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<AssistantMessage[]>([
@@ -47,7 +50,7 @@ export function FloatingAssistant() {
       id: "initial_1",
       sender: "assistant",
       intent: "HELP",
-      text: "Hi! I am SaltBot, your Etsy Intelligence Copilot. I can scan your market opportunities, audit competitor sales velocity, and prioritize today's research agenda.",
+      text: "Hi! I am SaltBot, your Etsy Intelligence Copilot. Ask me anything about your niche research, competitor sales velocity, or select a priority research action below.",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -81,6 +84,7 @@ export function FloatingAssistant() {
 
     setMessages((prev) => [...prev, userMsg]);
     setInputQuery("");
+    setShowSuggestions(false);
     setLoading(true);
 
     try {
@@ -98,6 +102,17 @@ export function FloatingAssistant() {
       const data = await res.json();
       if (data.message) {
         setMessages((prev) => [...prev, data.message]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `err_${Date.now()}`,
+            sender: "assistant",
+            intent: "HELP",
+            text: "I ran into a temporary hiccup analyzing that request. Please try again or rephrase.",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
       }
     } catch {
       setMessages((prev) => [
@@ -106,7 +121,7 @@ export function FloatingAssistant() {
           id: `err_${Date.now()}`,
           sender: "assistant",
           intent: "HELP",
-          text: "Could not reach the research assistant service. Please verify your connection.",
+          text: "Network error connecting to SaltBot engine.",
           timestamp: new Date().toISOString(),
         },
       ]);
@@ -121,10 +136,11 @@ export function FloatingAssistant() {
         id: `initial_${Date.now()}`,
         sender: "assistant",
         intent: "HELP",
-        text: `Chat reset. What would you like to investigate today on Etsy?`,
+        text: "Conversation cleared. What would you like to research next on Etsy?",
         timestamp: new Date().toISOString(),
       },
     ]);
+    setShowSuggestions(true);
   }
 
   return (
@@ -141,7 +157,7 @@ export function FloatingAssistant() {
           title={`Open ${assistantName} Copilot`}
         >
           <div className="relative">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020]">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020] shadow-sm">
               <Sparkles className="h-3.5 w-3.5 animate-pulse" />
             </span>
             <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
@@ -179,7 +195,7 @@ export function FloatingAssistant() {
                 </div>
                 <div className="text-[10px] text-[#AEB4AC] flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D] inline-block" />
-                  <span>Deterministic Engine + AI Multi-LLM</span>
+                  <span>Deterministic Engine + AI Fallback</span>
                 </div>
               </div>
             </div>
@@ -244,42 +260,40 @@ export function FloatingAssistant() {
                       className={`flex gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}
                     >
                       {!isUser && (
-                        <div className="h-7 w-7 rounded-full bg-[#141B16] text-[#0E8F5D] flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="h-7 w-7 rounded-full bg-[#141B16] text-[#0E8F5D] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                           <Bot className="h-4 w-4" />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[85%] rounded-xl p-3.5 shadow-2xs ${
+                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 space-y-2.5 leading-relaxed ${
                           isUser
-                            ? "bg-[#141B16] text-white"
-                            : "bg-white border border-line text-ink"
+                            ? "bg-[#141B16] text-white rounded-br-none shadow-2xs"
+                            : "bg-white text-ink border border-line rounded-tl-none shadow-2xs"
                         }`}
                       >
-                        <div className="leading-relaxed whitespace-pre-wrap text-xs">
-                          {msg.text}
-                        </div>
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
 
-                        {/* Cards Render */}
-                        {!isUser && msg.cards && msg.cards.length > 0 && (
-                          <div className="mt-3 space-y-2">
+                        {/* Result Cards if any */}
+                        {msg.cards && msg.cards.length > 0 && (
+                          <div className="space-y-2 pt-1">
                             {msg.cards.map((card) => (
                               <div
                                 key={card.id}
-                                className="p-3 rounded-lg bg-[#FAFAF8] border border-line-subtle space-y-2"
+                                className="p-3 rounded-xl border border-line bg-[#FAFAF8] text-ink space-y-1.5"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <div className="font-bold text-xs text-ink truncate">
-                                    {card.title}
-                                  </div>
+                                  <span className="font-bold text-xs truncate">{card.title}</span>
                                   {card.badge && (
                                     <Badge
                                       variant={
-                                        card.badge.variant === "warn"
-                                          ? "warning"
+                                        card.badge.variant === "success"
+                                          ? "success"
                                           : card.badge.variant === "accent"
                                           ? "gold"
-                                          : card.badge.variant
+                                          : card.badge.variant === "warn"
+                                          ? "warning"
+                                          : "neutral"
                                       }
                                     >
                                       {card.badge.label}
@@ -327,30 +341,40 @@ export function FloatingAssistant() {
                   );
                 })}
 
+                {/* Vertical Prebuilt Queries (One per row) */}
+                {showSuggestions && (
+                  <div className="pt-2 space-y-2">
+                    <div className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider px-1">
+                      Priority Research Queries
+                    </div>
+                    <div className="space-y-1.5">
+                      {SUGGESTED_QUERIES.map((query, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSendQuery(query)}
+                          disabled={loading}
+                          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#E7FAF1] text-xs font-medium text-ink hover:text-[#0E8F5D] border border-line hover:border-[#0E8F5D]/40 transition-colors flex items-center justify-between group shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Sparkles className="h-3.5 w-3.5 text-[#FFB020] shrink-0" />
+                            <span className="truncate">{query}</span>
+                          </div>
+                          <ArrowRight className="h-3 w-3 text-ink-tertiary group-hover:text-[#0E8F5D] shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {loading && (
-                  <div className="flex items-center gap-2 text-ink-tertiary text-xs py-1.5">
+                  <div className="flex items-center gap-2 text-ink-tertiary text-xs py-1.5 px-2">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#0E8F5D]" />
-                    <span>{assistantName} is analyzing real Etsy data...</span>
+                    <span>{assistantName} is querying real Etsy market signals...</span>
                   </div>
                 )}
 
                 <div ref={messagesEndRef} />
-              </div>
-
-              {/* Quick Suggestion Chips */}
-              <div className="p-2.5 bg-white border-t border-line overflow-x-auto whitespace-nowrap scrollbar-none flex gap-1.5">
-                {SUGGESTED_CHIPS.map((chip, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleSendQuery(chip)}
-                    disabled={loading}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#F4F3EF] hover:bg-[#E7FAF1] text-[11px] font-medium text-ink hover:text-[#0E8F5D] border border-line transition-colors shrink-0"
-                  >
-                    <Sparkles className="h-2.5 w-2.5 text-[#FFB020]" />
-                    {chip}
-                  </button>
-                ))}
               </div>
 
               {/* Chat Input Bar */}
@@ -362,18 +386,18 @@ export function FloatingAssistant() {
                 className="p-3 bg-white border-t border-line flex items-center gap-2"
               >
                 <Input
+                  placeholder={`Ask ${assistantName} a question...`}
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
-                  placeholder={`Ask ${assistantName} about winning products, shops, or keywords...`}
-                  className="text-xs"
                   disabled={loading}
+                  className="text-xs flex-1"
                 />
                 <Button
                   type="submit"
                   variant="primary"
                   size="compact"
                   disabled={!inputQuery.trim() || loading}
-                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] shrink-0 font-semibold"
+                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] shrink-0"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </Button>

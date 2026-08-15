@@ -32,13 +32,14 @@ export const authOptions: NextAuthOptions = {
       },
       token: "https://api.etsy.com/v3/public/oauth/token",
       userinfo: "https://openapi.etsy.com/v3/application/users/me",
-      clientId: process.env.ETSY_CLIENT_ID || "etsy-client-id-placeholder",
-      clientSecret: process.env.ETSY_CLIENT_SECRET || "",
+      clientId: process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "efxloiz6kn6jhkzzbto4oz3v",
+      clientSecret: process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "",
       profile(profile: any) {
         return {
           id: String(profile.user_id || profile.id || Date.now()),
           name: profile.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Etsy Seller",
           email: profile.primary_email || profile.email || `etsy_${profile.user_id || Date.now()}@sellersalt.user`,
+          image: profile.image_url_75x75 || profile.avatar_url || null,
         };
       },
     },
@@ -61,19 +62,18 @@ export const authOptions: NextAuthOptions = {
         if (!valid) return null;
 
         const primaryOrg = user.memberships[0]?.organization;
-
         return {
           id: user.id,
           email: user.email,
-          name: user.name ?? user.email,
+          name: user.name,
           organizationId: primaryOrg?.id ?? null,
           organizationName: primaryOrg?.name ?? null,
-        };
+        } as any;
       },
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google" || account?.provider === "etsy") {
         const email = user.email?.toLowerCase().trim();
         if (!email) return false;
@@ -110,6 +110,26 @@ export const authOptions: NextAuthOptions = {
           });
         }
 
+        // Persist Google / OAuth profile picture if available
+        const avatarUrl = user.image || (profile as any)?.picture || null;
+        if (avatarUrl && dbUser) {
+          try {
+            const avatarKey = `user_avatar_${dbUser.id}`;
+            const existingAvatar = await prisma.appSetting.findUnique({ where: { key: avatarKey } });
+            if (!existingAvatar) {
+              await prisma.appSetting.create({
+                data: {
+                  key: avatarKey,
+                  value: avatarUrl,
+                  isSecret: false,
+                },
+              });
+            }
+          } catch (e) {
+            // non-fatal
+          }
+        }
+
         const primaryOrg = dbUser.memberships[0]?.organization;
         (user as any).id = dbUser.id;
         (user as any).organizationId = primaryOrg?.id ?? null;
@@ -121,11 +141,15 @@ export const authOptions: NextAuthOptions = {
             const credentials = {
               accessToken: account.access_token,
               refreshToken: account.refresh_token || "",
-              expiresAt: account.expires_at ? new Date(account.expires_at * 1000).toISOString() : "",
+              expiresAt: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600000,
+              shopId: (account.providerAccountId || "").split(".")[0],
+              apiKey: process.env.ETSY_CLIENT_ID || "efxloiz6kn6jhkzzbto4oz3v",
             };
+
             const existing = await prisma.sellerChannel.findFirst({
               where: { organizationId: primaryOrg.id, platform: "ETSY_SELLER" },
             });
+
             if (existing) {
               await prisma.sellerChannel.update({
                 where: { id: existing.id },
@@ -153,11 +177,16 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.sub = (user as any).id || token.sub;
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
+        token.picture = user.image || token.picture;
+      }
+      if (trigger === "update" && session?.user) {
+        if (session.user.image) token.picture = session.user.image;
+        if (session.user.name) token.name = session.user.name;
       }
       return token;
     },
@@ -166,6 +195,9 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.sub;
         (session.user as any).organizationId = token.organizationId;
         (session.user as any).organizationName = token.organizationName;
+        if (token.picture) {
+          (session.user as any).image = token.picture as string;
+        }
       }
       return session;
     },
