@@ -40,11 +40,17 @@ function LoginForm() {
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
   const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const code = searchParams.get("error");
-    if (!code) return;
-    setError(OAUTH_ERROR_MESSAGES[code] ?? OAUTH_ERROR_MESSAGES.Default);
+    if (code) {
+      setError(OAUTH_ERROR_MESSAGES[code] ?? OAUTH_ERROR_MESSAGES.Default);
+      return;
+    }
+    if (searchParams.get("verified") === "1") {
+      setNotice("Email confirmed — you're all set. Sign in below.");
+    }
   }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -144,6 +150,12 @@ function LoginForm() {
       <Text size="body-sm" color="secondary" className="mb-6">
         Access your Opportunity Radar, competitor spy data, and tracked Etsy shops.
       </Text>
+
+      {notice && (
+        <Alert variant="success" className="mb-6">
+          {notice}
+        </Alert>
+      )}
 
       {/* Social / OAuth Logins */}
       {!needsTwoFactor && (

@@ -9,9 +9,13 @@ import { DashboardClient } from "./dashboard-client";
 
 export default async function OverviewPage() {
   const session = await getServerSession(authOptions);
-  const user = session?.user as { organizationId?: string; name?: string | null; email?: string | null } | undefined;
+  const user = session?.user as { id?: string; organizationId?: string; name?: string | null; email?: string | null } | undefined;
   const organizationId = user?.organizationId;
   const userName = user?.name ?? user?.email?.split("@")[0] ?? "there";
+
+  const emailVerified = user?.id
+    ? Boolean((await prisma.user.findUnique({ where: { id: user.id }, select: { emailVerified: true } }))?.emailVerified)
+    : true;
 
   if (!organizationId) {
     return (
@@ -44,5 +48,13 @@ export default async function OverviewPage() {
     scope: (c.organizationId ? "own" : "platform") as "own" | "platform",
   }));
 
-  return <DashboardClient initialData={data} connectors={connectors} userName={userName} />;
+  return (
+    <DashboardClient
+      initialData={data}
+      connectors={connectors}
+      userName={userName}
+      emailVerified={emailVerified}
+      userEmail={user?.email ?? ""}
+    />
+  );
 }

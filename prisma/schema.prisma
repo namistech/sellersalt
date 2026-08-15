@@ -42,13 +42,18 @@ enum Plan {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  name         String?
-  suspendedAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  suspendedAt   DateTime?
+  // Null = not yet confirmed. Set by GET /api/auth/verify-email when a
+  // valid token is redeemed. Pre-existing accounts are backfilled to
+  // "verified at signup" in this field's migration, so this only gates
+  // new signups going forward, not everyone who was already using the app.
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   memberships Membership[]
   passwordResetTokens PasswordResetToken[]

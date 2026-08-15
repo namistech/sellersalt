@@ -25,11 +25,19 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/login?error=verification_token_expired", appUrl()));
   }
 
-  // Mark token used and verified
-  await prisma.passwordResetToken.update({
-    where: { id: record.id },
-    data: { usedAt: new Date() },
-  });
+  // Mark the token used and the account actually verified — this used to
+  // only do the former, so a clicked link never persisted anywhere and
+  // there was no way to later ask "is this user verified?".
+  await prisma.$transaction([
+    prisma.passwordResetToken.update({
+      where: { id: record.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.user.update({
+      where: { id: record.userId },
+      data: { emailVerified: new Date() },
+    }),
+  ]);
 
   // Send Welcome email now that email is verified
   sendLifecycleEmail("WELCOME", record.user.email, {
