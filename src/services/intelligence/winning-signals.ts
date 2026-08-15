@@ -106,6 +106,7 @@ export interface WinningShopSignal {
   recommendation: "SHORTLIST" | "STUDY_PRODUCTS" | "WATCH_SHOP" | "IGNORE";
   whyInteresting: string;
   whatToStudy: string;
+  whatToAvoid: string;
 }
 
 export function computeShopWinningSignals(params: {
@@ -138,15 +139,23 @@ export function computeShopWinningSignals(params: {
   let recommendation: WinningShopSignal["recommendation"] = "WATCH_SHOP";
   let whyInteresting = "Stable shop operations on Etsy.";
   let whatToStudy = "General catalog assortment.";
+  let whatToAvoid = "Copying listings directly — differentiate on angle, bundle, or material before entering.";
 
   if (finalScore >= 80) {
     recommendation = "SHORTLIST";
     whyInteresting = `High catalog efficiency (${yieldRatio.toFixed(1)} sales/listing) and strong daily velocity.`;
     whatToStudy = "Top 5 revenue-driving listings, keyword tags, and primary thumbnail style.";
+    whatToAvoid =
+      params.shopAgeMonths > 0 && params.shopAgeMonths <= 18
+        ? "Underestimating how fast this niche moves — a young shop hitting this velocity signals rising demand and incoming competition."
+        : "Assuming this pace is easy to replicate — an established shop's velocity reflects years of review/ranking accumulation, not just product quality.";
   } else if (finalScore >= 65) {
     recommendation = "STUDY_PRODUCTS";
     whyInteresting = "Emerging catalog with promising product traction.";
     whatToStudy = "Discovered product categories and tag overlap.";
+    whatToAvoid = "Committing significant catalog investment before the trend proves durable — traction here is early, not yet established.";
+  } else if (finalScore < 40) {
+    whatToAvoid = "Treating low velocity here as low competition in the niche — this specific shop may simply be underperforming, not the category.";
   }
 
   return {
@@ -155,5 +164,6 @@ export function computeShopWinningSignals(params: {
     recommendation,
     whyInteresting,
     whatToStudy,
+    whatToAvoid,
   };
 }

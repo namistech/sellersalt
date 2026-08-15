@@ -29,6 +29,14 @@ import { Card, Badge, Button, Heading, Text } from "@/components/ui";
 import { computeProductWinningSignals, type WinningShopSignal } from "@/services/intelligence/winning-signals";
 import type { Prospect } from "@prisma/client";
 
+interface ShopSnapshotPoint {
+  capturedAt: string;
+  totalSales: number | null;
+  reviewCount: number;
+  reviewAverage: number | null;
+  activeListings: number;
+}
+
 interface ShopDetailClientProps {
   shopExternalId: string;
   primary: Prospect;
@@ -36,6 +44,8 @@ interface ShopDetailClientProps {
   keywords: string[];
   shopSignals: WinningShopSignal;
   isAuthenticated: boolean;
+  isTracked: boolean;
+  snapshots: ShopSnapshotPoint[];
 }
 
 export function ShopDetailClient({
@@ -45,10 +55,12 @@ export function ShopDetailClient({
   keywords,
   shopSignals,
   isAuthenticated,
+  isTracked,
+  snapshots,
 }: ShopDetailClientProps) {
-  const [shopFavorite, setShopFavorite] = useState(false);
   const [tracking, setTracking] = useState(false);
-  const [tracked, setTracked] = useState(false);
+  const [tracked, setTracked] = useState(isTracked);
+  const [trackError, setTrackError] = useState<string | null>(null);
   const [shortlistedListings, setShortlistedListings] = useState<Record<string, boolean>>({});
   const [plannedKeywords, setPlannedKeywords] = useState<Record<string, boolean>>({});
 
@@ -94,24 +106,21 @@ export function ShopDetailClient({
       return;
     }
     setTracking(true);
+    setTrackError(null);
     try {
       const res = await fetch(`/api/shops/${shopExternalId}/track`, {
         method: tracked ? "DELETE" : "POST",
       });
-      if (res.ok) setTracked(!tracked);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setTrackError(data.error || "Could not update tracking for this shop.");
+        return;
+      }
+      setTracked(!tracked);
+    } catch {
+      setTrackError("Network error updating tracking.");
     } finally {
       setTracking(false);
-    }
-  }
-
-  async function handleToggleShopFavorite() {
-    setShopFavorite(!shopFavorite);
-    if (isAuthenticated) {
-      try {
-        await fetch(`/api/shops/${shopExternalId}/track`, {
-          method: shopFavorite ? "DELETE" : "POST",
-        });
-      } catch {}
     }
   }
 
@@ -137,17 +146,19 @@ export function ShopDetailClient({
     setPlannedKeywords((prev) => ({ ...prev, [k]: !prev[k] }));
   }
 
-  // Simulated 7-day historical trend graph points
-  const graphPoints = [
-    { day: "Mon", sales: Math.max(1, Math.round(estDaily * 0.85)) },
-    { day: "Tue", sales: Math.max(1, Math.round(estDaily * 0.92)) },
-    { day: "Wed", sales: Math.max(1, Math.round(estDaily * 1.05)) },
-    { day: "Thu", sales: Math.max(1, Math.round(estDaily * 0.98)) },
-    { day: "Fri", sales: Math.max(1, Math.round(estDaily * 1.15)) },
-    { day: "Sat", sales: Math.max(1, Math.round(estDaily * 1.28)) },
-    { day: "Sun", sales: Math.max(1, Math.round(estDaily * 1.1)) },
-  ];
-  const maxSales = Math.max(...graphPoints.map((p) => p.sales), 10);
+  // Real day-over-day sales deltas derived from actual ShopSnapshot rows —
+  // needs at least 2 snapshots to show a trend (a single snapshot has no
+  // "since yesterday" to compare against). No simulated/fabricated points.
+  const trendPoints = snapshots.slice(1).map((s, i) => {
+    const prev = snapshots[i]!;
+    const delta = s.totalSales != null && prev.totalSales != null ? Math.max(0, s.totalSales - prev.totalSales) : 0;
+    return {
+      date: new Date(s.capturedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      sales: delta,
+    };
+  });
+  const maxTrendSales = Math.max(...trendPoints.map((p) => p.sales), 1);
+  const latestSnapshot = snapshots[snapshots.length - 1] ?? null;
 
   return (
     <div className="space-y-8">
@@ -208,13 +219,14 @@ export function ShopDetailClient({
             </a>
 
             <Button
-              variant={shopFavorite ? "primary" : "secondary"}
+              variant={tracked ? "primary" : "secondary"}
               size="compact"
-              onClick={handleToggleShopFavorite}
+              loading={tracking}
+              onClick={handleToggleTrack}
               className="text-xs font-semibold"
             >
-              <Bookmark className={`h-3.5 w-3.5 mr-1 ${shopFavorite ? "fill-current" : ""}`} />
-              {shopFavorite ? "★ Favorite Shop" : "+ Favorite Shop"}
+              <Bookmark className={`h-3.5 w-3.5 mr-1 ${tracked ? "fill-current" : ""}`} />
+              {tracked ? "★ Shortlisted & Tracking" : "+ Shortlist & Track Shop"}
             </Button>
           </div>
         </div>
@@ -244,7 +256,7 @@ export function ShopDetailClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-line-subtle text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-line-subtle text-xs">
             <div className="space-y-1">
               <div className="font-bold text-ink flex items-center gap-1.5">
                 <Target className="h-4 w-4 text-[#0E8F5D]" /> Why This Shop is Interesting:
@@ -257,6 +269,13 @@ export function ShopDetailClient({
                 <BookOpen className="h-4 w-4 text-purple-600" /> What to Study & Replicate:
               </div>
               <p className="text-ink-secondary leading-relaxed">{shopSignals.whatToStudy}</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <Zap className="h-4 w-4 text-amber-600" /> What to Avoid:
+              </div>
+              <p className="text-ink-secondary leading-relaxed">{shopSignals.whatToAvoid}</p>
             </div>
           </div>
         </div>
@@ -272,8 +291,11 @@ export function ShopDetailClient({
           <div className="text-2xl font-extrabold text-ink font-mono">
             ${estRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
-          <div className="text-[11px] text-ink-tertiary mt-1">
+          <div className="text-[11px] text-ink-tertiary mt-1" title="Methodology: lifetime unit sales x average observed listing price across this shop's discovered listings. Etsy doesn't expose actual revenue.">
             Est. Gross Profit: <strong className="text-[#0E8F5D] font-mono">${estGrossProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong>
+          </div>
+          <div className="text-[10px] text-ink-tertiary/80 mt-1.5 italic">
+            Estimated from lifetime sales × avg. listing price, at a modeled 68% gross margin — Etsy doesn't expose actual revenue or costs.
           </div>
         </Card>
 
@@ -317,23 +339,26 @@ export function ShopDetailClient({
         </Card>
       </div>
 
-      {/* DEDICATED GREEN TRACKING SECTION (Rich #0E8F5D Green Background + White Button) */}
-      <div className="p-8 rounded-2xl bg-[#0E8F5D] text-white shadow-lg space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-          <div className="space-y-1.5 max-w-xl">
+      {/* DEDICATED GREEN TRACKING SECTION — visually separate from the hero by design */}
+      {!tracked ? (
+        <div className="relative overflow-hidden p-8 rounded-2xl bg-[#0E8F5D] text-white shadow-lg">
+          {/* Decorative preview-only bars — never labeled as real data */}
+          <div className="absolute inset-0 flex items-end justify-between gap-3 px-8 pb-6 opacity-15 blur-[2px] pointer-events-none" aria-hidden="true">
+            {[40, 65, 50, 80, 55, 90, 70].map((h, i) => (
+              <div key={i} className="flex-1 bg-white rounded-t-md" style={{ height: `${h}%` }} />
+            ))}
+          </div>
+          <div className="relative flex flex-col items-center text-center gap-4 py-6">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold backdrop-blur-xs">
               <TrendingUp className="h-3.5 w-3.5" />
-              Automated 24h Competitor Radar
+              Automated Daily Competitor Radar
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight">
-              Track {primary.shopName}&apos;s Daily Sales & Revenue Movement
+            <h2 className="text-2xl font-extrabold tracking-tight max-w-lg">
+              Start tracking {primary.shopName}&apos;s daily sales
             </h2>
-            <p className="text-xs text-white/90 leading-relaxed">
-              SellerSalt crawlers record daily transaction counts, price fluctuations, and newly published listing launches every 24 hours.
+            <p className="text-xs text-white/90 leading-relaxed max-w-md">
+              SellerSalt will capture a daily snapshot of this shop's total sales, review count, and active listings — a real trend appears once at least two snapshots have been captured.
             </p>
-          </div>
-
-          <div className="shrink-0">
             <Button
               variant="secondary"
               size="compact"
@@ -341,40 +366,110 @@ export function ShopDetailClient({
               onClick={handleToggleTrack}
               className="bg-white hover:bg-[#F4F3EF] text-[#0E8F5D] font-extrabold text-sm px-6 py-3 shadow-md border-0 transition-transform transform hover:scale-105"
             >
-              {tracked ? "✓ Tracking Active (Daily Updates)" : "+ Start Daily Sales Tracking"}
+              + Start Tracking Sales of This Shop
             </Button>
+            {trackError && (
+              <p className="text-xs bg-black/20 rounded-lg px-3 py-2 text-white">{trackError}</p>
+            )}
           </div>
         </div>
+      ) : (
+        <div className="p-8 rounded-2xl bg-[#0E8F5D] text-white shadow-lg space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="space-y-1.5 max-w-xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold backdrop-blur-xs">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Tracking Active — Daily Snapshots
+              </div>
+              <h2 className="text-2xl font-extrabold tracking-tight">
+                {primary.shopName}&apos;s Sales & Review Movement
+              </h2>
+              {latestSnapshot && (
+                <p className="text-xs text-white/80">
+                  Last updated {new Date(latestSnapshot.capturedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
 
-        {/* Live Daily Trend Visualization Graph */}
-        <div className="p-5 rounded-xl bg-black/15 border border-white/20 space-y-3">
-          <div className="flex items-center justify-between text-xs text-white/80">
-            <span className="font-bold flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" /> 7-Day Estimated Sales Velocity Trend
-            </span>
-            <span className="font-mono">{estDaily.toFixed(1)} avg/day</span>
+            <div className="shrink-0">
+              <Button
+                variant="secondary"
+                size="compact"
+                loading={tracking}
+                onClick={handleToggleTrack}
+                className="bg-white/15 hover:bg-white/25 text-white font-semibold text-xs px-4 py-2.5 shadow-none border border-white/30"
+              >
+                Stop Tracking
+              </Button>
+            </div>
           </div>
 
-          {/* SVG Bar Chart */}
-          <div className="h-28 flex items-end justify-between gap-3 pt-2">
-            {graphPoints.map((p) => {
-              const heightPercent = Math.min(100, Math.max(15, Math.round((p.sales / maxSales) * 100)));
-              return (
-                <div key={p.day} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
-                  <div className="text-[10px] font-mono text-white/90 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {p.sales}
+          {trackError && <p className="text-xs bg-black/20 rounded-lg px-3 py-2">{trackError}</p>}
+
+          {snapshots.length < 2 ? (
+            <div className="p-5 rounded-xl bg-black/15 border border-white/20 text-center space-y-1.5">
+              <p className="text-sm font-semibold">Tracking started — first trend point on the way</p>
+              <p className="text-xs text-white/80">
+                {latestSnapshot
+                  ? `First snapshot captured: ${latestSnapshot.totalSales?.toLocaleString() ?? "—"} total sales, ${latestSnapshot.reviewCount.toLocaleString()} reviews, ${latestSnapshot.activeListings} active listings.`
+                  : "We'll capture the first snapshot within 24 hours."}{" "}
+                A trend line appears once a second daily snapshot has been captured.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-black/15 border border-white/20">
+                  <div className="text-white/70 font-semibold uppercase text-[10px]">Sales since first snapshot</div>
+                  <div className="text-lg font-extrabold font-mono">
+                    +{Math.max(0, (latestSnapshot?.totalSales ?? 0) - (snapshots[0]!.totalSales ?? 0)).toLocaleString()}
                   </div>
-                  <div
-                    className="w-full bg-white/90 group-hover:bg-white rounded-t-md transition-all"
-                    style={{ height: `${heightPercent}%` }}
-                  />
-                  <div className="text-[10px] font-bold text-white/70">{p.day}</div>
                 </div>
-              );
-            })}
-          </div>
+                <div className="p-3 rounded-lg bg-black/15 border border-white/20">
+                  <div className="text-white/70 font-semibold uppercase text-[10px]">Review count change</div>
+                  <div className="text-lg font-extrabold font-mono">
+                    {(latestSnapshot?.reviewCount ?? 0) - snapshots[0]!.reviewCount >= 0 ? "+" : ""}
+                    {(latestSnapshot?.reviewCount ?? 0) - snapshots[0]!.reviewCount}
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-black/15 border border-white/20">
+                  <div className="text-white/70 font-semibold uppercase text-[10px]">Listing count change</div>
+                  <div className="text-lg font-extrabold font-mono">
+                    {(latestSnapshot?.activeListings ?? 0) - snapshots[0]!.activeListings >= 0 ? "+" : ""}
+                    {(latestSnapshot?.activeListings ?? 0) - snapshots[0]!.activeListings}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-5 rounded-xl bg-black/15 border border-white/20 space-y-3">
+                <div className="flex items-center justify-between text-xs text-white/80">
+                  <span className="font-bold flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" /> Daily Sales Delta (real snapshots)
+                  </span>
+                </div>
+
+                <div className="h-28 flex items-end justify-between gap-3 pt-2">
+                  {trendPoints.map((p, i) => {
+                    const heightPercent = Math.min(100, Math.max(6, Math.round((p.sales / maxTrendSales) * 100)));
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+                        <div className="text-[10px] font-mono text-white/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {p.sales}
+                        </div>
+                        <div
+                          className="w-full bg-white/90 group-hover:bg-white rounded-t-md transition-all"
+                          style={{ height: `${heightPercent}%` }}
+                        />
+                        <div className="text-[10px] font-bold text-white/70">{p.date}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Discovered Long-Tail Keywords Section */}
       {keywords.length > 0 && (

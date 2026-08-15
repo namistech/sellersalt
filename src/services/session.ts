@@ -1,4 +1,5 @@
 import type { Capability, WorkspaceContext } from "./types";
+import { prisma } from "@/lib/db";
 
 // Real-session → WorkspaceContext mapping. Deliberately a plain
 // function, not a hook: (dashboard)/layout.tsx already resolves the
@@ -50,4 +51,30 @@ export function buildRealWorkspaceContext(input: RealSessionInput): WorkspaceCon
     // this data is supplied; they simply aren't supplied yet for the
     // real path.
   };
+}
+
+/** Single source of truth for "real NextAuth session -> WorkspaceContext",
+ * including the avatar DB lookup — every server component that needs to
+ * render DashboardShell for a real session should call this rather than
+ * re-deriving it, so avatar/org shape can't drift between call sites
+ * (this is exactly what happened before: shop-detail's page.tsx built its
+ * own context inline and never got the avatarUrl fix applied to
+ * (dashboard)/layout.tsx). */
+export async function resolveWorkspaceContextForUser(
+  user: { id?: string | null; name?: string | null; email?: string | null; organizationId?: string | null; organizationName?: string | null },
+  isAdmin: boolean
+): Promise<WorkspaceContext> {
+  const avatarSetting = user.id
+    ? await prisma.appSetting.findUnique({ where: { key: `user_avatar_${user.id}` } })
+    : null;
+
+  return buildRealWorkspaceContext({
+    userId: user.id,
+    userName: user.name,
+    userEmail: user.email,
+    userAvatarUrl: avatarSetting?.value ?? null,
+    organizationId: user.organizationId,
+    organizationName: user.organizationName,
+    isAdmin,
+  });
 }

@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/is-admin";
 import { isStagingVerificationAccount } from "@/lib/staging-verification";
 import { prisma } from "@/lib/db";
-import { buildRealWorkspaceContext } from "@/services/session";
+import { resolveWorkspaceContextForUser } from "@/services/session";
 import { DashboardShell } from "./dashboard-shell";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -29,19 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (!hasAccess) redirect("/checkout");
   }
 
-  const avatarSetting = user?.id
-    ? await prisma.appSetting.findUnique({ where: { key: `user_avatar_${user.id}` } })
-    : null;
-
-  const context = buildRealWorkspaceContext({
-    userId: user?.id,
-    userName: user?.name,
-    userEmail: user?.email,
-    userAvatarUrl: avatarSetting?.value ?? null,
-    organizationId: user?.organizationId,
-    organizationName: user?.organizationName,
-    isAdmin,
-  });
+  const context = await resolveWorkspaceContextForUser(user, isAdmin);
 
   return <DashboardShell context={context}>{children}</DashboardShell>;
 }

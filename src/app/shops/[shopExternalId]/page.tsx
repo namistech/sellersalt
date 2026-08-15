@@ -24,7 +24,7 @@ import {
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { DashboardShell } from "@/app/(dashboard)/dashboard-shell";
-import { buildRealWorkspaceContext } from "@/services/session";
+import { resolveWorkspaceContextForUser } from "@/services/session";
 import { isAdminEmail } from "@/lib/is-admin";
 import { Card, Badge, Button, Heading, Text } from "@/components/ui";
 import { computeShopWinningSignals, computeProductWinningSignals } from "@/services/intelligence/winning-signals";
@@ -78,6 +78,32 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
     reviewCount: primary.reviewCount,
   });
 
+  // Real tracking state + real historical snapshots — never fabricated.
+  // Only queried for an authenticated org, since tracking is per-org.
+  const organizationId = (session?.user as any)?.organizationId as string | undefined;
+  let shopWatch: { id: string; isActive: boolean } | null = null;
+  let snapshots: Array<{
+    capturedAt: Date;
+    totalSales: number | null;
+    reviewCount: number;
+    reviewAverage: number | null;
+    activeListings: number;
+  }> = [];
+
+  if (organizationId) {
+    shopWatch = await prisma.shopWatch.findUnique({
+      where: { organizationId_shopExternalId: { organizationId, shopExternalId } },
+      select: { id: true, isActive: true },
+    });
+    if (shopWatch?.isActive) {
+      snapshots = await prisma.shopSnapshot.findMany({
+        where: { shopWatchId: shopWatch.id },
+        orderBy: { capturedAt: "asc" },
+        select: { capturedAt: true, totalSales: true, reviewCount: true, reviewAverage: true, activeListings: true },
+      });
+    }
+  }
+
   const content = (
     <ShopDetailClient
       shopExternalId={shopExternalId}
@@ -86,20 +112,15 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
       keywords={keywords}
       shopSignals={shopSignals}
       isAuthenticated={!!session}
+      isTracked={Boolean(shopWatch?.isActive)}
+      snapshots={snapshots.map((s) => ({ ...s, capturedAt: s.capturedAt.toISOString() }))}
     />
   );
 
   // When logged-in inside the dashboard, preserve the full Dashboard Shell (Sidebar + Topbar)
   if (session && session.user) {
     const user = session.user as any;
-    const context = buildRealWorkspaceContext({
-      userId: user.id,
-      userName: user.name,
-      userEmail: user.email,
-      organizationId: user.organizationId,
-      organizationName: user.organizationName,
-      isAdmin: isAdminEmail(user.email),
-    });
+    const context = await resolveWorkspaceContextForUser(user, isAdminEmail(user.email));
 
     return <DashboardShell context={context}>{content}</DashboardShell>;
   }
