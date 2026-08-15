@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-type PaymentProviderType = "STRIPE" | "PAYPAL" | "SAFEPAY" | "PAYFAST";
+type PaymentProviderType = "STRIPE" | "PAYPAL" | "SAFEPAY" | "PAYFAST" | "MANUAL";
 type SubscriptionStatus = "INCOMPLETE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED";
 
 export async function upsertSubscription(params: {

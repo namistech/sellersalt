@@ -346,6 +346,9 @@ enum PaymentProviderType {
   PAYPAL
   SAFEPAY
   PAYFAST
+  // Admin-granted subscription with no real payment provider behind it —
+  // used to manually assign/grandfather an org onto a plan.
+  MANUAL
 }
 
 // ---------- Subscriptions ----------
@@ -379,6 +382,27 @@ enum SubscriptionStatus {
   ACTIVE
   PAST_DUE
   CANCELED
+}
+
+// Discount codes applied at checkout — reduce both the one-time trial
+// charge and the recurring price on whichever package they're redeemed
+// against.
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique
+  type            CouponType
+  value           Float
+  isActive        Boolean    @default(true)
+  maxRedemptions  Int?
+  redemptionCount Int        @default(0)
+  expiresAt       DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
 }
 
 // Idempotency log — every provider can retry-deliver the same webhook event.

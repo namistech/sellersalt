@@ -16,6 +16,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     include: {
       package: true,
+      subscription: { select: { status: true, provider: true, packageId: true } },
       memberships: { include: { user: { select: { email: true } } }, take: 1 },
       _count: { select: { connectors: true, searchConfigs: true, prospects: true, shopWatches: true } },
     },
@@ -28,6 +29,7 @@ export async function GET() {
       ownerEmail: o.memberships[0]?.user.email ?? null,
       createdAt: o.createdAt,
       package: o.package,
+      subscription: o.subscription,
       usage: {
         connectors: o._count.connectors,
         searchConfigs: o._count.searchConfigs,

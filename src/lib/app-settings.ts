@@ -12,6 +12,8 @@ export const SETTING_DEFINITIONS = [
   { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for cross-listing)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
+  { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
+  { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
 ] as const;
 
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];

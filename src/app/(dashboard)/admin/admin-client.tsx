@@ -103,13 +103,31 @@ const PAYMENT_PROVIDERS: Array<{
   },
 ];
 
+interface SubscriptionInfo {
+  status: "INCOMPLETE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED";
+  provider: string;
+  packageId: string;
+}
+
 interface OrgRow {
   id: string;
   name: string;
   ownerEmail: string | null;
   createdAt: string;
   package: Package | null;
+  subscription: SubscriptionInfo | null;
   usage: { connectors: number; searchConfigs: number; prospects: number; trackedShops: number };
+}
+
+interface CouponRow {
+  id: string;
+  code: string;
+  type: "PERCENT" | "FIXED";
+  value: number;
+  isActive: boolean;
+  maxRedemptions: number | null;
+  redemptionCount: number;
+  expiresAt: string | null;
 }
 
 const FIELDS: { key: keyof Package; label: string }[] = [
@@ -145,6 +163,13 @@ export function AdminPackagesClient() {
   const [siteSettings, setSiteSettings] = useState<SiteSettingRow[]>([]);
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const [settingSaving, setSettingSaving] = useState<string | null>(null);
+  const [subGrantDrafts, setSubGrantDrafts] = useState<Record<string, { packageId: string; status: "ACTIVE" | "TRIALING" }>>({});
+  const [subSavingOrgId, setSubSavingOrgId] = useState<string | null>(null);
+  const [coupons, setCoupons] = useState<CouponRow[]>([]);
+  const [showNewCouponForm, setShowNewCouponForm] = useState(false);
+  const [newCoupon, setNewCoupon] = useState({ code: "", type: "PERCENT" as "PERCENT" | "FIXED", value: 10, maxRedemptions: "", expiresAt: "" });
+  const [couponSaving, setCouponSaving] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<Package>>({});
@@ -155,16 +180,17 @@ export function AdminPackagesClient() {
   });
 
   async function loadAll() {
-    const [pRes, oRes, cRes, payRes, emailRes, settingsRes] = await Promise.all([
+    const [pRes, oRes, cRes, payRes, emailRes, settingsRes, couponRes] = await Promise.all([
       fetch("/api/admin/packages"),
       fetch("/api/admin/organizations"),
       fetch("/api/admin/platform-connectors"),
       fetch("/api/admin/payment-providers"),
       fetch("/api/admin/email-settings"),
       fetch("/api/admin/settings"),
+      fetch("/api/admin/coupons"),
     ]);
-    const [pData, oData, cData, payData, emailData, settingsData] = await Promise.all([
-      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(), settingsRes.json(),
+    const [pData, oData, cData, payData, emailData, settingsData, couponData] = await Promise.all([
+      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(), settingsRes.json(), couponRes.json(),
     ]);
     setPackages(pData.packages ?? []);
     setOrgs(oData.organizations ?? []);
@@ -175,6 +201,7 @@ export function AdminPackagesClient() {
       setEmailForm((f) => ({ ...f, ...emailData.settings, password: "" }));
     }
     setSiteSettings(settingsData.settings ?? []);
+    setCoupons(couponData.coupons ?? []);
     setLoading(false);
   }
 
@@ -216,6 +243,68 @@ export function AdminPackagesClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ packageId }),
     });
+    loadAll();
+  }
+
+  async function handleGrantSubscription(orgId: string) {
+    const draft = subGrantDrafts[orgId];
+    if (!draft?.packageId) return;
+    setSubSavingOrgId(orgId);
+    await fetch(`/api/admin/organizations/${orgId}/subscription`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(draft),
+    });
+    setSubSavingOrgId(null);
+    loadAll();
+  }
+
+  async function handleRevokeSubscription(orgId: string) {
+    if (!confirm("Revoke this org's subscription? They'll lose dashboard access until a new one is granted.")) return;
+    setSubSavingOrgId(orgId);
+    await fetch(`/api/admin/organizations/${orgId}/subscription`, { method: "DELETE" });
+    setSubSavingOrgId(null);
+    loadAll();
+  }
+
+  async function handleCreateCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    setCouponError(null);
+    setCouponSaving(true);
+    const res = await fetch("/api/admin/coupons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: newCoupon.code,
+        type: newCoupon.type,
+        value: newCoupon.value,
+        maxRedemptions: newCoupon.maxRedemptions || null,
+        expiresAt: newCoupon.expiresAt || null,
+      }),
+    });
+    const data = await res.json();
+    setCouponSaving(false);
+    if (!res.ok) {
+      setCouponError(data.error ?? "Failed to create coupon.");
+      return;
+    }
+    setShowNewCouponForm(false);
+    setNewCoupon({ code: "", type: "PERCENT", value: 10, maxRedemptions: "", expiresAt: "" });
+    loadAll();
+  }
+
+  async function handleToggleCouponActive(id: string, next: boolean) {
+    await fetch(`/api/admin/coupons/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: next }),
+    });
+    loadAll();
+  }
+
+  async function handleDeleteCoupon(id: string) {
+    if (!confirm("Delete this coupon? It will no longer be redeemable.")) return;
+    await fetch(`/api/admin/coupons/${id}`, { method: "DELETE" });
     loadAll();
   }
 
@@ -701,33 +790,146 @@ export function AdminPackagesClient() {
               <th className="py-2 pr-4">Package</th>
               <th className="py-2 pr-4">Usage</th>
               <th className="py-2 pr-4">Assign</th>
+              <th className="py-2 pr-4">Subscription (dashboard access)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {orgs.map((org) => (
-              <tr key={org.id}>
-                <td className="py-2 pr-4 font-medium text-ink">{org.name}</td>
-                <td className="py-2 pr-4 text-muted">{org.ownerEmail ?? "—"}</td>
-                <td className="py-2 pr-4">{org.package?.name ?? "None"}</td>
-                <td className="py-2 pr-4 text-xs text-muted">
-                  {org.usage.connectors}c · {org.usage.searchConfigs}s · {org.usage.trackedShops}t · {org.usage.prospects}p
-                </td>
-                <td className="py-2 pr-4">
-                  <select
-                    className="input !w-auto py-1 text-xs"
-                    value={org.package?.id ?? ""}
-                    onChange={(e) => handleAssign(org.id, e.target.value)}
-                  >
-                    <option value="" disabled>Select…</option>
-                    {packages.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
+            {orgs.map((org) => {
+              const draft = subGrantDrafts[org.id] ?? { packageId: org.package?.id ?? "", status: "ACTIVE" as const };
+              const hasAccess = org.subscription && (org.subscription.status === "ACTIVE" || org.subscription.status === "TRIALING");
+              return (
+                <tr key={org.id}>
+                  <td className="py-2 pr-4 font-medium text-ink">{org.name}</td>
+                  <td className="py-2 pr-4 text-muted">{org.ownerEmail ?? "—"}</td>
+                  <td className="py-2 pr-4">{org.package?.name ?? "None"}</td>
+                  <td className="py-2 pr-4 text-xs text-muted">
+                    {org.usage.connectors}c · {org.usage.searchConfigs}s · {org.usage.trackedShops}t · {org.usage.prospects}p
+                  </td>
+                  <td className="py-2 pr-4">
+                    <select
+                      className="input !w-auto py-1 text-xs"
+                      value={org.package?.id ?? ""}
+                      onChange={(e) => handleAssign(org.id, e.target.value)}
+                    >
+                      <option value="" disabled>Select…</option>
+                      {packages.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-2 pr-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`badge ${hasAccess ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
+                        {org.subscription ? `${org.subscription.status} · ${org.subscription.provider}` : "None"}
+                      </span>
+                      {org.subscription ? (
+                        <button
+                          onClick={() => handleRevokeSubscription(org.id)}
+                          disabled={subSavingOrgId === org.id}
+                          className="text-xs text-muted hover:text-danger"
+                        >
+                          Revoke
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <select
+                            className="input !w-auto py-1 text-xs"
+                            value={draft.packageId}
+                            onChange={(e) => setSubGrantDrafts((d) => ({ ...d, [org.id]: { ...draft, packageId: e.target.value } }))}
+                          >
+                            <option value="" disabled>Package…</option>
+                            {packages.map((p) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <select
+                            className="input !w-auto py-1 text-xs"
+                            value={draft.status}
+                            onChange={(e) => setSubGrantDrafts((d) => ({ ...d, [org.id]: { ...draft, status: e.target.value as "ACTIVE" | "TRIALING" } }))}
+                          >
+                            <option value="ACTIVE">Active</option>
+                            <option value="TRIALING">Trialing</option>
+                          </select>
+                          <button
+                            onClick={() => handleGrantSubscription(org.id)}
+                            disabled={!draft.packageId || subSavingOrgId === org.id}
+                            className="btn-secondary !py-1 !px-2 text-xs"
+                          >
+                            Grant
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      <div className="card overflow-x-auto">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Coupons</h2>
+            <p className="text-xs text-muted">Discount codes applied at checkout — reduce both the trial charge and the recurring price.</p>
+          </div>
+          <button className="btn-secondary" onClick={() => setShowNewCouponForm((s) => !s)}>
+            {showNewCouponForm ? "Cancel" : "New coupon"}
+          </button>
+        </div>
+
+        {showNewCouponForm && (
+          <form onSubmit={handleCreateCoupon} className="mb-4 grid grid-cols-2 gap-3 rounded-md border border-line p-3 sm:grid-cols-5">
+            <input className="input" placeholder="Code (e.g. LAUNCH20)" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} required />
+            <select className="input" value={newCoupon.type} onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as "PERCENT" | "FIXED" })}>
+              <option value="PERCENT">% off</option>
+              <option value="FIXED">$ off</option>
+            </select>
+            <input className="input" type="number" placeholder="Value" value={newCoupon.value} onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })} required />
+            <input className="input" type="number" placeholder="Max redemptions (blank = ∞)" value={newCoupon.maxRedemptions} onChange={(e) => setNewCoupon({ ...newCoupon, maxRedemptions: e.target.value })} />
+            <input className="input" type="date" placeholder="Expires (blank = never)" value={newCoupon.expiresAt} onChange={(e) => setNewCoupon({ ...newCoupon, expiresAt: e.target.value })} />
+            {couponError && <p className="text-sm text-danger sm:col-span-5">{couponError}</p>}
+            <button type="submit" disabled={couponSaving} className="btn-primary sm:col-span-5">
+              {couponSaving ? "Saving…" : "Create coupon"}
+            </button>
+          </form>
+        )}
+
+        {coupons.length === 0 ? (
+          <p className="text-sm text-muted">No coupons yet.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                <th className="py-2 pr-4">Code</th>
+                <th className="py-2 pr-4">Discount</th>
+                <th className="py-2 pr-4">Redemptions</th>
+                <th className="py-2 pr-4">Expires</th>
+                <th className="py-2 pr-4">Status</th>
+                <th className="py-2 pr-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {coupons.map((c) => (
+                <tr key={c.id}>
+                  <td className="py-2 pr-4 font-medium text-ink">{c.code}</td>
+                  <td className="py-2 pr-4 tabular-nums">{c.type === "PERCENT" ? `${c.value}%` : `$${c.value}`}</td>
+                  <td className="py-2 pr-4 tabular-nums">{c.redemptionCount}/{c.maxRedemptions ?? "∞"}</td>
+                  <td className="py-2 pr-4 text-muted">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}</td>
+                  <td className="py-2 pr-4">
+                    <button onClick={() => handleToggleCouponActive(c.id, !c.isActive)} className={`badge ${c.isActive ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
+                      {c.isActive ? "Active" : "Inactive"}
+                    </button>
+                  </td>
+                  <td className="py-2 pr-4">
+                    <button onClick={() => handleDeleteCoupon(c.id)} className="text-sm text-muted hover:text-danger">Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
