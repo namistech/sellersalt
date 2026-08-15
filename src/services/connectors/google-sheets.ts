@@ -126,15 +126,24 @@ export async function exportProspectsToGoogleSheets(
           rowsExported: rows.length,
         };
       }
+      const errorBody = await createRes.json().catch(() => null);
+      return {
+        success: false,
+        rowsExported: 0,
+        error: errorBody?.error?.message || `Google Sheets API returned ${createRes.status}.`,
+      };
     } catch (err: any) {
-      console.warn("Google Sheets live API call warning:", err?.message);
+      return { success: false, rowsExported: 0, error: err?.message || "Google Sheets API request failed." };
     }
   }
 
-  // Graceful fallback / export readiness state
+  // No access token was provided — this is not a successful export, and
+  // claiming otherwise (as this used to do, returning success:true with a
+  // link to Google's generic "create a blank spreadsheet" page) told the
+  // user their data was exported when nothing was written anywhere.
   return {
-    success: true,
-    spreadsheetUrl: `https://docs.google.com/spreadsheets/create`,
-    rowsExported: rows.length,
+    success: false,
+    rowsExported: 0,
+    error: "Google Sheets isn't connected for this workspace yet.",
   };
 }
