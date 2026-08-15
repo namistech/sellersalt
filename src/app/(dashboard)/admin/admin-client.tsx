@@ -43,6 +43,39 @@ interface AdminMetrics {
   estimatedMrr: number;
 }
 
+// Exact credential field names each provider's client reads —
+// src/lib/payment-providers/{stripe,paypal,safepay,payfast}-client.ts.
+const PROVIDER_FIELDS: Record<string, Array<{ key: string; label: string; secret?: boolean }>> = {
+  STRIPE: [
+    { key: "secretKey", label: "Secret Key", secret: true },
+    { key: "publishableKey", label: "Publishable Key" },
+    { key: "webhookSecret", label: "Webhook Signing Secret", secret: true },
+  ],
+  PAYPAL: [
+    { key: "clientId", label: "Client ID" },
+    { key: "clientSecret", label: "Client Secret", secret: true },
+    { key: "webhookId", label: "Webhook ID" },
+  ],
+  SAFEPAY: [
+    { key: "apiKey", label: "API Key", secret: true },
+    { key: "secretKey", label: "Secret Key", secret: true },
+    { key: "merchantId", label: "Merchant ID" },
+    { key: "webhookSecret", label: "Webhook Secret", secret: true },
+  ],
+  PAYFAST: [
+    { key: "merchantId", label: "Merchant ID" },
+    { key: "securedKey", label: "Secured Key", secret: true },
+    { key: "currencyCode", label: "Currency Code (e.g. USD)" },
+  ],
+};
+
+const PROVIDER_META: Record<string, { label: string; description: string; dashboardUrl: string }> = {
+  STRIPE: { label: "Stripe", description: "Credit / Debit Cards, Apple Pay, Google Pay", dashboardUrl: "https://dashboard.stripe.com/apikeys" },
+  PAYPAL: { label: "PayPal", description: "PayPal Account & Buyer Protection", dashboardUrl: "https://developer.paypal.com/dashboard/applications" },
+  SAFEPAY: { label: "Safepay", description: "Pakistan-focused card & wallet gateway", dashboardUrl: "https://dashboard.getsafepay.com/" },
+  PAYFAST: { label: "GoPayFast", description: "South Africa card & EFT gateway", dashboardUrl: "https://www.payfast.co.za/dashboard" },
+};
+
 interface AdminUserRow {
   id: string;
   name: string | null;
@@ -103,6 +136,8 @@ interface PaymentProviderRow {
   mode: "LIVE" | "SANDBOX";
   priority: number;
   updatedAt: string;
+  hasLiveCredentials: boolean;
+  hasSandboxCredentials: boolean;
 }
 
 interface SiteSettingRow {
@@ -178,6 +213,13 @@ export function AdminPackagesClient() {
     maxConnectors: 1, maxSearchConfigs: 3, maxScheduledSearches: 1, maxTrackedShops: 5, maxProspectsPerMonth: 200,
   });
   const [packageCreating, setPackageCreating] = useState(false);
+
+  // Payment provider credentials
+  const [providerMode, setProviderMode] = useState<Record<string, "LIVE" | "SANDBOX">>({});
+  const [providerDrafts, setProviderDrafts] = useState<Record<string, Record<string, string>>>({});
+  const [providerSaving, setProviderSaving] = useState<string | null>(null);
+  const [providerTestResult, setProviderTestResult] = useState<Record<string, string>>({});
+  const [pendingLiveConfirm, setPendingLiveConfirm] = useState<string | null>(null);
 
   async function loadAll() {
     try {
@@ -384,6 +426,92 @@ export function AdminPackagesClient() {
       await loadAll();
     } finally {
       setPackageCreating(false);
+    }
+  }
+
+  function modeFor(provider: string, current: "LIVE" | "SANDBOX"): "LIVE" | "SANDBOX" {
+    return providerMode[provider] ?? current;
+  }
+
+  function updateProviderDraft(provider: string, mode: "LIVE" | "SANDBOX", field: string, value: string) {
+    const key = `${provider}_${mode}`;
+    setProviderDrafts((prev) => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  }
+
+  async function handleSaveProviderCredentials(provider: string, mode: "LIVE" | "SANDBOX", label: string) {
+    const draft = providerDrafts[`${provider}_${mode}`];
+    if (!draft || Object.keys(draft).length === 0) return;
+    setProviderSaving(provider);
+    try {
+      await fetch("/api/admin/payment-providers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, label, credentials: draft, credentialMode: mode }),
+      });
+      setProviderDrafts((prev) => {
+        const next = { ...prev };
+        delete next[`${provider}_${mode}`];
+        return next;
+      });
+      await loadAll();
+    } finally {
+      setProviderSaving(null);
+    }
+  }
+
+  async function handleToggleProviderActive(providerRow: PaymentProviderRow) {
+    setProviderSaving(providerRow.provider);
+    try {
+      await fetch(`/api/admin/payment-providers/${providerRow.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !providerRow.isActive }),
+      });
+      await loadAll();
+    } finally {
+      setProviderSaving(null);
+    }
+  }
+
+  function requestModeSwitch(provider: string, nextMode: "LIVE" | "SANDBOX") {
+    if (nextMode === "LIVE") {
+      setPendingLiveConfirm(provider);
+      return;
+    }
+    setProviderMode((prev) => ({ ...prev, [provider]: nextMode }));
+  }
+
+  async function confirmSwitchToLive(providerRow: PaymentProviderRow) {
+    setPendingLiveConfirm(null);
+    setProviderMode((prev) => ({ ...prev, [providerRow.provider]: "LIVE" }));
+    setProviderSaving(providerRow.provider);
+    try {
+      await fetch(`/api/admin/payment-providers/${providerRow.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "LIVE" }),
+      });
+      await loadAll();
+    } finally {
+      setProviderSaving(null);
+    }
+  }
+
+  async function handleTestProviderConnection(providerRow: PaymentProviderRow, mode: "LIVE" | "SANDBOX") {
+    setProviderSaving(providerRow.provider);
+    setProviderTestResult((prev) => ({ ...prev, [providerRow.provider]: "Testing…" }));
+    try {
+      const res = await fetch(`/api/admin/payment-providers/${providerRow.id}/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
+      const data = await res.json();
+      setProviderTestResult((prev) => ({ ...prev, [providerRow.provider]: `${data.ok ? "✓" : "✗"} ${data.message}` }));
+    } catch {
+      setProviderTestResult((prev) => ({ ...prev, [providerRow.provider]: "✗ Network error." }));
+    } finally {
+      setProviderSaving(null);
     }
   }
 
@@ -970,83 +1098,125 @@ export function AdminPackagesClient() {
 
       {/* 6. OFFICIAL PAYMENT GATEWAYS */}
       {activeTab === "payments" && (
-        <div className="space-y-6">
+        <div className="space-y-5">
+          <Text size="body-sm" color="secondary">
+            SellerSalt is the merchant of record — these are your own gateway credentials (from each provider's dashboard), not a marketplace/Connect authorization. Live and Sandbox credentials are stored separately; switching to Live requires confirmation.
+          </Text>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Stripe Connect Platform Card */}
-            <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-extrabold">
-                    S
+            {(["STRIPE", "PAYPAL", "SAFEPAY", "PAYFAST"] as const).map((providerKey) => {
+              const meta = PROVIDER_META[providerKey];
+              const row = paymentProviders.find((p) => p.provider === providerKey);
+              const currentMode = row ? modeFor(providerKey, row.mode) : "SANDBOX";
+              const hasCredsForMode = row
+                ? currentMode === "LIVE" ? row.hasLiveCredentials : row.hasSandboxCredentials
+                : false;
+              const draft = providerDrafts[`${providerKey}_${currentMode}`] ?? {};
+
+              return (
+                <Card key={providerKey} padding="lg" className="border-line bg-white shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-[#F4F3EF] flex items-center justify-center text-ink font-extrabold">
+                        {meta.label[0]}
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-ink">{meta.label}</div>
+                        <div className="text-xs text-ink-tertiary">{meta.description}</div>
+                      </div>
+                    </div>
+                    <a href={meta.dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink-tertiary hover:text-ink flex items-center gap-1">
+                      Dashboard <ExternalLink className="h-3 w-3" />
+                    </a>
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-ink">Stripe Platform Connect</div>
-                    <div className="text-xs text-ink-tertiary">Credit / Debit Cards, Apple Pay, Google Pay</div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => requestModeSwitch(providerKey, "SANDBOX")}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${currentMode === "SANDBOX" ? "bg-[#141B16] text-white" : "bg-surface-muted text-ink-secondary"}`}
+                    >
+                      Sandbox
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => requestModeSwitch(providerKey, "LIVE")}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${currentMode === "LIVE" ? "bg-[#B42318] text-white" : "bg-surface-muted text-ink-secondary"}`}
+                    >
+                      Live
+                    </button>
+                    {row && (
+                      <Badge variant={row.isActive ? "success" : "neutral"} className="ml-auto">
+                        {row.isActive ? `Active (${row.mode})` : "Inactive"}
+                      </Badge>
+                    )}
                   </div>
-                </div>
-                <Badge variant="success">Priority 1</Badge>
-              </div>
 
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                Official Stripe Connect platform structure for recurring subscriptions and 3-day $1.00 USD trial authorizations.
-              </p>
+                  {pendingLiveConfirm === providerKey && (
+                    <Alert variant="warning">
+                      Switching to LIVE will process real charges once active. Confirm?
+                      <div className="flex gap-2 mt-2">
+                        <Button size="compact" variant="destructive" onClick={() => row && confirmSwitchToLive(row)} className="text-[11px]">Confirm Live</Button>
+                        <Button size="compact" variant="secondary" onClick={() => setPendingLiveConfirm(null)} className="text-[11px]">Cancel</Button>
+                      </div>
+                    </Alert>
+                  )}
 
-              <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle text-xs space-y-1.5 font-mono">
-                <div className="flex justify-between">
-                  <span className="text-ink-tertiary">Live Secret Key:</span>
-                  <span className="text-ink font-bold">••••••••_live_99f2</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-tertiary">Webhook Signing:</span>
-                  <span className="text-ink font-bold">••••••••_whsec_48a1</span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#0E8F5D]">✓ Platform Connected</span>
-                <Button variant="secondary" size="compact" className="text-xs">
-                  Re-authorize Stripe →
-                </Button>
-              </div>
-            </Card>
-
-            {/* PayPal Partner Onboarding Card */}
-            <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-extrabold">
-                    P
+                  <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle space-y-2">
+                    {PROVIDER_FIELDS[providerKey]!.map((field) => (
+                      <div key={field.key} className="flex items-center gap-2">
+                        <label className="text-[11px] text-ink-tertiary w-32 shrink-0">{field.label}</label>
+                        <input
+                          type={field.secret ? "password" : "text"}
+                          value={draft[field.key] ?? ""}
+                          onChange={(e) => updateProviderDraft(providerKey, currentMode, field.key, e.target.value)}
+                          placeholder={hasCredsForMode ? "••••••••" : `Enter ${field.label}`}
+                          className="flex-1 text-xs border border-line rounded px-2 py-1 font-mono"
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-ink">PayPal Partner Platform</div>
-                    <div className="text-xs text-ink-tertiary">PayPal Account & Buyer Protection</div>
+
+                  {providerTestResult[providerKey] && (
+                    <p className="text-[11px] text-ink-secondary">{providerTestResult[providerKey]}</p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="primary"
+                      size="compact"
+                      loading={providerSaving === providerKey}
+                      disabled={Object.keys(draft).length === 0}
+                      onClick={() => handleSaveProviderCredentials(providerKey, currentMode, meta.label)}
+                      className="text-[11px] bg-[#0E8F5D] hover:bg-[#0C7A52]"
+                    >
+                      Save {currentMode}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={providerSaving === providerKey}
+                      disabled={!hasCredsForMode && Object.keys(draft).length === 0}
+                      onClick={() => row && handleTestProviderConnection(row, currentMode)}
+                      className="text-[11px]"
+                    >
+                      Test Connection
+                    </Button>
+                    {row && (
+                      <Button
+                        variant="secondary"
+                        size="compact"
+                        loading={providerSaving === providerKey}
+                        onClick={() => handleToggleProviderActive(row)}
+                        className="text-[11px] ml-auto"
+                      >
+                        {row.isActive ? "Deactivate" : "Activate"}
+                      </Button>
+                    )}
                   </div>
-                </div>
-                <Badge variant="neutral">Priority 2</Badge>
-              </div>
-
-              <p className="text-xs text-ink-secondary leading-relaxed">
-                PayPal official partner integration with automated recurring billing vault and webhook synchronization.
-              </p>
-
-              <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle text-xs space-y-1.5 font-mono">
-                <div className="flex justify-between">
-                  <span className="text-ink-tertiary">Client ID:</span>
-                  <span className="text-ink font-bold">••••••••_paypal_client</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-ink-tertiary">Vault ID:</span>
-                  <span className="text-ink font-bold">••••••••_vault_ok</span>
-                </div>
-              </div>
-
-              <div className="pt-2 flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#0E8F5D]">✓ Platform Connected</span>
-                <Button variant="secondary" size="compact" className="text-xs">
-                  Re-authorize PayPal →
-                </Button>
-              </div>
-            </Card>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
