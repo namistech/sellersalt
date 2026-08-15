@@ -88,11 +88,34 @@ export default function ProfilePage() {
   const [showTotpModal, setShowTotpModal] = useState(false);
   const [totpSecret, setTotpSecret] = useState("");
   const [totpUri, setTotpUri] = useState("");
+  const [totpQrDataUrl, setTotpQrDataUrl] = useState("");
   const [totpCode, setTotpCode] = useState("");
   const [totpRecoveryCodes, setTotpRecoveryCodes] = useState<string[]>([]);
   const [totpLoading, setTotpLoading] = useState(false);
   const [totpError, setTotpError] = useState<string | null>(null);
   const [totpCopied, setTotpCopied] = useState(false);
+  const [recoveryCodesCopied, setRecoveryCodesCopied] = useState(false);
+  const [disableTotpPassword, setDisableTotpPassword] = useState("");
+  const [showDisableTotpConfirm, setShowDisableTotpConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!totpUri) {
+      setTotpQrDataUrl("");
+      return;
+    }
+    // Rendered entirely client-side (qrcode npm package) — never sent to a
+    // third-party QR image service, which would leak the raw TOTP secret
+    // (embedded in the otpauth:// URI) to an outside server.
+    let cancelled = false;
+    import("qrcode").then((QRCode) => {
+      QRCode.toDataURL(totpUri, { width: 220, margin: 1 }).then((url) => {
+        if (!cancelled) setTotpQrDataUrl(url);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [totpUri]);
   const [codesCopied, setCodesCopied] = useState(false);
 
   // Deletion Modal States
@@ -308,20 +331,68 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleDisableTotp() {
-    if (!confirm("Are you sure you want to disable Two-Factor Authentication?")) return;
+  async function handleConfirmDisableTotp() {
+    if (!disableTotpPassword.trim()) {
+      setTotpError("Enter your password or a current 2FA/backup code to confirm.");
+      return;
+    }
     setTotpLoading(true);
+    setTotpError(null);
     try {
-      const res = await fetch("/api/settings/2fa/totp", { method: "DELETE" });
+      // Accept either a password or a 6-digit/backup code in the same field.
+      const isCode = /^\d{6}$/.test(disableTotpPassword.trim()) || /^[0-9A-F]{4}-[0-9A-F]{4}$/i.test(disableTotpPassword.trim());
+      const res = await fetch("/api/settings/2fa/totp", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isCode ? { code: disableTotpPassword.trim() } : { password: disableTotpPassword }),
+      });
+      const data = await res.json();
       setTotpLoading(false);
-      if (res.ok) {
-        setTwoFactorEnabled(false);
-        setTotpRecoveryCodes([]);
-        setShowTotpModal(false);
+      if (!res.ok) {
+        setTotpError(data.error || "Could not disable 2FA.");
+        return;
       }
+      setTwoFactorEnabled(false);
+      setTotpRecoveryCodes([]);
+      setShowTotpModal(false);
+      setShowDisableTotpConfirm(false);
+      setDisableTotpPassword("");
     } catch {
       setTotpLoading(false);
+      setTotpError("Network error disabling 2FA.");
     }
+  }
+
+  async function handleRegenerateRecoveryCodes() {
+    const password = window.prompt("Enter your password or a current 2FA/backup code to regenerate backup codes:");
+    if (!password?.trim()) return;
+    setTotpLoading(true);
+    try {
+      const isCode = /^\d{6}$/.test(password.trim()) || /^[0-9A-F]{4}-[0-9A-F]{4}$/i.test(password.trim());
+      const res = await fetch("/api/settings/2fa/totp", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isCode ? { code: password.trim() } : { password }),
+      });
+      const data = await res.json();
+      setTotpLoading(false);
+      if (!res.ok) {
+        setProfileError(data.error || "Could not regenerate backup codes.");
+        return;
+      }
+      setTotpRecoveryCodes(data.recoveryCodes || []);
+      setShowTotpModal(true);
+      setProfileMessage("New backup codes generated. Your old codes no longer work.");
+    } catch {
+      setTotpLoading(false);
+      setProfileError("Network error regenerating backup codes.");
+    }
+  }
+
+  function handleCopyRecoveryCodes() {
+    navigator.clipboard.writeText(totpRecoveryCodes.join("\n"));
+    setRecoveryCodesCopied(true);
+    setTimeout(() => setRecoveryCodesCopied(false), 2000);
   }
 
   function handleDownloadRecoveryCodes() {
@@ -608,17 +679,32 @@ export default function ProfilePage() {
               </Badge>
             </div>
 
-            <div className="pt-2 border-t border-line-subtle flex justify-end">
+            <div className="pt-2 border-t border-line-subtle flex justify-end gap-2">
               {twoFactorEnabled ? (
-                <Button
-                  variant="destructive"
-                  size="compact"
-                  onClick={handleDisableTotp}
-                  loading={totpLoading}
-                  className="text-xs"
-                >
-                  Disable 2FA
-                </Button>
+                <>
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={handleRegenerateRecoveryCodes}
+                    loading={totpLoading}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" /> Regenerate backup codes
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="compact"
+                    onClick={() => {
+                      setShowDisableTotpConfirm(true);
+                      setDisableTotpPassword("");
+                      setTotpError(null);
+                    }}
+                    loading={totpLoading}
+                    className="text-xs"
+                  >
+                    Disable 2FA
+                  </Button>
+                </>
               ) : (
                 <Button
                   variant="primary"
@@ -845,14 +931,29 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  onClick={handleDownloadRecoveryCodes}
-                  className="text-xs"
-                >
-                  <Download className="h-3.5 w-3.5 mr-1" /> Download (.txt)
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={handleDownloadRecoveryCodes}
+                    className="text-xs"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1" /> Download
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={handleCopyRecoveryCodes}
+                    className="text-xs"
+                  >
+                    {recoveryCodesCopied ? (
+                      <Check className="h-3.5 w-3.5 mr-1 text-[#0E8F5D]" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    {recoveryCodesCopied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
 
                 <Button
                   variant="primary"
@@ -869,14 +970,12 @@ export default function ProfilePage() {
               {/* QR Code Display */}
               <div className="flex flex-col items-center justify-center p-4 bg-[#FAFAF8] rounded-xl border border-line space-y-2">
                 <div className="text-[11px] font-bold text-ink">Scan with Authenticator App:</div>
-                <div className="p-2 bg-white rounded-lg border border-line shadow-2xs">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                      totpUri || `otpauth://totp/SellerSalt:${email}?secret=${totpSecret}&issuer=SellerSalt`
-                    )}`}
-                    alt="2FA QR Code"
-                    className="h-44 w-44"
-                  />
+                <div className="p-2 bg-white rounded-lg border border-line shadow-2xs h-44 w-44 flex items-center justify-center">
+                  {totpQrDataUrl ? (
+                    <img src={totpQrDataUrl} alt="2FA QR Code" className="h-full w-full" />
+                  ) : (
+                    <span className="text-[10px] text-ink-tertiary">Generating QR code…</span>
+                  )}
                 </div>
               </div>
 
@@ -928,6 +1027,46 @@ export default function ProfilePage() {
               </div>
             </>
           )}
+        </div>
+      </Dialog>
+
+      {/* Disable 2FA Confirmation Dialog */}
+      <Dialog
+        open={showDisableTotpConfirm}
+        onClose={() => setShowDisableTotpConfirm(false)}
+        title="Disable Two-Factor Authentication"
+        description="This removes an active layer of account protection. Confirm with your password or a current 2FA/backup code."
+      >
+        <div className="space-y-4">
+          <Input
+            id="disableTotpConfirm"
+            label="Password or 2FA/backup code"
+            type="password"
+            autoFocus
+            value={disableTotpPassword}
+            onChange={(e) => setDisableTotpPassword(e.target.value)}
+            placeholder="Password, 123456, or a backup code"
+          />
+          {totpError && <Alert variant="danger">{totpError}</Alert>}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              variant="secondary"
+              size="compact"
+              onClick={() => setShowDisableTotpConfirm(false)}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="compact"
+              loading={totpLoading}
+              onClick={handleConfirmDisableTotp}
+              className="text-xs"
+            >
+              Disable 2FA
+            </Button>
+          </div>
         </div>
       </Dialog>
 

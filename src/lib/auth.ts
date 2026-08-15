@@ -11,6 +11,7 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { rpID, expectedOrigin } from "./webauthn";
 import { verifyChallengeToken } from "./webauthn-challenge";
+import { get2FA, verify2FALoginCode } from "./two-factor";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -60,6 +61,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        code: { label: "2FA code", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -72,6 +74,19 @@ export const authOptions: NextAuthOptions = {
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
+
+        // NextAuth's CredentialsProvider only surfaces failures via
+        // signIn()'s `error` string (thrown Error message on the
+        // authorize() side, not a return value) — this is the standard
+        // way to signal "need a second factor" vs. "wrong password"
+        // through that constraint, letting the login page show a
+        // second-step code prompt instead of just failing.
+        const twoFactor = await get2FA(user.id);
+        if (twoFactor?.enabled) {
+          if (!credentials.code) throw new Error("2FA_REQUIRED");
+          const result = await verify2FALoginCode(user.id, credentials.code);
+          if (!result.ok) throw new Error("2FA_INVALID");
+        }
 
         const primaryOrg = user.memberships[0]?.organization;
         return {

@@ -37,6 +37,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+  const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
 
   useEffect(() => {
     const code = searchParams.get("error");
@@ -48,10 +50,25 @@ function LoginForm() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const res = await signIn("credentials", { email, password, redirect: false });
+    const res = await signIn("credentials", {
+      email,
+      password,
+      code: needsTwoFactor ? twoFactorCode : undefined,
+      redirect: false,
+    });
     setLoading(false);
+
+    if (res?.error === "2FA_REQUIRED") {
+      setNeedsTwoFactor(true);
+      return;
+    }
+    if (res?.error === "2FA_INVALID") {
+      setError("That code isn't valid. Check your authenticator app, or use a backup code.");
+      return;
+    }
     if (res?.error) {
       setError("That email and password don't match an account.");
+      setNeedsTwoFactor(false);
       return;
     }
     router.push("/dashboard");
@@ -119,6 +136,7 @@ function LoginForm() {
       </Text>
 
       {/* Social / OAuth Logins */}
+      {!needsTwoFactor && (
       <div className="space-y-2.5 mb-6">
         <button
           type="button"
@@ -167,67 +185,114 @@ function LoginForm() {
           <span>{oauthLoading === "passkey" ? "Verifying passkey…" : "Sign in with a passkey"}</span>
         </button>
       </div>
+      )}
 
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-line-subtle" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-surface px-2 text-ink-tertiary font-medium">Or continue with email</span>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          id="email"
-          label="Email address"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          autoComplete="email"
-        />
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="password" className="text-label-md font-medium text-ink">
-              Password
-            </label>
-            <Link href="/forgot-password" className="text-xs font-semibold text-[#0E8F5D] hover:underline">
-              Forgot password?
-            </Link>
+      {!needsTwoFactor && (
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-line-subtle" />
           </div>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              className="pr-10"
-            />
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-surface px-2 text-ink-tertiary font-medium">Or continue with email</span>
+          </div>
+        </div>
+      )}
+
+      {needsTwoFactor ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Heading as="h2" size="h4" className="text-ink mb-1">
+              Enter your verification code
+            </Heading>
+            <Text size="body-sm" color="secondary">
+              Open your authenticator app for the code, or enter one of your backup codes.
+            </Text>
+          </div>
+
+          <Input
+            id="twoFactorCode"
+            label="6-digit code or backup code"
+            type="text"
+            required
+            autoFocus
+            value={twoFactorCode}
+            onChange={(e) => setTwoFactorCode(e.target.value)}
+            placeholder="123456"
+            autoComplete="one-time-code"
+          />
+
+          {error && <Alert variant="danger">{error}</Alert>}
+
+          <div className="pt-2 space-y-2">
+            <Button type="submit" variant="primary" loading={loading} fullWidth className="!py-3 text-base font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52]">
+              Verify & sign in
+            </Button>
             <button
               type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => {
+                setNeedsTwoFactor(false);
+                setTwoFactorCode("");
+                setError(null);
+              }}
+              className="w-full text-center text-xs font-semibold text-ink-tertiary hover:text-ink"
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              ← Back
             </button>
           </div>
-        </div>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            id="email"
+            label="Email address"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+          />
 
-        {error && <Alert variant="danger">{error}</Alert>}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="password" className="text-label-md font-medium text-ink">
+                Password
+              </label>
+              <Link href="/forgot-password" className="text-xs font-semibold text-[#0E8F5D] hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
 
-        <div className="pt-2">
-          <Button type="submit" variant="primary" loading={loading} fullWidth className="!py-3 text-base font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52]">
-            Sign in to SellerSalt
-          </Button>
-        </div>
-      </form>
+          {error && <Alert variant="danger">{error}</Alert>}
+
+          <div className="pt-2">
+            <Button type="submit" variant="primary" loading={loading} fullWidth className="!py-3 text-base font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52]">
+              Sign in to SellerSalt
+            </Button>
+          </div>
+        </form>
+      )}
 
       <p className="mt-6 text-center text-sm text-ink-tertiary">
         Don't have an account yet?{" "}
