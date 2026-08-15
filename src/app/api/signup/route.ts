@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/send-email";
+import { sendLifecycleEmail } from "@/services/email/template-registry";
 
 // One signup = one User + one Organization + one OWNER Membership.
-// This is the "single org per user today, schema ready for more" pattern:
-// nothing here prevents adding a second membership later for team invites.
 export async function POST(req: Request) {
   const { email, password, name, organizationName } = await req.json();
 
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
     data: { name: organizationName?.trim() || `${name || normalizedEmail}'s workspace` },
   });
 
-  await prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email: normalizedEmail,
       passwordHash,
@@ -40,12 +39,25 @@ export async function POST(req: Request) {
     },
   });
 
-  // Non-blocking — degrades gracefully like every other transactional email
-  // in this app if SMTP isn't configured, never fails the signup itself.
-  sendEmail({
-    to: normalizedEmail,
-    subject: "Welcome to SellerSalt",
-    html: `<p>Hi${name ? ` ${name}` : ""},</p><p>Your SellerSalt account is ready. One step left — pick a plan to activate your workspace.</p>`,
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    },
+  });
+
+  const appUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
+  const verificationUrl = `${appUrl.replace(/\/+$/, "")}/api/auth/verify-email?token=${rawToken}`;
+
+  sendLifecycleEmail("EMAIL_VERIFICATION", normalizedEmail, {
+    name: name?.trim() || normalizedEmail.split("@")[0],
+    verificationUrl,
+    expiresInHours: "24",
   }).catch(() => {});
 
   return NextResponse.json({ ok: true });

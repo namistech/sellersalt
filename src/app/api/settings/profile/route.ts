@@ -11,7 +11,7 @@ export async function GET() {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [user, org, membership, sellerChannel] = await Promise.all([
+  const [user, org, membership, sellerChannel, avatarSetting] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, createdAt: true },
@@ -34,11 +34,16 @@ export async function GET() {
           select: { id: true, label: true, storeUrl: true, status: true, lastSyncedAt: true },
         })
       : null,
+    prisma.appSetting.findUnique({
+      where: { key: `user_avatar_${userId}` },
+      select: { value: true },
+    }),
   ]);
 
   return NextResponse.json({
     name: user?.name ?? "",
     email: user?.email ?? "",
+    avatarUrl: avatarSetting?.value ?? null,
     memberSince: user?.createdAt,
     organizationName: org?.name ?? "",
     planName: org?.package?.name ?? org?.plan ?? "Starter",
