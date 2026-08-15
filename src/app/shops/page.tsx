@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isAdminEmail } from "@/lib/is-admin";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { DashboardShell } from "@/app/(dashboard)/dashboard-shell";
+import { resolveWorkspaceContextForUser } from "@/services/session";
 import { ShopsDirectoryClient, type PublicShopItem } from "./shops-client";
 
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
@@ -33,29 +36,47 @@ export default async function PublicShopsPage() {
   const session = await getServerSession(authOptions);
   const isAuthenticated = Boolean(session);
 
+  // Public, unauthenticated page — must never surface a paying customer's
+  // own competitive research to anonymous visitors (including their
+  // competitors). Scoped to admin-owned organizations only (the platform's
+  // own showcase research, per CLAUDE.md's "Seller Salt Administration"
+  // org), not every organization's Prospect rows. Previously had no
+  // organizationId filter at all.
+  const adminUsers = await prisma.user.findMany({ include: { memberships: true } });
+  const adminOrgIds = Array.from(
+    new Set(
+      adminUsers
+        .filter((u: (typeof adminUsers)[number]) => isAdminEmail(u.email))
+        .flatMap((u: (typeof adminUsers)[number]) => u.memberships.map((m: (typeof u.memberships)[number]) => m.organizationId))
+    )
+  );
+
   // Fetch real prospect rows from the database to populate the public directory
-  const prospects = await prisma.prospect.findMany({
-    select: {
-      shopExternalId: true,
-      shopName: true,
-      shopUrl: true,
-      shopIconUrl: true,
-      totalSales: true,
-      activeListings: true,
-      shopAgeMonths: true,
-      estDailySales: true,
-      avgSellingRatio: true,
-      reviewCount: true,
-      reviewAverage: true,
-      keyword: true,
-      price: true,
-      listingTitle: true,
-      listingImageUrl: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 500,
-  });
+  const prospects = adminOrgIds.length === 0
+    ? []
+    : await prisma.prospect.findMany({
+        where: { organizationId: { in: adminOrgIds } },
+        select: {
+          shopExternalId: true,
+          shopName: true,
+          shopUrl: true,
+          shopIconUrl: true,
+          totalSales: true,
+          activeListings: true,
+          shopAgeMonths: true,
+          estDailySales: true,
+          avgSellingRatio: true,
+          reviewCount: true,
+          reviewAverage: true,
+          keyword: true,
+          price: true,
+          listingTitle: true,
+          listingImageUrl: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: 500,
+      });
 
   // Aggregate by shopExternalId into distinct unique shop profiles
   const shopMap = new Map<string, PublicShopItem>();
@@ -115,21 +136,35 @@ export default async function PublicShopsPage() {
     })),
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
+  const content = (
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <ShopsDirectoryClient
+        initialShops={shops}
+        isAuthenticated={isAuthenticated}
+      />
+    </>
+  );
+
+  // Logged-in users get the real internal app shell (sidebar/topbar), not
+  // marketing chrome — same pattern as /shops/[shopExternalId].
+  if (session?.user) {
+    const user = session.user as any;
+    const context = await resolveWorkspaceContextForUser(user, isAdminEmail(user.email));
+    return (
+      <DashboardShell context={context}>
+        <div className="max-w-6xl mx-auto w-full">{content}</div>
+      </DashboardShell>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
       <PublicHeader currentPath="/shops" />
-
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-12">
-        <ShopsDirectoryClient
-          initialShops={shops}
-          isAuthenticated={isAuthenticated}
-        />
-      </main>
-
+      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-12">{content}</main>
       <PublicFooter />
     </div>
   );
