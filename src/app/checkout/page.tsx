@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { isStagingVerificationAccount } from "@/lib/staging-verification";
 import { prisma } from "@/lib/db";
 import { CheckoutClient } from "./checkout-client";
 
@@ -16,10 +18,17 @@ export default async function CheckoutPage({
   // (no session yet) are exactly who this page needs to serve, since
   // account creation now happens ON checkout, not before it.
   if (session) {
+    const headerList = await headers();
+    const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
+    const isStagingVerification = isStagingVerificationAccount(session.user?.email, host);
+
     const organizationId = (session.user as any)?.organizationId as string | undefined;
     if (organizationId) {
       const existingSub = await prisma.subscription.findUnique({ where: { organizationId } });
-      if (existingSub && (existingSub.status === "ACTIVE" || existingSub.status === "TRIALING")) {
+      const hasAccess =
+        isStagingVerification ||
+        Boolean(existingSub && (existingSub.status === "ACTIVE" || existingSub.status === "TRIALING"));
+      if (hasAccess) {
         redirect("/dashboard");
       }
     }

@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
@@ -11,9 +12,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "";
+
   const user = session.user as any;
   const isAdmin = isAdminEmail(user?.email);
-  const isStagingVerification = isStagingVerificationAccount(user?.email);
+  const isStagingVerification = isStagingVerificationAccount(user?.email, host);
 
   // Every plan (including Started) now requires completed checkout — no
   // free tier exists anymore. Admins and designated staging verification
