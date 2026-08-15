@@ -1,17 +1,18 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Store, ShieldCheck, ArrowRight, Sparkles, BarChart3 } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isAdminEmail } from "@/lib/is-admin";
 import { AnalyticsRevenueChart } from "./analytics-charts";
+import { Card, Button, Badge, Heading, Text } from "@/components/ui";
 
 export default async function AnalyticsPage() {
   const session = await getServerSession(authOptions);
-  if (!isAdminEmail(session?.user?.email)) redirect("/dashboard");
+  if (!session) redirect("/login");
 
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
-  if (!organizationId) return null;
+  if (!organizationId) redirect("/login");
 
   const channels = await prisma.sellerChannel.findMany({
     where: { organizationId, status: "ACTIVE" },
@@ -20,29 +21,71 @@ export default async function AnalyticsPage() {
     },
   });
 
+  // Intentional Premium Locked State if disconnected
   if (channels.length === 0) {
     return (
-      <div>
-        <header className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Analytics</h1>
-          <p className="mt-1 text-sm text-muted">Connect a store to see real sales data here.</p>
-        </header>
-        <div className="card">
-          <p className="mb-4 text-sm text-muted">No stores connected yet.</p>
-          <Link href="/settings/channels" className="btn-primary">Connect a store</Link>
+      <div className="space-y-6 max-w-4xl">
+        <div>
+          <Heading as="h1" size="h2">
+            Store Performance & Analytics
+          </Heading>
+          <Text size="body-md" color="secondary" className="mt-1">
+            Real-time sales tracking, order volume, and listing conversion intelligence.
+          </Text>
         </div>
+
+        <Card padding="lg" className="border-line bg-surface shadow-xs text-center py-12 space-y-5">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#0E8F5D]/10 text-[#0E8F5D] mx-auto">
+            <BarChart3 className="h-7 w-7" />
+          </div>
+
+          <div className="max-w-md mx-auto space-y-2">
+            <h3 className="text-lg font-bold text-ink">
+              Connect your Etsy shop to unlock store analytics
+            </h3>
+            <p className="text-xs leading-relaxed text-ink-secondary">
+              Correlate your Opportunity Radar research with your live store's transaction receipts, sales velocity, and customer revenue.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link href="/settings/channels">
+              <Button variant="primary" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-sm">
+                <Store className="h-4 w-4 mr-1.5" /> Connect Etsy Shop
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto pt-6 text-left text-xs border-t border-line-subtle text-ink-secondary">
+            <div className="space-y-1">
+              <span className="font-semibold text-ink flex items-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#0E8F5D]" /> Secure OAuth
+              </span>
+              <p className="text-[11px]">Direct official authentication via Etsy Open API.</p>
+            </div>
+            <div className="space-y-1">
+              <span className="font-semibold text-ink flex items-center gap-1">
+                <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" /> Multi-Currency
+              </span>
+              <p className="text-[11px]">Honest per-currency revenue separation.</p>
+            </div>
+            <div className="space-y-1">
+              <span className="font-semibold text-ink flex items-center gap-1">
+                <BarChart3 className="h-3.5 w-3.5 text-[#0E8F5D]" /> Order Velocity
+              </span>
+              <p className="text-[11px]">Daily 30-day transaction trendline breakdown.</p>
+            </div>
+          </div>
+        </Card>
       </div>
     );
   }
 
   const totalOrders = channels.reduce((sum: number, c: (typeof channels)[number]) => sum + c.orders.length, 0);
 
-  // Revenue is shown per-channel in its own currency rather than blended into
-  // one number — summing USD + PKR + EUR as if they were the same unit would
-  // be a real, misleading bug, not a rounding nicety.
   const perChannel = channels.map((c: (typeof channels)[number]) => {
     const revenue = c.orders.reduce((sum: number, o: (typeof c.orders)[number]) => sum + o.totalAmount, 0);
-    const currency = c.orders[0]?.currency ?? "";
+    const currency = c.orders[0]?.currency ?? "USD";
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const recentOrders = c.orders.filter((o: (typeof c.orders)[number]) => o.placedAt >= thirtyDaysAgo);
     return {
@@ -59,8 +102,6 @@ export default async function AnalyticsPage() {
 
   const best = [...perChannel].sort((a, b) => b.recentOrderCount - a.recentOrderCount)[0];
 
-  // Chart data per channel — grouped by day, kept separate per currency so the
-  // chart legend is honest about what it's showing.
   const chartData = channels.map((c: (typeof channels)[number]) => ({
     label: c.label,
     currency: c.orders[0]?.currency ?? "",
@@ -68,64 +109,80 @@ export default async function AnalyticsPage() {
   }));
 
   return (
-    <div>
-      <header className="mb-8 flex items-start justify-between">
+    <div className="space-y-8 max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Analytics</h1>
-          <p className="mt-1 text-sm text-muted">Real order data from your connected stores.</p>
+          <Heading as="h1" size="h2">
+            Store Performance & Analytics
+          </Heading>
+          <Text size="body-md" color="secondary" className="mt-1">
+            Real order metrics from your connected Etsy seller stores.
+          </Text>
         </div>
-        <Link href="/settings/channels" className="btn-secondary shrink-0">Manage stores</Link>
-      </header>
+        <Link href="/settings/channels">
+          <Button variant="secondary" size="compact" className="text-xs">
+            Manage Connected Stores
+          </Button>
+        </Link>
+      </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <div className="card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Connected stores</div>
-          <div className="mt-1 text-2xl font-semibold text-ink">{channels.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Total orders</div>
-          <div className="mt-1 text-2xl font-semibold text-ink">{totalOrders}</div>
-        </div>
-        <div className="card md:col-span-2">
-          <div className="text-xs font-medium uppercase tracking-wide text-muted">Best performing (last 30 days)</div>
-          <div className="mt-1 text-lg font-semibold text-ink">
-            {best && best.recentOrderCount > 0 ? `${best.label} — ${best.recentOrderCount} orders` : "Not enough recent data yet"}
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card padding="md" className="border-line bg-surface shadow-xs">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">Connected Stores</div>
+          <div className="mt-2 text-3xl font-black text-ink">{channels.length}</div>
+        </Card>
+
+        <Card padding="md" className="border-line bg-surface shadow-xs">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">Total Synced Orders</div>
+          <div className="mt-2 text-3xl font-black text-[#0E8F5D]">{totalOrders.toLocaleString()}</div>
+        </Card>
+
+        <Card padding="md" className="border-line bg-surface shadow-xs">
+          <div className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">Active Store Velocity</div>
+          <div className="mt-2 text-sm font-bold text-ink">
+            {best && best.recentOrderCount > 0 ? `${best.label} (${best.recentOrderCount} recent orders)` : "Awaiting initial sync activity"}
           </div>
+        </Card>
+      </div>
+
+      {/* Orders Trend Graph */}
+      <Card padding="lg" className="border-line bg-surface shadow-xs space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-ink">Orders Per Day (Last 30 Days)</h3>
+          <p className="text-xs text-ink-tertiary">Daily transaction velocity across connected seller channels.</p>
         </div>
-      </div>
-
-      <div className="mb-6 card">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Orders per day — last 30 days</h2>
         <AnalyticsRevenueChart series={chartData} />
-      </div>
+      </Card>
 
-      <div className="card overflow-x-auto">
-        <h2 className="mb-3 text-sm font-semibold text-ink">By store</h2>
-        <table className="w-full text-sm">
+      {/* Breakdown By Store */}
+      <Card padding="lg" className="border-line bg-surface shadow-xs space-y-4 overflow-x-auto">
+        <h3 className="text-sm font-bold text-ink">Connected Channels Breakdown</h3>
+        <table className="w-full text-left text-xs text-ink">
           <thead>
-            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="py-2 pr-4">Store</th>
-              <th className="py-2 pr-4">Orders</th>
-              <th className="py-2 pr-4">Revenue</th>
-              <th className="py-2 pr-4">Last synced</th>
+            <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider">
+              <th className="py-2.5 pr-4 font-semibold">Store</th>
+              <th className="py-2.5 pr-4 font-semibold">Orders</th>
+              <th className="py-2.5 pr-4 font-semibold">Revenue</th>
+              <th className="py-2.5 pr-4 font-semibold">Last Synchronized</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line">
+          <tbody className="divide-y divide-line-subtle">
             {perChannel.map((c: (typeof perChannel)[number]) => (
               <tr key={c.id}>
-                <td className="py-2 pr-4 font-medium text-ink">{c.label}</td>
-                <td className="py-2 pr-4 tabular-nums">{c.orderCount}</td>
-                <td className="py-2 pr-4 tabular-nums">
-                  {c.currency ? `${c.currency} ${c.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—"}
+                <td className="py-3 pr-4 font-semibold text-ink">{c.label}</td>
+                <td className="py-3 pr-4 tabular-nums">{c.orderCount}</td>
+                <td className="py-3 pr-4 tabular-nums font-semibold text-[#0E8F5D]">
+                  {c.currency} {c.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </td>
-                <td className="py-2 pr-4 text-muted">
-                  {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString() : "Not synced yet"}
+                <td className="py-3 pr-4 text-ink-tertiary">
+                  {c.lastSyncedAt ? new Date(c.lastSyncedAt).toLocaleString() : "Sync pending"}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </div>
+      </Card>
     </div>
   );
 }

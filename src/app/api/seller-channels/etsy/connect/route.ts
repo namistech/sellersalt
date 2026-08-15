@@ -22,7 +22,6 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.redirect(new URL("/login", appUrl()));
-  if (!isAdminEmail(session?.user?.email)) return NextResponse.redirect(new URL("/dashboard", appUrl()));
 
   const limitCheck = await checkLimit(organizationId, "sellerChannels");
   if (!limitCheck.allowed) {

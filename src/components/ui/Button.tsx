@@ -16,12 +16,12 @@ const BASE = "inline-flex items-center justify-center gap-2 rounded-md font-medi
 // Destructive. Kept as its own variant name (not aliased away) so
 // call sites can express *intent* even though the visual result matches.
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: "bg-accent text-white hover:bg-accent-dark active:bg-accent-active",
-  success: "bg-accent text-white hover:bg-accent-dark active:bg-accent-active",
-  secondary: "border border-line bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted",
-  tertiary: "bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted",
-  destructive: "bg-danger text-white hover:brightness-90 active:brightness-75",
-  link: "bg-transparent p-0 h-auto text-accent underline-offset-4 hover:underline",
+  primary: "bg-[#0E8F5D] text-white hover:bg-[#0C7A52] active:bg-[#0A6342] font-semibold shadow-xs",
+  success: "bg-[#0E8F5D] text-white hover:bg-[#0C7A52] active:bg-[#0A6342] font-semibold shadow-xs",
+  secondary: "border border-line bg-white text-ink hover:bg-surface-muted active:bg-surface-muted font-medium shadow-2xs",
+  tertiary: "bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted font-medium",
+  destructive: "bg-danger text-white hover:brightness-90 active:brightness-75 font-semibold shadow-xs",
+  link: "bg-transparent p-0 h-auto text-[#0E8F5D] font-medium underline-offset-4 hover:underline",
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {

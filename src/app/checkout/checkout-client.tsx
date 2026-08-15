@@ -1,11 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
-import { Check, ChevronDown, Eye, EyeOff } from "lucide-react";
+import { Check, ShieldCheck, Zap, Lock, Eye, EyeOff, Sparkles, ArrowRight, HelpCircle } from "lucide-react";
+import {
+  Card,
+  Input,
+  Button,
+  Alert,
+  Badge,
+  Heading,
+  Text,
+  Divider,
+} from "@/components/ui";
 
-interface PackageData {
+export interface PackageData {
   key: string;
   name: string;
   priceUsd: number;
@@ -17,7 +27,12 @@ interface PackageData {
   maxProspectsPerMonth: number;
 }
 
-const PROVIDER_LABELS: Record<string, string> = { STRIPE: "Pay with card", PAYPAL: "Pay with PayPal" };
+const PROVIDER_LABELS: Record<string, string> = {
+  STRIPE: "Pay with Card (Stripe)",
+  PAYPAL: "Pay with PayPal",
+  SAFEPAY: "Pay with Safepay",
+  PAYFAST: "Pay with PayFast (Debit / Credit)",
+};
 
 export function CheckoutClient({
   packages,
@@ -34,6 +49,8 @@ export function CheckoutClient({
   const [selectedKey, setSelectedKey] = useState(preselectedKey);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Coupon state
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
@@ -42,12 +59,15 @@ export function CheckoutClient({
     trialPriceUsd: number | null;
     priceUsd: number;
   } | null>(null);
-  const [featuresOpen, setFeaturesOpen] = useState(false);
 
-  // Account section — signup is the default for new visitors, with a
-  // "log in instead" toggle for people who already have an account.
+  // Account section
   const [accountMode, setAccountMode] = useState<"signup" | "login">("signup");
-  const [accountForm, setAccountForm] = useState({ name: "", organizationName: "", email: "", password: "" });
+  const [accountForm, setAccountForm] = useState({
+    name: "",
+    organizationName: "",
+    email: "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountSubmitting, setAccountSubmitting] = useState(false);
@@ -77,9 +97,13 @@ export function CheckoutClient({
         setAppliedCoupon(null);
         return;
       }
-      setAppliedCoupon({ code: couponInput.trim().toUpperCase(), trialPriceUsd: data.trialPriceUsd, priceUsd: data.priceUsd });
+      setAppliedCoupon({
+        code: couponInput.trim().toUpperCase(),
+        trialPriceUsd: data.trialPriceUsd,
+        priceUsd: data.priceUsd,
+      });
     } catch {
-      setCouponError("Something went wrong. Try again.");
+      setCouponError("Something went wrong validating coupon.");
     } finally {
       setCouponApplying(false);
     }
@@ -87,6 +111,7 @@ export function CheckoutClient({
 
   const displayTrialPriceUsd = appliedCoupon ? appliedCoupon.trialPriceUsd : selected.trialPriceUsd;
   const displayPriceUsd = appliedCoupon ? appliedCoupon.priceUsd : selected.priceUsd;
+  const dueToday = displayTrialPriceUsd !== null && displayTrialPriceUsd !== undefined ? displayTrialPriceUsd : displayPriceUsd;
 
   async function handleAccountSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,15 +126,12 @@ export function CheckoutClient({
       });
       const data = await res.json();
       if (!res.ok) {
-        setAccountError(data.error ?? "Something went wrong.");
+        setAccountError(data.error ?? "Something went wrong creating your account.");
         setAccountSubmitting(false);
         return;
       }
     }
 
-    // Same call establishes the session for both signup (right after account
-    // creation) and login — no full-page redirect, so the payment section
-    // below just becomes available in place once this resolves.
     const signInRes = await signIn("credentials", {
       email: accountForm.email,
       password: accountForm.password,
@@ -120,8 +142,8 @@ export function CheckoutClient({
     if (signInRes?.error) {
       setAccountError(
         accountMode === "signup"
-          ? "Account created, but sign-in failed. Try logging in below."
-          : "That email and password don't match an account."
+          ? "Account created, but sign-in failed. Please try logging in."
+          : "Invalid email or password."
       );
       return;
     }
@@ -135,233 +157,491 @@ export function CheckoutClient({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageKey: selected.key, provider, couponCode: appliedCoupon?.code }),
+        body: JSON.stringify({
+          packageKey: selected.key,
+          provider,
+          couponCode: appliedCoupon?.code,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        setError(data.error ?? "Couldn't start checkout.");
+        setError(data.error ?? "Could not initiate checkout session.");
         setLoadingProvider(null);
         return;
       }
       window.location.href = data.url;
     } catch {
-      setError("Something went wrong. Try again.");
+      setError("Network error starting checkout. Please try again.");
       setLoadingProvider(null);
     }
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <header className="border-b border-line px-6 py-5">
-        <Link href="/" className="text-lg font-semibold tracking-tight text-ink">
-          SellerSalt
-        </Link>
+    <div className="min-h-screen bg-[#FAFAF8] text-[#141B16]">
+      {/* Top Brand Bar */}
+      <header className="border-b border-[#E3E6E0] bg-white">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#0E8F5D] text-white font-bold flex items-center justify-center text-base shadow-xs group-hover:bg-[#0C7A52] transition-colors">
+              S
+            </div>
+            <span className="font-extrabold text-lg tracking-tight text-[#141B16]">
+              SellerSalt
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#525B55]">
+            <Lock className="h-3.5 w-3.5 text-[#0E8F5D]" />
+            <span>256-Bit SSL Encrypted Checkout</span>
+          </div>
+        </div>
       </header>
 
-      <div className="mx-auto max-w-xl px-6 py-14">
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-ink">Start your subscription</h1>
-        <p className="mb-8 text-sm text-muted">
-          {isAuthenticated
-            ? "One step left — pick your plan and payment method to get started."
-            : "Create your account and pick a plan — takes under a minute."}
-        </p>
-
-        {/* Account section — collapses to a simple confirmation once signed in */}
-        {isAuthenticated ? (
-          <div className="mb-6 flex items-center justify-between rounded-lg border border-line bg-surface px-4 py-3">
-            <span className="text-sm text-ink">
-              Signed in as <span className="font-medium">{session?.user?.email}</span>
-            </span>
-          </div>
-        ) : (
-          <div className="mb-6 rounded-xl border border-line bg-surface p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-ink">
-                {accountMode === "signup" ? "Create your account" : "Log in"}
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setAccountMode((m) => (m === "signup" ? "login" : "signup"));
-                  setAccountError(null);
-                }}
-                className="text-xs font-medium text-accent hover:underline"
-              >
-                {accountMode === "signup" ? "Already have an account? Log in" : "Need an account? Sign up"}
-              </button>
+      {/* Main Two-Column Container */}
+      <main className="max-w-6xl mx-auto px-6 py-10 lg:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* ============================================================ */}
+          {/* LEFT COLUMN: Account Authentication & Security Assurances   */}
+          {/* ============================================================ */}
+          <div className="lg:col-span-7 space-y-6">
+            <div>
+              <Badge variant="success" className="mb-2.5 text-xs font-semibold text-[#0E8F5D] bg-[#E7FAF1] border border-[#0E8F5D]/20">
+                <Sparkles className="h-3 w-3 mr-1 inline" /> Etsy E-Commerce Intelligence
+              </Badge>
+              <Heading as="h1" size="h2" className="text-2xl sm:text-3xl font-extrabold text-[#141B16]">
+                Set Up Your SellerSalt Workspace
+              </Heading>
+              <Text size="body-md" color="secondary" className="mt-1 text-[#525B55]">
+                {isAuthenticated
+                  ? "Your account is verified. Select your preferred payment gateway on the right to start researching."
+                  : "Create your login below to activate your Opportunity Radar and competitor research streams."}
+              </Text>
             </div>
 
-            <form onSubmit={handleAccountSubmit} className="space-y-3">
-              {accountMode === "signup" && (
-                <>
-                  <input
-                    className="input"
-                    placeholder="Workspace name"
-                    value={accountForm.organizationName}
-                    onChange={(e) => setAccountForm({ ...accountForm, organizationName: e.target.value })}
-                  />
-                  <input
-                    className="input"
-                    placeholder="Your name"
-                    value={accountForm.name}
-                    onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
-                  />
-                </>
-              )}
-              <input
-                type="email"
-                required
-                className="input"
-                placeholder="Email"
-                value={accountForm.email}
-                onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
-                autoComplete="email"
-              />
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  minLength={accountMode === "signup" ? 8 : undefined}
-                  className="input pr-10"
-                  placeholder="Password"
-                  value={accountForm.password}
-                  onChange={(e) => setAccountForm({ ...accountForm, password: e.target.value })}
-                  autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {accountError && <p className="text-sm text-danger">{accountError}</p>}
-              <button type="submit" disabled={accountSubmitting} className="btn-primary w-full">
-                {accountSubmitting ? "Please wait…" : accountMode === "signup" ? "Continue" : "Log in"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className="mb-6 rounded-xl border-2 border-accent bg-surface p-6">
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-accent">Selected plan</span>
-          </div>
-          <h2 className="text-xl font-semibold text-ink">{selected.name}</h2>
-
-          <div className="mt-3 flex items-baseline gap-2">
-            {appliedCoupon && (
-              <span className="text-lg text-muted line-through">${selected.trialPriceUsd ?? selected.priceUsd}</span>
-            )}
-            <span className="text-3xl font-bold text-ink">${displayTrialPriceUsd ?? displayPriceUsd}</span>
-            <span className="text-sm text-muted">
-              {selected.trialDays ? `for ${selected.trialDays} days` : "/ month"}
-            </span>
-          </div>
-          {selected.trialDays && (
-            <p className="mt-1 text-xs text-muted">
-              Then ${displayPriceUsd}/month automatically — cancel anytime during your trial and you won't be charged again.
-            </p>
-          )}
-
-          <div className="mt-4">
-            {appliedCoupon ? (
-              <div className="flex items-center justify-between rounded-md bg-green-50 px-3 py-2 text-xs text-success">
-                <span>Coupon "{appliedCoupon.code}" applied</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAppliedCoupon(null);
-                    setCouponInput("");
-                  }}
-                  className="font-medium hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
+            {/* Account Card */}
+            {isAuthenticated ? (
+              <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center font-bold text-base border border-[#0E8F5D]/30">
+                      ✓
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-[#7C847E] uppercase tracking-wider">
+                        Authenticated Workspace
+                      </div>
+                      <div className="text-sm font-bold text-[#141B16]">
+                        {session?.user?.email}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="tertiary"
+                    size="compact"
+                    onClick={() => signOut({ callbackUrl: "/checkout" })}
+                    className="text-xs text-[#7C847E] hover:text-[#141B16]"
+                  >
+                    Switch Account
+                  </Button>
+                </div>
+              </Card>
             ) : (
-              <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="Coupon code"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
-                />
-                <button
-                  type="button"
-                  onClick={handleApplyCoupon}
-                  disabled={couponApplying || !couponInput.trim()}
-                  className="btn-secondary shrink-0"
-                >
-                  {couponApplying ? "Applying…" : "Apply"}
-                </button>
-              </div>
+              <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-5">
+                {/* Account Mode Toggle Tabs */}
+                <div className="flex items-center border-b border-[#E3E6E0] pb-4 justify-between">
+                  <div>
+                    <h2 className="text-base font-bold text-[#141B16]">
+                      {accountMode === "signup" ? "1. Create Your Account" : "1. Sign In to Existing Account"}
+                    </h2>
+                    <p className="text-xs text-[#7C847E] mt-0.5">
+                      {accountMode === "signup"
+                        ? "Instant setup — your credentials will be ready immediately."
+                        : "Log in with your existing credentials to proceed to payment."}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountMode((m) => (m === "signup" ? "login" : "signup"));
+                      setAccountError(null);
+                    }}
+                    className="text-xs font-bold text-[#0E8F5D] hover:underline"
+                  >
+                    {accountMode === "signup" ? "Log in instead →" : "New user? Sign up →"}
+                  </button>
+                </div>
+
+                {/* 1-Click Social Sign In Options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => signIn("google", { callbackUrl: "/checkout" })}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-[#E3E6E0] bg-white px-3 py-2 text-xs font-semibold text-[#141B16] hover:bg-[#FAFAF8] transition shadow-2xs"
+                  >
+                    <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15Z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"
+                      />
+                    </svg>
+                    <span>Continue with Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => signIn("etsy", { callbackUrl: "/checkout" })}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-[#F1641E]/40 bg-[#F1641E]/5 px-3 py-2 text-xs font-semibold text-[#D9531E] hover:bg-[#F1641E]/10 transition shadow-2xs"
+                  >
+                    <span>Sign in with Etsy</span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#E3E6E0]" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase">
+                    <span className="bg-white px-2 text-[#7C847E] font-medium">Or enter email below</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleAccountSubmit} className="space-y-4">
+                  {accountMode === "signup" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        id="organizationName"
+                        label="Workspace / Business Name"
+                        placeholder="e.g. Acme Etsy Labs"
+                        value={accountForm.organizationName}
+                        onChange={(e) =>
+                          setAccountForm({ ...accountForm, organizationName: e.target.value })
+                        }
+                      />
+                      <Input
+                        id="name"
+                        label="Your Full Name"
+                        placeholder="e.g. Jane Doe"
+                        value={accountForm.name}
+                        onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })}
+                      />
+                    </div>
+                  )}
+
+                  <Input
+                    id="email"
+                    label="Email Address"
+                    type="email"
+                    required
+                    placeholder="you@company.com"
+                    value={accountForm.email}
+                    onChange={(e) => setAccountForm({ ...accountForm, email: e.target.value })}
+                    autoComplete="email"
+                  />
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="password" className="text-xs font-semibold text-[#141B16]">
+                        Password
+                      </label>
+                      {accountMode === "signup" && (
+                        <span className="text-[11px] text-[#7C847E]">Min 8 characters</span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={accountMode === "signup" ? 8 : undefined}
+                        placeholder="••••••••••••"
+                        value={accountForm.password}
+                        onChange={(e) =>
+                          setAccountForm({ ...accountForm, password: e.target.value })
+                        }
+                        autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7C847E] hover:text-[#141B16]"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {accountError && <Alert variant="danger">{accountError}</Alert>}
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={accountSubmitting}
+                    fullWidth
+                    className="!py-3 text-sm font-semibold bg-[#141B16] hover:bg-[#2A362D] text-white"
+                  >
+                    {accountSubmitting
+                      ? "Verifying Account…"
+                      : accountMode === "signup"
+                      ? "Save Account & Continue to Payment →"
+                      : "Sign In & Continue →"}
+                  </Button>
+                </form>
+              </Card>
             )}
-            {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
+
+            {/* Trust & Guarantee Section */}
+            <Card padding="md" className="border-[#E3E6E0] bg-white shadow-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[#525B55]">
+                <div className="flex items-start gap-2.5">
+                  <ShieldCheck className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-[#141B16]">Zero Lock-In</strong>
+                    Cancel anytime during your trial with 1-click in billing settings.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <Zap className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-[#141B16]">Instant Access</strong>
+                    Full Opportunity Radar, competitor spy, and live Etsy scrapers unlock immediately.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <Lock className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-[#141B16]">Secure Billing</strong>
+                    Tokenized and processed securely via certified gateways.
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <p className="text-[11px] text-[#7C847E] leading-relaxed">
+              By proceeding with checkout, you agree to SellerSalt's{" "}
+              <Link href="/terms" target="_blank" className="text-[#141B16] underline font-medium">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" className="text-[#141B16] underline font-medium">
+                Privacy Policy
+              </Link>
+              . You may cancel your subscription before the trial period concludes to prevent future charges.
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setFeaturesOpen((o) => !o)}
-            className="mt-5 flex w-full items-center justify-between text-sm font-medium text-ink"
-          >
-            What's included
-            <ChevronDown className={`h-4 w-4 transition-transform ${featuresOpen ? "rotate-180" : ""}`} />
-          </button>
-          {featuresOpen && (
-            <ul className="mt-3 space-y-2 text-sm text-ink">
-              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxConnectors} active connectors</li>
-              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxSearchConfigs} saved searches</li>
-              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxTrackedShops} tracked shops</li>
-              <li className="flex items-center gap-2"><Check className="h-4 w-4 text-success" /> {selected.maxProspectsPerMonth.toLocaleString()} prospect lookups / month</li>
-            </ul>
-          )}
+          {/* ============================================================ */}
+          {/* RIGHT COLUMN: Plan Summary, Pricing Breakdown & Gateway CTA */}
+          {/* ============================================================ */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Plan Card */}
+            <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-md space-y-5">
+              {/* Plan Switcher Header */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
+                    Selected Tier
+                  </span>
+                  <Badge variant="success" className="text-[11px] font-semibold text-[#0E8F5D] bg-[#E7FAF1]">
+                    {selected.trialDays ? `${selected.trialDays}-Day Trial` : "Monthly Subscription"}
+                  </Badge>
+                </div>
 
-          {!isAuthenticated ? (
-            <p className="mt-6 text-center text-xs text-muted">
-              Create your account above to continue to payment.
-            </p>
-          ) : availableProviders.length > 0 ? (
-            <div className="mt-6 space-y-2">
-              {availableProviders.map((provider, i) => (
-                <button
-                  key={provider}
-                  onClick={() => handleCheckout(provider)}
-                  disabled={loadingProvider !== null}
-                  className={i === 0 ? "btn-primary w-full !py-3" : "btn-secondary w-full !py-3"}
-                >
-                  {loadingProvider === provider ? "Redirecting…" : PROVIDER_LABELS[provider] ?? provider}
-                </button>
-              ))}
-              {error && <p className="text-sm text-danger">{error}</p>}
-            </div>
-          ) : (
-            <p className="mt-6 text-sm text-muted">
-              Checkout isn't available right now — contact hello@netdrix.com to get set up.
-            </p>
-          )}
-        </div>
+                {/* Plan Option Pills */}
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#FAFAF8] border border-[#E3E6E0]">
+                  {packages.map((pkg) => (
+                    <button
+                      key={pkg.key}
+                      type="button"
+                      onClick={() => selectPlan(pkg.key)}
+                      className={`py-2 px-3 rounded-md text-xs font-semibold transition-all ${
+                        selected.key === pkg.key
+                          ? "bg-white text-[#141B16] shadow-xs border border-[#E3E6E0]"
+                          : "text-[#7C847E] hover:text-[#141B16]"
+                      }`}
+                    >
+                      {pkg.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <div className="space-y-2">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Other plans</p>
-          {others.map((pkg) => (
-            <button
-              key={pkg.key}
-              onClick={() => selectPlan(pkg.key)}
-              className="flex w-full items-center justify-between rounded-lg border border-line px-4 py-3 text-left transition-colors hover:border-accent"
-            >
-              <span className="text-sm font-medium text-ink">{pkg.name}</span>
-              <span className="text-sm text-muted">
-                ${pkg.trialPriceUsd ?? pkg.priceUsd}
-                {pkg.trialDays ? ` for ${pkg.trialDays} days` : "/mo"} · then ${pkg.priceUsd}/mo
-              </span>
-            </button>
-          ))}
+              {/* Price Breakdown */}
+              <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-3">
+                <div className="flex items-center justify-between text-xs text-[#525B55]">
+                  <span>Plan</span>
+                  <span className="font-semibold text-[#141B16]">{selected.name}</span>
+                </div>
+
+                {selected.trialDays && (
+                  <div className="flex items-center justify-between text-xs text-[#525B55]">
+                    <span>{selected.trialDays}-Day Full Access Trial</span>
+                    <span className="font-mono font-bold text-[#0E8F5D]">
+                      ${(displayTrialPriceUsd ?? 1).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-[#525B55]">
+                  <span>Recurring monthly billing</span>
+                  <span className="font-mono font-semibold text-[#141B16]">
+                    ${displayPriceUsd.toFixed(2)} / mo
+                  </span>
+                </div>
+
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between text-xs text-[#0E8F5D] font-medium pt-1 border-t border-[#E3E6E0]">
+                    <span>Coupon "{appliedCoupon.code}" Discount</span>
+                    <span>Applied ✓</span>
+                  </div>
+                )}
+
+                <div className="pt-3 border-t border-[#E3E6E0] flex items-baseline justify-between">
+                  <div className="text-xs font-bold text-[#141B16] uppercase tracking-wider">
+                    Total Due Today:
+                  </div>
+                  <div className="text-2xl font-extrabold font-mono text-[#141B16]">
+                    ${dueToday.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Coupon Code Input */}
+              <div>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between rounded-lg bg-[#E7FAF1] px-3.5 py-2 text-xs text-[#0E8F5D] font-medium border border-[#0E8F5D]/30">
+                    <span>Coupon "{appliedCoupon.code}" active</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedCoupon(null);
+                        setCouponInput("");
+                      }}
+                      className="font-bold underline hover:text-[#0C7A52]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Promo or Coupon Code"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
+                      className="text-xs"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="compact"
+                      onClick={handleApplyCoupon}
+                      loading={couponApplying}
+                      disabled={!couponInput.trim()}
+                      className="shrink-0 text-xs font-semibold px-4"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                )}
+                {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
+              </div>
+
+              {/* Features Included List */}
+              <div className="space-y-2 pt-2 border-t border-[#E3E6E0]">
+                <div className="text-xs font-semibold text-[#141B16] uppercase tracking-wider">
+                  Included with {selected.name}:
+                </div>
+                <ul className="space-y-2 text-xs text-[#525B55]">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
+                    <span><strong>{selected.maxSearchConfigs}</strong> Saved Keyword Search Streams</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
+                    <span><strong>{selected.maxTrackedShops}</strong> Tracked Competitor Shops</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
+                    <span><strong>{selected.maxProspectsPerMonth.toLocaleString()}</strong> Prospect Lookups / month</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
+                    <span>Deterministic Opportunity Radar Scoring</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Payment Action Section */}
+              <div className="pt-3 border-t border-[#E3E6E0]">
+                {!isAuthenticated ? (
+                  <div className="p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E3E6E0] text-center space-y-1">
+                    <p className="text-xs font-semibold text-[#141B16]">
+                      Create or sign in to your account on the left
+                    </p>
+                    <p className="text-[11px] text-[#7C847E]">
+                      Payment methods will activate automatically once verified.
+                    </p>
+                  </div>
+                ) : availableProviders.length > 0 ? (
+                  <div className="space-y-2.5">
+                    <div className="text-xs font-semibold text-[#141B16]">
+                      Choose Payment Method:
+                    </div>
+
+                    {availableProviders.map((provider, i) => (
+                      <Button
+                        key={provider}
+                        type="button"
+                        variant={i === 0 ? "primary" : "secondary"}
+                        size="default"
+                        fullWidth
+                        loading={loadingProvider === provider}
+                        disabled={loadingProvider !== null}
+                        onClick={() => handleCheckout(provider)}
+                        className={
+                          i === 0
+                            ? "!py-3.5 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-sm"
+                            : "!py-3 text-xs font-semibold"
+                        }
+                      >
+                        {loadingProvider === provider
+                          ? "Connecting to Gateway…"
+                          : PROVIDER_LABELS[provider] ?? provider}
+                      </Button>
+                    ))}
+
+                    {error && <Alert variant="danger">{error}</Alert>}
+                  </div>
+                ) : (
+                  <div className="p-3 text-xs text-center text-[#7C847E]">
+                    Checkout is temporarily unavailable. Please contact{" "}
+                    <a href="mailto:support@sellersalt.com" className="underline text-[#141B16]">
+                      support@sellersalt.com
+                    </a>.
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

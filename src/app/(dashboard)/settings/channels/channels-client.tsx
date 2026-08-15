@@ -1,7 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RefreshCw, Trash2, ExternalLink } from "lucide-react";
+import {
+  Store,
+  RefreshCw,
+  Trash2,
+  ExternalLink,
+  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
+import {
+  Card,
+  Button,
+  Badge,
+  Heading,
+  Text,
+  Alert,
+  Divider,
+} from "@/components/ui";
 
 interface Channel {
   id: string;
@@ -15,278 +34,275 @@ interface Channel {
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
-  WOOCOMMERCE: "WooCommerce",
-  SHOPIFY: "Shopify",
-  ETSY_SELLER: "Etsy (your shop)",
-  EBAY_SELLER: "eBay (your shop)",
+  ETSY_SELLER: "Etsy Seller Store",
+  WOOCOMMERCE: "WooCommerce (Beta)",
+  SHOPIFY: "Shopify (Beta)",
 };
-
-// Real URLs. Netdrix's order form is one form shared for both platforms for
-// now — swap in dedicated URLs later if you build separate ones.
-// Fallback values, used only until an admin sets the real ones — that's the
-// whole point of moving these into /admin instead of hardcoding them here.
-const FALLBACK_SHOPIFY_AFFILIATE_URL = "https://shopify.pxf.io/9gO2v3";
-const FALLBACK_ORDER_URL = "https://netdrix.com/?fluent-form=8";
-
-// Defensive normalization even though setSetting() now does this on save too
-// — a value saved before that fix (e.g. "shopify.pxf.io/9gO2v3" with no
-// protocol) would otherwise render as a broken relative link.
-function normalizeUrl(value: string, fallback: string): string {
-  if (!value) return fallback;
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
-}
 
 export function ChannelsClient() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wooStoreUrl, setWooStoreUrl] = useState("");
-  const [showManualWoo, setShowManualWoo] = useState(false);
-  const [manualWoo, setManualWoo] = useState({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
-  const [manualWooError, setManualWooError] = useState<string | null>(null);
-  const [manualWooSaving, setManualWooSaving] = useState(false);
-  const [shopifyShop, setShopifyShop] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
-  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
-  const [links, setLinks] = useState({
-    shopify_affiliate_url: FALLBACK_SHOPIFY_AFFILIATE_URL,
-    netdrix_shopify_order_url: FALLBACK_ORDER_URL,
-    netdrix_woocommerce_order_url: FALLBACK_ORDER_URL,
-  });
+  const [bannerMessage, setBannerMessage] = useState<{ text: string; variant: "success" | "danger" | "warn" } | null>(null);
+  const [showSecondaryChannels, setShowSecondaryChannels] = useState(false);
+
+  // Secondary manual states
+  const [shopifyShop, setShopifyShop] = useState("");
+  const [wooStoreUrl, setWooStoreUrl] = useState("");
 
   async function loadChannels() {
-    const res = await fetch("/api/seller-channels");
-    const data = await res.json();
-    setChannels(data.channels ?? []);
-    setLoading(false);
-  }
-
-  async function loadLinks() {
-    const res = await fetch("/api/settings/public");
-    const data = await res.json();
-    if (data.settings) {
-      setLinks({
-        shopify_affiliate_url: normalizeUrl(data.settings.shopify_affiliate_url, FALLBACK_SHOPIFY_AFFILIATE_URL),
-        netdrix_shopify_order_url: normalizeUrl(data.settings.netdrix_shopify_order_url, FALLBACK_ORDER_URL),
-        netdrix_woocommerce_order_url: normalizeUrl(data.settings.netdrix_woocommerce_order_url, FALLBACK_ORDER_URL),
-      });
+    try {
+      const res = await fetch("/api/seller-channels");
+      const data = await res.json();
+      setChannels(data.channels ?? []);
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
     }
   }
 
   useEffect(() => {
     loadChannels();
-    loadLinks();
     const params = new URLSearchParams(window.location.search);
-    if (params.get("connected")) setBannerMessage("Store connected successfully.");
-    if (params.get("error") === "limit_reached") setBannerMessage("Your plan's store limit is reached — upgrade to connect more.");
-    if (params.get("error") === "invalid_store_url") setBannerMessage("That doesn't look like a valid store URL.");
-    if (params.get("error") === "shopify_not_configured") setBannerMessage("Shopify isn't configured yet — an admin needs to add the Client ID/Secret first.");
-    if (params.get("error")?.startsWith("shopify_")) setBannerMessage("Couldn't connect to Shopify — the connection was rejected or the code was invalid. Try again.");
+    if (params.get("connected")) {
+      setBannerMessage({ text: "Etsy shop connected successfully! Your shop data will begin syncing automatically.", variant: "success" });
+    }
+    if (params.get("error") === "limit_reached") {
+      setBannerMessage({ text: "Your plan's connected store limit has been reached. Upgrade your package to link additional stores.", variant: "warn" });
+    }
+    if (params.get("error") === "etsy_not_configured") {
+      setBannerMessage({ text: "Etsy Seller App API credentials are not yet configured in the Admin settings.", variant: "danger" });
+    }
+    if (params.get("error")?.startsWith("etsy_")) {
+      setBannerMessage({ text: "Could not complete Etsy connection. Please verify your shop credentials and try again.", variant: "danger" });
+    }
   }, []);
 
-  function handleConnectShopify(e: React.FormEvent) {
-    e.preventDefault();
-    if (!shopifyShop.trim()) return;
+  function handleConnectEtsy() {
     setConnecting(true);
-    window.location.href = `/api/seller-channels/shopify/connect?shop=${encodeURIComponent(shopifyShop.trim())}&label=${encodeURIComponent(shopifyShop.trim())}`;
-  }
-
-  function handleConnectWoo(e: React.FormEvent) {
-    e.preventDefault();
-    if (!wooStoreUrl.trim()) return;
-    setConnecting(true);
-    // Full-page navigation, not fetch — this is a real redirect to the
-    // customer's own store login/approval screen, not an API call.
-    window.location.href = `/api/seller-channels/woocommerce/connect?storeUrl=${encodeURIComponent(wooStoreUrl.trim())}&label=${encodeURIComponent(wooStoreUrl.trim())}`;
-  }
-
-  async function handleManualWooConnect(e: React.FormEvent) {
-    e.preventDefault();
-    setManualWooError(null);
-    setManualWooSaving(true);
-    const res = await fetch("/api/seller-channels", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        platform: "WOOCOMMERCE",
-        label: manualWoo.label || manualWoo.storeUrl,
-        storeUrl: manualWoo.storeUrl,
-        credentials: { consumerKey: manualWoo.consumerKey, consumerSecret: manualWoo.consumerSecret },
-      }),
-    });
-    const data = await res.json();
-    setManualWooSaving(false);
-    if (!res.ok) {
-      setManualWooError(data.error ?? "Failed to connect.");
-      return;
-    }
-    setShowManualWoo(false);
-    setManualWoo({ label: "", storeUrl: "", consumerKey: "", consumerSecret: "" });
-    loadChannels();
+    window.location.href = "/api/seller-channels/etsy/connect";
   }
 
   async function handleSync(id: string) {
     setSyncingId(id);
-    await fetch(`/api/seller-channels/${id}/sync`, { method: "POST" });
-    setSyncingId(null);
-    loadChannels();
+    try {
+      const res = await fetch(`/api/seller-channels/${id}/sync`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "Failed to trigger sync.");
+      }
+    } catch {
+      alert("Network error during sync.");
+    } finally {
+      setSyncingId(null);
+      loadChannels();
+    }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Disconnect this store? Its order history stays, but it'll stop syncing.")) return;
-    await fetch(`/api/seller-channels/${id}`, { method: "DELETE" });
-    loadChannels();
+    if (!confirm("Are you sure you want to disconnect this shop? Stored research data will be preserved, but automatic synchronization will stop.")) return;
+    try {
+      await fetch(`/api/seller-channels/${id}`, { method: "DELETE" });
+      loadChannels();
+    } catch {
+      alert("Error disconnecting shop.");
+    }
   }
 
+  const etsyChannels = channels.filter((c) => c.platform === "ETSY_SELLER");
+  const isEtsyConnected = etsyChannels.length > 0;
+
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Connected stores</h1>
-        <p className="mt-1 text-sm text-muted">
-          Connect your own shops to see them in your Unified Analytics dashboard.
-        </p>
-      </header>
+    <div className="space-y-8 max-w-4xl">
+      {/* Header */}
+      <div>
+        <Heading as="h1" size="h2">
+          Connected Etsy Shops
+        </Heading>
+        <Text size="body-md" color="secondary" className="mt-1">
+          Link your authenticated Etsy seller account to synchronize live transaction metrics, listing health, and store analytics.
+        </Text>
+      </div>
 
       {bannerMessage && (
-        <div className="card mb-6">
-          <p className="text-sm text-ink">{bannerMessage}</p>
-        </div>
+        <Alert variant={bannerMessage.variant === "warn" ? "warning" : bannerMessage.variant}>
+          {bannerMessage.text}
+        </Alert>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-1 text-sm font-semibold text-ink">Connect WooCommerce</h2>
-          <p className="mb-4 text-xs text-muted">
-            You'll be taken to your own store to log in and approve — nothing to copy or paste.
-          </p>
-          <form onSubmit={handleConnectWoo} className="flex gap-2">
-            <input
-              className="input"
-              required
-              placeholder="https://mystore.com"
-              value={wooStoreUrl}
-              onChange={(e) => setWooStoreUrl(e.target.value)}
-            />
-            <button type="submit" disabled={connecting} className="btn-primary shrink-0">
-              {connecting ? "Redirecting…" : "Connect"}
-            </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={() => setShowManualWoo((s) => !s)}
-            className="mt-3 text-xs text-muted hover:text-ink"
-          >
-            {showManualWoo ? "Hide manual connection" : "Having trouble connecting? Connect manually"}
-          </button>
-
-          {showManualWoo && (
-            <form onSubmit={handleManualWooConnect} className="mt-3 space-y-3 rounded-md border border-line p-3">
-              <p className="text-xs text-muted">
-                In your WordPress admin: WooCommerce → Settings → Advanced → REST API → Add key
-                (Read permissions). Paste the key and secret below.
-              </p>
-              <input
-                className="input"
-                placeholder="Label (optional)"
-                value={manualWoo.label}
-                onChange={(e) => setManualWoo({ ...manualWoo, label: e.target.value })}
-              />
-              <input
-                className="input"
-                required
-                placeholder="https://mystore.com"
-                value={manualWoo.storeUrl}
-                onChange={(e) => setManualWoo({ ...manualWoo, storeUrl: e.target.value })}
-              />
-              <input
-                className="input"
-                required
-                placeholder="Consumer Key"
-                value={manualWoo.consumerKey}
-                onChange={(e) => setManualWoo({ ...manualWoo, consumerKey: e.target.value })}
-              />
-              <input
-                className="input"
-                required
-                type="password"
-                placeholder="Consumer Secret"
-                value={manualWoo.consumerSecret}
-                onChange={(e) => setManualWoo({ ...manualWoo, consumerSecret: e.target.value })}
-              />
-              {manualWooError && <p className="text-sm text-danger">{manualWooError}</p>}
-              <button type="submit" disabled={manualWooSaving} className="btn-secondary w-full">
-                {manualWooSaving ? "Testing connection…" : "Connect manually"}
-              </button>
-            </form>
-          )}
-        </div>
-
-        <div className="card">
-          <h2 className="mb-1 text-sm font-semibold text-ink">Connect Shopify</h2>
-          <p className="mb-4 text-xs text-muted">
-            You'll be taken to Shopify to log in and approve — nothing to copy or paste.
-          </p>
-          <form onSubmit={handleConnectShopify} className="mb-3 flex gap-2">
-            <input
-              className="input"
-              required
-              placeholder="mystore or mystore.myshopify.com"
-              value={shopifyShop}
-              onChange={(e) => setShopifyShop(e.target.value)}
-            />
-            <button type="submit" disabled={connecting} className="btn-primary shrink-0">
-              {connecting ? "Redirecting…" : "Connect"}
-            </button>
-          </form>
-          <a href={links.shopify_affiliate_url} target="_blank" rel="noreferrer" className="text-sm text-accent hover:underline">
-            <ExternalLink className="mr-1 inline h-3.5 w-3.5" />
-            Don't have a Shopify store? Create one
-          </a>
-        </div>
-      </div>
-
-      <div className="mb-6 card">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Don't have a store yet?</h2>
-        <div className="flex flex-wrap gap-2">
-          <a href={`${links.netdrix_shopify_order_url}&ref=sellersalt_shopify`} className="btn-secondary">Order a custom Shopify store</a>
-          <a href={`${links.netdrix_woocommerce_order_url}&ref=sellersalt_woocommerce`} className="btn-secondary">Order a custom WooCommerce store</a>
-        </div>
-      </div>
-
-      {loading ? (
-        <p className="text-sm text-muted">Loading…</p>
-      ) : channels.length === 0 ? (
-        <p className="text-sm text-muted">No stores connected yet.</p>
-      ) : (
-        <div className="card divide-y divide-line">
-          {channels.map((c) => (
-            <div key={c.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-              <div>
-                <div className="text-sm font-medium text-ink">
-                  {c.label} <span className="badge bg-accent-soft text-accent">{PLATFORM_LABELS[c.platform] ?? c.platform}</span>
-                </div>
-                <div className="text-xs text-muted">{c.storeUrl}</div>
-                {c.lastSyncError ? (
-                  <div className="mt-0.5 text-xs text-danger">Last sync failed: {c.lastSyncError}</div>
+      {/* Primary Etsy Connection Surface */}
+      <Card padding="lg" className="border-line bg-surface shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line-subtle pb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#0E8F5D]/10 text-[#0E8F5D]">
+              <Store className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-ink">Etsy Seller Store Integration</h3>
+                {isEtsyConnected ? (
+                  <Badge variant="success">
+                    <CheckCircle2 className="h-3 w-3 mr-1 inline" /> Active Connection
+                  </Badge>
                 ) : (
-                  <div className="mt-0.5 text-xs text-muted">
-                    {c.lastSyncedAt ? `Last synced ${new Date(c.lastSyncedAt).toLocaleString()}` : "Not synced yet"}
-                  </div>
+                  <Badge variant="neutral">
+                    Disconnected
+                  </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleSync(c.id)} disabled={syncingId === c.id} className="text-muted hover:text-ink" aria-label="Sync now" title="Sync now">
-                  <RefreshCw className={`h-4 w-4 ${syncingId === c.id ? "animate-spin" : ""}`} />
-                </button>
-                <button onClick={() => handleDelete(c.id)} className="text-muted hover:text-danger" aria-label="Disconnect" title="Disconnect">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <p className="text-xs text-ink-secondary mt-0.5">
+                Official OAuth 2.0 PKCE authentication with the Etsy Open API v3.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <Button
+              variant="primary"
+              onClick={handleConnectEtsy}
+              loading={connecting}
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-sm"
+            >
+              {isEtsyConnected ? "Connect Another Shop" : "Connect Your Etsy Shop"}
+              <ArrowRight className="h-4 w-4 ml-1.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Feature Entitlement Explanation */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-ink-secondary">
+          <div className="rounded-lg border border-line-subtle bg-surface-muted p-3 space-y-1">
+            <div className="font-semibold text-ink flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-[#0E8F5D]" /> Secure Permissions
+            </div>
+            <p>Read-only access for shop receipts, active listings, and inventory counts.</p>
+          </div>
+          <div className="rounded-lg border border-line-subtle bg-surface-muted p-3 space-y-1">
+            <div className="font-semibold text-ink flex items-center gap-1.5">
+              <RefreshCw className="h-4 w-4 text-[#0E8F5D]" /> Auto Token Refresh
+            </div>
+            <p>Automatic background OAuth token rotation without interruption.</p>
+          </div>
+          <div className="rounded-lg border border-line-subtle bg-surface-muted p-3 space-y-1">
+            <div className="font-semibold text-ink flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-[#FFB020]" /> Store Health Analysis
+            </div>
+            <p>Unlocks personalized store conversion analytics and listing audits.</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Connected Shops Table */}
+      <Card padding="lg" className="border-line bg-surface shadow-xs space-y-4">
+        <Heading as="h2" size="h4">
+          Active Workspace Channels
+        </Heading>
+
+        {loading ? (
+          <Text size="body-sm" color="tertiary">Loading connected stores...</Text>
+        ) : channels.length === 0 ? (
+          <div className="text-center py-8 rounded-lg border border-dashed border-line bg-surface-muted space-y-3">
+            <Store className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
+            <div className="space-y-1">
+              <Text size="body-sm" weight="semibold" color="primary">
+                No Etsy store connected yet
+              </Text>
+              <Text size="body-sm" color="secondary" className="max-w-md mx-auto">
+                Connecting your Etsy shop allows SellerSalt to correlate your research with your live store's actual performance.
+              </Text>
+            </div>
+            <Button variant="primary" size="compact" onClick={handleConnectEtsy} className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs">
+              Connect Etsy Shop
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y divide-line-subtle">
+            {channels.map((c) => (
+              <div key={c.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-3.5 gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-ink">{c.label}</span>
+                    <Badge variant="neutral">
+                      {PLATFORM_LABELS[c.platform] ?? c.platform}
+                    </Badge>
+                  </div>
+                  <a
+                    href={c.storeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-brand-primary hover:underline flex items-center gap-1"
+                  >
+                    {c.storeUrl} <ExternalLink className="h-3 w-3" />
+                  </a>
+                  {c.lastSyncError ? (
+                    <div className="text-xs text-danger flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Sync warning: {c.lastSyncError}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-ink-tertiary">
+                      {c.lastSyncedAt ? `Last synchronized: ${new Date(c.lastSyncedAt).toLocaleString()}` : "Pending first synchronization"}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => handleSync(c.id)}
+                    loading={syncingId === c.id}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" /> Sync
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="compact"
+                    onClick={() => handleDelete(c.id)}
+                    className="text-xs"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Disconnect
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* Secondary Marketplace Channels (Architecturally Preserved) */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setShowSecondaryChannels((s) => !s)}
+          className="text-xs font-semibold text-ink-tertiary hover:text-ink flex items-center gap-1 transition"
+        >
+          {showSecondaryChannels ? "Hide upcoming platform channels" : "Show future channels (Shopify / WooCommerce preview)"}
+        </button>
+
+        {showSecondaryChannels && (
+          <div className="mt-4 rounded-lg border border-line bg-surface-muted p-5 space-y-4">
+            <div>
+              <h4 className="text-sm font-semibold text-ink">Upcoming Multi-Channel Integrations</h4>
+              <p className="text-xs text-ink-secondary mt-0.5">
+                SellerSalt is launching Etsy-first. Additional marketplace channels are in closed beta.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-ink-tertiary">
+              <div className="rounded border border-line bg-surface p-3 space-y-1">
+                <span className="font-semibold text-ink">Shopify Connector</span>
+                <p>Order sync and cross-listing foundation (Enterprise Beta).</p>
+              </div>
+              <div className="rounded border border-line bg-surface p-3 space-y-1">
+                <span className="font-semibold text-ink">WooCommerce Connector</span>
+                <p>REST API connector for self-hosted WordPress stores.</p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

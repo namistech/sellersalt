@@ -14,12 +14,12 @@ export function CheckoutButtons({
   packageName: string;
   currentPackageName: string;
   isUpgrade: boolean;
-  availableProviders: string[]; // subset of ["STRIPE", "PAYPAL"] that are active
+  availableProviders: string[]; // subset of ["STRIPE", "PAYPAL", "SAFEPAY", "PAYFAST"]
 }) {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleCheckout(provider: "STRIPE" | "PAYPAL") {
+  async function handleCheckout(provider: "STRIPE" | "PAYPAL" | "SAFEPAY" | "PAYFAST") {
     setError(null);
     setLoadingProvider(provider);
     try {
@@ -61,6 +61,7 @@ export function CheckoutButtons({
           variant="primary"
           size="default"
           fullWidth
+          className="bg-[#141B16] text-white hover:bg-[#2A362D] font-semibold"
           loading={loadingProvider === "STRIPE"}
           disabled={loadingProvider !== null}
           onClick={() => handleCheckout("STRIPE")}
@@ -78,6 +79,30 @@ export function CheckoutButtons({
           onClick={() => handleCheckout("PAYPAL")}
         >
           Pay with PayPal
+        </Button>
+      )}
+      {availableProviders.includes("SAFEPAY") && (
+        <Button
+          variant="secondary"
+          size="default"
+          fullWidth
+          loading={loadingProvider === "SAFEPAY"}
+          disabled={loadingProvider !== null}
+          onClick={() => handleCheckout("SAFEPAY")}
+        >
+          Pay with Safepay
+        </Button>
+      )}
+      {availableProviders.includes("PAYFAST") && (
+        <Button
+          variant="secondary"
+          size="default"
+          fullWidth
+          loading={loadingProvider === "PAYFAST"}
+          disabled={loadingProvider !== null}
+          onClick={() => handleCheckout("PAYFAST")}
+        >
+          Pay with GoPayFast
         </Button>
       )}
       {error && <Alert variant="danger">{error}</Alert>}

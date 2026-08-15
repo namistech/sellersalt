@@ -38,21 +38,21 @@
     --color-border-default: 227 230 224; /* #E3E6E0 */
     --color-border-subtle: 237 239 234;  /* #EDEFEA */
     --color-border-strong: 199 204 196;  /* #C7CCC4 */
-    --color-border-focus: 22 199 132;    /* #16C784 */
+    --color-border-focus: 14 143 93;     /* #0E8F5D */
 
     /* Brand */
-    --color-brand-primary: 22 199 132;         /* #16C784 */
-    --color-brand-primary-hover: 16 156 104;   /* #109C68 */
-    --color-brand-primary-active: 12 122 82;   /* #0C7A52 */
+    --color-brand-primary: 14 143 93;          /* #0E8F5D */
+    --color-brand-primary-hover: 12 122 82;    /* #0C7A52 */
+    --color-brand-primary-active: 10 99 66;    /* #0A6342 */
     --color-brand-primary-subtle: 231 250 241; /* #E7FAF1 */
 
     /* Gold accent (distinct from status-warning — see design-system-v1.md §3) */
     --color-gold: 255 176 32; /* #FFB020 */
 
     /* Status: positive (intentionally shares the brand-primary hue — design-system-v1.md §3) */
-    --color-status-positive: 22 199 132;          /* #16C784 */
+    --color-status-positive: 14 143 93;           /* #0E8F5D */
     --color-status-positive-subtle: 231 250 241;  /* #E7FAF1 */
-    --color-status-positive-strong: 14 143 93;    /* #0E8F5D */
+    --color-status-positive-strong: 10 99 66;     /* #0A6342 */
 
     /* Status: warning */
     --color-status-warning: 217 119 6;          /* #D97706 */

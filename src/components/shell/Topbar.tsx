@@ -19,6 +19,7 @@ export interface TopbarProps {
   context: WorkspaceContext;
   onOpenMobileNav: () => void;
   onOpenSearch: () => void;
+  onOpenAssistant: () => void;
   onOpenNotifications: () => void;
   unreadCount: number;
   onSwitchScope: (id: string) => void;
@@ -32,6 +33,7 @@ export function Topbar({
   context,
   onOpenMobileNav,
   onOpenSearch,
+  onOpenAssistant,
   onOpenNotifications,
   unreadCount,
   onSwitchScope,
@@ -75,7 +77,20 @@ export function Topbar({
         </Tooltip>
         <IconButton icon={<Search />} variant="tertiary" aria-label="Search" onClick={onOpenSearch} className="sm:hidden" />
 
-        <IconButton icon={<Sparkles />} variant="tertiary" aria-label="Ask AI" onClick={() => onNavigate("/dev/shell/placeholder/ai-assistant")} />
+        <Tooltip content="Etsy Personal Assistant">
+          <button
+            type="button"
+            onClick={onOpenAssistant}
+            aria-label="Etsy Personal Assistant"
+            className={cn(
+              "flex items-center gap-1.5 rounded-md border border-[#0E8F5D]/30 bg-[#0E8F5D]/5 px-2.5 py-1 text-xs font-semibold text-[#0E8F5D] transition hover:bg-[#0E8F5D]/15",
+              FOCUS_RING
+            )}
+          >
+            <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" />
+            <span className="hidden md:inline">Assistant</span>
+          </button>
+        </Tooltip>
 
         <div className="relative">
           <IconButton icon={<Bell />} variant="tertiary" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"} onClick={onOpenNotifications} />
@@ -88,7 +103,7 @@ export function Topbar({
           icon={<HelpCircle />}
           variant="tertiary"
           aria-label="Help & support"
-          onClick={() => onNavigate("/dev/shell/placeholder/help")}
+          onClick={() => onNavigate("/contact")}
           className="hidden sm:inline-flex"
         />
 

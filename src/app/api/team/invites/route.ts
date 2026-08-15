@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     },
   });
 
-  const baseUrl = process.env.NEXTAUTH_URL || "https://sellersalt.com";
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
   const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
   const acceptUrl = `${cleanBaseUrl}/accept-invite?token=${rawToken}`;
 

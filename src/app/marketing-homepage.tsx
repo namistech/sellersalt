@@ -109,7 +109,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <ul className="nav-links">
               <li><a href="#features">Features</a></li>
               <li><a href="#radar">Opportunity Radar</a></li>
-              <li><a href="#calculator">Difficulty Tool</a></li>
+              <li><Link href="/shops">Shop Directory</Link></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
             </ul>
@@ -431,10 +431,13 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             SellerSalt
           </div>
 
-          <div style={{ display: "flex", gap: "24px", fontSize: "13px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", fontSize: "13px" }}>
             <a href="#features">Features</a>
+            <Link href="/shops">Shop Directory</Link>
             <a href="#pricing">Pricing</a>
-            <a href="#faq">FAQ</a>
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/contact">Support</Link>
             <Link href="/login">Sign In</Link>
           </div>
 

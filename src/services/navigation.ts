@@ -40,6 +40,7 @@ const DISCOVER_ITEMS: NavigationItem[] = [
   { id: "radar", label: "Opportunity Radar", href: "/radar", icon: Flame },
   { id: "prospects", label: "Prospects", href: "/prospects", icon: Search },
   { id: "spy", label: "Spy on Competitor", href: "/spy", icon: Eye },
+  { id: "tracked-shops", label: "Tracked Shops", href: "/spy/tracked", icon: Store },
   { id: "trends", label: "Trends", href: "/trends", icon: TrendingUp },
   { id: "dropped-shops", label: "Dropped Shops", href: "/inactive", icon: XCircle },
   { id: "favorites", label: "Favorites", href: "/favorites", icon: Star },
@@ -59,8 +60,8 @@ const OPERATE_ITEMS: NavigationItem[] = [
 ];
 
 const MANAGE_ITEMS_BASE: NavigationItem[] = [
-  { id: "connectors", label: "Connectors", href: "/connectors", icon: Plug },
-  { id: "jobs", label: "Jobs", href: "/jobs", icon: Briefcase },
+  { id: "connectors", label: "Search Streams", href: "/connectors", icon: Plug },
+  { id: "jobs", label: "Scraper Jobs", href: "/jobs", icon: Briefcase },
   { id: "settings", label: "Settings", href: "/settings", icon: Settings },
 ];
 

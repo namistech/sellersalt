@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getOrgPackage, checkLimit } from "@/lib/plan-limits";
 import { Card, Heading, Text, Badge, Alert, Button } from "@/components/ui";
 import { CheckoutButtons } from "./checkout-buttons";
+import { CancelSubscriptionButton, ResumeSubscriptionButton } from "./cancel-subscription-button";
 
 export default async function BillingPage({
   searchParams,
@@ -15,21 +16,31 @@ export default async function BillingPage({
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return null;
 
-  const [currentPackage, allPackages, connectors, searchConfigs, scheduledSearches, trackedShops, prospects, activeProviders] =
-    await Promise.all([
-      getOrgPackage(organizationId),
-      prisma.package.findMany({ where: { isCustom: false }, orderBy: { priceUsd: "asc" } }),
-      checkLimit(organizationId, "connectors"),
-      checkLimit(organizationId, "searchConfigs"),
-      checkLimit(organizationId, "scheduledSearches"),
-      checkLimit(organizationId, "trackedShops"),
-      checkLimit(organizationId, "prospectsThisMonth"),
-      prisma.paymentProvider.findMany({ where: { isActive: true }, select: { provider: true, label: true } }),
-    ]);
+  const [
+    currentPackage,
+    allPackages,
+    subscription,
+    connectors,
+    searchConfigs,
+    scheduledSearches,
+    trackedShops,
+    prospects,
+    activeProviders,
+  ] = await Promise.all([
+    getOrgPackage(organizationId),
+    prisma.package.findMany({ where: { isCustom: false }, orderBy: { priceUsd: "asc" } }),
+    prisma.subscription.findUnique({ where: { organizationId } }),
+    checkLimit(organizationId, "connectors"),
+    checkLimit(organizationId, "searchConfigs"),
+    checkLimit(organizationId, "scheduledSearches"),
+    checkLimit(organizationId, "trackedShops"),
+    checkLimit(organizationId, "prospectsThisMonth"),
+    prisma.paymentProvider.findMany({ where: { isActive: true }, select: { provider: true, label: true } }),
+  ]);
 
   const checkoutCapableProviders = activeProviders
     .map((p: (typeof activeProviders)[number]) => p.provider)
-    .filter((p: string) => p === "STRIPE" || p === "PAYPAL");
+    .filter((p: string) => p === "STRIPE" || p === "PAYPAL" || p === "SAFEPAY" || p === "PAYFAST");
 
   const usageRows = [
     { label: "Active Search Streams", ...searchConfigs },
@@ -69,22 +80,38 @@ export default async function BillingPage({
               <Badge variant="success" className="font-bold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
                 {currentPackage.name} (${currentPackage.priceUsd}/mo)
               </Badge>
+              {subscription?.cancelAtPeriodEnd && (
+                <Badge variant="warning" className="text-xs">
+                  Canceling on {subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "period end"}
+                </Badge>
+              )}
             </div>
             <Text size="meta" color="secondary" className="mt-1">
               Includes full Opportunity Radar access, Etsy search scrapers, and daily competitor snapshots.
             </Text>
           </div>
 
-          {activeProviders.length > 0 && (
-            <div className="flex items-center gap-1.5 text-xs text-ink-tertiary">
-              <span>Accepted:</span>
-              {activeProviders.map((p) => (
-                <span key={p.provider} className="rounded bg-surface-muted px-2 py-0.5 font-medium text-ink-secondary border border-line-subtle">
-                  {p.label}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {subscription && subscription.cancelAtPeriodEnd && (
+              <ResumeSubscriptionButton />
+            )}
+            {subscription && !subscription.cancelAtPeriodEnd && (subscription.status === "ACTIVE" || subscription.status === "TRIALING") && (
+              <CancelSubscriptionButton
+                provider={subscription.provider}
+                currentPeriodEnd={subscription.currentPeriodEnd?.toISOString()}
+              />
+            )}
+            {activeProviders.length > 0 && (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-ink-tertiary">
+                <span>Accepted:</span>
+                {activeProviders.map((p) => (
+                  <span key={p.provider} className="rounded bg-surface-muted px-2 py-0.5 font-medium text-ink-secondary border border-line-subtle">
+                    {p.label}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quota Progress Bars */}

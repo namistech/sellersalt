@@ -8,6 +8,7 @@ import type { NotificationItem, SearchResultItem, WorkspaceContext } from "@/ser
 import { GlobalSearch } from "./GlobalSearch";
 import { MobileNav } from "./MobileNav";
 import { NotificationCenter } from "./NotificationCenter";
+import { AssistantDrawer } from "@/components/assistant/AssistantDrawer";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
@@ -32,6 +33,7 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [activeConnectedShopId, setActiveConnectedShopId] = useState(context.activeConnectedShopId);
   const [activeScopeId, setActiveScopeId] = useState(context.scope?.current.id);
@@ -94,6 +96,7 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
           context={shellContext}
           onOpenMobileNav={() => setMobileNavOpen(true)}
           onOpenSearch={() => setSearchOpen(true)}
+          onOpenAssistant={() => setAssistantOpen(true)}
           onOpenNotifications={() => setNotificationsOpen(true)}
           unreadCount={unreadCount}
           onSwitchScope={setActiveScopeId}
@@ -107,6 +110,7 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} results={searchResults} />
+      <AssistantDrawer open={assistantOpen} onClose={() => setAssistantOpen(false)} />
       <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} />
     </div>
   );

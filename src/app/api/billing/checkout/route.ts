@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { getStripeClient } from "@/lib/payment-providers/stripe-client";
 import { getPaypalContext, paypalClient } from "@/lib/payment-providers/paypal-client";
 import { getOrCreatePaypalPlan, createDiscountedPaypalPlan } from "@/lib/payment-providers/paypal-plans";
+import { createSafepayCheckoutSession } from "@/lib/payment-providers/safepay-client";
+import { createPayfastSession } from "@/lib/payment-providers/payfast-client";
 import { validateCoupon, applyCouponDiscount, redeemCoupon } from "@/lib/coupons";
 
 function appUrl(): string {
@@ -15,11 +17,13 @@ function appUrl(): string {
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
+  const userEmail = session?.user?.email || "";
+  const userName = session?.user?.name || "SellerSalt Customer";
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { packageKey, provider, couponCode } = (await req.json()) as {
     packageKey: string;
-    provider: "STRIPE" | "PAYPAL";
+    provider: "STRIPE" | "PAYPAL" | "SAFEPAY" | "PAYFAST";
     couponCode?: string;
   };
   const pkg = await prisma.package.findUnique({ where: { key: packageKey } });
@@ -54,11 +58,6 @@ export async function POST(req: Request) {
 
     const hasTrial = Boolean(pkg.trialDays && prices.trialPriceUsd !== null && prices.trialPriceUsd !== undefined);
 
-    // Stripe's native trial_period_days charges $0 during the trial — that's
-    // not what we want. Instead: a one-time line item charges the real
-    // trial fee immediately, and the recurring subscription price is
-    // deferred via trial_period_days so its first real charge lands when
-    // the trial ends. Together these produce "$1 now, full price later."
     const lineItems: any[] = [];
     if (hasTrial) {
       lineItems.push({
@@ -109,7 +108,7 @@ export async function POST(req: Request) {
     const c = paypalClient(ctx);
     const subRes = await c.post("/v1/billing/subscriptions", {
       plan_id: planId,
-      custom_id: organizationId, // echoed back on webhook events — how we map back to this org
+      custom_id: organizationId,
       application_context: {
         brand_name: "SellerSalt",
         return_url: `${appUrl()}/settings/billing?checkout=success&provider=paypal`,
@@ -123,6 +122,45 @@ export async function POST(req: Request) {
 
     if (couponId) await redeemCoupon(couponId);
     return NextResponse.json({ url: approveLink });
+  }
+
+  if (provider === "SAFEPAY") {
+    const chargeAmount = prices.trialPriceUsd !== null && prices.trialPriceUsd !== undefined ? prices.trialPriceUsd : prices.priceUsd;
+    const sessionRes = await createSafepayCheckoutSession({
+      amount: chargeAmount,
+      currency: "USD",
+      orderId: `${organizationId}_${pkg.key}_${Date.now()}`,
+      customerEmail: userEmail,
+      customerName: userName,
+      successUrl: `${appUrl()}/settings/billing?checkout=success&provider=safepay`,
+      cancelUrl: `${appUrl()}/settings/billing?checkout=cancelled`,
+    });
+
+    if (!sessionRes || !sessionRes.url) {
+      return NextResponse.json({ error: "Couldn't initialize Safepay session. Check gateway credentials." }, { status: 500 });
+    }
+
+    if (couponId) await redeemCoupon(couponId);
+    return NextResponse.json({ url: sessionRes.url });
+  }
+
+  if (provider === "PAYFAST") {
+    const chargeAmount = prices.trialPriceUsd !== null && prices.trialPriceUsd !== undefined ? prices.trialPriceUsd : prices.priceUsd;
+    const sessionRes = await createPayfastSession({
+      orderId: `${organizationId}_${pkg.key}_${Date.now()}`,
+      amount: chargeAmount,
+      customerEmail: userEmail,
+      customerName: userName,
+      successUrl: `${appUrl()}/settings/billing?checkout=success&provider=payfast`,
+      cancelUrl: `${appUrl()}/settings/billing?checkout=cancelled`,
+    });
+
+    if (!sessionRes || !sessionRes.url) {
+      return NextResponse.json({ error: "Couldn't initialize PayFast session. Check gateway credentials." }, { status: 500 });
+    }
+
+    if (couponId) await redeemCoupon(couponId);
+    return NextResponse.json({ url: sessionRes.url });
   }
 
   return NextResponse.json({ error: "Unsupported provider." }, { status: 400 });

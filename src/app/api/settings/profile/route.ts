@@ -11,9 +11,29 @@ export async function GET() {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [user, org] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true, createdAt: true } }),
-    organizationId ? prisma.organization.findUnique({ where: { id: organizationId }, select: { name: true } }) : null,
+  const [user, org, membership, sellerChannel] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true, createdAt: true },
+    }),
+    organizationId
+      ? prisma.organization.findUnique({
+          where: { id: organizationId },
+          include: { package: { select: { name: true, key: true } } },
+        })
+      : null,
+    organizationId
+      ? prisma.membership.findUnique({
+          where: { userId_organizationId: { userId, organizationId } },
+          select: { role: true },
+        })
+      : null,
+    organizationId
+      ? prisma.sellerChannel.findFirst({
+          where: { organizationId, platform: "ETSY_SELLER" },
+          select: { id: true, label: true, storeUrl: true, status: true, lastSyncedAt: true },
+        })
+      : null,
   ]);
 
   return NextResponse.json({
@@ -21,6 +41,10 @@ export async function GET() {
     email: user?.email ?? "",
     memberSince: user?.createdAt,
     organizationName: org?.name ?? "",
+    planName: org?.package?.name ?? org?.plan ?? "Starter",
+    planKey: org?.package?.key ?? org?.plan ?? "FREE",
+    role: membership?.role ?? "MEMBER",
+    connectedEtsyShop: sellerChannel,
   });
 }
 

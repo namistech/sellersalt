@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     data: { userId: user.id, tokenHash, expiresAt },
   });
 
-  const baseUrl = process.env.NEXTAUTH_URL || "https://sellersalt.com";
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
   const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
   const resetUrl = `${cleanBaseUrl}/reset-password?token=${rawToken}`;
 

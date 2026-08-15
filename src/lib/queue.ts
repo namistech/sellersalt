@@ -49,6 +49,36 @@ export const SCHEDULE_FREQUENCIES: Record<string, string | null> = {
   WEEKLY: "0 6 * * 1",
 };
 
+export async function triggerScrapeJob(
+  organizationId: string,
+  searchConfigId: string,
+  connectorId: string
+) {
+  const { prisma } = await import("@/lib/db");
+  const job = await prisma.job.create({
+    data: {
+      organizationId,
+      connectorId,
+      searchConfigId,
+      status: "QUEUED",
+      triggeredBy: "USER",
+    },
+  });
+
+  await prospectingQueue.add(
+    RUN_SEARCH_JOB_NAME,
+    {
+      jobId: job.id,
+      organizationId,
+      connectorId,
+      searchConfigId,
+    },
+    { jobId: job.id }
+  );
+
+  return job;
+}
+
 export async function upsertSchedule(params: {
   searchConfigId: string;
   organizationId: string;

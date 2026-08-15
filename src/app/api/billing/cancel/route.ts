@@ -48,5 +48,19 @@ export async function POST() {
     return NextResponse.json({ ok: true, effectiveAt: null });
   }
 
-  return NextResponse.json({ error: "Unsupported provider." }, { status: 400 });
+  if (sub.provider === "SAFEPAY" || sub.provider === "PAYFAST") {
+    await prisma.subscription.update({
+      where: { organizationId },
+      data: { cancelAtPeriodEnd: true, status: "CANCELED" },
+    });
+
+    const started = await prisma.package.findFirst({ where: { key: "STARTED" } });
+    if (started) {
+      await prisma.organization.update({ where: { id: organizationId }, data: { packageId: started.id } });
+    }
+
+    return NextResponse.json({ ok: true, effectiveAt: sub.currentPeriodEnd });
+  }
+
+  return NextResponse.json({ error: "Unsupported payment provider." }, { status: 400 });
 }

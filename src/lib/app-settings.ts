@@ -5,15 +5,34 @@ import { encrypt, decrypt } from "./encryption";
 // adding a line here — no schema migration needed, since AppSetting is a
 // generic key-value store.
 export const SETTING_DEFINITIONS = [
+  // Application Branding & Identity
+  { key: "app_name", label: "Application Name", isSecret: false },
+  { key: "app_logo_url", label: "App Logo (URL)", isSecret: false },
+  { key: "app_favicon_url", label: "App Favicon / Icon (URL)", isSecret: false },
+  { key: "support_email", label: "Public Support Email", isSecret: false },
+
+  // SEO & Social Defaults
+  { key: "seo_default_title", label: "Default SEO Meta Title", isSecret: false },
+  { key: "seo_default_description", label: "Default SEO Description", isSecret: false },
+  { key: "seo_og_image_url", label: "OpenGraph / Social Preview Image (URL)", isSecret: false },
+
+  // Auth Page Artwork
+  { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
+  { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
+
+  // Etsy Integration Credentials
+  { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
+  { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
+
+  // Optional External AI / LLM Key (for Assistant Level 2 pluggability)
+  { key: "openai_api_key", label: "OpenAI API Key (Optional Assistant LLM)", isSecret: true },
+
+  // Secondary Channel Credentials
   { key: "shopify_client_id", label: "Shopify Client ID", isSecret: false },
   { key: "shopify_client_secret", label: "Shopify Client Secret", isSecret: true },
   { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
   { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
   { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
-  { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for cross-listing)", isSecret: false },
-  { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
-  { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
-  { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
 ] as const;
 
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];

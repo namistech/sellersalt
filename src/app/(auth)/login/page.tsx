@@ -4,8 +4,9 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Store } from "lucide-react";
 import { AuthLayout } from "../auth-layout";
+import { Button, Input, Alert, Heading, Text, Divider } from "@/components/ui";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,46 +31,111 @@ export default function LoginPage() {
     router.refresh();
   }
 
+  async function handleOAuth(provider: "google" | "etsy") {
+    setError(null);
+    setOauthLoading(provider);
+    try {
+      await signIn(provider, { callbackUrl: "/dashboard" });
+    } catch {
+      setError(`Failed to connect with ${provider}.`);
+      setOauthLoading(null);
+    }
+  }
+
   return (
     <AuthLayout>
-      <h1 className="mb-8 text-2xl font-semibold tracking-tight text-ink">
-        Sign in to access your workspace
-      </h1>
+      <Heading as="h1" size="h2" className="mb-2 text-ink">
+        Sign in to your workspace
+      </Heading>
+      <Text size="body-sm" color="secondary" className="mb-6">
+        Access your Opportunity Radar, competitor spy data, and tracked Etsy shops.
+      </Text>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label className="label" htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            required
-            className="input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
+      {/* Social / OAuth Logins */}
+      <div className="space-y-2.5 mb-6">
+        <button
+          type="button"
+          onClick={() => handleOAuth("google")}
+          disabled={Boolean(oauthLoading) || loading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface-muted transition shadow-2xs disabled:opacity-50"
+        >
+          <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+            <path
+              fill="#4285F4"
+              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.03 0 12s.45 3.82 1.25 5.42l4.03-3.15Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z"
+            />
+          </svg>
+          <span>{oauthLoading === "google" ? "Connecting Google…" : "Continue with Google"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleOAuth("etsy")}
+          disabled={Boolean(oauthLoading) || loading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#F1641E]/40 bg-[#F1641E]/5 px-4 py-2.5 text-sm font-semibold text-[#D9531E] hover:bg-[#F1641E]/10 transition shadow-2xs disabled:opacity-50"
+        >
+          <Store className="h-4 w-4 shrink-0 text-[#F1641E]" />
+          <span>{oauthLoading === "etsy" ? "Connecting Etsy…" : "Sign in with Etsy Store"}</span>
+        </button>
+      </div>
+
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-line-subtle" />
         </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-surface px-2 text-ink-tertiary font-medium">Or continue with email</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          id="email"
+          label="Email address"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          autoComplete="email"
+        />
+
         <div>
-          <div className="flex items-center justify-between">
-            <label className="label" htmlFor="password">Password</label>
-            <Link href="/forgot-password" className="mb-1 text-xs text-accent hover:underline">
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="password" className="text-label-md font-medium text-ink">
+              Password
+            </label>
+            <Link href="/forgot-password" className="text-xs font-semibold text-[#0E8F5D] hover:underline">
               Forgot password?
             </Link>
           </div>
           <div className="relative">
-            <input
+            <Input
               id="password"
               type={showPassword ? "text" : "password"}
               required
-              className="input pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
               autoComplete="current-password"
+              className="pr-10"
             />
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-tertiary hover:text-ink"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -76,17 +143,19 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full !py-3 !text-base">
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
+        <div className="pt-2">
+          <Button type="submit" variant="primary" loading={loading} fullWidth className="!py-3 text-base font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52]">
+            Sign in to SellerSalt
+          </Button>
+        </div>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        Don't have an account?{" "}
-        <Link href="/signup" className="font-medium text-accent hover:underline">
-          Sign up
+      <p className="mt-6 text-center text-sm text-ink-tertiary">
+        Don't have an account yet?{" "}
+        <Link href="/checkout?plan=PRO" className="font-semibold text-[#0E8F5D] hover:underline">
+          Start $1 Trial
         </Link>
       </p>
     </AuthLayout>

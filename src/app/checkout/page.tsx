@@ -59,7 +59,7 @@ export default async function CheckoutPage({
   });
   const availableProviders = providers
     .map((p: (typeof providers)[number]) => p.provider)
-    .filter((p: string) => p === "STRIPE" || p === "PAYPAL");
+    .filter((p: string) => p === "STRIPE" || p === "PAYPAL" || p === "SAFEPAY" || p === "PAYFAST");
 
   const preselectedKey = plan?.toUpperCase() && order.includes(plan.toUpperCase()) ? plan.toUpperCase() : "STARTED";
 
