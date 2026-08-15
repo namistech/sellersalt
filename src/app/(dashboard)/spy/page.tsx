@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { PageHeader } from "@/components/shell";
+import { Card, Input, Button, Alert, Heading, Text } from "@/components/ui";
+import { resolveResearchShopUrl } from "@/services/researchShops";
+import { ServiceError } from "@/services/http";
 import { SpyTabs } from "./spy-tabs";
 
 export default function SpyOnCompetitorPage() {
@@ -18,56 +22,45 @@ export default function SpyOnCompetitorPage() {
     setMessage(null);
     setLoading(true);
 
-    const res = await fetch("/api/shops/resolve", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
+    try {
+      const { shopExternalId } = await resolveResearchShopUrl(url);
+      setMessage("Found it — opening the shop profile…");
+      setTimeout(() => router.push(`/shops/${shopExternalId}`), 1200);
+    } catch (e) {
       setLoading(false);
-      setError(data.error ?? "Couldn't process that URL.");
-      return;
+      setError(e instanceof ServiceError ? e.message : "Couldn't process that URL.");
     }
-
-    setMessage("Your query has been processed, please check after 24 hours.");
-    setTimeout(() => {
-      router.push(`/shops/${data.shopExternalId}`);
-    }, 1200);
   }
 
   return (
     <div>
+      <PageHeader title="Spy on Competitor" />
       <SpyTabs active="find" />
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="w-full max-w-lg text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Spy on Competitor</h1>
-          <p className="mt-2 text-sm text-muted">
+          <Heading as="h2" size="h2">
+            Research any competitor shop
+          </Heading>
+          <Text color="secondary" className="mt-2">
             Paste any Etsy shop URL to pull up its full profile and start tracking its sales over time.
-          </p>
+          </Text>
 
-          <form onSubmit={handleSubmit} className="card mt-6">
-            <label className="label text-left" htmlFor="shopUrl">
-              Shop URL
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="shopUrl"
-                className="input"
+          <Card padding="lg" className="mt-6 text-left">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <Input
+                label="Shop URL"
                 required
                 placeholder="https://www.etsy.com/shop/ShopName"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
-              <button type="submit" disabled={loading} className="btn-primary shrink-0">
-                <Search className="mr-1.5 inline h-4 w-4" />
+              <Button type="submit" variant="primary" loading={loading} leadingIcon={<Search className="h-4 w-4" />}>
                 {loading ? "Searching…" : "Start spying"}
-              </button>
-            </div>
-            {error && <p className="mt-3 text-left text-sm text-danger">{error}</p>}
-            {message && <p className="mt-3 text-left text-sm text-success">{message}</p>}
-          </form>
+              </Button>
+              {error && <Alert variant="danger">{error}</Alert>}
+              {message && <Alert variant="success">{message}</Alert>}
+            </form>
+          </Card>
         </div>
       </div>
     </div>

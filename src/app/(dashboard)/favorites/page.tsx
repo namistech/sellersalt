@@ -1,17 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProspectTable, type ProspectRow } from "../prospect-table";
+import { Star } from "lucide-react";
+import { PageHeader } from "@/components/shell";
+import { Card, Alert } from "@/components/ui";
+import { Table, EmptyState } from "@/components/data";
+import { fetchProspects, updateProspect, type ProspectRow, type ProspectStatus } from "@/services/prospects";
+import { ServiceError } from "@/services/http";
+import { buildProspectColumns } from "../prospect-columns";
 
 export default function FavoritesPage() {
   const [rows, setRows] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
-    const res = await fetch("/api/prospects?favorite=true");
-    const data = await res.json();
-    setRows(data.prospects ?? []);
-    setLoading(false);
+    setError(null);
+    try {
+      setRows(await fetchProspects({ favoriteOnly: true }));
+    } catch (e) {
+      setError(e instanceof ServiceError ? e.message : "Couldn't load Favorites.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -20,33 +31,50 @@ export default function FavoritesPage() {
 
   async function handleToggleFavorite(id: string, next: boolean) {
     setRows((prev) => (next ? prev : prev.filter((p) => p.id !== id)));
-    await fetch(`/api/prospects/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isFavorite: next }),
-    });
+    try {
+      await updateProspect(id, { isFavorite: next });
+    } catch {
+      load();
+    }
   }
+
+  async function handleStatusChange(id: string, status: ProspectStatus) {
+    setRows((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    try {
+      await updateProspect(id, { status });
+    } catch {
+      load();
+    }
+  }
+
+  const columns = buildProspectColumns({ onToggleFavorite: handleToggleFavorite, onStatusChange: handleStatusChange });
 
   return (
     <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Favorites</h1>
-        <p className="mt-1 text-sm text-muted">
-          Prospects you've starred across every search, in one place.
-        </p>
-      </header>
+      <PageHeader title="Favorites" description="Prospects you've starred across every search, in one place." />
 
-      <div className="card overflow-x-auto">
-        {loading ? (
-          <p className="text-sm text-muted">Loading…</p>
-        ) : (
-          <ProspectTable
-            rows={rows}
-            onToggleFavorite={handleToggleFavorite}
-            emptyMessage='No favorites yet. Star a prospect from the Prospects page to see it here.'
-          />
-        )}
-      </div>
+      {error && (
+        <Alert variant="danger" title="Couldn't load Favorites" className="mb-6">
+          {error}
+        </Alert>
+      )}
+
+      <Card padding="sm">
+        <Table<ProspectRow>
+          aria-label="Favorite prospects"
+          columns={columns}
+          rows={rows}
+          getRowId={(p) => p.id}
+          loading={loading}
+          emptyState={
+            <EmptyState
+              icon={<Star />}
+              title="No favorites yet"
+              description="Star a prospect from the Prospects page to see it here."
+            />
+          }
+        />
+      </Card>
     </div>
   );
 }

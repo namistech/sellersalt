@@ -2,20 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
 import { DollarSign, Package, Star, Calendar, Heart, TrendingUp, Target, ShoppingBag, Copy, Check } from "lucide-react";
+import { Card, Button, Badge, Heading, Text, Alert, Skeleton, cn } from "@/components/ui";
+import { AreaChart, BarChart, EmptyState, type ChartSeries } from "@/components/data";
 import { ScoredStatCard } from "../../scored-stat-card";
+import { fetchResearchShop, startTrackingResearchShop, stopTrackingResearchShop, type ResearchShopDetail } from "@/services/researchShops";
+import { ServiceError } from "@/services/http";
 import {
   scoreShopAgeMonths,
   scoreTotalSales,
@@ -29,63 +21,33 @@ import {
   demandMeta,
 } from "@/lib/competition-scoring";
 
-interface TopListing {
-  listingExternalId: string;
-  title: string;
-  price: number;
-  url: string;
-  imageUrl?: string;
-}
-
-interface Snapshot {
-  capturedAt: string;
-  totalSales: number | null;
-  reviewCount: number;
-  activeListings: number;
-}
-
-interface ShopDetail {
-  shop: {
-    shopExternalId: string;
-    shopName: string;
-    shopUrl: string;
-    shopIconUrl: string | null;
-    shopBannerUrl?: string;
-    shopAgeMonths: number;
-    reviewCount: number;
-    reviewAverage: number | null;
-    activeListings: number;
-    totalSales: number | null;
-    numFavorers: number | null;
-    avgSellingRatio: number;
-    estDailySales: number;
-    badges: string[];
-  };
-  keywords: Array<{ term: string; count: number }>;
-  topListings: TopListing[];
-  watch: { isActive: boolean; startedAt: string; snapshots: Snapshot[] } | null;
-}
+const TREND_SERIES: ChartSeries[] = [
+  { key: "sales", label: "Total sales", colorIndex: 0 },
+  { key: "reviews", label: "Reviews", colorIndex: 2 },
+  { key: "listings", label: "Listings", colorIndex: 1 },
+];
+const SNAPSHOT_SERIES: ChartSeries[] = [{ key: "value", label: "Current" }];
 
 export default function ShopDetailPage() {
   const params = useParams();
   const shopExternalId = params.shopExternalId as string;
 
-  const [data, setData] = useState<ShopDetail | null>(null);
+  const [data, setData] = useState<ResearchShopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [trackingBusy, setTrackingBusy] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function load() {
-    const res = await fetch(`/api/shops/${shopExternalId}`);
-    const json = await res.json();
-    if (!res.ok) {
-      setErrorMsg(json.error ?? "Something went wrong.");
+    setErrorMsg(null);
+    try {
+      const json = await fetchResearchShop(shopExternalId);
+      setData(json);
+    } catch (e) {
+      setErrorMsg(e instanceof ServiceError ? e.message : "Something went wrong.");
+    } finally {
       setLoading(false);
-      return;
     }
-    setData(json);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -95,16 +57,22 @@ export default function ShopDetailPage() {
 
   async function handleStartTracking() {
     setTrackingBusy(true);
-    await fetch(`/api/shops/${shopExternalId}/track`, { method: "POST" });
-    setTrackingBusy(false);
-    load();
+    try {
+      await startTrackingResearchShop(shopExternalId);
+    } finally {
+      setTrackingBusy(false);
+      load();
+    }
   }
 
   async function handleStopTracking() {
     setTrackingBusy(true);
-    await fetch(`/api/shops/${shopExternalId}/track`, { method: "DELETE" });
-    setTrackingBusy(false);
-    load();
+    try {
+      await stopTrackingResearchShop(shopExternalId);
+    } finally {
+      setTrackingBusy(false);
+      load();
+    }
   }
 
   async function handleCopyKeywords() {
@@ -128,20 +96,29 @@ export default function ShopDetailPage() {
     return { ageLevel, salesLevel, reviewLevel, velocityLevel, sellThroughLevel, listingsLevel, favoritesLevel, overall };
   }, [data]);
 
-  if (loading) return <p className="text-sm text-muted">Loading…</p>;
-  if (errorMsg || !data || !scored) {
+  if (loading) {
     return (
-      <div className="card">
-        <p className="text-sm text-muted">{errorMsg ?? "Shop not found."}</p>
+      <div className="flex flex-col gap-6">
+        <Skeleton variant="block" className="h-40 w-full rounded-lg" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} variant="block" className="h-28 w-full rounded-md" />
+          ))}
+        </div>
+        <Skeleton variant="block" className="h-72 w-full rounded-md" />
       </div>
     );
   }
 
-  const { shop, keywords, topListings, watch } = data;
+  if (errorMsg || !data || !scored) {
+    return (
+      <Card padding="lg">
+        <EmptyState tone="error" title="Couldn't load this shop" description={errorMsg ?? "Shop not found."} />
+      </Card>
+    );
+  }
 
-  // Fall back to a listing photo as the cover when Etsy doesn't expose a shop
-  // banner for this shop (common — banners are optional on Etsy's side, not
-  // something we failed to fetch).
+  const { shop, keywords, topListings, watch } = data;
   const coverImage = shop.shopBannerUrl || topListings[0]?.imageUrl;
 
   const trendData = (watch?.snapshots ?? []).map((s) => ({
@@ -150,7 +127,7 @@ export default function ShopDetailPage() {
     reviews: s.reviewCount,
     listings: s.activeListings,
   }));
-  const currentSnapshotBar = [
+  const snapshotBarData = [
     { name: "Sales", value: shop.totalSales ?? 0 },
     { name: "Reviews", value: shop.reviewCount },
     { name: "Listings", value: shop.activeListings },
@@ -160,9 +137,9 @@ export default function ShopDetailPage() {
   const overallMeta = levelMeta(scored.overall);
 
   return (
-    <div>
+    <div className="flex flex-col gap-6">
       {/* Banner + header */}
-      <div className="mb-6 overflow-hidden rounded-lg border border-line">
+      <div className="overflow-hidden rounded-lg border border-line">
         <div
           className="h-32 w-full bg-gradient-to-br from-accent/25 to-accent-soft bg-cover bg-center sm:h-40"
           style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
@@ -170,180 +147,143 @@ export default function ShopDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4 bg-surface p-4">
           <div className="flex items-center gap-4">
             {shop.shopIconUrl ? (
-              <img
-                src={shop.shopIconUrl}
-                alt=""
-                className="-mt-10 h-16 w-16 rounded-full object-cover ring-4 ring-surface"
-              />
+              <img src={shop.shopIconUrl} alt="" className="-mt-10 h-16 w-16 rounded-full object-cover ring-4 ring-surface" />
             ) : (
               <div className="-mt-10 h-16 w-16 rounded-full bg-line ring-4 ring-surface" />
             )}
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-ink">{shop.shopName}</h1>
+              <Heading as="h1" size="h1">
+                {shop.shopName}
+              </Heading>
               {shop.badges.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {shop.badges.map((b) => (
-                    <span key={b} className="badge bg-accent-soft text-accent">
+                    <Badge key={b} variant="success">
                       {b}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <a href={shop.shopUrl} target="_blank" rel="noreferrer" className="btn-primary shrink-0">
+          <Button variant="primary" href={shop.shopUrl} target="_blank" className="shrink-0">
             Visit shop ↗
-          </a>
+          </Button>
         </div>
       </div>
 
-      {/* Competition rating — separated, most important card */}
-      <div
-        className={`mb-6 flex items-center gap-5 rounded-lg border-2 p-5 ${overallMeta.bg}`}
-        style={{ borderColor: "currentColor" }}
-      >
-        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/70 dark:bg-black/20 ${overallMeta.text}`}>
-          <Target className="h-6 w-6" />
+      {/* Competition rating */}
+      <div className={cn("flex items-center gap-5 rounded-lg border-2 p-5", overallMeta.bg)} style={{ borderColor: "currentColor" }}>
+        <div className={cn("flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/70", overallMeta.text)}>
+          <Target className="h-6 w-6" aria-hidden />
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted">Overall competition rating</div>
-          <div className={`text-xl font-bold ${overallMeta.text}`}>{overallMeta.label}</div>
-          <p className="mt-0.5 text-xs text-muted">
+          <Text as="div" size="label-sm" color="secondary" className="uppercase tracking-wide">
+            Overall competition rating
+          </Text>
+          <Heading as="h2" size="h3" className={overallMeta.text}>
+            {overallMeta.label}
+          </Heading>
+          <Text size="body-sm" color="secondary" className="mt-0.5">
             Based on this shop's age, lifetime sales, reviews, catalog size, and favorites.
-          </p>
+          </Text>
         </div>
       </div>
 
       {/* Stat cards */}
-      <div className="mb-2 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        <ScoredStatCard icon={DollarSign} label="Total sales" value={shop.totalSales ?? "—"} level={scored.salesLevel} />
-        <ScoredStatCard icon={Package} label="Active listings" value={shop.activeListings} level={scored.listingsLevel} />
-        <ScoredStatCard
-          icon={Star}
-          label="Reviews"
-          value={shop.reviewCount}
-          sub={shop.reviewAverage != null ? `${shop.reviewAverage.toFixed(1)}★ avg` : undefined}
-          level={scored.reviewLevel}
-        />
-        <ScoredStatCard icon={Calendar} label="Shop age" value={`${shop.shopAgeMonths}mo`} level={scored.ageLevel} />
-        <ScoredStatCard
-          icon={ShoppingBag}
-          label="Sales / listing"
-          value={shop.avgSellingRatio}
-          level={scored.sellThroughLevel}
-          metaFn={demandMeta}
-        />
-        <ScoredStatCard
-          icon={TrendingUp}
-          label="Est. daily sales"
-          value={shop.estDailySales}
-          level={scored.velocityLevel}
-          metaFn={demandMeta}
-        />
-        <div className="sm:col-span-1 md:col-span-2">
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <ScoredStatCard icon={DollarSign} label="Total sales" value={shop.totalSales ?? "—"} level={scored.salesLevel} />
+          <ScoredStatCard icon={Package} label="Active listings" value={shop.activeListings} level={scored.listingsLevel} />
+          <ScoredStatCard
+            icon={Star}
+            label="Reviews"
+            value={shop.reviewCount}
+            sub={shop.reviewAverage != null ? `${shop.reviewAverage.toFixed(1)}★ avg` : undefined}
+            level={scored.reviewLevel}
+          />
+          <ScoredStatCard icon={Calendar} label="Shop age" value={`${shop.shopAgeMonths}mo`} level={scored.ageLevel} />
+          <ScoredStatCard icon={ShoppingBag} label="Sales / listing" value={shop.avgSellingRatio} level={scored.sellThroughLevel} metaFn={demandMeta} />
+          <ScoredStatCard icon={TrendingUp} label="Est. daily sales" value={shop.estDailySales} level={scored.velocityLevel} metaFn={demandMeta} />
           <ScoredStatCard icon={Heart} label="Favorites" value={shop.numFavorers ?? "—"} level={scored.favoritesLevel} />
         </div>
+        <Text size="meta" color="tertiary">
+          Age, sales, reviews, listings, and favorites score how entrenched <em>this shop</em> is. Sales/listing and est. daily
+          sales are a separate signal — how strong current buyer demand is in this category, regardless of whether this
+          particular shop is easy to beat.
+        </Text>
       </div>
-      <p className="mb-6 text-xs text-muted">
-        Age, sales, reviews, listings, and favorites score how entrenched <em>this shop</em> is.
-        Sales/listing and est. daily sales are a separate signal — how strong current buyer
-        demand is in this category, regardless of whether this particular shop is easy to beat.
-      </p>
 
       {/* Sales tracking graph */}
-      <div className="card mb-6">
+      <Card padding="lg">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Sales tracking</h2>
+          <Heading as="h2" size="h4">
+            Sales tracking
+          </Heading>
           {isTracking ? (
-            <button onClick={handleStopTracking} disabled={trackingBusy} className="btn-secondary">
-              {trackingBusy ? "Stopping…" : "Stop tracking"}
-            </button>
+            <Button variant="secondary" loading={trackingBusy} onClick={handleStopTracking}>
+              Stop tracking
+            </Button>
           ) : (
-            <button onClick={handleStartTracking} disabled={trackingBusy} className="btn-primary">
-              {trackingBusy ? "Starting…" : "Start tracking the shop"}
-            </button>
+            <Button variant="primary" loading={trackingBusy} onClick={handleStartTracking}>
+              Start tracking the shop
+            </Button>
           )}
         </div>
 
         {hasTrendHistory ? (
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={trendData}>
-              <defs>
-                <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="reviewsGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#16A34A" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#16A34A" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="listingsGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#D97706" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#D97706" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgb(228 228 231)" }} />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="sales" name="Total sales" stroke="#2563EB" strokeWidth={2} fill="url(#salesGrad)" />
-              <Area type="monotone" dataKey="reviews" name="Reviews" stroke="#16A34A" strokeWidth={2} fill="url(#reviewsGrad)" />
-              <Area type="monotone" dataKey="listings" name="Listings" stroke="#D97706" strokeWidth={2} fill="url(#listingsGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          <AreaChart data={trendData} xKey="date" series={TREND_SERIES} height={280} accessibleSummary="Sales, reviews, and listings over time for this tracked shop" />
         ) : (
           <div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={currentSnapshotBar}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgb(228 228 231)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12 }} stroke="rgb(113 113 122)" axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid rgb(228 228 231)" }} />
-                <Bar dataKey="value" fill="#2563EB" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <p className="mt-3 text-xs text-muted">
+            <BarChart data={snapshotBarData} xKey="name" series={SNAPSHOT_SERIES} height={220} accessibleSummary="Current sales, reviews, and listings snapshot" />
+            <Text size="meta" color="tertiary" className="mt-3">
               {isTracking
                 ? "Tracking is active — checking daily. The trend fills in once there are a couple of snapshots to compare."
                 : "Showing this shop's current numbers. Start tracking to build a real trend over time — checked once a day."}
-            </p>
+            </Text>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Search terms */}
-      <div className="card mb-6">
+      <Card padding="lg">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Popular search terms</h2>
+          <Heading as="h2" size="h4">
+            Popular search terms
+          </Heading>
           {keywords.length > 0 && (
-            <button onClick={handleCopyKeywords} className="btn-secondary !py-1.5 !px-3 text-xs">
-              {copied ? <Check className="mr-1 inline h-3.5 w-3.5" /> : <Copy className="mr-1 inline h-3.5 w-3.5" />}
+            <Button variant="secondary" size="compact" leadingIcon={copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />} onClick={handleCopyKeywords}>
               {copied ? "Copied" : "Copy all"}
-            </button>
+            </Button>
           )}
         </div>
         {keywords.length === 0 ? (
-          <p className="text-sm text-muted">Not enough listing data yet to extract search terms.</p>
+          <Text size="body-sm" color="secondary">
+            Not enough listing data yet to extract search terms.
+          </Text>
         ) : (
           <div className="flex flex-wrap gap-2">
             {keywords.map((k) => (
-              <span key={k.term} className="badge border border-line bg-paper text-ink">
-                {k.term} <span className="ml-1 text-muted">{k.count}</span>
-              </span>
+              <Badge key={k.term} variant="neutral">
+                {k.term} <span className="text-ink-tertiary">{k.count}</span>
+              </Badge>
             ))}
           </div>
         )}
-        <p className="mt-3 text-xs text-muted">
+        <Text size="meta" color="tertiary" className="mt-3">
           Long-tail phrases extracted from listing titles — single-word tags are excluded.
-        </p>
-      </div>
+        </Text>
+      </Card>
 
       {/* Best sellers */}
-      <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-ink">Best sellers</h2>
+      <Card padding="lg">
+        <Heading as="h2" size="h4" className="mb-3">
+          Best sellers
+        </Heading>
         {topListings.length === 0 ? (
-          <p className="text-sm text-muted">No listings found for this shop.</p>
+          <Text size="body-sm" color="secondary">
+            No listings found for this shop.
+          </Text>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -358,22 +298,26 @@ export default function ShopDetailPage() {
                   {l.imageUrl ? (
                     <img src={l.imageUrl} alt="" className="h-32 w-full object-cover" />
                   ) : (
-                    <div className="h-32 w-full bg-line" />
+                    <div className="h-32 w-full bg-line-subtle" />
                   )}
                   <div className="p-2">
-                    <div className="truncate text-xs text-ink group-hover:text-accent">{l.title}</div>
-                    <div className="mt-0.5 text-xs font-medium text-muted">${l.price.toFixed(2)}</div>
+                    <Text size="body-sm" className="truncate group-hover:text-accent">
+                      {l.title}
+                    </Text>
+                    <Text size="body-sm" weight="medium" color="secondary" className="mt-0.5">
+                      ${l.price.toFixed(2)}
+                    </Text>
                   </div>
                 </a>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted">
-              Ranked by Etsy's own relevance score — Etsy doesn't expose per-listing sales counts publicly, so this
-              isn't a confirmed sales ranking.
-            </p>
+            <Text size="meta" color="tertiary" className="mt-3">
+              Ranked by Etsy's own relevance score — Etsy doesn't expose per-listing sales counts publicly, so this isn't a
+              confirmed sales ranking.
+            </Text>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
