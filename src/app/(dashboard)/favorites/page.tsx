@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Star, Store, Sparkles, Bookmark, ExternalLink, Compass, Download, ArrowRight } from "lucide-react";
+import { Star, Store, Sparkles, Bookmark, ExternalLink, Compass, Download, ArrowRight, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Card, Alert, Button, Badge, Tabs, Heading, Text } from "@/components/ui";
 import { Table, EmptyState } from "@/components/data";
@@ -44,11 +44,20 @@ function downloadCsv(filename: string, rows: ProspectRow[]) {
   URL.revokeObjectURL(url);
 }
 
+interface PlannedKeywordRow {
+  id: string;
+  keyword: string;
+  sourceShopExternalId: string | null;
+  sourceListingUrl: string | null;
+  createdAt: string;
+}
+
 export default function FavoritesPage() {
   const [activeTab, setActiveTab] = useState<"products" | "shops" | "keywords">("products");
   const [productRows, setProductRows] = useState<ProspectRow[]>([]);
   const [trackedShops, setTrackedShops] = useState<TrackedResearchShop[]>([]);
-  const [keywords, setKeywords] = useState<Array<{ keyword: string; count: number; estDaily: number }>>([]);
+  const [keywords, setKeywords] = useState<PlannedKeywordRow[]>([]);
+  const [keywordSearch, setKeywordSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,41 +67,60 @@ export default function FavoritesPage() {
   async function loadAll() {
     setError(null);
     try {
-      const [favs, allProspects, shops] = await Promise.all([
+      const [favs, shops, plannedRes] = await Promise.all([
         fetchProspects({ favoriteOnly: true }),
-        fetchProspects(),
         fetchTrackedResearchShops().catch(() => []),
+        fetch("/api/planned-keywords").then((r) => r.json()).catch(() => ({ keywords: [] })),
       ]);
 
       setProductRows(favs);
       setTrackedShops(shops);
-
-      // Aggregate planned keywords from research dataset
-      const kwMap = new Map<string, { count: number; totalDaily: number }>();
-      for (const p of allProspects) {
-        if (p.keyword) {
-          const entry = kwMap.get(p.keyword) || { count: 0, totalDaily: 0 };
-          entry.count += 1;
-          entry.totalDaily += p.estDailySales ?? 0;
-          kwMap.set(p.keyword, entry);
-        }
-      }
-
-      const kwList = Array.from(kwMap.entries())
-        .map(([kw, data]) => ({
-          keyword: kw,
-          count: data.count,
-          estDaily: Math.round((data.totalDaily / Math.max(1, data.count)) * 10) / 10,
-        }))
-        .sort((a, b) => b.count - a.count);
-
-      setKeywords(kwList);
+      setKeywords(plannedRes.keywords ?? []);
     } catch (e) {
       setError(e instanceof ServiceError ? e.message : "Couldn't load Planning data.");
     } finally {
       setLoading(false);
     }
   }
+
+  async function handleRemoveKeyword(id: string) {
+    setKeywords((prev) => prev.filter((k) => k.id !== id));
+    try {
+      await fetch("/api/planned-keywords", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+    } catch {
+      loadAll();
+    }
+  }
+
+  function handleExportKeywords() {
+    const header = "Keyword,Word Count,Source Shop,Source Listing,Added";
+    const body = filteredKeywords
+      .map((k) =>
+        [
+          `"${k.keyword.replace(/"/g, '""')}"`,
+          k.keyword.split(/\s+/).length,
+          `"${k.sourceShopExternalId ?? ""}"`,
+          `"${k.sourceListingUrl ?? ""}"`,
+          new Date(k.createdAt).toISOString(),
+        ].join(",")
+      )
+      .join("\n");
+    const blob = new Blob([`${header}\n${body}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sellersalt-planned-keywords-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const filteredKeywords = keywords.filter((k) =>
+    k.keyword.toLowerCase().includes(keywordSearch.trim().toLowerCase())
+  );
 
   useEffect(() => {
     loadAll();
@@ -183,6 +211,14 @@ export default function FavoritesPage() {
               onClick={handleExportShops}
             >
               Export Shops CSV
+            </Button>
+          ) : activeTab === "keywords" && keywords.length > 0 ? (
+            <Button
+              variant="secondary"
+              leadingIcon={<Download className="h-4 w-4" />}
+              onClick={handleExportKeywords}
+            >
+              Export Keywords CSV
             </Button>
           ) : undefined
         }
@@ -321,45 +357,83 @@ export default function FavoritesPage() {
       {/* 3. PLANNED KEYWORDS TAB */}
       {activeTab === "keywords" && (
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-          <div>
-            <Heading as="h2" size="h4">
-              Discovered Keyword Planning Lists ({keywords.length})
-            </Heading>
-            <Text size="body-sm" color="secondary" className="mt-0.5">
-              High-intent Etsy keyword clusters discovered across your research runs.
-            </Text>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <Heading as="h2" size="h4">
+                Your Keyword Planning List ({keywords.length})
+              </Heading>
+              <Text size="body-sm" color="secondary" className="mt-0.5">
+                Keywords you've explicitly added to planning from Shop Intelligence or Keyword Research.
+              </Text>
+            </div>
+            <input
+              type="text"
+              value={keywordSearch}
+              onChange={(e) => setKeywordSearch(e.target.value)}
+              placeholder="Search planned keywords…"
+              className="px-3 py-1.5 rounded-lg border border-line text-xs w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#0E8F5D]/30"
+            />
           </div>
 
-          <div className="overflow-x-auto border border-line rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
-                <tr>
-                  <th className="p-3">Keyword / Niche</th>
-                  <th className="p-3">Word Count</th>
-                  <th className="p-3">Discovered Listings</th>
-                  <th className="p-3">Est. Daily Velocity</th>
-                  <th className="p-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-subtle">
-                {keywords.map((k) => (
-                  <tr key={k.keyword} className="hover:bg-[#FAFAF8]">
-                    <td className="p-3 font-bold text-ink">{k.keyword}</td>
-                    <td className="p-3 font-mono">{k.keyword.split(/\s+/).length} words</td>
-                    <td className="p-3 font-mono">{k.count} products</td>
-                    <td className="p-3 font-mono text-[#0E8F5D] font-bold">{k.estDaily} / day</td>
-                    <td className="p-3 text-right">
-                      <Link href={`/prospects?search=${encodeURIComponent(k.keyword)}`}>
-                        <Button variant="secondary" size="compact" className="text-xs">
-                          Research Stream →
-                        </Button>
-                      </Link>
-                    </td>
+          {keywords.length === 0 ? (
+            <div className="py-12 text-center text-xs text-ink-tertiary">
+              No keywords planned yet. Visit a Shop Intelligence page and click <strong>Add to Keyword Planning</strong> on any discovered keyword.
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-line rounded-lg">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                  <tr>
+                    <th className="p-3">Keyword / Niche</th>
+                    <th className="p-3">Word Count</th>
+                    <th className="p-3">Source</th>
+                    <th className="p-3">Added</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line-subtle">
+                  {filteredKeywords.map((k) => (
+                    <tr key={k.id} className="hover:bg-[#FAFAF8]">
+                      <td className="p-3 font-bold text-ink">{k.keyword}</td>
+                      <td className="p-3 font-mono">{k.keyword.split(/\s+/).length} words</td>
+                      <td className="p-3">
+                        {k.sourceListingUrl ? (
+                          <a
+                            href={k.sourceListingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-ink-tertiary hover:text-ink flex items-center gap-1"
+                          >
+                            Evidence listing <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-ink-tertiary">—</span>
+                        )}
+                      </td>
+                      <td className="p-3 font-mono text-ink-tertiary">{new Date(k.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/prospects?search=${encodeURIComponent(k.keyword)}`}>
+                            <Button variant="secondary" size="compact" className="text-xs">
+                              Research →
+                            </Button>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveKeyword(k.id)}
+                            className="p-1.5 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Remove from planning"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       )}
     </div>
