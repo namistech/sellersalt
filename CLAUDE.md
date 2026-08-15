@@ -244,6 +244,40 @@ git history / commit messages for the specific incidents each one fixed):
   dashboard shows a non-dismissible alert with a working resend button
   until it's set.
 
+**AI provider/model registry** (2026-08-16, Phase 1 of the SaltBot AI
+infrastructure rebuild — see `AiProvider`/`AiModel` models): fixes
+"AI APIs are failing because the system doesn't know which model to
+use" — every provider previously had a hardcoded model ID string in
+`llm-provider.ts` (e.g. a specific OpenRouter free-tier slug, Google's
+since-deprecated `gemini-1.5-flash`) with no way to know if it still
+existed on the provider's side, and no admin UI to see or change it.
+- Real, admin-refreshable model catalog per provider (OpenRouter,
+  NVIDIA, Gemini, OpenAI), fetched live from each provider's own
+  model-list API on demand — never hardcoded/invented. Verified live
+  against all four real endpoints while building this (OpenRouter:
+  413 real models incl. 19 free; NVIDIA: real catalog, no auth
+  required for the list endpoint; Gemini/OpenAI: confirmed reachable).
+- Admin UI (`/admin` → AI Providers tab): per-provider API key entry,
+  Test Connection (a real model-list call), Refresh Models, a Default
+  Model dropdown populated from the live catalog, priority (SaltBot's
+  fallback order), "Models last updated: X ago".
+- `llm-provider.ts` now iterates active, priority-ordered `AiProvider`
+  rows from the DB using each one's selected `defaultModelId` — zero
+  hardcoded model strings remain.
+- Auto-picks a sane default on every refresh (keeps the current
+  selection if it survived the refresh, else cheapest free model, else
+  first reported) so a provider is never "connected but no model
+  selected."
+- Migration `20260815203713_add_ai_provider_model_registry` also
+  migrated the already-configured OpenRouter/NVIDIA keys over from
+  their old `AppSetting` rows (same encryption module) and removed
+  those rows — credentials now live in exactly one place.
+- **Not yet built** (later phases, deliberately deferred per explicit
+  instruction to stop after Phase 1 and let it get tested): per-model
+  health tracking/auto-failover beyond the existing try-next-provider
+  fallback, scheduled catalog refresh, auto-recommend (best free/
+  cheap/quality/fast), cost-control routing.
+
 **Billing — real, not just credential storage**:
 - Stripe: fully dynamic Checkout Sessions (inline `price_data`, no
   pre-created Stripe Price objects — DB-edited package prices stay the
