@@ -19,6 +19,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isAdmin = isAdminEmail(user?.email);
   const isStagingVerification = isStagingVerificationAccount(user?.email, host);
 
+  // Hard block: an email/password account that hasn't confirmed its email
+  // never reaches the dashboard, full stop — not a dismissible nag. OAuth
+  // (Google/Etsy) sign-ins set emailVerified automatically at login time
+  // (see the signIn callback in lib/auth.ts), so this check alone already
+  // distinguishes "genuinely unverified" from "OAuth-verified" without
+  // needing to branch on auth method here.
+  if (!isAdmin && user?.id) {
+    const verification = await prisma.user.findUnique({ where: { id: user.id }, select: { emailVerified: true } });
+    if (!verification?.emailVerified) redirect("/verify-email");
+  }
+
   // Every plan (including Started) now requires completed checkout — no
   // free tier exists anymore. Admins and designated staging verification
   // test accounts are exempt so testing can proceed without a live Stripe charge;

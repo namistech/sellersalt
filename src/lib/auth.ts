@@ -13,6 +13,18 @@ import { rpID, expectedOrigin } from "./webauthn";
 import { verifyChallengeToken } from "./webauthn-challenge";
 import { get2FA, verify2FALoginCode } from "./two-factor";
 
+// There's no NextAuth Account/Session adapter table in this schema (JWT
+// session strategy only), so User.authMethods is the only record of which
+// sign-in methods an account has ever used — appended to on every
+// successful login, read by the admin Users table.
+async function recordAuthMethod(userId: string, method: string, currentMethods: string[]) {
+  if (currentMethods.includes(method)) return;
+  await prisma.user.update({
+    where: { id: userId },
+    data: { authMethods: { push: method } },
+  });
+}
+
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: {
@@ -89,6 +101,8 @@ export const authOptions: NextAuthOptions = {
           if (!result.ok) throw new Error("2FA_INVALID");
         }
 
+        recordAuthMethod(user.id, "credentials", user.authMethods).catch(() => {});
+
         const primaryOrg = user.memberships[0]?.organization;
         return {
           id: user.id,
@@ -151,6 +165,8 @@ export const authOptions: NextAuthOptions = {
           data: { counter: BigInt(verification.authenticationInfo.newCounter), lastUsedAt: new Date() },
         });
 
+        recordAuthMethod(stored.user.id, "passkey", stored.user.authMethods).catch(() => {});
+
         const primaryOrg = stored.user.memberships[0]?.organization;
         return {
           id: stored.user.id,
@@ -189,6 +205,11 @@ export const authOptions: NextAuthOptions = {
               email,
               name: user.name || email.split("@")[0],
               passwordHash,
+              // Google/Etsy have already verified this address themselves —
+              // the mandatory-verification requirement is for email/password
+              // accounts, not OAuth identities.
+              emailVerified: new Date(),
+              authMethods: [account.provider],
               memberships: {
                 create: {
                   organizationId: org.id,
@@ -198,6 +219,23 @@ export const authOptions: NextAuthOptions = {
             },
             include: { memberships: { include: { organization: true } } },
           });
+        } else {
+          // Existing account (created via email/password, or via the other
+          // OAuth provider) signing in with Google/Etsy for the first time —
+          // this identity is provider-verified even if the account itself
+          // never completed email/password verification, and this provider
+          // wasn't necessarily recorded yet.
+          const needsVerification = !dbUser.emailVerified;
+          const needsAuthMethod = !dbUser.authMethods.includes(account.provider);
+          if (needsVerification || needsAuthMethod) {
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: {
+                ...(needsVerification ? { emailVerified: new Date() } : {}),
+                ...(needsAuthMethod ? { authMethods: { push: account.provider } } : {}),
+              },
+            });
+          }
         }
 
         if (dbUser.suspendedAt) return false; // NextAuth treats a false return as access denied
@@ -281,6 +319,12 @@ export const authOptions: NextAuthOptions = {
         token.organizationId = (user as any).organizationId;
         token.organizationName = (user as any).organizationName;
         token.picture = user.image || token.picture;
+        // `user` is only populated right after a real sign-in (not on every
+        // token refresh), so this is exactly one write per login.
+        const uid = (user as any).id;
+        if (uid) {
+          prisma.user.update({ where: { id: uid }, data: { lastLoginAt: new Date() } }).catch(() => {});
+        }
       }
       if (trigger === "update" && session?.user) {
         if (session.user.image) token.picture = session.user.image;

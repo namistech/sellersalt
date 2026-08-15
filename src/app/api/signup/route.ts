@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
-import { sendLifecycleEmail } from "@/services/email/template-registry";
+import { sendVerificationEmail } from "@/lib/email-verification";
+import { scheduleVerificationReminders } from "@/lib/queue";
 
 // One signup = one User + one Organization + one OWNER Membership.
 export async function POST(req: Request) {
@@ -39,26 +39,25 @@ export async function POST(req: Request) {
     },
   });
 
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  await prisma.passwordResetToken.create({
-    data: {
-      userId: user.id,
-      tokenHash,
-      expiresAt,
+  // First of the capped 3-email sequence (immediate + ~6h + ~18h). The
+  // other two are scheduled as delayed jobs; each re-checks verification
+  // status and the shared cap before actually sending.
+  sendVerificationEmail(
+    {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerified: null,
+      verificationEmailCount: 0,
+      verificationFirstSentAt: null,
+      lastVerificationEmailAt: null,
     },
-  });
+    { trigger: "signup" }
+  ).catch((err) => console.error("Failed to send initial verification email:", err));
 
-  const appUrl = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
-  const verificationUrl = `${appUrl.replace(/\/+$/, "")}/api/auth/verify-email?token=${rawToken}`;
-
-  sendLifecycleEmail("EMAIL_VERIFICATION", normalizedEmail, {
-    name: name?.trim() || normalizedEmail.split("@")[0],
-    verificationUrl,
-    expiresInHours: "24",
-  }).catch(() => {});
+  scheduleVerificationReminders(user.id).catch((err) =>
+    console.error("Failed to schedule verification reminders:", err)
+  );
 
   return NextResponse.json({ ok: true });
 }

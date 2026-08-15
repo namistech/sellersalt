@@ -5,14 +5,17 @@ import {
   PROSPECTING_QUEUE_NAME,
   TRACK_SHOP_JOB_NAME,
   SYNC_SELLER_CHANNEL_JOB_NAME,
+  SEND_VERIFICATION_REMINDER_JOB_NAME,
   type ProspectingJobData,
   type ShopWatchJobData,
   type SellerChannelSyncJobData,
+  type VerificationReminderJobData,
 } from "../lib/queue";
 import { decrypt } from "../lib/encryption";
 import { getConnector } from "../connectors/registry";
 import { sendEmail } from "../lib/send-email";
 import { syncSellerChannel } from "../lib/sync-seller-channel";
+import { sendVerificationEmail } from "../lib/email-verification";
 
 console.log("SellerSalt worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
 
@@ -150,6 +153,13 @@ async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
   });
 }
 
+async function handleVerificationReminderJob(job: { data: VerificationReminderJobData }) {
+  const { userId } = job.data;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return; // account deleted since the reminder was scheduled
+  await sendVerificationEmail(user, { trigger: "reminder" });
+}
+
 const worker = new Worker(
   PROSPECTING_QUEUE_NAME,
   async (job) => {
@@ -158,6 +168,8 @@ const worker = new Worker(
     } else if (job.name === SYNC_SELLER_CHANNEL_JOB_NAME) {
       const { sellerChannelId } = job.data as SellerChannelSyncJobData;
       await syncSellerChannel(sellerChannelId);
+    } else if (job.name === SEND_VERIFICATION_REMINDER_JOB_NAME) {
+      await handleVerificationReminderJob(job as { data: VerificationReminderJobData });
     } else {
       await handleProspectingJob(job as { data: ProspectingJobData });
     }

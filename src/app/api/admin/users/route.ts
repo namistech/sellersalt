@@ -31,6 +31,7 @@ export async function GET(req: Request) {
             include: {
               package: { select: { name: true, key: true } },
               subscription: { select: { status: true, provider: true } },
+              sellerChannels: { where: { platform: "ETSY_SELLER" }, select: { status: true }, take: 1 },
             },
           },
         },
@@ -54,6 +55,10 @@ export async function GET(req: Request) {
       subscriptionStatus: primaryOrg?.subscription?.status || "INCOMPLETE",
       memberSince: u.createdAt,
       suspended: Boolean(u.suspendedAt),
+      emailVerified: Boolean(u.emailVerified),
+      authMethods: u.authMethods,
+      lastLoginAt: u.lastLoginAt,
+      etsyConnected: (primaryOrg?.sellerChannels?.[0]?.status ?? null) === "ACTIVE",
     };
   });
 

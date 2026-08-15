@@ -10,6 +10,7 @@ export const RUN_SEARCH_JOB_NAME = "run-search";
 export const SCHEDULED_SEARCH_JOB_NAME = "scheduled-search";
 export const TRACK_SHOP_JOB_NAME = "track-shop";
 export const SYNC_SELLER_CHANNEL_JOB_NAME = "sync-seller-channel";
+export const SEND_VERIFICATION_REMINDER_JOB_NAME = "send-verification-reminder";
 
 export interface ProspectingJobData {
   jobId?: string;
@@ -29,7 +30,13 @@ export interface SellerChannelSyncJobData {
   sellerChannelId: string;
 }
 
-export const prospectingQueue = new Queue<ProspectingJobData | ShopWatchJobData | SellerChannelSyncJobData>(
+export interface VerificationReminderJobData {
+  userId: string;
+}
+
+export const prospectingQueue = new Queue<
+  ProspectingJobData | ShopWatchJobData | SellerChannelSyncJobData | VerificationReminderJobData
+>(
   PROSPECTING_QUEUE_NAME,
   {
     connection,
@@ -153,4 +160,22 @@ export async function stopSellerChannelSync(sellerChannelId: string) {
   for (const r of existing) {
     await prospectingQueue.removeRepeatableByKey(r.key);
   }
+}
+
+// Completes the capped 3-email sequence started at signup: the immediate
+// send happens inline in /api/signup, this schedules the remaining two
+// (~6h, ~18h later). Each delayed job re-checks verification status and the
+// shared rate-limit counters before sending, so it's a no-op if the user
+// already verified or a manual resend already used up the cap.
+export async function scheduleVerificationReminders(userId: string) {
+  await prospectingQueue.add(
+    SEND_VERIFICATION_REMINDER_JOB_NAME,
+    { userId },
+    { delay: 6 * 60 * 60 * 1000, jobId: `verify-reminder-${userId}-2` }
+  );
+  await prospectingQueue.add(
+    SEND_VERIFICATION_REMINDER_JOB_NAME,
+    { userId },
+    { delay: 18 * 60 * 60 * 1000, jobId: `verify-reminder-${userId}-3` }
+  );
 }

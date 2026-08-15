@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { sendLifecycleEmail } from "@/services/email/template-registry";
+import { sendVerificationEmail, markEmailVerified } from "@/lib/email-verification";
+import { logAuditEvent } from "@/lib/audit-log";
 
 function appUrl(): string {
   const url = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
@@ -12,7 +14,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = url.searchParams.get("token");
   if (!token) {
-    return NextResponse.redirect(new URL("/login?error=invalid_verification_token", appUrl()));
+    return NextResponse.redirect(new URL("/verify-email?status=invalid", appUrl()));
   }
 
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
@@ -21,25 +23,33 @@ export async function GET(req: Request) {
     include: { user: true },
   });
 
-  if (!record || record.expiresAt < new Date() || record.usedAt) {
-    return NextResponse.redirect(new URL("/login?error=verification_token_expired", appUrl()));
+  if (!record) {
+    return NextResponse.redirect(new URL("/verify-email?status=invalid", appUrl()));
   }
 
-  // Mark the token used and the account actually verified — this used to
-  // only do the former, so a clicked link never persisted anywhere and
-  // there was no way to later ask "is this user verified?".
-  await prisma.$transaction([
-    prisma.passwordResetToken.update({
-      where: { id: record.id },
-      data: { usedAt: new Date() },
-    }),
-    prisma.user.update({
-      where: { id: record.userId },
-      data: { emailVerified: new Date() },
-    }),
-  ]);
+  if (record.usedAt) {
+    // Already redeemed — most commonly a double-clicked link or a stale
+    // tab reopened later. If the account is already verified this is
+    // harmless, so say so plainly instead of showing a scary "invalid
+    // link" error for something that already succeeded.
+    const status = record.user.emailVerified ? "already-verified" : "expired";
+    return NextResponse.redirect(new URL(`/verify-email?status=${status}`, appUrl()));
+  }
 
-  // Send Welcome email now that email is verified
+  if (record.expiresAt < new Date()) {
+    return NextResponse.redirect(new URL("/verify-email?status=expired", appUrl()));
+  }
+
+  // Marks the token used, the account verified, and invalidates any other
+  // outstanding tokens for this user in one transaction.
+  await markEmailVerified(record.userId, record.id);
+
+  logAuditEvent({
+    event: "EMAIL_VERIFIED",
+    actor: { id: record.userId, email: record.user.email },
+    target: { id: record.userId, email: record.user.email },
+  }).catch(() => {});
+
   sendLifecycleEmail("WELCOME", record.user.email, {
     name: record.user.name || "there",
     dashboardUrl: `${appUrl()}/dashboard`,
@@ -49,32 +59,20 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { email } = await req.json();
+  const { email } = await req.json().catch(() => ({}));
   if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });
 
-  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+  const user = await prisma.user.findUnique({ where: { email: String(email).toLowerCase().trim() } });
   if (!user) {
-    // Return success to avoid email enumeration
+    // Always return success — an unauthenticated caller must never be able
+    // to tell whether an email address has an account.
     return NextResponse.json({ ok: true });
   }
 
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-  await prisma.passwordResetToken.create({
-    data: {
-      userId: user.id,
-      tokenHash,
-      expiresAt,
-    },
-  });
-
-  const verificationUrl = `${appUrl()}/api/auth/verify-email?token=${rawToken}`;
-  await sendLifecycleEmail("EMAIL_VERIFICATION", user.email, {
-    name: user.name || "there",
-    verificationUrl,
-    expiresInHours: "24",
+  // sendVerificationEmail silently no-ops on cooldown/cap/already-verified —
+  // the response shape must stay identical either way for the same reason.
+  await sendVerificationEmail(user, { trigger: "resend" }).catch((err) => {
+    console.error("Failed to send verification resend email:", err);
   });
 
   return NextResponse.json({ ok: true });

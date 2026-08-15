@@ -295,6 +295,32 @@ existed on the provider's side, and no admin UI to see or change it.
   shown for providers actually active; falls back to a mailto link if
   neither is configured for an org
 
+**Email verification & account activation (2026-08-16)** — email/password
+accounts are hard-blocked from the dashboard until verified (redirect in
+`(dashboard)/layout.tsx`, not a dismissible nag — the old dashboard alert
+was removed). Google/Etsy OAuth logins are auto-verified at sign-in
+(provider identity already implies a verified address) and never blocked.
+Central helper `src/lib/email-verification.ts` (`sendVerificationEmail`)
+is the single send path for signup's first email, the self-serve resend on
+`/verify-email`, the two automatic BullMQ-delayed reminders (~6h/~18h,
+`scheduleVerificationReminders` in `src/lib/queue.ts`), and the new admin
+"Send verification email" action — all share the same `User` counters
+(`verificationEmailCount`/`verificationFirstSentAt`/`lastVerificationEmailAt`)
+so the cap (3 sends / 24h, plus a 60s per-send cooldown) can't be bypassed
+by mixing send paths. `/verify-email` now doubles as the dedicated
+verification-required screen (masked email, cooldown countdown, distinct
+invalid/expired/already-verified states) when hit by an authenticated user,
+not just the old unauthenticated resend form. New admin actions on the
+Users tab: "Send verification email" and "Change email" (conflict-checked —
+409s and stops rather than merging accounts; resets verification state and
+re-sends). New `User` columns: `authMethods` (String[], appended to on
+every successful login — there's no NextAuth Account/Session adapter table
+in this schema, so this is the only record of which sign-in methods an
+account has used) and `lastLoginAt`. New minimal `AuditLog` model
+(`src/lib/audit-log.ts`) records `EMAIL_VERIFICATION_SENT`,
+`EMAIL_VERIFICATION_RESENT`, `ADMIN_EMAIL_VERIFICATION_SENT`,
+`ADMIN_EMAIL_CHANGED`, `EMAIL_VERIFIED` — never secrets/tokens.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -312,7 +338,7 @@ existed on the provider's side, and no admin UI to see or change it.
   "Test Connection" button only validates required fields are present
   for these two, unlike Stripe/PayPal which do a real API call).
 - Chrome extension, AI assistant, eBay research connector, category
-  leaderboards, audit log, mobile-responsive pass, automated backups
+  leaderboards, mobile-responsive pass, automated backups
 - Real Privacy Policy/Terms pages (still `mailto:` placeholders — a real
   legal gap, not cosmetic)
 - Login/register security hardening (disposable-email blocking, device

@@ -48,10 +48,28 @@ model User {
   name          String?
   suspendedAt   DateTime?
   // Null = not yet confirmed. Set by GET /api/auth/verify-email when a
-  // valid token is redeemed. Pre-existing accounts are backfilled to
-  // "verified at signup" in this field's migration, so this only gates
-  // new signups going forward, not everyone who was already using the app.
+  // valid token is redeemed, or automatically on any Google/Etsy OAuth
+  // sign-in (that identity is already provider-verified). Pre-existing
+  // accounts are backfilled to "verified at signup" in this field's
+  // migration, so this only gates new signups going forward, not everyone
+  // who was already using the app.
   emailVerified DateTime?
+  // Tracks the capped automatic reminder sequence (signup + ~6h + ~18h,
+  // max 3 total within a 24h window) and any admin/user-triggered resend —
+  // all sends share the same counter so the cap can never be bypassed by
+  // mixing automatic and manual sends. Window resets 24h after the first
+  // send in the current cycle, so a user who never verifies can still ask
+  // for a fresh link later rather than being locked out forever.
+  verificationEmailCount   Int       @default(0)
+  verificationFirstSentAt  DateTime?
+  lastVerificationEmailAt  DateTime?
+  // Every distinct method this account has ever successfully authenticated
+  // with ("credentials" | "google" | "etsy" | "passkey") — appended to on
+  // each successful sign-in. There's no NextAuth Account/Session adapter
+  // table in this schema (JWT session strategy only), so this is the only
+  // record of "how has this person signed in" for the admin Users table.
+  authMethods   String[] @default([])
+  lastLoginAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -564,6 +582,29 @@ model EmailSettings {
   fromName     String   @default("Anadash")
   isActive     Boolean  @default(false)
   updatedAt    DateTime @updatedAt
+}
+
+// ---------- Audit log ----------
+
+// Minimal, scoped audit trail — currently only used for account-security
+// events (email verification, admin-mediated email changes). Intentionally
+// has no FK relation to User: an audit row must survive the target account
+// being deleted later, so target identity is captured as a plain snapshot
+// (targetId/targetEmail) rather than a live relation. Never store secrets,
+// tokens, or passwords in metadata.
+model AuditLog {
+  id          String   @id @default(cuid())
+  event       String
+  actorId     String?
+  actorEmail  String?
+  targetId    String?
+  targetEmail String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([event])
+  @@index([targetId])
+  @@index([createdAt])
 }
 
 // ---------- Password reset ----------

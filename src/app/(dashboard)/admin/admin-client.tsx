@@ -88,6 +88,10 @@ interface AdminUserRow {
   subscriptionStatus: string;
   memberSince: string;
   suspended: boolean;
+  emailVerified: boolean;
+  authMethods: string[];
+  lastLoginAt: string | null;
+  etsyConnected: boolean;
 }
 
 interface Package {
@@ -362,6 +366,48 @@ export function AdminPackagesClient() {
       const data = await res.json();
       if (!res.ok) {
         setUserActionError(data.error || "Delete failed.");
+        return;
+      }
+      await searchUsers(userSearch);
+    } catch {
+      setUserActionError("Network error.");
+    } finally {
+      setUserActionLoading(null);
+    }
+  }
+
+  async function handleSendVerification(userId: string) {
+    setUserActionLoading(userId);
+    setUserActionError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/send-verification`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setUserActionError(data.error || "Failed to send verification email.");
+        return;
+      }
+      await searchUsers(userSearch);
+    } catch {
+      setUserActionError("Network error.");
+    } finally {
+      setUserActionLoading(null);
+    }
+  }
+
+  async function handleChangeEmail(userId: string, currentEmail: string) {
+    const newEmail = prompt(`Change login email for ${currentEmail} to:`);
+    if (!newEmail || !newEmail.trim()) return;
+    setUserActionLoading(userId);
+    setUserActionError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/change-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail: newEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUserActionError(data.error || "Failed to change email.");
         return;
       }
       await searchUsers(userSearch);
@@ -915,6 +961,7 @@ export function AdminPackagesClient() {
                   <th className="p-3">Workspace</th>
                   <th className="p-3">Plan</th>
                   <th className="p-3">Status</th>
+                  <th className="p-3">Verification</th>
                   <th className="p-3">Signed Up</th>
                   <th className="p-3 text-right">Actions</th>
                 </tr>
@@ -958,9 +1005,47 @@ export function AdminPackagesClient() {
                         {u.subscriptionStatus}
                       </Badge>
                     </td>
+                    <td className="p-3">
+                      <div className="flex flex-col gap-1">
+                        {u.emailVerified ? (
+                          <Badge variant="success">✓ Verified</Badge>
+                        ) : (
+                          <Badge variant="warning">⚠ Unverified</Badge>
+                        )}
+                        <span className="text-[10px] text-ink-tertiary">
+                          {u.authMethods.length ? u.authMethods.join(", ") : "credentials"}
+                        </span>
+                        <span className="text-[10px] text-ink-tertiary">
+                          Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
+                        </span>
+                        {u.etsyConnected && (
+                          <span className="text-[10px] text-[#0E8F5D] font-semibold">Etsy connected</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        {!u.emailVerified && (
+                          <Button
+                            variant="secondary"
+                            size="compact"
+                            loading={userActionLoading === u.id}
+                            onClick={() => handleSendVerification(u.id)}
+                            className="text-[11px]"
+                          >
+                            Send verification
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          loading={userActionLoading === u.id}
+                          onClick={() => handleChangeEmail(u.id, u.email)}
+                          className="text-[11px]"
+                        >
+                          Change email
+                        </Button>
                         <Button
                           variant="secondary"
                           size="compact"

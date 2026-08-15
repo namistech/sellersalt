@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Radar, Mail, RefreshCw } from "lucide-react";
+import { Plus, Radar } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Button, Alert } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { NewSearchDrawer } from "../new-search-drawer";
 import { createSearchConfig, type CreateSearchConfigInput } from "@/services/searchConfigs";
 import type { ConnectorSummary } from "@/services/connectors";
@@ -18,29 +18,11 @@ interface DashboardClientProps {
   initialData: DashboardData;
   connectors: ConnectorSummary[];
   userName: string;
-  emailVerified: boolean;
-  userEmail: string;
 }
 
-export function DashboardClient({ initialData, connectors, userName, emailVerified, userEmail }: DashboardClientProps) {
+export function DashboardClient({ initialData, connectors, userName }: DashboardClientProps) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
-
-  async function handleResendVerification() {
-    setResending(true);
-    try {
-      await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail }),
-      });
-      setResent(true);
-    } finally {
-      setResending(false);
-    }
-  }
 
   async function handleCreateSearch(input: CreateSearchConfigInput) {
     await createSearchConfig(input);
@@ -57,28 +39,6 @@ export function DashboardClient({ initialData, connectors, userName, emailVerifi
 
   return (
     <div className="flex flex-col gap-6">
-      {!emailVerified && (
-        <Alert variant="warning" title="Confirm your email address">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <span className="flex-1 flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
-              We sent a confirmation link to <strong>{userEmail}</strong> when you signed up. Some features may be limited until it's confirmed.
-            </span>
-            <Button
-              variant="secondary"
-              size="compact"
-              loading={resending}
-              disabled={resent}
-              onClick={handleResendVerification}
-              leadingIcon={<RefreshCw className="h-3.5 w-3.5" />}
-              className="shrink-0 text-xs"
-            >
-              {resent ? "Email sent — check your inbox" : "Resend confirmation email"}
-            </Button>
-          </div>
-        </Alert>
-      )}
-
       <PageHeader
         title={`Welcome back, ${userName}`}
         description={statusSubtitle}
