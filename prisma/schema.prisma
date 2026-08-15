@@ -32,6 +32,7 @@ model Organization {
   sellerChannels SellerChannel[]
   crossListings CrossListing[]
   subscription Subscription?
+  plannedKeywords PlannedKeyword[]
 }
 
 enum Plan {
@@ -289,6 +290,25 @@ model ShopSnapshot {
   shopWatch ShopWatch @relation(fields: [shopWatchId], references: [id], onDelete: Cascade)
 
   @@index([shopWatchId])
+}
+
+// A real, persisted "add to keyword planning" list — not derived from
+// existing Prospect rows. sourceShopExternalId/sourceListingUrl are
+// optional provenance (where the keyword was spotted), kept so the
+// Planning UI can link back to the evidence rather than showing a bare
+// string.
+model PlannedKeyword {
+  id                   String   @id @default(cuid())
+  organizationId       String
+  keyword              String
+  sourceShopExternalId String?
+  sourceListingUrl     String?
+  createdAt            DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, keyword])
+  @@index([organizationId])
 }
 
 // ---------- Packages (plan tiers) ----------

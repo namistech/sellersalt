@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Store,
@@ -63,6 +63,19 @@ export function ShopDetailClient({
   const [trackError, setTrackError] = useState<string | null>(null);
   const [shortlistedListings, setShortlistedListings] = useState<Record<string, boolean>>({});
   const [plannedKeywords, setPlannedKeywords] = useState<Record<string, boolean>>({});
+  const [keywordActionLoading, setKeywordActionLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetch("/api/planned-keywords")
+      .then((r) => r.json())
+      .then((d) => {
+        const planned: Record<string, boolean> = {};
+        for (const k of d.keywords ?? []) planned[k.keyword] = true;
+        setPlannedKeywords(planned);
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
 
   const estDaily = primary.estDailySales ?? 0;
   const totalSales = primary.totalSales ?? 0;
@@ -142,8 +155,38 @@ export function ShopDetailClient({
     }
   }
 
-  function handleToggleKeywordPlanning(k: string) {
-    setPlannedKeywords((prev) => ({ ...prev, [k]: !prev[k] }));
+  async function handleToggleKeywordPlanning(k: string) {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    const wasPlanned = Boolean(plannedKeywords[k]);
+    setKeywordActionLoading(k);
+    setPlannedKeywords((prev) => ({ ...prev, [k]: !wasPlanned }));
+    try {
+      if (wasPlanned) {
+        await fetch("/api/planned-keywords", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keyword: k }),
+        });
+      } else {
+        const matchingListing = prospects.find((p) => p.keyword === k);
+        await fetch("/api/planned-keywords", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            keyword: k,
+            sourceShopExternalId: shopExternalId,
+            sourceListingUrl: matchingListing?.listingUrl,
+          }),
+        });
+      }
+    } catch {
+      setPlannedKeywords((prev) => ({ ...prev, [k]: wasPlanned }));
+    } finally {
+      setKeywordActionLoading(null);
+    }
   }
 
   // Real day-over-day sales deltas derived from actual ShopSnapshot rows —
@@ -282,7 +325,7 @@ export function ShopDetailClient({
       </Card>
 
       {/* Live Financial & Sales Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card padding="md" className="border-line bg-white shadow-xs">
           <div className="flex items-center justify-between text-[11px] font-bold text-ink-tertiary uppercase mb-1">
             <span>Est. Total Revenue</span>
@@ -335,6 +378,19 @@ export function ShopDetailClient({
           </div>
           <div className="text-[11px] text-ink-tertiary mt-1">
             {activeListings} active listings
+          </div>
+        </Card>
+
+        <Card padding="md" className="border-line bg-white shadow-xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-ink-tertiary uppercase mb-1">
+            <span>Review Velocity</span>
+            <Star className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="text-2xl font-extrabold text-ink font-mono">
+            {primary.reviewVelocity.toFixed(1)}
+          </div>
+          <div className="text-[11px] text-ink-tertiary mt-1">
+            reviews/month · {Math.round(primary.shopAgeMonths)}mo shop age
           </div>
         </Card>
       </div>
@@ -471,59 +527,83 @@ export function ShopDetailClient({
         </div>
       )}
 
-      {/* Discovered Long-Tail Keywords Section */}
+      {/* Keywords This Shop Is Winning — deliberately separate from the listings section */}
       {keywords.length > 0 && (
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <Heading as="h2" size="h4">
-                Shop Long-Tail Keyword Landscape ({keywords.length})
+                Keywords This Shop Is Winning ({keywords.length})
               </Heading>
               <Text size="body-sm" color="secondary" className="mt-0.5">
-                Target search terms where {primary.shopName} captures customer discovery.
+                Search terms discovered on {primary.shopName}'s top-performing listings, ranked by how many of its listings use them.
               </Text>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {keywords.map((k) => {
-              const words = k.split(/\s+/).length;
-              const isPlanned = plannedKeywords[k];
+            {[...keywords]
+              .map((k) => {
+                const matches = prospects.filter((p) => p.keyword === k);
+                return { keyword: k, matches };
+              })
+              .sort((a, b) => b.matches.length - a.matches.length)
+              .map(({ keyword: k, matches }) => {
+                const words = k.split(/\s+/).length;
+                const isPlanned = plannedKeywords[k];
+                const evidenceListing = matches[0];
+                const tierLabel = words >= 4 ? "Long-tail" : words === 3 ? "Mid-tail" : "Head term";
 
-              return (
-                <div
-                  key={k}
-                  className="p-3 rounded-xl border border-line bg-[#FAFAF8] flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-ink truncate">{k}</div>
-                    <div className="text-[10px] text-ink-tertiary mt-0.5">
-                      {words} words · Long-tail niche
+                return (
+                  <div
+                    key={k}
+                    className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs text-ink truncate">{k}</div>
+                        <div className="text-[10px] text-ink-tertiary mt-0.5">
+                          {words} words · {tierLabel} · {matches.length} listing{matches.length === 1 ? "" : "s"}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Link
+                          href={`/prospects?search=${encodeURIComponent(k)}`}
+                          className="p-1 rounded text-ink-tertiary hover:text-ink"
+                          title="Research keyword"
+                        >
+                          <Compass className="h-3.5 w-3.5" />
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={keywordActionLoading === k}
+                          onClick={() => handleToggleKeywordPlanning(k)}
+                          className={`p-1 rounded text-xs transition-colors disabled:opacity-50 ${
+                            isPlanned ? "text-[#0E8F5D]" : "text-ink-tertiary hover:text-ink"
+                          }`}
+                          title={isPlanned ? "Remove from Keyword Planning" : "Add to Keyword Planning"}
+                        >
+                          <Bookmark className={`h-3.5 w-3.5 ${isPlanned ? "fill-current" : ""}`} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Link
-                      href={`/prospects?search=${encodeURIComponent(k)}`}
-                      className="p-1 rounded text-ink-tertiary hover:text-ink"
-                      title="Research keyword"
-                    >
-                      <Compass className="h-3.5 w-3.5" />
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleKeywordPlanning(k)}
-                      className={`p-1 rounded text-xs transition-colors ${
-                        isPlanned ? "text-[#0E8F5D]" : "text-ink-tertiary hover:text-ink"
-                      }`}
-                      title={isPlanned ? "Planned" : "Add to Planning"}
-                    >
-                      <Bookmark className={`h-3.5 w-3.5 ${isPlanned ? "fill-current" : ""}`} />
-                    </button>
+                    {evidenceListing && (
+                      <a
+                        href={evidenceListing.listingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-ink-tertiary hover:text-ink flex items-center gap-1 truncate"
+                        title="View the listing using this keyword"
+                      >
+                        <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">Evidence: {evidenceListing.listingTitle}</span>
+                      </a>
+                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </Card>
       )}
