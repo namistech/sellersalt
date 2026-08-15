@@ -1,7 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Compass,
+  Eye,
+  Flame,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import "./marketing.css";
 
 interface PackageData {
@@ -18,22 +31,29 @@ interface PackageData {
 
 const FAQS = [
   {
-    q: "Do I need my own Etsy API key?",
-    a: "No. Anadash works completely out-of-the-box. You don't need an Etsy developer key or technical setup.",
+    q: "Do I need my own Etsy API key or developer account?",
+    a: "No. SellerSalt works completely out-of-the-box using our platform research connector. You don't need technical setup or Etsy approval.",
   },
   {
-    q: "Is the sales data real or estimated?",
-    a: "Anadash uses verified lifetime sales numbers directly extracted from shop data and updated through automated daily tracking.",
+    q: "Is the sales data on SellerSalt real or estimated?",
+    a: "SellerSalt extracts verified lifetime transaction numbers directly from Etsy shop data and updates them via daily point-in-time snapshots, avoiding speculative keyword estimators.",
   },
   {
-    q: "Can e-commerce agencies use Anadash for clients?",
-    a: "Yes. The Agency plan supports multi-seat teams and up to 100 concurrently tracked shops for sourcing clients.",
+    q: "What is Opportunity Radar?",
+    a: "Opportunity Radar is SellerSalt's decision layer. It evaluates sales velocity, catalog density, competition barriers, and recency to highlight emerging winning products before they get crowded.",
+  },
+  {
+    q: "Can I track competitor shops over time?",
+    a: "Yes. Use Spy on Competitor to monitor any Etsy shop. SellerSalt captures daily snapshots of sales, listing changes, and review growth so you see real trajectories.",
+  },
+  {
+    q: "How does the $1 trial work?",
+    a: "You get 3 full days of access for just $1 to verify real data and test the Opportunity Radar. You can cancel anytime inside your dashboard billing settings.",
   },
 ];
 
 export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
   const router = useRouter();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [searchValue, setSearchValue] = useState("");
 
@@ -41,36 +61,23 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
   const [shopAge, setShopAge] = useState(14);
   const [demandLevel, setDemandLevel] = useState<"high" | "medium" | "low">("high");
 
-  useEffect(() => {
-    const stored = localStorage.getItem("anadash-theme");
-    if (stored === "dark") setTheme("dark");
-    else if (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches) setTheme("dark");
-  }, []);
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("anadash-theme", next);
-  }
-
   function handleHeroSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchValue.trim()) params.set("url", searchValue.trim());
-    router.push(`/signup${params.toString() ? `?${params.toString()}` : ""}`);
+    router.push(`/checkout?plan=STARTED${params.toString() ? `&${params.toString()}` : ""}`);
   }
 
-  // Same illustrative logic as the original design — a self-contained lead-gen
-  // widget, not connected to real shop data (that only exists once a shop is
-  // actually looked up inside the app).
+  // Interactive Opportunity Feasibility Calculation
   let score = 100;
   score -= Math.min(reviewCount / 10, 40);
   score -= Math.min(shopAge * 1.5, 30);
   if (demandLevel === "high") score += 20;
   if (demandLevel === "low") score -= 20;
   score = Math.max(10, Math.min(99, Math.round(score)));
-  const scoreBadge = score >= 70 ? "green" : score >= 45 ? "yellow" : "red";
-  const scoreLabel = score >= 70 ? "Easy Opportunity" : score >= 45 ? "Medium Difficulty" : "Highly Competitive";
+  const scoreBadgeBg = score >= 70 ? "#E7FAF1" : score >= 45 ? "#FDF1DF" : "#FCEAE9";
+  const scoreBadgeText = score >= 70 ? "#0E8F5D" : score >= 45 ? "#D97706" : "#DC2626";
+  const scoreLabel = score >= 70 ? "🔥 High Opportunity Potential" : score >= 45 ? "📈 Moderate Competition" : "⚠️ Saturated Niche";
 
   const pkg = (key: string) => packages.find((p) => p.key === key);
   const started = pkg("STARTED");
@@ -78,409 +85,361 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
   const agency = pkg("AGENCY");
 
   return (
-    <div className="anadash-marketing" data-theme={theme}>
+    <div className="sellersalt-marketing">
       <div className="bg-graphic bg-graphic-1" />
       <div className="bg-graphic bg-graphic-2" />
-      <div className="bg-graphic bg-graphic-3" />
 
-      <div className="top-offer-bar">
+      {/* Top Banner */}
+      <div className="top-bar">
         <span>
-          🔥 <strong>LIMITED OFFER:</strong> Get 20% OFF Pro Annual Plans — mention code{" "}
-          <code>EXPAND2026</code> when you upgrade
+          ✨ <strong>LAUNCH SPECIAL:</strong> Start researching Etsy opportunities today with a 3-day trial for just $1.
         </span>
-        <a href="#pricing" className="top-offer-link">
-          See plans →
-        </a>
+        <a href="#pricing">See Plans →</a>
       </div>
 
+      {/* Navigation Header */}
       <header>
         <div className="container nav-container">
-          <a href="/" className="logo">
-            <div className="logo-icon" />
-            Anadash
-          </a>
+          <Link href="/" className="logo">
+            <div className="logo-icon">S</div>
+            SellerSalt
+          </Link>
+
           <nav aria-label="Main Navigation">
             <ul className="nav-links">
               <li><a href="#features">Features</a></li>
-              <li><a href="#comparison">Why Anadash</a></li>
+              <li><a href="#radar">Opportunity Radar</a></li>
               <li><a href="#calculator">Difficulty Tool</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><a href="#faq">FAQ</a></li>
             </ul>
           </nav>
+
           <div className="nav-actions">
-            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle Dark/Light Mode">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="5" />
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-              </svg>
-            </button>
-            <a href="/login" className="btn btn-secondary">Log in</a>
-            <a href="/signup" className="btn btn-primary">Start trial</a>
+            <Link href="/login" className="btn btn-secondary">
+              Sign In
+            </Link>
+            <Link href="/checkout?plan=PRO" className="btn btn-accent">
+              Get Started
+            </Link>
           </div>
         </div>
       </header>
 
+      {/* Hero Section */}
       <section className="hero">
         <div className="container">
-          <div className="hero-tag">
-            <span style={{ background: "var(--accent)", color: "#FFF", padding: "2px 8px", borderRadius: 12, fontSize: "0.7rem", fontWeight: 700 }}>
-              NEW
-            </span>
-            eBay Sourcing Intelligence Integration Launching Soon
+          <div className="hero-badge">
+            <Sparkles className="h-4 w-4" />
+            First-Principles Etsy Research & Opportunity Intelligence
           </div>
 
-          <h1>Find Winning Etsy Products &amp; Competitors in Seconds</h1>
-          <p>No setup. No API key needed. Get verified lifetime sales data, spy on top shop listings, and spot untapped sourcing opportunities.</p>
+          <h1>
+            Spot Winning Etsy Opportunities <br />
+            Before They Become Saturated
+          </h1>
 
-          <form className="hero-search-box" onSubmit={handleHeroSearch}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
+          <p>
+            SellerSalt transforms verified marketplace sales data into clear decision intelligence.
+            Identify high-velocity niches, lean catalogs, and competitor momentum in seconds.
+          </p>
+
+          <div className="hero-actions">
+            <Link href="/checkout?plan=PRO" className="btn btn-accent">
+              Start 3-Day Trial ($1)
+            </Link>
+            <a href="#calculator" className="btn btn-secondary">
+              Try Difficulty Calculator
+            </a>
+          </div>
+
+          {/* Direct Shop Lookup / Search Input */}
+          <form onSubmit={handleHeroSearch} className="hero-search-box">
             <input
               type="text"
-              placeholder="Paste Etsy Shop URL or Keyword (e.g., etsy.com/shop/LeatherCrafts)..."
-              aria-label="Etsy Shop Search Input"
+              placeholder="Paste any Etsy shop URL or search keyword (e.g. etsy.com/shop/YourShopName)..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <button type="submit" className="btn btn-primary">Analyze Shop</button>
+            <button type="submit" className="btn btn-primary">
+              Analyze Niche →
+            </button>
           </form>
+        </div>
+      </section>
 
-          <div className="hero-mockup">
-            <div className="mockup-header">
-              <div className="dot" /><div className="dot" /><div className="dot" />
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: 12, fontWeight: 500 }}>
-                anadash.com/app/shop-intelligence
-              </span>
+      {/* Core Features Grid */}
+      <section id="features" className="container">
+        <div className="section-header">
+          <h2>Data → Intelligence → Decision</h2>
+          <p>
+            Unlike generic SEO tools that estimate speculative keyword volume, SellerSalt tracks verified sales transactions and competitor velocity.
+          </p>
+        </div>
+
+        <div className="features-grid">
+          <div className="feature-card">
+            <div className="feature-icon">
+              <Flame className="h-6 w-6" />
             </div>
-            <div className="mockup-body">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderBottom: "1px solid var(--border-subtle)", paddingBottom: 18 }}>
-                <div>
-                  <h3 style={{ fontSize: "1.25rem", fontWeight: 700 }}>
-                    GlobalCraftsStudio <span className="badge badge-green">Low Competition</span>
-                  </h3>
-                  <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                    Primary Region: US/EU Export • 1,840 Active Listings • Daily Auto-Tracked
-                  </p>
-                </div>
-                <button className="btn btn-secondary" style={{ fontSize: "0.8rem", padding: "8px 16px" }}>
-                  + Add to Tracker
-                </button>
-              </div>
+            <h3>Opportunity Radar</h3>
+            <p>
+              Our proprietary 5-signal scoring engine evaluates sales velocity, catalog density, competition barriers, and freshness to surface the highest-potential products.
+            </p>
+          </div>
 
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="label">Verified Lifetime Sales</div>
-                  <div className="value">94,120</div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Monthly Rev (Est.)</div>
-                  <div className="value" style={{ color: "var(--accent)" }}>$32,850</div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Avg Item Price</div>
-                  <div className="value">$48.50</div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Category Demand</div>
-                  <div className="value"><span className="badge badge-green">94 / 100</span></div>
-                </div>
-              </div>
-
-              <div className="graph-container">
-                <div style={{ position: "absolute", top: 16, left: 16, fontSize: "0.82rem", fontWeight: 600, color: "var(--text-muted)" }}>
-                  Real Daily Sales Graph (Last 30 Days)
-                </div>
-                <svg viewBox="0 0 500 100" preserveAspectRatio="none" style={{ width: "100%", height: 85 }}>
-                  <path d="M0,70 Q60,20 120,50 T240,20 T360,40 T500,10" fill="none" stroke="var(--accent)" strokeWidth="3" />
-                </svg>
-              </div>
+          <div className="feature-card">
+            <div className="feature-icon">
+              <Eye className="h-6 w-6" />
             </div>
+            <h3>Spy on Competitor</h3>
+            <p>
+              Monitor any Etsy shop with daily automated snapshots. Track lifetime sales growth, listing additions, and customer review velocity over time.
+            </p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon">
+              <Zap className="h-6 w-6" />
+            </div>
+            <h3>Active Search Streams</h3>
+            <p>
+              Set continuous automated search streams that scan Etsy for your targeted price, age, and review criteria. Surface emerging winners before others spot them.
+            </p>
           </div>
         </div>
       </section>
 
-      <div className="social-proof">
-        <div className="container">
-          <div className="proof-grid">
-            <div className="proof-item">✓ Verified Lifetime Sales Data</div>
-            <div className="proof-item">✓ Zero API Setup Needed</div>
-            <div className="proof-item">✓ Daily Tracked Shop Trends</div>
-            <div className="proof-item">✓ Trusted by Global Exporters &amp; Agencies</div>
-          </div>
-        </div>
-      </div>
-
-      <section id="features">
-        <div className="container">
-          <div className="section-header">
-            <h2>Designed Specifically for Sourcing Decisions</h2>
-            <p>While SEO tools help you rewrite product tags, Anadash helps you decide whether to enter a market and how to beat top sellers.</p>
-          </div>
-
-          <div className="features-grid">
-            <article className="feature-card">
-              <div className="feature-icon">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-              </div>
-              <h3>Product &amp; Shop Hunting</h3>
-              <p>Filter Etsy shops by age, review velocity, price point, and sales volume to discover high-margin niches.</p>
-            </article>
-
-            <article className="feature-card">
-              <div className="feature-icon">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-              </div>
-              <h3>Spy on Competitors</h3>
-              <p>Paste any URL for a comprehensive breakdown: top-selling items, extracted listing keywords, and exact sales numbers.</p>
-            </article>
-
-            <article className="feature-card">
-              <div className="feature-icon">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
-              </div>
-              <h3>Sales &amp; Listing Tracking</h3>
-              <p>Monitor shop performance over time with daily automated checks on revenue growth and catalog additions.</p>
-            </article>
-
-            <article className="feature-card">
-              <div className="feature-icon">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-              </div>
-              <h3>Difficulty Scoring</h3>
-              <p>Instant color-coded competition metrics (Green/Yellow/Red) showing buyer demand vs market saturation.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="comparison" className="comparison-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>How Anadash Compares</h2>
-            <p>Built for e-commerce sourcing and market entry—not basic keyword optimization.</p>
-          </div>
-
-          <table className="comp-table">
-            <thead>
-              <tr>
-                <th>Feature / Capability</th>
-                <th style={{ color: "var(--accent)" }}>Anadash</th>
-                <th>Traditional Keyword SEO Tools</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Primary Goal</td>
-                <td><strong>Sourcing &amp; Competitor Intelligence</strong></td>
-                <td>On-Page Tag &amp; Title Rewriting</td>
-              </tr>
-              <tr>
-                <td>Data Source</td>
-                <td><strong>Verified Lifetime Sales &amp; Daily Tracking</strong></td>
-                <td>Estimated Search Volume Metrics</td>
-              </tr>
-              <tr>
-                <td>Setup Required</td>
-                <td><strong>Zero Setup (No Etsy API Key Needed)</strong></td>
-                <td>Requires API Authentication &amp; Key Setup</td>
-              </tr>
-              <tr>
-                <td>Competitor Spying</td>
-                <td><strong>Instant Shop Profile &amp; Trend Graph</strong></td>
-                <td>Limited Listing Keyword Overlaps</td>
-              </tr>
-              <tr>
-                <td>Cross-Border / Export Focus</td>
-                <td><strong>Optimized for Global Sourcing Hubs</strong></td>
-                <td>US Domestic Focus Only</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="calculator">
-        <div className="container">
-          <div className="section-header">
-            <h2>Live Competition Difficulty Simulator</h2>
-            <p>Test how Anadash evaluates market feasibility before investing in new product inventory.</p>
-          </div>
-
-          <div className="calc-box">
-            <div className="calc-row">
-              <div className="calc-field">
-                <label htmlFor="reviewCount">Avg Competitor Reviews</label>
-                <input
-                  type="number"
-                  id="reviewCount"
-                  value={reviewCount}
-                  onChange={(e) => setReviewCount(Number(e.target.value) || 0)}
-                />
-              </div>
-              <div className="calc-field">
-                <label htmlFor="shopAge">Avg Shop Age (Months)</label>
-                <input
-                  type="number"
-                  id="shopAge"
-                  value={shopAge}
-                  onChange={(e) => setShopAge(Number(e.target.value) || 0)}
-                />
-              </div>
-            </div>
-            <div className="calc-row">
-              <div className="calc-field">
-                <label htmlFor="demandLevel">Category Buyer Demand</label>
-                <select id="demandLevel" value={demandLevel} onChange={(e) => setDemandLevel(e.target.value as any)}>
-                  <option value="high">High Buyer Demand</option>
-                  <option value="medium">Medium Buyer Demand</option>
-                  <option value="low">Low Buyer Demand</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={{ background: "var(--bg-card)", padding: "20px 24px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 600 }}>Calculated Opportunity Score:</div>
-                <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent)" }}>{score} / 100</div>
-              </div>
-              <div><span className={`badge badge-${scoreBadge}`}>{scoreLabel}</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing">
-        <div className="container">
-          <div className="section-header">
-            <h2>Simple, Predictable Pricing</h2>
-            <p>No hidden fees. Choose a plan that fits your sourcing volume.</p>
-          </div>
-
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <h3>Started</h3>
-              <div className="pricing-price">
-                ${started?.trialPriceUsd ?? 1} <span>for {started?.trialDays ?? 3} days</span>
-              </div>
-              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: -16, marginBottom: 20 }}>
-                then ${started?.priceUsd ?? 19}/mo — cancel anytime during your trial, no charge
-              </p>
-              <ul className="pricing-features">
-                <li>✓ {started?.maxConnectors ?? 2} Active Connectors (Etsy)</li>
-                <li>✓ {started?.maxSearchConfigs ?? 5} Saved searches</li>
-                <li>✓ {started?.maxTrackedShops ?? 10} Tracked shops</li>
-                <li>✓ {(started?.maxProspectsPerMonth ?? 500).toLocaleString()} Monthly prospect lookups</li>
-              </ul>
-              <a href="/signup?plan=started" className="btn btn-secondary">Start trial</a>
-            </div>
-
-            <div className="pricing-card featured">
-              <div className="pricing-badge">Most Popular</div>
-              <h3>Pro Plan</h3>
-              <div className="pricing-price">${pro?.priceUsd ?? 49} <span>/ mo</span></div>
-              <ul className="pricing-features">
-                <li>✓ All Connectors (Etsy + eBay Access)</li>
-                <li>✓ <strong>{pro?.maxSearchConfigs ?? 20} Saved searches</strong></li>
-                <li>✓ <strong>{pro?.maxTrackedShops ?? 50} Tracked shops</strong></li>
-                <li>✓ {(pro?.maxProspectsPerMonth ?? 5000).toLocaleString()} Monthly prospect lookups</li>
-                <li>✓ Full Competition Difficulty Scoring</li>
-              </ul>
-              <a href="/signup?plan=pro" className="btn btn-primary">Start Pro Trial</a>
-            </div>
-
-            <div className="pricing-card">
-              <h3>Agency Plan</h3>
-              <div className="pricing-price">${agency?.priceUsd ?? 199} <span>/ mo</span></div>
-              <ul className="pricing-features">
-                <li>✓ All Connectors + API Access</li>
-                <li>✓ <strong>{(agency?.maxSearchConfigs ?? 0) >= 100 ? "Unlimited" : agency?.maxSearchConfigs} Saved searches</strong></li>
-                <li>✓ <strong>{agency?.maxTrackedShops ?? 250} Tracked shops</strong></li>
-                <li>✓ {(agency?.maxProspectsPerMonth ?? 50000).toLocaleString()}+ Monthly prospect lookups</li>
-                <li>✓ Multi-seat team support</li>
-              </ul>
-              <a
-                href="mailto:hello@netdrix.com?subject=Anadash%20Agency%20Plan%20Inquiry"
-                className="btn btn-secondary"
-              >
-                Contact Sales
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="faq" style={{ backgroundColor: "transparent" }}>
-        <div className="container">
-          <div className="section-header">
-            <h2>Frequently Asked Questions</h2>
-            <p>Answers to common questions about Anadash, data accuracy, and sourcing.</p>
-          </div>
-
-          <div className="faq-container">
-            {FAQS.map((item, i) => (
-              <div key={item.q} className={`faq-item ${openFaq === i ? "active" : ""}`}>
-                <button className="faq-button" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  {item.q}
-                  <span className="faq-icon">▼</span>
-                </button>
-                <div className="faq-answer">{item.a}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <footer>
-        <div className="container">
-          <div className="footer-grid">
+      {/* Interactive Feasibility Calculator */}
+      <section id="calculator" className="container">
+        <div className="calc-section">
+          <div className="calc-grid">
             <div>
-              <div className="logo" style={{ marginBottom: 16 }}>
-                <div className="logo-icon" /> Anadash
+              <h2 style={{ fontSize: "28px", fontWeight: 700, marginBottom: "12px" }}>
+                Opportunity Feasibility Tool
+              </h2>
+              <p style={{ color: "var(--text-secondary)", marginBottom: "32px", fontSize: "15px" }}>
+                Simulate how SellerSalt evaluates niche competition based on competitor review barriers, shop maturity, and buyer demand.
+              </p>
+
+              <div className="calc-control">
+                <label>
+                  <span>Competitor Review Volume</span>
+                  <span>{reviewCount.toLocaleString()} reviews</span>
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="5000"
+                  step="50"
+                  value={reviewCount}
+                  onChange={(e) => setReviewCount(Number(e.target.value))}
+                />
               </div>
-              <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", maxWidth: 280, lineHeight: 1.5 }}>
-                Real-time competitor intelligence and product sourcing platform for Etsy sellers, dropshippers, and global export hubs.
+
+              <div className="calc-control">
+                <label>
+                  <span>Competitor Shop Maturity</span>
+                  <span>{shopAge} months</span>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="60"
+                  value={shopAge}
+                  onChange={(e) => setShopAge(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="calc-control">
+                <label>
+                  <span>Market Buyer Velocity</span>
+                  <span style={{ textTransform: "capitalize" }}>{demandLevel} Velocity</span>
+                </label>
+                <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                  {(["high", "medium", "low"] as const).map((lvl) => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      onClick={() => setDemandLevel(lvl)}
+                      className="btn btn-secondary"
+                      style={{
+                        flex: 1,
+                        fontSize: "12px",
+                        padding: "6px 12px",
+                        backgroundColor: demandLevel === lvl ? "var(--text-main)" : "var(--bg-surface)",
+                        color: demandLevel === lvl ? "#FFFFFF" : "var(--text-main)",
+                      }}
+                    >
+                      {lvl.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="calc-score-box">
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-muted)", marginBottom: "12px" }}>
+                ESTIMATED OPPORTUNITY SCORE
+              </div>
+              <div className="calc-score-number">{score}</div>
+              <div
+                className="calc-score-badge"
+                style={{ backgroundColor: scoreBadgeBg, color: scoreBadgeText }}
+              >
+                {scoreLabel}
+              </div>
+              <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                {score >= 70
+                  ? "High opportunity: low review barriers and younger competitors make entering this niche highly feasible."
+                  : score >= 45
+                  ? "Moderate barrier: requires high-converting listing visuals and targeted SEO to break into top results."
+                  : "Crowded niche: mature competitors with high review counts dominate top organic placements."}
               </p>
             </div>
+          </div>
+        </div>
+      </section>
 
-            <div className="footer-col">
-              <h4>Product</h4>
-              <ul>
-                <li><a href="#features">Shop Intelligence</a></li>
-                <li><a href="#calculator">Difficulty Tool</a></li>
-                <li><a href="#comparison">Why Anadash</a></li>
-                <li><a href="#pricing">Pricing</a></li>
+      {/* Pricing Section */}
+      <section id="pricing" className="container">
+        <div className="section-header">
+          <h2>Transparent, High-Yield Pricing</h2>
+          <p>Every plan includes real Etsy research access, Opportunity Radar, and daily competitor tracking.</p>
+        </div>
+
+        <div className="pricing-grid">
+          {/* STARTED */}
+          <div className="pricing-card">
+            <div>
+              <h3>{started?.name ?? "Started"}</h3>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                Ideal for individual sellers and solo researchers.
+              </p>
+              <div className="pricing-price">
+                ${started?.priceUsd ?? 19}
+                <span> / month</span>
+              </div>
+              <div className="pricing-trial-note">3-day trial for $1, cancel anytime</div>
+
+              <ul className="pricing-features">
+                <li><Check className="h-4 w-4" /> {started?.maxSearchConfigs ?? 3} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {started?.maxTrackedShops ?? 5} Tracked Competitor Shops</li>
+                <li><Check className="h-4 w-4" /> {started?.maxProspectsPerMonth ?? 200} Prospects per month</li>
+                <li><Check className="h-4 w-4" /> Full Opportunity Radar Access</li>
+                <li><Check className="h-4 w-4" /> Live Etsy Shop Spy & Sourcing</li>
               </ul>
             </div>
 
-            <div className="footer-col">
-              <h4>Affiliates</h4>
-              <ul>
-                <li><a href="mailto:hello@netdrix.com?subject=Affiliate%20Program">Become a Partner</a></li>
-                <li><a href="mailto:hello@netdrix.com?subject=Affiliate%20Program">Commission Rates</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-col">
-              <h4>Resources</h4>
-              <ul>
-                <li><a href="mailto:hello@netdrix.com?subject=Support">Support</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-col">
-              <h4>Legal</h4>
-              <ul>
-                <li><a href="mailto:hello@netdrix.com?subject=Privacy%20Policy%20Request">Privacy Policy</a></li>
-                <li><a href="mailto:hello@netdrix.com?subject=Terms%20of%20Service%20Request">Terms of Service</a></li>
-              </ul>
-            </div>
+            <Link href="/checkout?plan=STARTED" className="btn btn-secondary" style={{ width: "100%" }}>
+              Start $1 Trial
+            </Link>
           </div>
 
-          <div style={{ borderTop: "1px solid var(--border-subtle)", paddingTop: 24, textAlign: "center", fontSize: "0.82rem", color: "var(--text-muted)" }}>
-            &copy; {new Date().getFullYear()} Anadash. All rights reserved.
+          {/* PRO (FEATURED) */}
+          <div className="pricing-card featured">
+            <div className="pricing-badge">Most Popular</div>
+            <div>
+              <h3>{pro?.name ?? "Pro"}</h3>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                For professional sellers scaling multiple product lines.
+              </p>
+              <div className="pricing-price">
+                ${pro?.priceUsd ?? 49}
+                <span> / month</span>
+              </div>
+              <div className="pricing-trial-note">3-day trial for $1, cancel anytime</div>
+
+              <ul className="pricing-features">
+                <li><Check className="h-4 w-4" /> {pro?.maxSearchConfigs ?? 10} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {pro?.maxTrackedShops ?? 25} Tracked Competitor Shops</li>
+                <li><Check className="h-4 w-4" /> {pro?.maxProspectsPerMonth ?? 1000} Prospects per month</li>
+                <li><Check className="h-4 w-4" /> Priority Search Queue & Hourly Cadences</li>
+                <li><Check className="h-4 w-4" /> Export Unlimited CSV Data</li>
+                <li><Check className="h-4 w-4" /> Gaining & Declining Trends Intelligence</li>
+              </ul>
+            </div>
+
+            <Link href="/checkout?plan=PRO" className="btn btn-accent" style={{ width: "100%" }}>
+              Start $1 Trial (Pro)
+            </Link>
+          </div>
+
+          {/* AGENCY */}
+          <div className="pricing-card">
+            <div>
+              <h3>{agency?.name ?? "Agency"}</h3>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                For sourcing agencies and high-volume multi-brand teams.
+              </p>
+              <div className="pricing-price">
+                ${agency?.priceUsd ?? 199}
+                <span> / month</span>
+              </div>
+              <div className="pricing-trial-note">3-day trial for $1, cancel anytime</div>
+
+              <ul className="pricing-features">
+                <li><Check className="h-4 w-4" /> {agency?.maxSearchConfigs ?? 50} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {agency?.maxTrackedShops ?? 100} Tracked Competitor Shops</li>
+                <li><Check className="h-4 w-4" /> {agency?.maxProspectsPerMonth ?? 5000} Prospects per month</li>
+                <li><Check className="h-4 w-4" /> Multi-Seat Team Workspace</li>
+                <li><Check className="h-4 w-4" /> Dedicated Search Capacity</li>
+              </ul>
+            </div>
+
+            <Link href="/checkout?plan=AGENCY" className="btn btn-secondary" style={{ width: "100%" }}>
+              Start $1 Trial (Agency)
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="container">
+        <div className="section-header">
+          <h2>Frequently Asked Questions</h2>
+          <p>Everything you need to know about SellerSalt, data accuracy, and trial billing.</p>
+        </div>
+
+        <div className="faq-list">
+          {FAQS.map((faq, idx) => {
+            const isOpen = openFaq === idx;
+            return (
+              <div
+                key={idx}
+                className="faq-item"
+                onClick={() => setOpenFaq(isOpen ? null : idx)}
+              >
+                <div className="faq-q">
+                  <span>{faq.q}</span>
+                  {isOpen ? <ChevronUp className="h-4 w-4 text-muted" /> : <ChevronDown className="h-4 w-4 text-muted" />}
+                </div>
+                {isOpen && <div className="faq-a">{faq.a}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer>
+        <div className="container footer-container">
+          <div className="logo" style={{ fontSize: "16px" }}>
+            <div className="logo-icon" style={{ width: "24px", height: "24px", fontSize: "13px" }}>
+              S
+            </div>
+            SellerSalt
+          </div>
+
+          <div style={{ display: "flex", gap: "24px", fontSize: "13px" }}>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+            <Link href="/login">Sign In</Link>
+          </div>
+
+          <div style={{ fontSize: "13px" }}>
+            &copy; {new Date().getFullYear()} SellerSalt. All rights reserved.
           </div>
         </div>
       </footer>

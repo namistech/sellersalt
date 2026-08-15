@@ -1,0 +1,797 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Compass,
+  ExternalLink,
+  Eye,
+  Flame,
+  Plus,
+  Search,
+  Sparkles,
+  Star,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import type { OpportunityRadarData, OpportunityItem, OpportunityType } from "@/services/opportunities";
+import {
+  Badge,
+  Button,
+  Card,
+  DataText,
+  Heading,
+  Input,
+  Select,
+  Text,
+  IconButton,
+} from "@/components/ui";
+import { EmptyState, Table, type Column } from "@/components/data";
+import { fetchConnectors, type ConnectorSummary } from "@/services/connectors";
+import { createSearchConfig, type CreateSearchConfigInput } from "@/services/searchConfigs";
+import { updateProspect } from "@/services/prospects";
+import { NewSearchDrawer } from "../new-search-drawer";
+
+interface RadarClientProps {
+  initialData: OpportunityRadarData;
+  searchConfigId?: string;
+  selectedType?: string;
+  minScore?: number;
+  initialQuery?: string;
+}
+
+export function RadarClient({
+  initialData,
+  searchConfigId,
+  selectedType = "ALL",
+  minScore = 0,
+  initialQuery = "",
+}: RadarClientProps) {
+  const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
+
+  // Local filter states
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [typeFilter, setTypeFilter] = useState<string>(selectedType);
+  const [configFilter, setConfigFilter] = useState<string>(searchConfigId || "ALL");
+  const [scoreFilter, setScoreFilter] = useState<number>(minScore);
+  const [sortBy, setSortBy] = useState<string>("score");
+
+  // Local state for optimistic updates
+  const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialData.allOpportunities);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchConnectors().then(setConnectors).catch(() => {});
+  }, []);
+
+  async function handleCreateSearch(input: CreateSearchConfigInput) {
+    await createSearchConfig(input);
+    setDrawerOpen(false);
+    router.refresh();
+  }
+
+  // Filter & sort
+  const filteredOpportunities = opportunities.filter((item) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const match =
+        item.shopName.toLowerCase().includes(q) ||
+        item.listingTitle.toLowerCase().includes(q) ||
+        item.keyword.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+    if (typeFilter !== "ALL" && item.type !== typeFilter) return false;
+    if (configFilter !== "ALL" && item.searchConfigId !== configFilter) return false;
+    if (scoreFilter > 0 && item.score < scoreFilter) return false;
+    return true;
+  });
+
+  filteredOpportunities.sort((a, b) => {
+    switch (sortBy) {
+      case "score":
+        return b.score - a.score;
+      case "velocity":
+        return b.estDailySales - a.estDailySales;
+      case "density":
+        return b.avgSellingRatio - a.avgSellingRatio;
+      case "freshness":
+        return new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime();
+      case "sales":
+        return b.totalSales - a.totalSales;
+      default:
+        return b.score - a.score;
+    }
+  });
+
+  async function handleToggleFavorite(item: OpportunityItem) {
+    setActionLoadingId(item.id);
+    const nextVal = !item.isFavorite;
+
+    setOpportunities((prev) =>
+      prev.map((o) => (o.id === item.id ? { ...o, isFavorite: nextVal } : o))
+    );
+
+    try {
+      await updateProspect(item.prospectId, { isFavorite: nextVal });
+    } catch {
+      // Rollback
+      setOpportunities((prev) =>
+        prev.map((o) => (o.id === item.id ? { ...o, isFavorite: !nextVal } : o))
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function handleToggleShortlist(item: OpportunityItem) {
+    setActionLoadingId(item.id);
+    const nextStatus = item.status === "SHORTLISTED" ? "PENDING_REVIEW" : "SHORTLISTED";
+
+    setOpportunities((prev) =>
+      prev.map((o) =>
+        o.id === item.id
+          ? {
+              ...o,
+              status: nextStatus,
+              isShortlisted: nextStatus === "SHORTLISTED",
+            }
+          : o
+      )
+    );
+
+    try {
+      await updateProspect(item.prospectId, { status: nextStatus });
+    } catch {
+      // Rollback
+      setOpportunities((prev) =>
+        prev.map((o) => (o.id === item.id ? { ...o, status: item.status, isShortlisted: item.isShortlisted } : o))
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  function renderTypeBadge(type: OpportunityType) {
+    switch (type) {
+      case "EMERGING":
+        return (
+          <Badge variant="warning" className="font-semibold text-warn-strong bg-warn-subtle border border-warn/30">
+            🔥 Emerging Winner
+          </Badge>
+        );
+      case "HIDDEN_GEM":
+        return (
+          <Badge variant="neutral" className="font-semibold text-amber-800 bg-amber-50 border border-amber-300">
+            💎 Hidden Gem
+          </Badge>
+        );
+      case "COMPETITION_RISING":
+        return (
+          <Badge variant="neutral" className="font-medium text-ink-secondary bg-surface-muted border border-line">
+            ⚠️ Crowded Niche
+          </Badge>
+        );
+      case "GROWING":
+      default:
+        return (
+          <Badge variant="success" className="font-semibold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
+            📈 Consistent Growth
+          </Badge>
+        );
+    }
+  }
+
+  const columns: Column<OpportunityItem>[] = [
+    {
+      key: "opportunity",
+      header: "Opportunity / Product",
+      render: (row) => (
+        <div className="flex items-start gap-3 max-w-sm">
+          {row.listingImageUrl ? (
+            <img
+              src={row.listingImageUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-md border border-line object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary">
+              Shop
+            </div>
+          )}
+          <div className="min-w-0">
+            <Link
+              href={`/shops/${row.shopExternalId}`}
+              className="font-medium text-ink hover:text-brand-primary line-clamp-1 text-sm transition-colors"
+            >
+              {row.listingTitle || row.shopName}
+            </Link>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-ink-tertiary">
+              <span className="font-medium text-ink-secondary">{row.shopName}</span>
+              <span>·</span>
+              <span>${row.price.toFixed(2)}</span>
+              <span>·</span>
+              <span>{row.keyword}</span>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "type",
+      header: "Classification",
+      render: (row) => (
+        <div className="flex flex-col items-start gap-1">
+          {renderTypeBadge(row.type)}
+          <span className="text-[11px] text-ink-tertiary line-clamp-1 max-w-[200px]">
+            {row.reason}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "score",
+      header: "Score",
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-lg font-mono text-sm font-bold shadow-xs ${
+              row.score >= 80
+                ? "bg-brand-primary-subtle text-brand-primary border border-brand-primary/30"
+                : row.score >= 65
+                ? "bg-surface-muted text-ink border border-line"
+                : "bg-surface text-ink-tertiary border border-line-subtle"
+            }`}
+          >
+            {row.score}
+          </div>
+          <div className="text-[11px] text-ink-tertiary">
+            <div>{row.score >= 80 ? "High Signal" : row.score >= 65 ? "Moderate" : "Low"}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "velocity",
+      header: "Daily Sales",
+      render: (row) => (
+        <div>
+          <div className="font-mono text-sm font-medium text-ink">
+            {row.estDailySales.toFixed(1)}/day
+          </div>
+          <div className="text-[11px] text-ink-tertiary">
+            {row.totalSales.toLocaleString()} total
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "density",
+      header: "Sales/Listing",
+      render: (row) => (
+        <div>
+          <div className="font-mono text-sm font-medium text-ink">
+            {row.avgSellingRatio.toFixed(1)}x
+          </div>
+          <div className="text-[11px] text-ink-tertiary">
+            {row.activeListings} listings
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "competition",
+      header: "Competition",
+      render: (row) => (
+        <div>
+          <div className="text-xs font-medium text-ink">
+            {row.reviewCount} reviews
+          </div>
+          <div className="text-[11px] text-ink-tertiary">
+            {Math.round(row.shopAgeMonths)} mos old
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "freshness",
+      header: "Discovered",
+      render: (row) => (
+        <div className="text-xs text-ink-tertiary">
+          {row.signals.freshness.metricValue}
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      render: (row) => (
+        <div className="flex items-center gap-1.5 justify-end">
+          <IconButton
+            icon={<Star className={`h-4 w-4 ${row.isFavorite ? "fill-amber-400 text-amber-400" : "text-ink-tertiary"}`} />}
+            aria-label={row.isFavorite ? "Unfavorite" : "Favorite"}
+            variant="tertiary"
+            size="compact"
+            onClick={() => handleToggleFavorite(row)}
+            disabled={actionLoadingId === row.id}
+          />
+
+          <Button
+            variant={row.isShortlisted ? "primary" : "secondary"}
+            size="compact"
+            onClick={() => handleToggleShortlist(row)}
+            disabled={actionLoadingId === row.id}
+            className="text-xs h-7 px-2.5"
+          >
+            {row.isShortlisted ? "Shortlisted" : "Shortlist"}
+          </Button>
+
+          <Link href={`/shops/${row.shopExternalId}`}>
+            <Button variant="secondary" size="compact" className="text-xs h-7 px-2.5">
+              Investigate
+            </Button>
+          </Link>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* ---------------------------------------------------------------- */}
+      {/* PAGE HEADER                                                     */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-line-subtle pb-6">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-primary-subtle text-brand-primary">
+              <Flame className="h-4 w-4" />
+            </span>
+            <Heading as="h1" size="h2" className="tracking-tight">
+              Opportunity Radar
+            </Heading>
+            <Badge variant="success" className="font-semibold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
+              Live Intelligence
+            </Badge>
+          </div>
+          <Text size="body-md" color="secondary" className="mt-1 max-w-2xl">
+            Real-time decision layer detecting high-velocity Etsy niches, lean catalogs, and hidden demand before they become crowded.
+          </Text>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            variant="secondary"
+            size="default"
+            onClick={() => router.push("/spy")}
+            className="gap-1.5 shadow-xs"
+          >
+            <Eye className="h-4 w-4" />
+            Spy on Shop
+          </Button>
+          <Button
+            variant="primary"
+            size="default"
+            onClick={() => setDrawerOpen(true)}
+            className="gap-1.5 shadow-sm font-semibold"
+          >
+            <Plus className="h-4 w-4" />
+            New Search Stream
+          </Button>
+        </div>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ROW 1: RADAR PULSE METRICS                                      */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card padding="md" className="border-line shadow-xs">
+          <div className="flex items-start justify-between">
+            <Text size="label-sm" color="tertiary" className="font-medium">
+              High-Potential Discoveries
+            </Text>
+            <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-primary-subtle text-brand-primary text-xs font-bold">
+              ★
+            </span>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <DataText size="data-lg" className="font-bold text-ink">
+              {initialData.pulse.highPotentialCount}
+            </DataText>
+            <span className="text-xs text-ink-tertiary">
+              of {initialData.pulse.totalOpportunities} analyzed
+            </span>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-primary" />
+            <Text size="meta" color="secondary">
+              Score ≥ 75 prime opportunities
+            </Text>
+          </div>
+        </Card>
+
+        <Card padding="md" className="border-line shadow-xs">
+          <div className="flex items-start justify-between">
+            <Text size="label-sm" color="tertiary" className="font-medium">
+              Emerging Winners
+            </Text>
+            <span className="text-sm">🔥</span>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <DataText size="data-lg" className="font-bold text-warn-strong">
+              {initialData.pulse.emergingCount}
+            </DataText>
+            <span className="text-xs text-ink-tertiary">rapid velocity</span>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-warn" />
+            <Text size="meta" color="secondary">
+              Young shops (&lt;18 mos) scaling fast
+            </Text>
+          </div>
+        </Card>
+
+        <Card padding="md" className="border-line shadow-xs">
+          <div className="flex items-start justify-between">
+            <Text size="label-sm" color="tertiary" className="font-medium">
+              Hidden Gems
+            </Text>
+            <span className="text-sm">💎</span>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <DataText size="data-lg" className="font-bold text-amber-700">
+              {initialData.pulse.hiddenGemCount}
+            </DataText>
+            <span className="text-xs text-ink-tertiary">lean catalogs</span>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+            <Text size="meta" color="secondary">
+              High sales/listing with low competition
+            </Text>
+          </div>
+        </Card>
+
+        <Card padding="md" className="border-line shadow-xs">
+          <div className="flex items-start justify-between">
+            <Text size="label-sm" color="tertiary" className="font-medium">
+              Average Radar Score
+            </Text>
+            <Compass className="h-4 w-4 text-ink-tertiary" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <DataText size="data-lg" className="font-bold text-ink">
+              {initialData.pulse.averageScore}
+              <span className="text-sm font-normal text-ink-tertiary">/100</span>
+            </DataText>
+            <Badge variant="neutral" className="font-mono text-xs">
+              {initialData.pulse.topNiches.length} Active Niches
+            </Badge>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-line-strong" />
+            <Text size="meta" color="secondary">
+              Calculated across 5 deterministic signals
+            </Text>
+          </div>
+        </Card>
+      </div>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ROW 2: SPOTLIGHT OPPORTUNITIES (TOP 3 CARDS)                     */}
+      {/* ---------------------------------------------------------------- */}
+      {initialData.spotlightOpportunities.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brand-primary" />
+                <Heading as="h2" size="h4">
+                  Top Priority Opportunities
+                </Heading>
+              </div>
+              <Text size="body-sm" color="secondary" className="mt-0.5">
+                Highest-conviction signals answering why each opportunity is promising and what to do next.
+              </Text>
+            </div>
+            <Badge variant="neutral" className="text-xs text-ink-tertiary">
+              Ranked by composite velocity & efficiency
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            {initialData.spotlightOpportunities.map((opp) => (
+              <Card
+                key={opp.id}
+                padding="md"
+                className="relative flex flex-col justify-between border-line shadow-xs hover:border-line-strong hover:shadow-sm transition-all bg-surface"
+              >
+                <div>
+                  {/* Top Badge Row */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    {renderTypeBadge(opp.type)}
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-brand-primary bg-brand-primary-subtle px-2 py-0.5 rounded border border-brand-primary/30">
+                        Score {opp.score}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 1. WHAT: Opportunity details */}
+                  <div className="flex items-start gap-3">
+                    {opp.listingImageUrl ? (
+                      <img
+                        src={opp.listingImageUrl}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
+                        Etsy
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <Link
+                        href={`/shops/${opp.shopExternalId}`}
+                        className="font-semibold text-sm text-ink hover:text-brand-primary line-clamp-2 transition-colors"
+                      >
+                        {opp.listingTitle || opp.shopName}
+                      </Link>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-ink-tertiary">
+                        <span className="font-medium text-ink-secondary">{opp.shopName}</span>
+                        <span>·</span>
+                        <span className="font-semibold text-ink">${opp.price.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. WHY: Deterministic explanation */}
+                  <div className="mt-3.5 rounded-lg bg-surface-muted p-2.5 border border-line-subtle">
+                    <Text size="body-sm" color="primary" className="text-xs leading-relaxed italic">
+                      "{opp.reason}"
+                    </Text>
+                  </div>
+
+                  {/* 3 & 4. EVIDENCE: 5-Signal Radar Chips */}
+                  <div className="mt-3.5 space-y-1.5 border-t border-line-subtle pt-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-ink-tertiary flex items-center gap-1">
+                        <Zap className="h-3.5 w-3.5 text-brand-primary" /> Velocity
+                      </span>
+                      <span className="font-mono font-medium text-ink">
+                        {opp.signals.velocity.metricValue}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-ink-tertiary flex items-center gap-1">
+                        <Target className="h-3.5 w-3.5 text-amber-500" /> Sales Density
+                      </span>
+                      <span className="font-mono font-medium text-ink">
+                        {opp.signals.density.metricValue}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-ink-tertiary flex items-center gap-1">
+                        <TrendingUp className="h-3.5 w-3.5 text-info" /> Competition
+                      </span>
+                      <span className="font-mono font-medium text-ink">
+                        {opp.signals.competition.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-ink-tertiary">Freshness</span>
+                      <span className="text-ink-secondary">{opp.signals.freshness.metricValue}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. WHAT NEXT: Action triggers */}
+                <div className="mt-5 flex items-center gap-2 border-t border-line-subtle pt-3.5">
+                  <Link href={`/shops/${opp.shopExternalId}`} className="flex-1">
+                    <Button variant="primary" size="compact" className="w-full text-xs font-semibold shadow-xs">
+                      Investigate Shop →
+                    </Button>
+                  </Link>
+
+                  <IconButton
+                    icon={<Star className={`h-4 w-4 ${opp.isFavorite ? "fill-amber-400 text-amber-400" : "text-ink-tertiary"}`} />}
+                    aria-label="Save to favorites"
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => handleToggleFavorite(opp)}
+                    disabled={actionLoadingId === opp.id}
+                  />
+
+                  <Button
+                    variant={opp.isShortlisted ? "primary" : "secondary"}
+                    size="compact"
+                    onClick={() => handleToggleShortlist(opp)}
+                    disabled={actionLoadingId === opp.id}
+                    className="text-xs px-2.5"
+                  >
+                    {opp.isShortlisted ? "Shortlisted" : "Shortlist"}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ROW 3: INTELLIGENCE CONTROLS & FILTER BAR                        */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Heading as="h2" size="h4">
+              All Opportunity Discoveries
+            </Heading>
+            <Text size="body-sm" color="secondary">
+              Showing {filteredOpportunities.length} of {opportunities.length} detected opportunities
+            </Text>
+          </div>
+
+          {/* Quick Type Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {[
+              { key: "ALL", label: "All Opportunities" },
+              { key: "EMERGING", label: "🔥 Emerging" },
+              { key: "HIDDEN_GEM", label: "💎 Hidden Gems" },
+              { key: "GROWING", label: "📈 Growing" },
+              { key: "COMPETITION_RISING", label: "⚠️ Crowded" },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setTypeFilter(tab.key)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                  typeFilter === tab.key
+                    ? "bg-brand-primary text-white shadow-xs"
+                    : "bg-surface-muted text-ink-secondary hover:bg-line-subtle hover:text-ink border border-line-subtle"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Filter Toolbar Card */}
+        <Card padding="md" className="border-line bg-surface shadow-xs space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {/* 1. Keyword search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-tertiary" />
+              <Input
+                placeholder="Search shop, title, or niche..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 text-xs"
+              />
+            </div>
+
+            {/* 2. Search Config Stream */}
+            <Select
+              value={configFilter}
+              onChange={(e) => setConfigFilter(e.target.value)}
+              options={[
+                { value: "ALL", label: "All Search Streams" },
+                ...initialData.searchConfigs.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
+
+            {/* 3. Min Score */}
+            <Select
+              value={String(scoreFilter)}
+              onChange={(e) => setScoreFilter(Number(e.target.value))}
+              options={[
+                { value: "0", label: "Any Opportunity Score" },
+                { value: "60", label: "Score ≥ 60 (Promising)" },
+                { value: "75", label: "Score ≥ 75 (High Signal)" },
+                { value: "85", label: "Score ≥ 85 (Elite Tier)" },
+              ]}
+            />
+
+            {/* 4. Sort By */}
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              options={[
+                { value: "score", label: "Sort by Opportunity Score" },
+                { value: "velocity", label: "Sort by Daily Velocity" },
+                { value: "density", label: "Sort by Sales/Listing Density" },
+                { value: "freshness", label: "Sort by Recency" },
+                { value: "sales", label: "Sort by Total Sales" },
+              ]}
+            />
+
+            {/* 5. Reset Filters */}
+            {searchQuery || typeFilter !== "ALL" || configFilter !== "ALL" || scoreFilter > 0 ? (
+              <Button
+                variant="secondary"
+                size="default"
+                onClick={() => {
+                  setSearchQuery("");
+                  setTypeFilter("ALL");
+                  setConfigFilter("ALL");
+                  setScoreFilter(0);
+                }}
+                className="text-xs"
+              >
+                Reset Filters
+              </Button>
+            ) : (
+              <div className="flex items-center text-xs text-ink-tertiary px-2">
+                Deterministic Model Active
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* -------------------------------------------------------------- */}
+        {/* ROW 4: OPPORTUNITIES DATA TABLE OR EMPTY STATE                 */}
+        {/* -------------------------------------------------------------- */}
+        {filteredOpportunities.length === 0 ? (
+          <Card padding="lg" className="border-line">
+            <EmptyState
+              title={
+                opportunities.length === 0
+                  ? "No Opportunity Signals Detected Yet"
+                  : "No opportunities match your selected filters"
+              }
+              description={
+                opportunities.length === 0
+                  ? "Opportunity Radar analyzes Etsy search results in real time. Launch a search stream to uncover winning products, high-velocity shops, and untapped niches."
+                  : "Try clearing your filters or lowering the minimum score threshold to see more opportunities."
+              }
+              action={
+                opportunities.length === 0 ? (
+                  <Button
+                    variant="primary"
+                    onClick={() => setDrawerOpen(true)}
+                    className="font-semibold shadow-sm gap-1.5"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create First Search Stream
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setTypeFilter("ALL");
+                      setConfigFilter("ALL");
+                      setScoreFilter(0);
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                )
+              }
+            />
+          </Card>
+        ) : (
+          <Table<OpportunityItem>
+            columns={columns}
+            rows={filteredOpportunities}
+            getRowId={(row) => row.id}
+            aria-label="Opportunity Discoveries Table"
+          />
+        )}
+      </div>
+
+      {/* New Search Drawer */}
+      <NewSearchDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        connectors={connectors}
+        onSubmit={handleCreateSearch}
+      />
+    </div>
+  );
+}

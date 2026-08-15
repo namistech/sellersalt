@@ -9,9 +9,8 @@ import { startSellerChannelSync } from "@/lib/queue";
 import { ETSY_TOKEN_URL } from "@/seller-channels/etsy-seller";
 
 function appUrl(): string {
-  const url = process.env.NEXTAUTH_URL;
-  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
-  return url;
+  const url = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
+  return url.replace(/\/+$/, "");
 }
 
 export async function GET(req: Request) {

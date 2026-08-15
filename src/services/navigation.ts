@@ -2,7 +2,9 @@ import {
   BarChart3,
   Briefcase,
   CreditCard,
+  Eye,
   FileText,
+  Flame,
   GraduationCap,
   LayoutDashboard,
   Plug,
@@ -17,20 +19,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Capability, WorkspaceContext } from "./types";
-
-// docs/design/information-architecture-v1.md — Final IA Tree: DISCOVER /
-// OPERATE / MANAGE, AI cross-cutting (not a nav item — see
-// components/shell/GlobalSearch.tsx and the AI entry in Topbar.tsx).
-// Intelligence and Optimization are deliberately NOT nav groups here —
-// per the IA, they render as shared card patterns wherever relevant and
-// as a tab/rollup inside Operate/Manage, not as durable destinations.
-//
-// Every href below that starts with something other than "#" is a REAL
-// existing route in this repository (verified against src/app during
-// this task) — nothing here was invented to make navigation "look
-// complete." Items with no real destination yet (Agency/Institute-only,
-// exercised only via the mock demo harness at /dev/shell) point at the
-// shared placeholder route rather than a fabricated product page.
 
 export interface NavigationItem {
   id: string;
@@ -49,8 +37,9 @@ export interface NavigationGroup {
 
 const DISCOVER_ITEMS: NavigationItem[] = [
   { id: "overview", label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { id: "radar", label: "Opportunity Radar", href: "/radar", icon: Flame },
   { id: "prospects", label: "Prospects", href: "/prospects", icon: Search },
-  { id: "spy", label: "Spy on Competitor", href: "/spy", icon: Radar },
+  { id: "spy", label: "Spy on Competitor", href: "/spy", icon: Eye },
   { id: "trends", label: "Trends", href: "/trends", icon: TrendingUp },
   { id: "dropped-shops", label: "Dropped Shops", href: "/inactive", icon: XCircle },
   { id: "favorites", label: "Favorites", href: "/favorites", icon: Star },

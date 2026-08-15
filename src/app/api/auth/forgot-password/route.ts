@@ -30,7 +30,9 @@ export async function POST(req: Request) {
     data: { userId: user.id, tokenHash, expiresAt },
   });
 
-  const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${rawToken}`;
+  const baseUrl = process.env.NEXTAUTH_URL || "https://sellersalt.com";
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+  const resetUrl = `${cleanBaseUrl}/reset-password?token=${rawToken}`;
 
   const result = await sendEmail({
     to: user.email,

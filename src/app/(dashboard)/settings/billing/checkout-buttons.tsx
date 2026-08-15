@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Alert } from "@/components/ui";
 
 export function CheckoutButtons({
   packageKey,
@@ -29,13 +30,13 @@ export function CheckoutButtons({
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
-        setError(data.error ?? "Couldn't start checkout.");
+        setError(data.error ?? "Couldn't initiate checkout session.");
         setLoadingProvider(null);
         return;
       }
       window.location.href = data.url;
     } catch {
-      setError("Something went wrong. Try again.");
+      setError("Network error starting checkout.");
       setLoadingProvider(null);
     }
   }
@@ -43,10 +44,12 @@ export function CheckoutButtons({
   if (availableProviders.length === 0) {
     return (
       <a
-        href={`mailto:hello@netdrix.com?subject=Upgrade to ${packageName}&body=I'd like to upgrade my SellerSalt workspace to the ${packageName} plan.`}
-        className="btn-primary block w-full text-center"
+        href={`mailto:support@sellersalt.com?subject=Upgrade to ${packageName}&body=I'd like to upgrade my SellerSalt workspace to the ${packageName} plan.`}
+        className="block w-full"
       >
-        {isUpgrade ? "Upgrade" : "Switch"} to {packageName}
+        <Button variant="primary" size="default" fullWidth>
+          {isUpgrade ? "Upgrade" : "Switch"} to {packageName}
+        </Button>
       </a>
     );
   }
@@ -54,16 +57,30 @@ export function CheckoutButtons({
   return (
     <div className="space-y-2">
       {availableProviders.includes("STRIPE") && (
-        <button onClick={() => handleCheckout("STRIPE")} disabled={loadingProvider !== null} className="btn-primary w-full">
-          {loadingProvider === "STRIPE" ? "Redirecting…" : `Pay with card — ${packageName}`}
-        </button>
+        <Button
+          variant="primary"
+          size="default"
+          fullWidth
+          loading={loadingProvider === "STRIPE"}
+          disabled={loadingProvider !== null}
+          onClick={() => handleCheckout("STRIPE")}
+        >
+          {isUpgrade ? "Upgrade Plan" : "Switch"} with Card
+        </Button>
       )}
       {availableProviders.includes("PAYPAL") && (
-        <button onClick={() => handleCheckout("PAYPAL")} disabled={loadingProvider !== null} className="btn-secondary w-full">
-          {loadingProvider === "PAYPAL" ? "Redirecting…" : "Pay with PayPal"}
-        </button>
+        <Button
+          variant="secondary"
+          size="default"
+          fullWidth
+          loading={loadingProvider === "PAYPAL"}
+          disabled={loadingProvider !== null}
+          onClick={() => handleCheckout("PAYPAL")}
+        >
+          Pay with PayPal
+        </Button>
       )}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <Alert variant="danger">{error}</Alert>}
     </div>
   );
 }

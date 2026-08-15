@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { AuthLayout } from "../auth-layout";
+import { Button, Input, Alert, Text } from "@/components/ui";
 
 function AcceptInviteForm() {
   const searchParams = useSearchParams();
@@ -23,7 +25,7 @@ function AcceptInviteForm() {
 
   useEffect(() => {
     if (!token) {
-      setInvalid("Missing invite token.");
+      setInvalid("Missing or invalid invite token.");
       setLoading(false);
       return;
     }
@@ -31,12 +33,16 @@ function AcceptInviteForm() {
       .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         if (!ok) {
-          setInvalid(d.error ?? "This invite is invalid.");
+          setInvalid(d.error ?? "This invite is invalid or has expired.");
         } else {
           setEmail(d.email);
           setOrganizationName(d.organizationName);
           setUserExists(d.userExists);
         }
+        setLoading(false);
+      })
+      .catch(() => {
+        setInvalid("Failed to verify invite.");
         setLoading(false);
       });
   }, [token]);
@@ -46,74 +52,94 @@ function AcceptInviteForm() {
     setSubmitError(null);
     setSubmitting(true);
 
-    const res = await fetch("/api/team/accept-invite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, name, password }),
-    });
-    const data = await res.json();
-    setSubmitting(false);
+    try {
+      const res = await fetch("/api/team/accept-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, name, password }),
+      });
+      const data = await res.json();
+      setSubmitting(false);
 
-    if (!res.ok) {
-      setSubmitError(data.error ?? "Something went wrong.");
-      return;
-    }
+      if (!res.ok) {
+        setSubmitError(data.error ?? "Something went wrong.");
+        return;
+      }
 
-    if (data.createdNewAccount) {
-      await signIn("credentials", { email: data.email, password, redirect: false });
-      router.push("/dashboard");
-      router.refresh();
-    } else {
-      router.push("/login");
+      if (data.createdNewAccount) {
+        await signIn("credentials", { email: data.email, password, redirect: false });
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        router.push("/login");
+      }
+    } catch {
+      setSubmitError("Network error accepting invite.");
+      setSubmitting(false);
     }
   }
 
-  if (loading) return <p className="text-center text-sm text-muted">Loading…</p>;
+  if (loading) {
+    return <Text size="body-sm" color="tertiary">Verifying workspace invitation...</Text>;
+  }
 
   if (invalid) {
     return (
-      <div className="card text-center">
-        <p className="text-sm text-danger">{invalid}</p>
-        <Link href="/login" className="mt-4 inline-block text-sm font-medium text-accent hover:underline">
-          Back to sign in
+      <div className="space-y-6">
+        <Alert variant="danger">{invalid}</Alert>
+        <Link href="/login" className="block text-center text-sm font-semibold text-brand-primary hover:underline">
+          Return to sign in
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="card">
-      <p className="mb-4 text-sm text-ink">
-        You've been invited to join <strong>{organizationName}</strong> as <strong>{email}</strong>.
-      </p>
+    <div className="space-y-6">
+      <div className="rounded-lg border border-line bg-surface-muted p-4">
+        <Text size="body-sm" color="primary">
+          You have been invited to join <strong className="text-ink">{organizationName}</strong> as{" "}
+          <strong className="text-ink">{email}</strong>.
+        </Text>
+      </div>
 
       {userExists ? (
-        <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full">
-          {submitting ? "Joining…" : "Accept & continue to sign in"}
-        </button>
-      ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="label" htmlFor="name">Your name</label>
-            <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">Set a password</label>
-            <input
-              id="password"
-              type="password"
-              className="input"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </div>
-          {submitError && <p className="text-sm text-danger">{submitError}</p>}
-          <button type="submit" disabled={submitting} className="btn-primary w-full">
-            {submitting ? "Joining…" : "Accept invite"}
-          </button>
+          <Text size="body-sm" color="secondary">
+            Your account is already registered. Click below to accept the invitation and access the workspace.
+          </Text>
+          {submitError && <Alert variant="danger">{submitError}</Alert>}
+          <Button type="submit" variant="primary" loading={submitting} fullWidth className="!py-3 text-base">
+            Accept & Continue to Sign In
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            id="name"
+            label="Your full name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Jane Doe"
+          />
+
+          <Input
+            id="password"
+            label="Set account password"
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
+          />
+
+          {submitError && <Alert variant="danger">{submitError}</Alert>}
+
+          <Button type="submit" variant="primary" loading={submitting} fullWidth className="!py-3 text-base">
+            Create Account & Join Workspace
+          </Button>
         </form>
       )}
     </div>
@@ -122,16 +148,17 @@ function AcceptInviteForm() {
 
 export default function AcceptInvitePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mb-1 text-xl font-semibold tracking-tight text-ink">SellerSalt</div>
-          <p className="text-sm text-muted">Join a workspace</p>
-        </div>
-        <Suspense fallback={<p className="text-center text-sm text-muted">Loading…</p>}>
-          <AcceptInviteForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthLayout>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-ink">
+        Join Workspace
+      </h1>
+      <Text size="body-sm" color="secondary" className="mb-8">
+        Accept your team invitation to access SellerSalt intelligence.
+      </Text>
+
+      <Suspense fallback={<Text size="body-sm" color="tertiary">Loading invitation...</Text>}>
+        <AcceptInviteForm />
+      </Suspense>
+    </AuthLayout>
   );
 }

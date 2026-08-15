@@ -6,28 +6,26 @@ import { prisma } from "@/lib/db";
 import { ensureDefaultPackages } from "@/lib/plan-limits";
 import { MarketingHomepage } from "./marketing-homepage";
 
-// Driven by NEXTAUTH_URL rather than hardcoded, so a future domain change is
-// a one-line env var update, not a code hunt across meta tags.
-const SITE_URL = process.env.NEXTAUTH_URL ?? "https://anadash.com";
+const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "Anadash — Real-Time Etsy Competitor Intelligence & Product Sourcing Tool",
+  title: "SellerSalt — Real-Time Etsy Competitor Intelligence & Opportunity Radar",
   description:
-    "Anadash helps global Etsy sellers, dropshippers, and e-commerce exporters find winning products using real lifetime sales data. Zero setup, no Etsy API key required.",
+    "SellerSalt helps Etsy sellers, brands, and agencies discover winning products, analyze competitor sales velocity, and spot high-demand niches using verified lifetime sales data.",
   keywords:
-    "Etsy product research, Etsy competitor spy tool, Etsy market analysis, dropshipping product finder, Etsy sales tracker, e-commerce sourcing Pakistan US EU",
+    "Etsy product research, Etsy competitor spy tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "Anadash — Etsy Competitor Intelligence & Sourcing",
+    title: "SellerSalt — Real-Time Etsy Competitor Intelligence & Opportunity Radar",
     description:
-      "Uncover verified Etsy shop sales, daily listing trends, and low-competition product niches. No API key required.",
+      "Uncover verified Etsy shop sales velocity, daily listing trends, and low-competition product niches with SellerSalt.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Anadash — Etsy Sourcing Intelligence",
-    description: "Real sales data for Etsy sellers and exporters. Track shops daily and spot winning niches.",
+    title: "SellerSalt — Etsy Competitor Intelligence & Sourcing",
+    description: "Verified sales data and Opportunity Radar for Etsy sellers and exporters.",
   },
 };
 
@@ -36,24 +34,29 @@ const JSON_LD = {
   "@graph": [
     {
       "@type": "SoftwareApplication",
-      name: "Anadash",
+      name: "SellerSalt",
       operatingSystem: "Web-based",
       applicationCategory: "BusinessApplication",
-      offers: { "@type": "AggregateOffer", priceCurrency: "USD", lowPrice: "0", highPrice: "199", offerCount: "3" },
-      description: "Product-hunting and competitor-intelligence SaaS platform for Etsy sellers, dropshippers, and sourcing agencies.",
+      offers: { "@type": "AggregateOffer", priceCurrency: "USD", lowPrice: "19", highPrice: "199", offerCount: "3" },
+      description: "Ecommerce research and competitor intelligence platform for Etsy sellers, dropshippers, and sourcing agencies.",
     },
     {
       "@type": "FAQPage",
       mainEntity: [
         {
           "@type": "Question",
-          name: "Do I need my own Etsy API key to use Anadash?",
-          acceptedAnswer: { "@type": "Answer", text: "No. Anadash works out of the box. You do not need to apply for or configure your own Etsy API key." },
+          name: "Do I need my own Etsy API key to use SellerSalt?",
+          acceptedAnswer: { "@type": "Answer", text: "No. SellerSalt works out of the box with our platform research engine. You do not need to apply for or configure an Etsy developer key." },
         },
         {
           "@type": "Question",
-          name: "Is the sales data on Anadash real or estimated?",
-          acceptedAnswer: { "@type": "Answer", text: "Anadash provides verified lifetime sales data directly from Etsy shop sources and daily automated tracking, avoiding speculative keyword estimation algorithms." },
+          name: "Is the sales data on SellerSalt real or estimated?",
+          acceptedAnswer: { "@type": "Answer", text: "SellerSalt extracts verified lifetime transaction numbers directly from marketplace shop data and tracks point-in-time snapshots daily, providing accurate velocity metrics." },
+        },
+        {
+          "@type": "Question",
+          name: "What is the Opportunity Radar?",
+          acceptedAnswer: { "@type": "Answer", text: "Opportunity Radar is SellerSalt's decision layer that evaluates sales velocity, catalog density, competition barriers, and freshness to surface high-potential products before they become crowded." },
         },
       ],
     },

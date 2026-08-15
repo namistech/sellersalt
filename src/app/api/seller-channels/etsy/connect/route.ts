@@ -10,9 +10,8 @@ import { getSetting } from "@/lib/app-settings";
 const SCOPES = "listings_w listings_r shops_r transactions_r";
 
 function appUrl(): string {
-  const url = process.env.NEXTAUTH_URL;
-  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
-  return url;
+  const url = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
+  return url.replace(/\/+$/, "");
 }
 
 function base64url(buf: Buffer): string {

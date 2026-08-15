@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getOrgPackage, checkLimit } from "@/lib/plan-limits";
+import { Card, Heading, Text, Badge, Alert, Button } from "@/components/ui";
 import { CheckoutButtons } from "./checkout-buttons";
 
 export default async function BillingPage({
@@ -31,107 +32,161 @@ export default async function BillingPage({
     .filter((p: string) => p === "STRIPE" || p === "PAYPAL");
 
   const usageRows = [
-    { label: "Connectors", ...connectors },
-    { label: "Saved searches", ...searchConfigs },
-    { label: "Scheduled searches", ...scheduledSearches },
-    { label: "Shops tracked", ...trackedShops },
-    { label: "Prospects this month", ...prospects },
+    { label: "Active Search Streams", ...searchConfigs },
+    { label: "Scheduled Searches", ...scheduledSearches },
+    { label: "Tracked Competitor Shops", ...trackedShops },
+    { label: "Prospects Discovered This Month", ...prospects },
+    { label: "Marketplace Connectors", ...connectors },
   ];
 
   return (
-    <div>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Billing</h1>
-        <p className="mt-1 text-sm text-muted">Manage your plan and payment method.</p>
-      </header>
+    <div className="max-w-4xl space-y-8">
+      {/* Header */}
+      <div>
+        <Heading as="h1" size="h2">
+          Billing & Subscription
+        </Heading>
+        <Text size="body-md" color="secondary" className="mt-1">
+          Manage your plan, check monthly search usage quotas, and upgrade your research capacity.
+        </Text>
+      </div>
 
       {checkout === "success" && (
-        <div className="mb-6 card border-success">
-          <p className="text-sm text-ink">
-            Payment received — your plan updates automatically within a few seconds once the payment
-            provider confirms it (webhook-driven, not instant on this page load).
-          </p>
-        </div>
+        <Alert variant="success">
+          Payment confirmed! Your subscription and plan limits will update automatically via live webhook.
+        </Alert>
       )}
       {checkout === "cancelled" && (
-        <div className="mb-6 card">
-          <p className="text-sm text-muted">Checkout was cancelled — no charge was made.</p>
-        </div>
+        <Alert variant="info">Checkout session was cancelled — no charges were made.</Alert>
       )}
 
-      {activeProviders.length > 0 && (
-        <div className="mb-6 flex items-center gap-2 text-xs text-muted">
-          <span>Accepted payment methods:</span>
-          {activeProviders.map((p: (typeof activeProviders)[number]) => (
-            <span key={p.provider} className="badge bg-accent-soft text-accent">{p.label}</span>
-          ))}
-        </div>
-      )}
+      {/* Plan Usage Card */}
+      <Card padding="lg" className="border-line shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-line-subtle pb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-ink">Active Plan:</span>
+              <Badge variant="success" className="font-bold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
+                {currentPackage.name} (${currentPackage.priceUsd}/mo)
+              </Badge>
+            </div>
+            <Text size="meta" color="secondary" className="mt-1">
+              Includes full Opportunity Radar access, Etsy search scrapers, and daily competitor snapshots.
+            </Text>
+          </div>
 
-      <div className="card mb-6">
-        <h2 className="mb-4 text-sm font-semibold text-ink">
-          Current plan: <span className="text-accent">{currentPackage.name}</span>
-        </h2>
-        <div className="space-y-3">
-          {usageRows.map((row) => {
-            const pct = row.limit > 0 ? Math.min(100, Math.round((row.current / row.limit) * 100)) : 0;
-            const isNearLimit = pct >= 80;
+          {activeProviders.length > 0 && (
+            <div className="flex items-center gap-1.5 text-xs text-ink-tertiary">
+              <span>Accepted:</span>
+              {activeProviders.map((p) => (
+                <span key={p.provider} className="rounded bg-surface-muted px-2 py-0.5 font-medium text-ink-secondary border border-line-subtle">
+                  {p.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quota Progress Bars */}
+        <div className="space-y-4">
+          <Text size="label-md" color="secondary" className="font-semibold">
+            Monthly Quota Utilization
+          </Text>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {usageRows.map((row) => {
+              const pct = row.limit > 0 ? Math.min(100, Math.round((row.current / row.limit) * 100)) : 0;
+              const isNearLimit = pct >= 80;
+              return (
+                <div key={row.label} className="rounded-lg border border-line-subtle bg-surface-muted p-3.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-ink">{row.label}</span>
+                    <span className={`font-mono ${isNearLimit ? "font-bold text-warn-strong" : "text-ink-secondary"}`}>
+                      {row.current} / {row.limit}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
+                    <div
+                      className={`h-full rounded-full transition-all ${isNearLimit ? "bg-warn" : "bg-brand-primary"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Card>
+
+      {/* Plan Tiers Grid */}
+      <div className="space-y-4">
+        <Heading as="h2" size="h4">
+          Available Subscription Tiers
+        </Heading>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {allPackages.map((pkg) => {
+            const isCurrent = pkg.id === currentPackage.id;
             return (
-              <div key={row.label}>
-                <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="text-muted">{row.label}</span>
-                  <span className={isNearLimit ? "font-medium text-warn" : "text-muted"}>
-                    {row.current} / {row.limit}
-                  </span>
+              <Card
+                key={pkg.id}
+                padding="lg"
+                className={`flex flex-col justify-between border-line shadow-xs ${
+                  isCurrent ? "border-brand-primary ring-1 ring-brand-primary/20 bg-surface" : "bg-surface"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-base text-ink">{pkg.name}</h3>
+                    {isCurrent && (
+                      <Badge variant="success" className="text-xs font-semibold text-brand-primary bg-brand-primary-subtle">
+                        Current
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-3xl font-extrabold text-ink">${pkg.priceUsd}</span>
+                    <span className="text-xs text-ink-tertiary"> / month</span>
+                  </div>
+
+                  <ul className="space-y-2 text-xs text-ink-secondary mb-6">
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxSearchConfigs} Search Streams
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxScheduledSearches} Scheduled Searches
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxTrackedShops} Tracked Shops
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxProspectsPerMonth.toLocaleString()} Prospects/mo
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-brand-primary font-bold">✓</span> Opportunity Radar Access
+                    </li>
+                  </ul>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
-                  <div
-                    className={`h-full rounded-full ${isNearLimit ? "bg-warn" : "bg-accent"}`}
-                    style={{ width: `${pct}%` }}
-                  />
+
+                <div>
+                  {isCurrent ? (
+                    <Button variant="secondary" size="default" fullWidth disabled>
+                      Active Tier
+                    </Button>
+                  ) : (
+                    <CheckoutButtons
+                      packageKey={pkg.key}
+                      packageName={pkg.name}
+                      currentPackageName={currentPackage.name}
+                      isUpgrade={pkg.priceUsd > currentPackage.priceUsd}
+                      availableProviders={checkoutCapableProviders}
+                    />
+                  )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {allPackages.map((pkg: (typeof allPackages)[number]) => {
-          const isCurrent = pkg.id === currentPackage.id;
-          return (
-            <div key={pkg.id} className={`card ${isCurrent ? "border-accent" : ""}`}>
-              <div className="mb-1 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-ink">{pkg.name}</h2>
-                {isCurrent && <span className="badge bg-accent-soft text-accent">Current</span>}
-              </div>
-              <div className="mb-3 text-2xl font-semibold text-ink">
-                ${pkg.priceUsd}
-                {pkg.priceUsd > 0 && <span className="text-sm font-normal text-muted">/mo</span>}
-              </div>
-              <ul className="mb-4 space-y-1 text-xs text-muted">
-                <li>{pkg.maxConnectors} connector(s)</li>
-                <li>{pkg.maxSearchConfigs} saved searches</li>
-                <li>{pkg.maxScheduledSearches} scheduled searches</li>
-                <li>{pkg.maxTrackedShops} shops tracked</li>
-                <li>{pkg.maxProspectsPerMonth.toLocaleString()} prospects/month</li>
-              </ul>
-              {isCurrent ? (
-                <button className="btn-secondary w-full" disabled>
-                  Current plan
-                </button>
-              ) : (
-                <CheckoutButtons
-                  packageKey={pkg.key}
-                  packageName={pkg.name}
-                  currentPackageName={currentPackage.name}
-                  isUpgrade={pkg.priceUsd > currentPackage.priceUsd}
-                  availableProviders={checkoutCapableProviders}
-                />
-              )}
-            </div>
-          );
-        })}
       </div>
     </div>
   );

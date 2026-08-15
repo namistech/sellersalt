@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Star, ExternalLink, ArrowRight, Sparkles, Check } from "lucide-react";
+import { Star, ExternalLink, ArrowRight, Sparkles, Check, Flame, Gem, Zap } from "lucide-react";
 import { Card, Button, Badge, Heading, Text, IconButton } from "@/components/ui";
 import { EmptyState } from "@/components/data";
 import { scoreEstDailySales, demandMeta } from "@/lib/competition-scoring";
@@ -45,20 +45,25 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
   }
 
   return (
-    <Card padding="lg" className="flex flex-col justify-between">
+    <Card padding="lg" className="flex flex-col justify-between border-line shadow-xs">
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-primary-subtle text-brand-primary text-xs font-bold">
+              <Flame className="h-3.5 w-3.5" />
+            </span>
             <Heading as="h2" size="h4">
               Top Opportunity Discoveries
             </Heading>
-            <Badge variant="success">High potential</Badge>
+            <Badge variant="success" className="font-semibold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
+              High potential
+            </Badge>
           </div>
           <Link
-            href="/prospects"
-            className="inline-flex items-center gap-1 text-body-sm font-medium text-accent hover:underline"
+            href="/radar"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary hover:underline"
           >
-            View all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            Open Radar <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
         </div>
 
@@ -81,6 +86,10 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
               const velocityLevel = scoreEstDailySales(item.estDailySales ?? 0);
               const meta = demandMeta(velocityLevel);
 
+              // Quick opportunity badge detection
+              const isEmerging = item.shopAgeMonths <= 18 && (item.estDailySales ?? 0) >= 3.5;
+              const isHiddenGem = (item.avgSellingRatio ?? 0) >= 15;
+
               return (
                 <div key={item.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3 min-w-0">
@@ -91,22 +100,31 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                         className="h-12 w-12 shrink-0 rounded-md object-cover border border-line"
                       />
                     ) : (
-                      <div className="h-12 w-12 shrink-0 rounded-md bg-line-subtle" />
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary">
+                        Shop
+                      </div>
                     )}
                     <div className="min-w-0">
-                      <a
-                        href={item.listingUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group flex items-center gap-1 font-medium text-ink hover:text-accent"
-                      >
-                        <Text as="span" size="body-sm" weight="medium" className="truncate">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/shops/${item.shopExternalId}`}
+                          className="font-medium text-ink hover:text-brand-primary text-sm truncate"
+                        >
                           {item.listingTitle}
-                        </Text>
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                      </a>
+                        </Link>
+                        {isEmerging && (
+                          <span className="shrink-0 text-[10px] font-bold text-warn-strong bg-warn-subtle px-1.5 py-0.5 rounded border border-warn/30">
+                            🔥 Emerging
+                          </span>
+                        )}
+                        {!isEmerging && isHiddenGem && (
+                          <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300">
+                            💎 Hidden Gem
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-meta text-ink-tertiary">
-                        <Link href={`/shops/${item.shopExternalId}`} className="text-accent hover:underline">
+                        <Link href={`/shops/${item.shopExternalId}`} className="text-brand-primary hover:underline">
                           {item.shopName}
                         </Link>
                         <span>·</span>
@@ -117,6 +135,12 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                             <span className={meta.text}>
                               {item.estDailySales.toFixed(1)} sales/day ({meta.label})
                             </span>
+                          </>
+                        )}
+                        {item.avgSellingRatio != null && (
+                          <>
+                            <span>·</span>
+                            <span>{item.avgSellingRatio.toFixed(1)}x density</span>
                           </>
                         )}
                       </div>
@@ -132,7 +156,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                       onClick={() => handleToggleFavorite(item.id, item.isFavorite)}
                     />
                     {item.status === "SHORTLISTED" ? (
-                      <Badge variant="success" className="flex items-center gap-1">
+                      <Badge variant="success" className="flex items-center gap-1 text-xs">
                         <Check className="h-3 w-3" /> Shortlisted
                       </Badge>
                     ) : (
@@ -141,6 +165,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                         size="compact"
                         disabled={updatingId === item.id}
                         onClick={() => handleStatusChange(item.id, "SHORTLISTED")}
+                        className="text-xs"
                       >
                         Shortlist
                       </Button>
@@ -154,9 +179,9 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
       </div>
 
       <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-meta text-ink-tertiary">
-        <span>Ranked by estimated buyer velocity & demand signals</span>
-        <Link href="/prospects?status=SHORTLISTED" className="text-accent hover:underline">
-          Shortlist pipeline →
+        <span>Ranked by estimated velocity, sales density & competition signals</span>
+        <Link href="/radar" className="font-medium text-brand-primary hover:underline flex items-center gap-1">
+          Explore Opportunity Radar →
         </Link>
       </div>
     </Card>

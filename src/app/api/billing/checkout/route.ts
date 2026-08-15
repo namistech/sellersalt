@@ -8,9 +8,8 @@ import { getOrCreatePaypalPlan, createDiscountedPaypalPlan } from "@/lib/payment
 import { validateCoupon, applyCouponDiscount, redeemCoupon } from "@/lib/coupons";
 
 function appUrl(): string {
-  const url = process.env.NEXTAUTH_URL;
-  if (!url) throw new Error("NEXTAUTH_URL is required.");
-  return url;
+  const url = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
+  return url.replace(/\/+$/, "");
 }
 
 export async function POST(req: Request) {

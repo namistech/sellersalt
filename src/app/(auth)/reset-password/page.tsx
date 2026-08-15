@@ -3,6 +3,8 @@
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthLayout } from "../auth-layout";
+import { Button, Input, Alert, Text } from "@/components/ui";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -24,28 +26,37 @@ function ResetPasswordForm() {
       return;
     }
 
-    setLoading(true);
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, newPassword }),
-    });
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(data.error ?? "Something went wrong.");
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
-    setSuccess(true);
-    setTimeout(() => router.push("/login"), 2000);
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong.");
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => router.push("/login"), 2000);
+    } catch {
+      setError("An unexpected network error occurred.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!token) {
     return (
-      <div className="card text-center">
-        <p className="text-sm text-danger">This reset link is missing its token.</p>
-        <Link href="/forgot-password" className="mt-4 inline-block text-sm font-medium text-accent hover:underline">
+      <div className="space-y-6">
+        <Alert variant="danger">This password reset link is invalid or has expired.</Alert>
+        <Link href="/forgot-password" className="block text-center text-sm font-semibold text-brand-primary hover:underline">
           Request a new link
         </Link>
       </div>
@@ -54,59 +65,59 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <div className="card text-center">
-        <p className="text-sm text-ink">Password updated — taking you to sign in…</p>
+      <div className="space-y-6">
+        <Alert variant="success">Password updated successfully! Redirecting you to sign in...</Alert>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card space-y-4">
-      <div>
-        <label className="label" htmlFor="newPassword">New password</label>
-        <input
-          id="newPassword"
-          type="password"
-          required
-          minLength={8}
-          className="input"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-      <div>
-        <label className="label" htmlFor="confirmPassword">Confirm new password</label>
-        <input
-          id="confirmPassword"
-          type="password"
-          required
-          className="input"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          autoComplete="new-password"
-        />
-      </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
-      <button type="submit" disabled={loading} className="btn-primary w-full">
-        {loading ? "Updating…" : "Set new password"}
-      </button>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Input
+        id="newPassword"
+        label="New password"
+        type="password"
+        required
+        minLength={8}
+        value={newPassword}
+        onChange={(e) => setNewPassword(e.target.value)}
+        placeholder="At least 8 characters"
+        autoComplete="new-password"
+      />
+
+      <Input
+        id="confirmPassword"
+        label="Confirm new password"
+        type="password"
+        required
+        value={confirmPassword}
+        onChange={(e) => setConfirmPassword(e.target.value)}
+        placeholder="Re-enter your password"
+        autoComplete="new-password"
+      />
+
+      {error && <Alert variant="danger">{error}</Alert>}
+
+      <Button type="submit" variant="primary" loading={loading} fullWidth className="!py-3 text-base">
+        Update password
+      </Button>
     </form>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mb-1 text-xl font-semibold tracking-tight text-ink">SellerSalt</div>
-          <p className="text-sm text-muted">Set a new password</p>
-        </div>
-        <Suspense fallback={<p className="text-center text-sm text-muted">Loading…</p>}>
-          <ResetPasswordForm />
-        </Suspense>
-      </div>
-    </div>
+    <AuthLayout>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-ink">
+        Set a new password
+      </h1>
+      <Text size="body-sm" color="secondary" className="mb-8">
+        Choose a secure password with at least 8 characters.
+      </Text>
+
+      <Suspense fallback={<Text size="body-sm" color="tertiary">Loading reset token...</Text>}>
+        <ResetPasswordForm />
+      </Suspense>
+    </AuthLayout>
   );
 }

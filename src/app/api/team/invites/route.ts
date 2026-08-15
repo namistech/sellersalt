@@ -49,7 +49,9 @@ export async function POST(req: Request) {
     },
   });
 
-  const acceptUrl = `${process.env.NEXTAUTH_URL}/accept-invite?token=${rawToken}`;
+  const baseUrl = process.env.NEXTAUTH_URL || "https://sellersalt.com";
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+  const acceptUrl = `${cleanBaseUrl}/accept-invite?token=${rawToken}`;
 
   const result = await sendEmail({
     to: normalizedEmail,
