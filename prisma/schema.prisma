@@ -50,6 +50,32 @@ model User {
 
   memberships Membership[]
   passwordResetTokens PasswordResetToken[]
+  webAuthnCredentials WebAuthnCredential[]
+}
+
+// One row per registered passkey/security key. credentialId is the
+// authenticator-issued identifier (base64url) — looked up globally at
+// login time, before we know which user is signing in, which is why it's
+// unique and indexed rather than only scoped by userId. counter is a
+// signature-replay guard per the WebAuthn spec: it must strictly increase
+// on every use, and a non-increasing value on a real assertion indicates
+// a cloned authenticator.
+model WebAuthnCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  credentialId String    @unique
+  publicKey    String
+  counter      BigInt    @default(0)
+  deviceType   String
+  backedUp     Boolean   @default(false)
+  transports   String?
+  name         String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Membership {

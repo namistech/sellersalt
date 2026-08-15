@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { startRegistration } from "@simplewebauthn/browser";
 import {
   User,
   Building,
@@ -25,6 +26,7 @@ import {
   Store,
   Download,
   QrCode,
+  Pencil,
 } from "lucide-react";
 import {
   Card,
@@ -334,17 +336,23 @@ export default function ProfilePage() {
   }
 
   // Passkeys State
-  const [passkeys, setPasskeys] = useState<Array<{ id: string; name: string; createdAt: string }>>([]);
+  const [passkeys, setPasskeys] = useState<
+    Array<{ id: string; name: string | null; deviceType: string; backedUp: boolean; createdAt: string; lastUsedAt: string | null }>
+  >([]);
   const [passkeyStatus, setPasskeyStatus] = useState<string | null>(null);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
 
-  useEffect(() => {
+  function loadPasskeys() {
     fetch("/api/settings/passkeys")
       .then((r) => r.json())
       .then((d) => {
         if (d.passkeys) setPasskeys(d.passkeys);
       })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    loadPasskeys();
   }, []);
 
   async function handleRegisterPasskey() {
@@ -353,65 +361,47 @@ export default function ProfilePage() {
     try {
       if (!window.PublicKeyCredential) {
         setPasskeyStatus("Passkeys / WebAuthn is not supported by your current browser.");
-        setPasskeyLoading(false);
         return;
       }
 
-      const initRes = await fetch("/api/settings/passkeys");
-      const initData = await initRes.json();
-
-      const challengeBuffer = Uint8Array.from(
-        atob(initData.challenge.replace(/-/g, "+").replace(/_/g, "/")),
-        (c) => c.charCodeAt(0)
-      );
-      const userIdBuffer = Uint8Array.from(
-        atob(initData.user.id.replace(/-/g, "+").replace(/_/g, "/")),
-        (c) => c.charCodeAt(0)
-      );
-
-      const credential = (await navigator.credentials.create({
-        publicKey: {
-          challenge: challengeBuffer,
-          rp: { name: "SellerSalt", id: window.location.hostname },
-          user: {
-            id: userIdBuffer,
-            name: initData.user.name,
-            displayName: initData.user.displayName,
-          },
-          pubKeyCredParams: [
-            { type: "public-key", alg: -7 },
-            { type: "public-key", alg: -257 },
-          ],
-          authenticatorSelection: {
-            userVerification: "preferred",
-            residentKey: "preferred",
-          },
-          timeout: 60000,
-        },
-      })) as PublicKeyCredential | null;
-
-      if (credential) {
-        const rawIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
-          .replace(/\+/g, "-")
-          .replace(/\//g, "_")
-          .replace(/=+$/, "");
-
-        const saveRes = await fetch("/api/settings/passkeys", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            credentialId: rawIdBase64,
-            name: `${navigator.platform || "Device"} Passkey`,
-          }),
-        });
-
-        const saveData = await saveRes.json();
-        if (saveData.passkeys) setPasskeys(saveData.passkeys);
-        setPasskeyStatus("Passkey successfully registered.");
+      const optionsRes = await fetch("/api/settings/passkeys/register/options");
+      if (!optionsRes.ok) {
+        setPasskeyStatus("Could not start passkey setup. Please try again.");
+        return;
       }
+      const { options, challengeToken } = await optionsRes.json();
+
+      const registrationResponse = await startRegistration({ optionsJSON: options });
+
+      const deviceLabel =
+        /iphone|ipad/i.test(navigator.userAgent) ? "iOS device" :
+        /android/i.test(navigator.userAgent) ? "Android device" :
+        /mac/i.test(navigator.userAgent) ? "Mac" :
+        /win/i.test(navigator.userAgent) ? "Windows device" : "Device";
+
+      const verifyRes = await fetch("/api/settings/passkeys/register/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          response: registrationResponse,
+          challengeToken,
+          name: `${deviceLabel} Passkey`,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setPasskeyStatus(verifyData.error || "Passkey verification failed.");
+        return;
+      }
+
+      loadPasskeys();
+      setPasskeyStatus("Passkey successfully registered.");
     } catch (err: any) {
       if (err.name === "NotAllowedError") {
         setPasskeyStatus("Passkey setup cancelled or timed out.");
+      } else if (err.name === "InvalidStateError") {
+        setPasskeyStatus("This device's passkey is already registered.");
       } else {
         setPasskeyStatus(err.message || "Passkey setup error.");
       }
@@ -420,16 +410,28 @@ export default function ProfilePage() {
     }
   }
 
-  async function handleDeletePasskey(credentialId: string) {
+  async function handleRenamePasskey(id: string, currentName: string | null) {
+    const nextName = window.prompt("Rename this passkey", currentName || "");
+    if (!nextName || !nextName.trim()) return;
+    try {
+      await fetch("/api/settings/passkeys", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, name: nextName.trim() }),
+      });
+      loadPasskeys();
+    } catch {}
+  }
+
+  async function handleDeletePasskey(id: string) {
     if (!confirm("Remove this registered passkey?")) return;
     try {
-      const res = await fetch("/api/settings/passkeys", {
+      await fetch("/api/settings/passkeys", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credentialId }),
+        body: JSON.stringify({ id }),
       });
-      const data = await res.json();
-      if (data.passkeys) setPasskeys(data.passkeys);
+      loadPasskeys();
     } catch {}
   }
 
@@ -658,19 +660,30 @@ export default function ProfilePage() {
                       className="p-2 rounded-lg bg-white border border-line-subtle flex items-center justify-between text-xs"
                     >
                       <div className="min-w-0">
-                        <div className="font-semibold text-ink truncate">{p.name}</div>
+                        <div className="font-semibold text-ink truncate">{p.name || "Unnamed passkey"}</div>
                         <div className="text-[10px] text-ink-tertiary">
                           Added {new Date(p.createdAt).toLocaleDateString()}
+                          {p.lastUsedAt ? ` · Last used ${new Date(p.lastUsedAt).toLocaleDateString()}` : ""}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePasskey(p.id)}
-                        className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
-                        title="Remove Passkey"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleRenamePasskey(p.id, p.name)}
+                          className="p-1 rounded text-ink-tertiary hover:text-ink hover:bg-surface-muted"
+                          title="Rename Passkey"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePasskey(p.id)}
+                          className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+                          title="Remove Passkey"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

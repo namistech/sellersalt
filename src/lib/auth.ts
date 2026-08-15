@@ -7,6 +7,10 @@ import { prisma } from "./db";
 import { encrypt } from "./encryption";
 import { resolveEtsyShopId } from "@/seller-channels/etsy-seller";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
+import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
+import { rpID, expectedOrigin } from "./webauthn";
+import { verifyChallengeToken } from "./webauthn-challenge";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -74,6 +78,67 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
+          organizationId: primaryOrg?.id ?? null,
+          organizationName: primaryOrg?.name ?? null,
+        } as any;
+      },
+    }),
+    CredentialsProvider({
+      id: "passkey",
+      name: "Passkey",
+      credentials: {
+        response: { label: "response", type: "text" },
+        challengeToken: { label: "challengeToken", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.response || !credentials?.challengeToken) return null;
+
+        const payload = verifyChallengeToken(credentials.challengeToken);
+        if (!payload) return null; // expired/tampered — no specific userId expected for login
+
+        let response: AuthenticationResponseJSON;
+        try {
+          response = JSON.parse(credentials.response);
+        } catch {
+          return null;
+        }
+
+        const stored = await prisma.webAuthnCredential.findUnique({
+          where: { credentialId: response.id },
+          include: { user: { include: { memberships: { include: { organization: true } } } } },
+        });
+        if (!stored) return null;
+
+        let verification;
+        try {
+          verification = await verifyAuthenticationResponse({
+            response,
+            expectedChallenge: payload.challenge,
+            expectedOrigin: expectedOrigin(),
+            expectedRPID: rpID(),
+            credential: {
+              id: stored.credentialId,
+              publicKey: new Uint8Array(Buffer.from(stored.publicKey, "base64url")),
+              counter: Number(stored.counter),
+              transports: stored.transports ? (stored.transports.split(",") as any) : undefined,
+            },
+          });
+        } catch {
+          return null;
+        }
+
+        if (!verification.verified) return null;
+
+        await prisma.webAuthnCredential.update({
+          where: { id: stored.id },
+          data: { counter: BigInt(verification.authenticationInfo.newCounter), lastUsedAt: new Date() },
+        });
+
+        const primaryOrg = stored.user.memberships[0]?.organization;
+        return {
+          id: stored.user.id,
+          email: stored.user.email,
+          name: stored.user.name,
           organizationId: primaryOrg?.id ?? null,
           organizationName: primaryOrg?.name ?? null,
         } as any;

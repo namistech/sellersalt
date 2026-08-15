@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Store } from "lucide-react";
+import { startAuthentication } from "@simplewebauthn/browser";
+import { Eye, EyeOff, Store, Fingerprint } from "lucide-react";
 import { AuthLayout } from "../auth-layout";
 import { Button, Input, Alert, Heading, Text, Divider } from "@/components/ui";
 
@@ -55,6 +56,46 @@ function LoginForm() {
     }
     router.push("/dashboard");
     router.refresh();
+  }
+
+  async function handlePasskeyLogin() {
+    setError(null);
+    if (!window.PublicKeyCredential) {
+      setError("Passkeys aren't supported in this browser.");
+      return;
+    }
+    setOauthLoading("passkey");
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/options", { method: "POST" });
+      if (!optionsRes.ok) {
+        setError("Could not start passkey sign-in. Please try again.");
+        return;
+      }
+      const { options, challengeToken } = await optionsRes.json();
+
+      const assertion = await startAuthentication({ optionsJSON: options });
+
+      const res = await signIn("passkey", {
+        response: JSON.stringify(assertion),
+        challengeToken,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError("That passkey isn't recognized. Please try again or use another sign-in method.");
+        return;
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setError("Passkey sign-in was cancelled.");
+      } else {
+        setError(err.message || "Passkey sign-in failed.");
+      }
+    } finally {
+      setOauthLoading(null);
+    }
   }
 
   async function handleOAuth(provider: "google" | "etsy") {
@@ -114,6 +155,16 @@ function LoginForm() {
         >
           <Store className="h-4 w-4 shrink-0 text-[#F1641E]" />
           <span>{oauthLoading === "etsy" ? "Connecting Etsy…" : "Sign in with Etsy Store"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handlePasskeyLogin}
+          disabled={Boolean(oauthLoading) || loading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink hover:bg-surface-muted transition shadow-2xs disabled:opacity-50"
+        >
+          <Fingerprint className="h-4 w-4 shrink-0 text-[#0E8F5D]" />
+          <span>{oauthLoading === "passkey" ? "Verifying passkey…" : "Sign in with a passkey"}</span>
         </button>
       </div>
 

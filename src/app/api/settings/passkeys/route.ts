@@ -1,129 +1,53 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import crypto from "node:crypto";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+async function requireUserId() {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
-
-  if (!session || !userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Fetch registered passkeys for this user
-  const settingKey = `user_passkeys_${userId}`;
-  const setting = await prisma.appSetting.findUnique({ where: { key: settingKey } });
-
-  let passkeys: Array<{ id: string; name: string; createdAt: string; lastUsedAt?: string }> = [];
-  if (setting?.value) {
-    try {
-      passkeys = JSON.parse(setting.value);
-    } catch {
-      passkeys = [];
-    }
-  }
-
-  // Generate a random registration challenge
-  const challenge = crypto.randomBytes(32).toString("base64url");
-
-  return NextResponse.json({
-    passkeys,
-    challenge,
-    rp: {
-      name: "SellerSalt",
-      id: typeof window === "undefined" ? undefined : window.location.hostname,
-    },
-    user: {
-      id: Buffer.from(userId).toString("base64url"),
-      name: session.user?.email || "user",
-      displayName: session.user?.name || session.user?.email || "SellerSalt User",
-    },
-  });
+  return (session?.user as any)?.id as string | undefined;
 }
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
+export async function GET() {
+  const userId = await requireUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!session || !userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const body = await req.json();
-  const { credentialId, name } = body as { credentialId?: string; name?: string };
-
-  if (!credentialId) {
-    return NextResponse.json({ error: "Credential ID is required." }, { status: 400 });
-  }
-
-  const settingKey = `user_passkeys_${userId}`;
-  const setting = await prisma.appSetting.findUnique({ where: { key: settingKey } });
-
-  let passkeys: Array<{ id: string; name: string; createdAt: string; lastUsedAt?: string }> = [];
-  if (setting?.value) {
-    try {
-      passkeys = JSON.parse(setting.value);
-    } catch {
-      passkeys = [];
-    }
-  }
-
-  // Add new passkey
-  const newPasskey = {
-    id: credentialId,
-    name: name || `Passkey (${new Date().toLocaleDateString()})`,
-    createdAt: new Date().toISOString(),
-    lastUsedAt: new Date().toISOString(),
-  };
-
-  passkeys.push(newPasskey);
-
-  await prisma.appSetting.upsert({
-    where: { key: settingKey },
-    create: {
-      key: settingKey,
-      value: JSON.stringify(passkeys),
-      isSecret: false,
-    },
-    update: {
-      value: JSON.stringify(passkeys),
-    },
+  const credentials = await prisma.webAuthnCredential.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, deviceType: true, backedUp: true, createdAt: true, lastUsedAt: true },
   });
 
-  return NextResponse.json({ success: true, passkeys }, { status: 201 });
+  return NextResponse.json({ passkeys: credentials });
+}
+
+export async function PATCH(req: Request) {
+  const userId = await requireUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id, name } = (await req.json().catch(() => ({}))) as { id?: string; name?: string };
+  if (!id || !name?.trim()) {
+    return NextResponse.json({ error: "id and name are required." }, { status: 400 });
+  }
+
+  const result = await prisma.webAuthnCredential.updateMany({
+    where: { id, userId },
+    data: { name: name.trim() },
+  });
+  if (result.count === 0) return NextResponse.json({ error: "Passkey not found." }, { status: 404 });
+
+  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
+  const userId = await requireUserId();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!session || !userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { id } = (await req.json().catch(() => ({}))) as { id?: string };
+  if (!id) return NextResponse.json({ error: "id is required." }, { status: 400 });
 
-  const { credentialId } = await req.json();
-  if (!credentialId) {
-    return NextResponse.json({ error: "Credential ID required" }, { status: 400 });
-  }
+  const result = await prisma.webAuthnCredential.deleteMany({ where: { id, userId } });
+  if (result.count === 0) return NextResponse.json({ error: "Passkey not found." }, { status: 404 });
 
-  const settingKey = `user_passkeys_${userId}`;
-  const setting = await prisma.appSetting.findUnique({ where: { key: settingKey } });
-
-  if (setting?.value) {
-    try {
-      let passkeys = JSON.parse(setting.value) as Array<{ id: string; name: string; createdAt: string }>;
-      passkeys = passkeys.filter((p) => p.id !== credentialId);
-      await prisma.appSetting.update({
-        where: { key: settingKey },
-        data: { value: JSON.stringify(passkeys) },
-      });
-      return NextResponse.json({ success: true, passkeys });
-    } catch {
-      return NextResponse.json({ error: "Failed to delete passkey" }, { status: 500 });
-    }
-  }
-
-  return NextResponse.json({ success: true, passkeys: [] });
+  return NextResponse.json({ success: true });
 }
