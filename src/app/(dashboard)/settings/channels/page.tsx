@@ -1,12 +1,10 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import { isAdminEmail } from "@/lib/is-admin";
 import { ChannelsClient } from "./channels-client";
 
-export default async function ChannelsPage() {
-  const session = await getServerSession(authOptions);
-  if (!isAdminEmail(session?.user?.email)) redirect("/dashboard");
-
+// Etsy-seller store connection is customer-facing (MVP scope: Etsy is the
+// only customer-facing marketplace). Auth/org membership is already
+// enforced by the (dashboard) layout above this route — no admin gate
+// here. Shopify/WooCommerce stay admin-only; ChannelsClient renders their
+// section as informational-only, not a working connect flow.
+export default function ChannelsPage() {
   return <ChannelsClient />;
 }

@@ -155,15 +155,23 @@ why).
 - **`PaymentWebhookEvent`** — idempotency log; both Stripe and PayPal
   retry-deliver events, this prevents double-processing.
 
-## MVP scope decision — Shopify/WooCommerce/cross-listing are admin-only
+## MVP scope decision — Shopify/WooCommerce/cross-listing are admin-only; Etsy-seller connect is now customer-facing
 
-Founder decision: customer-facing product stays Etsy-focused for now.
-Shopify, WooCommerce, Etsy-seller, Analytics, and Cross-listing are fully
-built but **gated to admin-only** — hidden from the sidebar nav for regular
-users AND rejected server-side at the API level (`requireAdminOrg()`
-helper in `src/lib/require-admin-org.ts`, applied to every seller-channels
-route). This is a visibility/positioning decision, not a half-finished
-feature — the code is real and working, just not customer-facing yet.
+Founder decision (updated 2026-08-15): customer-facing product stays
+Etsy-focused. **Etsy-seller store connection (`SellerChannel` platform
+`ETSY_SELLER`) is now customer-facing** — any authenticated user can
+connect their own Etsy shop from `/settings/channels`, not just admins.
+Shopify, WooCommerce, and Cross-listing remain **admin-only**, gated
+per-route via individual `isAdminEmail()` checks in each connect route
+file (`shopify/connect/route.ts`, `woocommerce/connect/route.ts`) — not
+via the `requireAdminOrg()` helper in `src/lib/require-admin-org.ts`,
+which exists but is dead code (defined, never actually called anywhere;
+a prior version of this file incorrectly claimed it was wired up — it
+wasn't). The `/settings/channels` page itself used to hard-redirect all
+non-admins to `/dashboard`; that page-level gate is now removed. The
+Shopify/WooCommerce section on that page is informational-only text, not
+a working connect flow, so no route-level exposure risk from opening the
+page.
 
 ## What's built (comprehensive — don't rebuild these)
 
@@ -262,6 +270,32 @@ Every customer shares one Etsy Personal Access connector — 5 req/sec,
    intended after a migration, since the tool available for closing it
    again wasn't discovered until later. Always verify closure via
    Coolify's UI, don't just assume a prior "disabled" claim held.
+5. **Etsy OAuth redirect_uri incident (2026-08-15)**: the two Etsy
+   seller-channel routes (`src/app/api/seller-channels/etsy/connect|
+   callback/route.ts`) built `redirect_uri` from request headers
+   (`x-forwarded-host`/`host`) instead of `NEXTAUTH_URL`, unlike every
+   other OAuth connector in the app (Shopify, WooCommerce), which
+   deliberately avoid `req.url`/headers for exactly this reason — behind
+   Coolify's proxy those can reflect the container's internal address, not
+   the public domain. A mismatched `redirect_uri` is what Etsy's
+   "requested redirect URL is not permitted" error means, and repeated
+   failed attempts during testing is the likely cause of the follow-up
+   "Temporarily blocked" state. Fixed by switching both routes to the same
+   `appUrl()`-from-`NEXTAUTH_URL` pattern already used elsewhere. Also
+   found and removed a hardcoded Etsy client ID literal
+   (`efxloiz6kn6jhkzzbto4oz3v`) used as a fallback in **four** places
+   (`src/lib/auth.ts` ×2, both seller-channels/etsy routes) — a real
+   credential-in-source violation independent of the redirect bug. **One
+   Etsy developer app serves both flows** (per founder decision): "Sign in
+   with Etsy" (NextAuth, `src/lib/auth.ts`, login/identity) and "Connect
+   Your Etsy Shop" (`/settings/channels`, dedicated PKCE flow, now
+   customer-facing). Because they're separate code paths, **Etsy's app
+   dashboard must have BOTH redirect URIs registered, for both
+   environments** (4 total): `{NEXTAUTH_URL}/api/auth/callback/etsy` and
+   `{NEXTAUTH_URL}/api/seller-channels/etsy/callback`, for
+   `https://sellersalt.com` and `https://staging.sellersalt.com`. This is
+   an Etsy-dashboard-side config step outside the codebase — verify it's
+   done before testing either flow end-to-end.
 
 ## How to work efficiently in this project
 

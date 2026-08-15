@@ -1,21 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Store } from "lucide-react";
 import { AuthLayout } from "../auth-layout";
 import { Button, Input, Alert, Heading, Text, Divider } from "@/components/ui";
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthSignin: "Could not start the sign-in request with that provider. Please try again.",
+  OAuthCallback: "That provider's response couldn't be verified. This is usually a temporary issue — please try again.",
+  OAuthCreateAccount: "We couldn't create an account from that provider's info. Try signing in with email instead.",
+  OAuthAccountNotLinked: "That email is already registered with a different sign-in method. Sign in with your original method, or use a different account.",
+  AccessDenied: "Access was denied — you cancelled the authorization, or your account isn't allowed to sign in this way.",
+  Configuration: "Sign-in is temporarily misconfigured on our end. Please try again shortly or use email sign-in.",
+  Verification: "That sign-in link is invalid or has expired.",
+  Default: "Something went wrong signing you in. Please try again.",
+};
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    const code = searchParams.get("error");
+    if (!code) return;
+    setError(OAUTH_ERROR_MESSAGES[code] ?? OAUTH_ERROR_MESSAGES.Default);
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

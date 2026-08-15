@@ -74,18 +74,31 @@ export function ChannelsClient() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+
     if (params.get("connected")) {
       setBannerMessage({ text: "Etsy shop connected successfully! Your shop data will begin syncing automatically.", variant: "success" });
+      return;
     }
-    if (params.get("error") === "limit_reached") {
-      setBannerMessage({ text: "Your plan's connected store limit has been reached. Upgrade your package to link additional stores.", variant: "warn" });
-    }
-    if (params.get("error") === "etsy_not_configured") {
-      setBannerMessage({ text: "Etsy Seller App API credentials are not yet configured in the Admin settings.", variant: "danger" });
-    }
-    if (params.get("error")?.startsWith("etsy_")) {
-      setBannerMessage({ text: "Could not complete Etsy connection. Please verify your shop credentials and try again.", variant: "danger" });
-    }
+    if (!error) return;
+
+    const ETSY_ERROR_MESSAGES: Record<string, string> = {
+      limit_reached: "Your plan's connected store limit has been reached. Upgrade your package to link additional stores.",
+      etsy_not_configured: "Etsy Seller App API credentials are not yet configured in Admin settings.",
+      etsy_access_denied: "Etsy authorization was cancelled — you declined access on Etsy's page. Click Connect to try again.",
+      etsy_authorization_failed: "Etsy declined this authorization request. This is usually a redirect URL or app-configuration mismatch on Etsy's side — contact support if it persists.",
+      etsy_callback_incomplete: "Etsy's response was missing required information. Please try connecting again.",
+      etsy_invalid_state: "This authorization link is invalid or has expired (links are valid for 15 minutes). Please try connecting again.",
+      etsy_token_exchange_failed: "Etsy rejected the authorization code during token exchange. Please try connecting again — if this keeps happening, the app's redirect URL may be misconfigured.",
+      etsy_no_shop_found: "We couldn't find an Etsy shop on this account. Make sure you're signing in with the Etsy account that owns your shop.",
+      etsy_token_invalid: "Etsy issued a token but it failed verification. Please try connecting again.",
+    };
+
+    const variant = error === "limit_reached" ? "warn" : error === "etsy_access_denied" ? "warn" : "danger";
+    setBannerMessage({
+      text: ETSY_ERROR_MESSAGES[error] ?? "Could not complete Etsy connection. Please try again.",
+      variant,
+    });
   }, []);
 
   function handleConnectEtsy() {

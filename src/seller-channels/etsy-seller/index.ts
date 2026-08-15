@@ -107,5 +107,21 @@ export const etsySellerConnector: SellerChannelConnector = {
   },
 };
 
-export { getValidAccessToken as refreshEtsySellerToken, ETSY_TOKEN_URL };
+/** Resolves the shop belonging to the Etsy account behind this access
+ * token. Shared by every code path that connects an Etsy seller channel
+ * (the dedicated PKCE connect flow and the "Sign in with Etsy" identity
+ * login, which also links a channel) so they can't drift into resolving
+ * shops differently. The numeric prefix of an Etsy access token is the
+ * user_id. */
+async function resolveEtsyShopId(accessToken: string, apiKey: string): Promise<string> {
+  const userId = accessToken.split(".")[0];
+  const res = await axios.get(`${ETSY_API_BASE}/users/${userId}/shops`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "x-api-key": apiKey },
+  });
+  const shopId = String(res.data?.shop_id ?? "");
+  if (!shopId || shopId === "undefined") throw new Error("No Etsy shop found for this account.");
+  return shopId;
+}
+
+export { getValidAccessToken as refreshEtsySellerToken, ETSY_TOKEN_URL, resolveEtsyShopId };
 export type { EtsyCredentials };

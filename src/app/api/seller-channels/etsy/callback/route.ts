@@ -6,23 +6,29 @@ import { verifyConnectToken } from "@/lib/store-connect-token";
 import { getSetting } from "@/lib/app-settings";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { startSellerChannelSync } from "@/lib/queue";
-import { ETSY_TOKEN_URL } from "@/seller-channels/etsy-seller";
+import { ETSY_TOKEN_URL, resolveEtsyShopId } from "@/seller-channels/etsy-seller";
 
-function getBaseUrl(req: Request): string {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-  const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-  if (host) {
-    return `${proto}://${host}`.replace(/\/+$/, "");
-  }
-  const fallback = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://staging.sellersalt.com";
-  return fallback.replace(/\/+$/, "");
+// Deliberately built from NEXTAUTH_URL, never from req.url/headers — see
+// the connect route (and the WooCommerce connect route) for why. This
+// MUST match the redirect_uri sent in the initial authorize request
+// exactly, or the token exchange fails.
+function appUrl(): string {
+  const url = process.env.NEXTAUTH_URL || process.env.APP_URL;
+  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
+  return url.replace(/\/+$/, "");
 }
 
 export async function GET(req: Request) {
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = appUrl();
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
+  const oauthError = url.searchParams.get("error");
+
+  if (oauthError) {
+    const errorCode = oauthError === "access_denied" ? "etsy_access_denied" : "etsy_authorization_failed";
+    return NextResponse.redirect(new URL(`/settings/channels?error=${errorCode}`, baseUrl));
+  }
 
   if (!code || !state) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_callback_incomplete", baseUrl));
@@ -37,7 +43,7 @@ export async function GET(req: Request) {
     (await getSetting("etsy_seller_client_id")) ||
     process.env.ETSY_CLIENT_ID ||
     process.env.ETSY_KEYSTRING ||
-    "efxloiz6kn6jhkzzbto4oz3v";
+    "";
 
   if (!clientId) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_not_configured", baseUrl));
@@ -62,15 +68,9 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_token_exchange_failed", baseUrl));
   }
 
-  // The numeric prefix of an Etsy access token is the user_id
-  const userId = accessToken.split(".")[0];
   let shopId: string;
   try {
-    const shopsRes = await axios.get(`https://openapi.etsy.com/v3/application/users/${userId}/shops`, {
-      headers: { Authorization: `Bearer ${accessToken}`, "x-api-key": clientId },
-    });
-    shopId = String(shopsRes.data.shop_id);
-    if (!shopId || shopId === "undefined") throw new Error("No shop found for this Etsy account.");
+    shopId = await resolveEtsyShopId(accessToken, clientId);
   } catch {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_no_shop_found", baseUrl));
   }

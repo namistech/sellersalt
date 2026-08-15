@@ -8,14 +8,16 @@ import { getSetting } from "@/lib/app-settings";
 
 const SCOPES = "listings_w listings_r shops_r transactions_r";
 
-function getBaseUrl(req: Request): string {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
-  const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-  if (host) {
-    return `${proto}://${host}`.replace(/\/+$/, "");
-  }
-  const fallback = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://staging.sellersalt.com";
-  return fallback.replace(/\/+$/, "");
+// Deliberately built from NEXTAUTH_URL, never from req.url/headers. Behind
+// Coolify's proxy, header-derived values can reflect the container's
+// internal address rather than the public domain — see the WooCommerce
+// connect route for the original incident this pattern was written for.
+// A redirect_uri that doesn't exactly match what's registered in Etsy's
+// app dashboard produces "The requested redirect URL is not permitted."
+function appUrl(): string {
+  const url = process.env.NEXTAUTH_URL || process.env.APP_URL;
+  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
+  return url.replace(/\/+$/, "");
 }
 
 function base64url(buf: Buffer): string {
@@ -23,7 +25,7 @@ function base64url(buf: Buffer): string {
 }
 
 export async function GET(req: Request) {
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = appUrl();
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.redirect(new URL("/login", baseUrl));
@@ -37,7 +39,7 @@ export async function GET(req: Request) {
     (await getSetting("etsy_seller_client_id")) ||
     process.env.ETSY_CLIENT_ID ||
     process.env.ETSY_KEYSTRING ||
-    "efxloiz6kn6jhkzzbto4oz3v";
+    "";
 
   if (!clientId) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_not_configured", baseUrl));

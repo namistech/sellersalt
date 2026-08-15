@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import { prisma } from "./db";
 import { encrypt } from "./encryption";
+import { resolveEtsyShopId } from "@/seller-channels/etsy-seller";
+import { getSellerChannelConnector } from "@/seller-channels/registry";
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -22,17 +24,23 @@ export const authOptions: NextAuthOptions = {
       name: "Etsy",
       type: "oauth",
       version: "2.0",
+      // Etsy's Open API v3 mandates PKCE on every authorization-code grant,
+      // confidential or not. Without checks: ["pkce"], NextAuth never
+      // generates/attaches a code_verifier, so the code_challenge_method
+      // param below was previously sent with no matching code_challenge —
+      // a malformed request Etsy could legitimately reject.
+      checks: ["pkce", "state"],
       authorization: {
         url: "https://www.etsy.com/oauth/connect",
         params: {
           scope: "listings_w listings_r shops_r transactions_r",
           response_type: "code",
-          code_challenge_method: "S256",
+          prompt: "consent",
         },
       },
       token: "https://api.etsy.com/v3/public/oauth/token",
       userinfo: "https://openapi.etsy.com/v3/application/users/me",
-      clientId: process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "efxloiz6kn6jhkzzbto4oz3v",
+      clientId: process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "",
       clientSecret: process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "",
       profile(profile: any) {
         return {
@@ -135,42 +143,48 @@ export const authOptions: NextAuthOptions = {
         (user as any).organizationId = primaryOrg?.id ?? null;
         (user as any).organizationName = primaryOrg?.name ?? null;
 
-        // If Etsy OAuth login and access token is present, auto-create/update SellerChannel
+        // If Etsy OAuth login and access token is present, auto-link the
+        // seller channel — resolving the real shop and verifying the
+        // token, same as the dedicated /settings/channels connect flow,
+        // so the two paths never disagree about what "connected" means.
         if (account.provider === "etsy" && account.access_token && primaryOrg) {
           try {
+            const apiKey = process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "";
+            const shopId = await resolveEtsyShopId(account.access_token, apiKey);
+            const storeUrl = `https://www.etsy.com/shop/${shopId}`;
             const credentials = {
               accessToken: account.access_token,
               refreshToken: account.refresh_token || "",
               expiresAt: account.expires_at ? account.expires_at * 1000 : Date.now() + 3600000,
-              shopId: (account.providerAccountId || "").split(".")[0],
-              apiKey: process.env.ETSY_CLIENT_ID || "efxloiz6kn6jhkzzbto4oz3v",
+              shopId,
+              apiKey,
             };
 
-            const existing = await prisma.sellerChannel.findFirst({
-              where: { organizationId: primaryOrg.id, platform: "ETSY_SELLER" },
-            });
-
-            if (existing) {
-              await prisma.sellerChannel.update({
-                where: { id: existing.id },
-                data: {
-                  encryptedCredentials: encrypt(JSON.stringify(credentials)),
-                  status: "ACTIVE",
-                },
-              });
-            } else {
-              await prisma.sellerChannel.create({
-                data: {
+            const connector = getSellerChannelConnector("ETSY_SELLER");
+            const test = await connector.testConnection(credentials as any, storeUrl);
+            if (test.ok) {
+              const channel = await prisma.sellerChannel.upsert({
+                where: { organizationId_storeUrl: { organizationId: primaryOrg.id, storeUrl } },
+                create: {
                   organizationId: primaryOrg.id,
                   platform: "ETSY_SELLER",
-                  label: user.name ? `${user.name}'s Etsy Shop` : "My Etsy Shop",
-                  storeUrl: "https://www.etsy.com",
+                  label: `Etsy shop ${shopId}`,
+                  storeUrl,
                   encryptedCredentials: encrypt(JSON.stringify(credentials)),
                   status: "ACTIVE",
                 },
+                update: {
+                  encryptedCredentials: encrypt(JSON.stringify(credentials)),
+                  status: "ACTIVE",
+                  lastSyncError: null,
+                },
               });
+              const { startSellerChannelSync } = await import("@/lib/queue");
+              await startSellerChannelSync(channel.id).catch(() => {});
             }
           } catch (err) {
+            // Non-fatal — the user is still signed in even if shop-linking fails.
+            // They can connect explicitly from /settings/channels afterward.
             console.error("Failed to auto-link Etsy seller channel in OAuth sign-in:", err);
           }
         }
