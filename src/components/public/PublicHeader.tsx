@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Flame, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui";
+import { useSession } from "next-auth/react";
+import { Menu, X, Flame, LayoutDashboard, ArrowRight, User } from "lucide-react";
+import { Button, Avatar } from "@/components/ui";
 
 interface PublicHeaderProps {
   currentPath?: string;
@@ -11,6 +12,8 @@ interface PublicHeaderProps {
 
 export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated" && !!session?.user;
 
   return (
     <header className="sticky top-0 z-50 bg-[#FAFAF8]/90 backdrop-blur-md border-b border-[#E3E6E0]">
@@ -64,16 +67,37 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login">
-            <Button variant="secondary" size="compact" className="text-xs px-3 py-1.5 font-medium">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/checkout?plan=PRO">
-            <Button variant="primary" size="compact" className="text-xs px-3.5 py-1.5 font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs">
-              Start $1 Trial →
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Link
+                href="/settings/profile"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line bg-white hover:bg-[#F4F3EF] text-xs font-medium text-[#141B16] transition-colors"
+              >
+                <div className="h-5 w-5 rounded-full bg-[#0E8F5D] text-white text-[10px] font-bold flex items-center justify-center">
+                  {(session.user?.name || session.user?.email || "U").substring(0, 1).toUpperCase()}
+                </div>
+                <span className="max-w-[120px] truncate">{session.user?.name || session.user?.email}</span>
+              </Link>
+              <Link href="/dashboard">
+                <Button variant="primary" size="compact" className="text-xs px-3.5 py-1.5 font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs flex items-center gap-1">
+                  <LayoutDashboard className="h-3.5 w-3.5" /> Dashboard <ArrowRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="secondary" size="compact" className="text-xs px-3 py-1.5 font-medium">
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/checkout?plan=PRO">
+                <Button variant="primary" size="compact" className="text-xs px-3.5 py-1.5 font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs">
+                  Start $1 Trial →
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Toggle Button */}
@@ -130,16 +154,26 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
           </Link>
 
           <div className="pt-3 border-t border-[#E3E6E0] flex flex-col gap-2">
-            <Link href="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="secondary" size="default" fullWidth>
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/checkout?plan=PRO" onClick={() => setMobileOpen(false)}>
-              <Button variant="primary" size="default" fullWidth className="bg-[#141B16] text-white">
-                Start $1 Trial
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
+                <Button variant="primary" size="default" fullWidth className="bg-[#0E8F5D] text-white">
+                  Go to Dashboard →
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  <Button variant="secondary" size="default" fullWidth>
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/checkout?plan=PRO" onClick={() => setMobileOpen(false)}>
+                  <Button variant="primary" size="default" fullWidth className="bg-[#141B16] text-white">
+                    Start $1 Trial
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

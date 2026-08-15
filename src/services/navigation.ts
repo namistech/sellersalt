@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Briefcase,
+  Compass,
   CreditCard,
   Eye,
   FileText,
@@ -36,6 +37,7 @@ export interface NavigationGroup {
 }
 
 const DISCOVER_ITEMS: NavigationItem[] = [
+  { id: "discovery", label: "Discovery Hub", href: "/discovery", icon: Compass },
   { id: "overview", label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { id: "radar", label: "Opportunity Radar", href: "/radar", icon: Flame },
   { id: "prospects", label: "Prospects", href: "/prospects", icon: Search },
