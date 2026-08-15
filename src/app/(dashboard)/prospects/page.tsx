@@ -66,6 +66,7 @@ export default function ProspectsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
   const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null);
 
   // Checkbox row selection for export
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -96,6 +97,10 @@ export default function ProspectsPage() {
   async function handleCreateSearch(input: Parameters<typeof createSearchConfig>[0]) {
     await createSearchConfig(input);
     setDrawerOpen(false);
+    setQueuedMessage(
+      "We're working on your query. Your research is running in the background — please check back in a minute or two."
+    );
+    setTab("saved");
     await loadAll();
   }
 
@@ -265,6 +270,12 @@ export default function ProspectsPage() {
       {loadError && (
         <Alert variant="danger" title="Couldn't load Prospects" className="mb-6">
           {loadError}
+        </Alert>
+      )}
+
+      {queuedMessage && (
+        <Alert variant="success" title="Research queued" className="mb-6" onDismiss={() => setQueuedMessage(null)}>
+          {queuedMessage}
         </Alert>
       )}
 
