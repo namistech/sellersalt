@@ -92,9 +92,6 @@ export default function ProfilePage() {
   const [totpCopied, setTotpCopied] = useState(false);
   const [codesCopied, setCodesCopied] = useState(false);
 
-  // Passkeys State
-  const [passkeyStatus, setPasskeyStatus] = useState<string | null>(null);
-
   // Deletion Modal States
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -333,12 +330,104 @@ export default function ProfilePage() {
     URL.revokeObjectURL(url);
   }
 
+  // Passkeys State
+  const [passkeys, setPasskeys] = useState<Array<{ id: string; name: string; createdAt: string }>>([]);
+  const [passkeyStatus, setPasskeyStatus] = useState<string | null>(null);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/passkeys")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.passkeys) setPasskeys(d.passkeys);
+      })
+      .catch(() => {});
+  }, []);
+
   async function handleRegisterPasskey() {
-    if (!window.PublicKeyCredential) {
-      setPasskeyStatus("Passkeys / WebAuthn is not supported by your current browser.");
-      return;
+    setPasskeyLoading(true);
+    setPasskeyStatus(null);
+    try {
+      if (!window.PublicKeyCredential) {
+        setPasskeyStatus("Passkeys / WebAuthn is not supported by your current browser.");
+        setPasskeyLoading(false);
+        return;
+      }
+
+      const initRes = await fetch("/api/settings/passkeys");
+      const initData = await initRes.json();
+
+      const challengeBuffer = Uint8Array.from(
+        atob(initData.challenge.replace(/-/g, "+").replace(/_/g, "/")),
+        (c) => c.charCodeAt(0)
+      );
+      const userIdBuffer = Uint8Array.from(
+        atob(initData.user.id.replace(/-/g, "+").replace(/_/g, "/")),
+        (c) => c.charCodeAt(0)
+      );
+
+      const credential = (await navigator.credentials.create({
+        publicKey: {
+          challenge: challengeBuffer,
+          rp: { name: "SellerSalt", id: window.location.hostname },
+          user: {
+            id: userIdBuffer,
+            name: initData.user.name,
+            displayName: initData.user.displayName,
+          },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },
+            { type: "public-key", alg: -257 },
+          ],
+          authenticatorSelection: {
+            userVerification: "preferred",
+            residentKey: "preferred",
+          },
+          timeout: 60000,
+        },
+      })) as PublicKeyCredential | null;
+
+      if (credential) {
+        const rawIdBase64 = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+        const saveRes = await fetch("/api/settings/passkeys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            credentialId: rawIdBase64,
+            name: `${navigator.platform || "Device"} Passkey`,
+          }),
+        });
+
+        const saveData = await saveRes.json();
+        if (saveData.passkeys) setPasskeys(saveData.passkeys);
+        setPasskeyStatus("Passkey successfully registered.");
+      }
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setPasskeyStatus("Passkey setup cancelled or timed out.");
+      } else {
+        setPasskeyStatus(err.message || "Passkey setup error.");
+      }
+    } finally {
+      setPasskeyLoading(false);
     }
-    setPasskeyStatus("Passkey registered for this device via WebAuthn.");
+  }
+
+  async function handleDeletePasskey(credentialId: string) {
+    if (!confirm("Remove this registered passkey?")) return;
+    try {
+      const res = await fetch("/api/settings/passkeys", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credentialId }),
+      });
+      const data = await res.json();
+      if (data.passkeys) setPasskeys(data.passkeys);
+    } catch {}
   }
 
   const initials = (name || email || "U").substring(0, 2).toUpperCase();
@@ -540,17 +629,48 @@ export default function ProfilePage() {
 
           {/* Passkeys */}
           <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex flex-col justify-between space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-white border border-line flex items-center justify-center text-purple-600 shadow-2xs">
-                  <Fingerprint className="h-5 w-5" />
+            <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-white border border-line flex items-center justify-center text-purple-600 shadow-2xs">
+                    <Fingerprint className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-ink">Passkeys (WebAuthn)</div>
+                    <div className="text-[11px] text-ink-tertiary">Touch ID, Face ID, Windows Hello, YubiKey</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-bold text-xs text-ink">Passkeys (WebAuthn)</div>
-                  <div className="text-[11px] text-ink-tertiary">Touch ID, Face ID, YubiKey</div>
-                </div>
+                <Badge variant={passkeys.length > 0 ? "success" : "neutral"}>
+                  {passkeys.length > 0 ? `${passkeys.length} Registered` : "Ready"}
+                </Badge>
               </div>
-              <Badge variant="neutral">Ready</Badge>
+
+              {/* Registered passkeys list */}
+              {passkeys.length > 0 && (
+                <div className="mt-3 space-y-1.5 max-h-36 overflow-y-auto">
+                  {passkeys.map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-2 rounded-lg bg-white border border-line-subtle flex items-center justify-between text-xs"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-semibold text-ink truncate">{p.name}</div>
+                        <div className="text-[10px] text-ink-tertiary">
+                          Added {new Date(p.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePasskey(p.id)}
+                        className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Remove Passkey"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
@@ -558,6 +678,7 @@ export default function ProfilePage() {
               <Button
                 variant="secondary"
                 size="compact"
+                loading={passkeyLoading}
                 onClick={handleRegisterPasskey}
                 className="text-xs"
               >

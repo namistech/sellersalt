@@ -63,6 +63,7 @@ export async function GET(req: Request) {
   authorizeUrl.searchParams.set("state", token);
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);
   authorizeUrl.searchParams.set("code_challenge_method", "S256");
+  authorizeUrl.searchParams.set("prompt", "consent");
 
   return NextResponse.redirect(authorizeUrl);
 }

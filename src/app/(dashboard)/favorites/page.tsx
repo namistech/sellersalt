@@ -11,6 +11,39 @@ import { fetchTrackedResearchShops, type TrackedResearchShop } from "@/services/
 import { ServiceError } from "@/services/http";
 import { buildProspectColumns } from "../prospect-columns";
 
+const CSV_COLUMNS: Array<{ key: keyof ProspectRow; label: string }> = [
+  { key: "shopName", label: "Shop" },
+  { key: "shopUrl", label: "Shop URL" },
+  { key: "shopAgeMonths", label: "Shop Age (mo)" },
+  { key: "reviewCount", label: "Reviews" },
+  { key: "activeListings", label: "Active Listings" },
+  { key: "totalSales", label: "Total Sales" },
+  { key: "avgSellingRatio", label: "Sales/Listing" },
+  { key: "estDailySales", label: "Est Daily Sales" },
+  { key: "listingTitle", label: "Listing" },
+  { key: "listingUrl", label: "Listing URL" },
+  { key: "price", label: "Price" },
+  { key: "status", label: "Status" },
+];
+
+function toCsv(rows: ProspectRow[]): string {
+  const header = CSV_COLUMNS.map((c) => c.label).join(",");
+  const body = rows
+    .map((r) => CSV_COLUMNS.map((c) => `"${String(r[c.key] ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  return `${header}\n${body}`;
+}
+
+function downloadCsv(filename: string, rows: ProspectRow[]) {
+  const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function FavoritesPage() {
   const [activeTab, setActiveTab] = useState<"products" | "shops" | "keywords">("products");
   const [productRows, setProductRows] = useState<ProspectRow[]>([]);
@@ -18,6 +51,9 @@ export default function FavoritesPage() {
   const [keywords, setKeywords] = useState<Array<{ keyword: string; count: number; estDaily: number }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Checkbox selection for Favorite Listings
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   async function loadAll() {
     setError(null);
@@ -80,6 +116,45 @@ export default function FavoritesPage() {
     }
   }
 
+  function toggleSelectRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size >= productRows.length && productRows.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(productRows.map((p) => p.id)));
+    }
+  }
+
+  function handleExportSelected() {
+    const rowsToExport =
+      selectedIds.size > 0
+        ? productRows.filter((p) => selectedIds.has(p.id))
+        : productRows;
+    downloadCsv(`sellersalt-favorite-listings-${Date.now()}.csv`, rowsToExport);
+  }
+
+  function handleExportShops() {
+    const header = "Shop Name,Shop External ID,Tracking Since";
+    const body = trackedShops
+      .map((s) => `"${s.shopName.replace(/"/g, '""')}","${s.shopExternalId}","${s.trackingSince}"`)
+      .join("\n");
+    const blob = new Blob([`${header}\n${body}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sellersalt-favorite-shops-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const columns = buildProspectColumns({
     onToggleFavorite: handleToggleFavorite,
     onStatusChange: handleStatusChange,
@@ -89,7 +164,28 @@ export default function FavoritesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Planning & Shortlists Hub"
-        description="Unified planning lists for your shortlisted Etsy products, monitored competitor shops, and high-opportunity keywords."
+        description="Unified planning lists for your favorite Etsy listings, monitored competitor shops, and high-opportunity keywords."
+        primaryAction={
+          activeTab === "products" && productRows.length > 0 ? (
+            <Button
+              variant="secondary"
+              leadingIcon={<Download className="h-4 w-4" />}
+              onClick={handleExportSelected}
+            >
+              {selectedIds.size > 0
+                ? `Export Selected (${selectedIds.size}) CSV`
+                : "Export All Listings CSV"}
+            </Button>
+          ) : activeTab === "shops" && trackedShops.length > 0 ? (
+            <Button
+              variant="secondary"
+              leadingIcon={<Download className="h-4 w-4" />}
+              onClick={handleExportShops}
+            >
+              Export Shops CSV
+            </Button>
+          ) : undefined
+        }
       />
 
       {error && (
@@ -108,7 +204,7 @@ export default function FavoritesPage() {
               : "bg-white hover:bg-[#F4F3EF] text-ink border border-line"
           }`}
         >
-          Shortlisted Products ({productRows.length})
+          Favorite Listings ({productRows.length})
         </button>
 
         <button
@@ -120,7 +216,7 @@ export default function FavoritesPage() {
               : "bg-white hover:bg-[#F4F3EF] text-ink border border-line"
           }`}
         >
-          Tracked Shops ({trackedShops.length})
+          Favorite Shops ({trackedShops.length})
         </button>
 
         <button
@@ -136,7 +232,7 @@ export default function FavoritesPage() {
         </button>
       </div>
 
-      {/* 1. SHORTLISTED PRODUCTS TAB */}
+      {/* 1. FAVORITE LISTINGS TAB */}
       {activeTab === "products" && (
         <Card padding="sm" className="border-line bg-white shadow-xs">
           <Table<ProspectRow>
@@ -145,27 +241,30 @@ export default function FavoritesPage() {
             rows={productRows}
             getRowId={(p) => p.id}
             loading={loading}
+            selectedIds={selectedIds}
+            onSelectRow={toggleSelectRow}
+            onSelectAll={toggleSelectAll}
             emptyState={
               <EmptyState
                 icon={<Star />}
-                title="No shortlisted products yet"
-                description="Star products in Opportunity Radar or Prospects to save them here for your product planning."
+                title="No favorite listings yet"
+                description="Star listings in Opportunity Radar, Prospects, or Shop Profiles to save them here."
               />
             }
           />
         </Card>
       )}
 
-      {/* 2. TRACKED SHOPS TAB */}
+      {/* 2. FAVORITE SHOPS TAB */}
       {activeTab === "shops" && (
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <Heading as="h2" size="h4">
-                Monitored Competitor Shops ({trackedShops.length})
+                Favorite & Monitored Competitor Shops ({trackedShops.length})
               </Heading>
               <Text size="body-sm" color="secondary" className="mt-0.5">
-                Competitors whose daily sales, velocity, and listing changes you are tracking.
+                Competitors whose daily sales, velocity, and catalog yield you are tracking.
               </Text>
             </div>
             <Link href="/spy">
@@ -177,14 +276,14 @@ export default function FavoritesPage() {
 
           {trackedShops.length === 0 ? (
             <div className="py-12 text-center text-xs text-ink-tertiary">
-              No shops currently tracked. Visit any Shop Profile and click <strong>+ Monitor Shop</strong>.
+              No shops currently favorited. Visit any Shop Profile and click <strong>+ Favorite Shop</strong>.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {trackedShops.map((s) => (
                 <div
                   key={s.shopExternalId}
-                  className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3 flex flex-col justify-between"
+                  className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3 flex flex-col justify-between shadow-2xs"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
@@ -227,7 +326,7 @@ export default function FavoritesPage() {
               Discovered Keyword Planning Lists ({keywords.length})
             </Heading>
             <Text size="body-sm" color="secondary" className="mt-0.5">
-              High-intent Etsy keyword clusters discovered across your search runs.
+              High-intent Etsy keyword clusters discovered across your research runs.
             </Text>
           </div>
 

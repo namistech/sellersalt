@@ -157,12 +157,12 @@ export function FloatingAssistant() {
           title={`Open ${assistantName} Copilot`}
         >
           <div className="relative">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020] shadow-sm">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020] shadow-sm">
+              <Sparkles className="h-4 w-4 animate-pulse" />
             </span>
-            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0E8F5D] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0E8F5D]"></span>
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0E8F5D] opacity-80"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#0E8F5D] border-2 border-white"></span>
             </span>
           </div>
           <span className="text-xs font-bold tracking-tight text-[#141B16]">

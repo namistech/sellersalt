@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download, Plus, Search as SearchIcon, Radar } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Button, Card, Input, Select, Alert, Tabs, Heading, Text } from "@/components/ui";
-import { Table, EmptyState, ResultsCount, FilterGroup, ActiveFilters, type Column } from "@/components/data";
+import { Button, Card, Input, Select, Alert, Tabs, Heading, Text, Badge } from "@/components/ui";
+import { Table, EmptyState, ResultsCount, ActiveFilters, type Column } from "@/components/data";
 import { fetchProspects, updateProspect, type ProspectRow, type ProspectStatus } from "@/services/prospects";
 import {
   fetchSearchConfigs,
@@ -67,9 +67,12 @@ export default function ProspectsPage() {
   const [running, setRunning] = useState<string | null>(null);
   const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
 
+  // Checkbox row selection for export
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   const [searchFilter, setSearchFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<Set<ProspectStatus>>(new Set());
-  const [sortKey, setSortKey] = useState<SortKey | undefined>(undefined);
+  const [sortKey, setSortKey] = useState<SortKey | undefined>("estDailySales");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   async function loadAll() {
@@ -88,7 +91,6 @@ export default function ProspectsPage() {
 
   useEffect(() => {
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleCreateSearch(input: Parameters<typeof createSearchConfig>[0]) {
@@ -102,7 +104,7 @@ export default function ProspectsPage() {
     try {
       await runSearch(searchConfigId);
     } catch {
-      // Surfaced generically — a queue/Redis failure here doesn't block the rest of the page.
+      // Surfaced generically
     } finally {
       setRunning(null);
       loadAll();
@@ -167,6 +169,31 @@ export default function ProspectsPage() {
     }
   }
 
+  function toggleSelectRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size >= filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((p) => p.id)));
+    }
+  }
+
+  function handleExportSelected() {
+    const rowsToExport =
+      selectedIds.size > 0
+        ? filtered.filter((p) => selectedIds.has(p.id))
+        : filtered;
+    downloadCsv(`sellersalt-prospects-${Date.now()}.csv`, rowsToExport);
+  }
+
   const columns: Column<ProspectRow>[] = buildProspectColumns({
     onToggleFavorite: handleToggleFavorite,
     onStatusChange: handleStatusChange,
@@ -181,6 +208,14 @@ export default function ProspectsPage() {
   function clearFilters() {
     setSearchFilter("all");
     setStatusFilter(new Set());
+  }
+
+  function removeFilter(key: string) {
+    if (key === "search") setSearchFilter("all");
+    if (key.startsWith("status:")) {
+      const status = key.replace("status:", "") as ProspectStatus;
+      toggleStatusFilter(status);
+    }
   }
 
   if (!loading && connectors.length === 0) {
@@ -213,14 +248,11 @@ export default function ProspectsPage() {
               <Button
                 variant="secondary"
                 leadingIcon={<Download className="h-4 w-4" />}
-                onClick={() =>
-                  window.open(
-                    `/api/prospects/export?searchConfigId=${searchFilter !== "all" ? searchFilter : ""}`,
-                    "_blank"
-                  )
-                }
+                onClick={handleExportSelected}
               >
-                Export CSV
+                {selectedIds.size > 0
+                  ? `Export Selected (${selectedIds.size}) CSV`
+                  : "Export All CSV"}
               </Button>
             )}
             <Button variant="primary" leadingIcon={<Plus className="h-4 w-4" />} onClick={() => setDrawerOpen(true)}>
@@ -238,135 +270,142 @@ export default function ProspectsPage() {
 
       <Tabs value={tab} onChange={(v) => setTab(v as "results" | "saved")}>
         <Tabs.List aria-label="Prospects views">
-          <Tabs.Trigger value="results">Results</Tabs.Trigger>
-          <Tabs.Trigger value="saved">Saved Searches</Tabs.Trigger>
+          <Tabs.Trigger value="results">Results ({filtered.length})</Tabs.Trigger>
+          <Tabs.Trigger value="saved">Saved Searches ({searchConfigs.length})</Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Panel value="results">
-          {!loading && searchConfigs.length === 0 ? (
-            <Card padding="lg" className="mt-4">
-              <EmptyState
-                icon={<SearchIcon />}
-                title="No saved searches yet"
-                description='Click "New search" to define keywords and filters — results appear here once a search runs.'
-                action={
-                  <Button variant="primary" onClick={() => setDrawerOpen(true)}>
-                    New search
-                  </Button>
-                }
-              />
-            </Card>
-          ) : (
-            <div className="mt-4 flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <Select
-                  aria-label="Filter by search"
-                  value={searchFilter}
-                  onChange={(e) => setSearchFilter(e.target.value)}
-                  options={[{ value: "all", label: "All searches" }, ...searchConfigs.map((s) => ({ value: s.id, label: s.name }))]}
-                  className="!w-auto"
-                />
-                <FilterGroup label="Status" activeSummary={statusFilter.size > 0 ? `Status (${statusFilter.size})` : undefined}>
-                  <div className="flex flex-col gap-2">
-                    {PROSPECT_STATUS_OPTIONS.map((opt) => (
-                      <label key={opt.value} className="flex items-center gap-2 text-body-sm text-ink">
-                        <input
-                          type="checkbox"
-                          checked={statusFilter.has(opt.value)}
-                          onChange={() => toggleStatusFilter(opt.value)}
-                          className="h-[18px] w-[18px] rounded-xs border-line-strong accent-accent"
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
-                </FilterGroup>
-                <ResultsCount count={filtered.length} label={filtered.length === 1 ? "prospect" : "prospects"} className="ml-auto" />
-              </div>
-              {activeFilters.length > 0 && <ActiveFilters filters={activeFilters} onRemove={() => clearFilters()} onClearAll={clearFilters} />}
-
-              <Table<ProspectRow>
-                aria-label="Prospects"
-                columns={columns}
-                rows={filtered}
-                getRowId={(p) => p.id}
-                sortKey={sortKey}
-                sortDirection={sortDir}
-                onSort={handleSort}
-                loading={loading}
-                density="compact"
-                emptyState={
-                  <EmptyState
-                    title={prospects.length === 0 ? "No results yet" : "No results for these filters"}
-                    description={
-                      prospects.length === 0
-                        ? 'Run a search from the Saved Searches tab — check the Jobs page for progress.'
-                        : "Try clearing your filters."
-                    }
-                    action={prospects.length > 0 ? <Button variant="secondary" onClick={clearFilters}>Clear filters</Button> : undefined}
-                  />
-                }
-              />
+          {/* Search Streams Filter Chips */}
+          {searchConfigs.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="text-xs font-bold text-ink-tertiary">Search Stream:</span>
+              <button
+                type="button"
+                onClick={() => setSearchFilter("all")}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  searchFilter === "all" ? "bg-[#141B16] text-white" : "bg-[#F4F3EF] text-ink hover:bg-[#E3E6E0]"
+                }`}
+              >
+                All searches
+              </button>
+              {searchConfigs.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSearchFilter(s.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                    searchFilter === s.id ? "bg-[#141B16] text-white" : "bg-[#F4F3EF] text-ink hover:bg-[#E3E6E0]"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
             </div>
           )}
+
+          {/* Status Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="text-xs font-bold text-ink-tertiary">Status:</span>
+            {PROSPECT_STATUS_OPTIONS.map((opt) => {
+              const isSelected = statusFilter.has(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => toggleStatusFilter(opt.value)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                    isSelected ? "bg-[#0E8F5D] text-white" : "bg-[#F4F3EF] text-ink hover:bg-[#E3E6E0]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mb-4 flex items-center justify-between">
+            <ResultsCount count={filtered.length} label="prospects" />
+            <ActiveFilters filters={activeFilters} onRemove={removeFilter} onClearAll={clearFilters} />
+          </div>
+
+          <Card padding="sm">
+            <Table<ProspectRow>
+              aria-label="Prospects"
+              columns={columns}
+              rows={filtered}
+              getRowId={(p) => p.id}
+              loading={loading}
+              sortKey={sortKey}
+              sortDirection={sortDir}
+              onSort={handleSort}
+              selectedIds={selectedIds}
+              onSelectRow={toggleSelectRow}
+              onSelectAll={toggleSelectAll}
+              emptyState={
+                <EmptyState
+                  icon={<SearchIcon />}
+                  title="No prospects match"
+                  description={
+                    prospects.length === 0
+                      ? "Define a search to start finding Etsy prospects matching your filters."
+                      : "Try widening your search or status filters."
+                  }
+                  action={
+                    prospects.length === 0 ? (
+                      <Button variant="primary" leadingIcon={<Plus className="h-4 w-4" />} onClick={() => setDrawerOpen(true)}>
+                        New search
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              }
+            />
+          </Card>
         </Tabs.Panel>
 
         <Tabs.Panel value="saved">
-          {loading ? (
-            <Text size="body-sm" color="secondary" className="mt-4">
-              Loading…
-            </Text>
-          ) : searchConfigs.length === 0 ? (
-            <Card padding="lg" className="mt-4">
-              <EmptyState
-                icon={<SearchIcon />}
-                title='No saved searches yet — click "New search" to create one'
-                action={
-                  <Button variant="primary" onClick={() => setDrawerOpen(true)}>
-                    New search
-                  </Button>
-                }
-              />
-            </Card>
-          ) : (
-            <div className="mt-4 flex flex-col gap-3">
-              {searchConfigs.map((s) => {
-                const resultCount = prospects.filter((p) => p.searchConfigId === s.id).length;
-                return (
-                  <Card key={s.id} padding="md">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <Heading as="h3" size="h4">
-                          {s.name}
-                        </Heading>
-                        <Text size="body-sm" color="secondary" className="mt-0.5">
-                          {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice} · {resultCount} result{resultCount === 1 ? "" : "s"}
-                        </Text>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          aria-label={`Schedule for ${s.name}`}
-                          value={scheduleFrequencyFromCron(s.scheduleCron)}
-                          disabled={savingSchedule === s.id}
-                          onChange={(e) => handleScheduleChange(s.id, e.target.value as ScheduleFrequency)}
-                          options={Object.entries(SCHEDULE_FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))}
-                          className="!w-auto"
-                        />
-                        <Button
-                          variant="secondary"
-                          leadingIcon={<Radar className="h-4 w-4" />}
-                          onClick={() => handleRun(s.id)}
-                          loading={running === s.id}
-                        >
-                          Run now
-                        </Button>
-                      </div>
+          <div className="flex flex-col gap-4">
+            {searchConfigs.map((sc) => {
+              const freq = scheduleFrequencyFromCron(sc.scheduleCron);
+              const isRunning = running === sc.id;
+              const isSavingThis = savingSchedule === sc.id;
+
+              return (
+                <Card key={sc.id} padding="md" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-ink">{sc.name}</span>
+                      <Badge variant="neutral">{sc.connector?.label ?? "Etsy"}</Badge>
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                    <div className="text-xs text-ink-secondary mt-1">
+                      Keywords: {sc.keywords.join(", ")} · Price: ${sc.minPrice}–${sc.maxPrice} · Shop age: {sc.minShopAgeMonths}–{sc.maxShopAgeMonths}mo · Min reviews: {sc.minReviewCount}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Select
+                      aria-label={`Schedule frequency for ${sc.name}`}
+                      value={freq}
+                      onChange={(e) => handleScheduleChange(sc.id, e.target.value as ScheduleFrequency)}
+                      disabled={isSavingThis}
+                      options={Object.entries(SCHEDULE_FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))}
+                      className="text-xs w-36"
+                    />
+
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={isRunning}
+                      onClick={() => handleRun(sc.id)}
+                      className="text-xs shrink-0"
+                    >
+                      Run Now
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </Tabs.Panel>
       </Tabs>
 
