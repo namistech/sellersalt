@@ -233,6 +233,16 @@ git history / commit messages for the specific incidents each one fixed):
   no-op toggle) via a two-step credentials flow. Regenerate/copy backup
   codes and a real disable-confirmation (password or code required) were
   added — didn't exist before.
+- **Email confirmation** (2026-08-16) — signup already sent a real
+  verification email and a resend page already existed, but nothing
+  persisted whether a user actually confirmed: the token-verify route
+  only marked the token used, with no field anywhere to record it.
+  Added `User.emailVerified` (migration
+  `20260815201102_add_user_email_verified`, applied to staging,
+  existing accounts backfilled to "verified at signup" so this only
+  gates new signups). The verify route now actually sets it; the
+  dashboard shows a non-dismissible alert with a working resend button
+  until it's set.
 
 **Billing — real, not just credential storage**:
 - Stripe: fully dynamic Checkout Sessions (inline `price_data`, no
