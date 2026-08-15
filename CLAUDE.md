@@ -260,9 +260,13 @@ git history / commit messages for the specific incidents each one fixed):
   they need to be manually registered in Stripe's and PayPal's dashboards
   before a real purchase will actually update someone's plan. **Do this
   before testing a real checkout end-to-end.**
-- Safepay/PayFast — credential storage only, no checkout logic (Stripe/
-  PayPal were built first per founder priority; same shared
-  `Subscription`/webhook framework is ready for them when it's time)
+- Safepay/PayFast — checkout logic actually exists (`src/lib/payment-
+  providers/{safepay,payfast}-client.ts`, wired into
+  `/api/billing/checkout`) — a prior version of this file's claim that
+  it was "credential storage only" was stale. What's still missing: a
+  lightweight live test-connection ping for either (the admin UI's
+  "Test Connection" button only validates required fields are present
+  for these two, unlike Stripe/PayPal which do a real API call).
 - Chrome extension, AI assistant, eBay research connector, category
   leaderboards, audit log, mobile-responsive pass, automated backups
 - Real Privacy Policy/Terms pages (still `mailto:` placeholders — a real
@@ -273,6 +277,25 @@ git history / commit messages for the specific incidents each one fixed):
   OAuth scopes decided: `read_products,write_products,read_inventory,
   write_inventory,read_locations,read_orders,read_customers`), architecture
   question (shared backend vs. separate) still open, nothing built
+- **Google Sheets export** — real Sheets v4 API call exists
+  (`src/services/connectors/google-sheets.ts`) but has no UI entry
+  point anywhere in the app and no OAuth flow ever requests Sheets
+  write scope, so it's unreachable in practice. Was also silently
+  fake-succeeding on failure (fixed to report real errors instead —
+  see 2026-08-16 completion pass). CSV export covers this need today.
+- **Google (login) OAuth admin config** — client ID/secret are env-var
+  only, unlike every other integration in this app. Deliberate: making
+  it AppSetting-backed would require restructuring NextAuth's
+  `authOptions` (currently a static module export) to build per-
+  request, a real risk to the most sensitive code path for a
+  credential that rarely changes.
+- **"App research"** — referenced in the 2026-08-16 master completion
+  pass instructions but not defined anywhere in this file or `docs/`.
+  Needs founder clarification before anything is built for it.
+- **`app_name`/`app_logo_url` propagation** — admin can edit these,
+  but only a few surfaces actually read them (root `<title>`/SEO meta
+  now does, as of 2026-08-16). Header, sidebar, and most page titles
+  are still hardcoded "SellerSalt" — a real but large sweep, not done.
 
 ## Known scaling constraint (not solved, just flagged)
 
@@ -328,6 +351,26 @@ Every customer shares one Etsy Personal Access connector — 5 req/sec,
    `https://sellersalt.com` and `https://staging.sellersalt.com`. This is
    an Etsy-dashboard-side config step outside the codebase — verify it's
    done before testing either flow end-to-end.
+6. **Public data leak (2026-08-16)**: the unauthenticated `/shops`
+   directory page queried `prisma.prospect.findMany()` with **no
+   `organizationId` filter at all** — every customer's own paid
+   research (specific shops/keywords they searched for) was visible to
+   any anonymous visitor, including their competitors. Confirmed as an
+   oversight, not a design choice. Fixed by scoping the query to admin-
+   owned organizations only (resolved via the `ADMIN_EMAILS` allowlist
+   → their org memberships). If a future public "showcase" page pulls
+   from `Prospect` again, scope it the same way — never query that
+   table without an `organizationId` filter on a route that doesn't
+   require a session.
+7. **Admin backend/frontend drift**: a recurring pattern found across
+   the 2026-08-16 completion pass — Organizations, Packages, and Email
+   Settings all had fully real PATCH/POST/test API routes with **zero**
+   frontend calling them (Users had neither side). The Payments admin
+   tab was worse: entirely hardcoded fake JSX (`••••••••_live_99f2`, a
+   permanent "✓ Platform Connected" badge) with no connection to the
+   real state already being fetched. When auditing a feature that looks
+   done, check both sides independently — a working-looking admin panel
+   is not evidence the buttons in it do anything.
 
 ## How to work efficiently in this project
 
