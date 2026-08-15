@@ -221,9 +221,20 @@ export function AdminPackagesClient() {
   const [providerTestResult, setProviderTestResult] = useState<Record<string, string>>({});
   const [pendingLiveConfirm, setPendingLiveConfirm] = useState<string | null>(null);
 
+  // SMTP / email provider settings
+  const [emailSettings, setEmailSettings] = useState<{
+    id?: string; host: string; port: number; secure: boolean; username: string;
+    fromEmail: string; fromName: string; isActive: boolean; hasPassword: boolean; updatedAt?: string;
+  } | null>(null);
+  const [emailSettingsDraft, setEmailSettingsDraft] = useState<Record<string, string>>({});
+  const [emailSettingsSaving, setEmailSettingsSaving] = useState(false);
+  const [emailSettingsResult, setEmailSettingsResult] = useState<string | null>(null);
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<string | null>(null);
+
   async function loadAll() {
     try {
-      const [mRes, pRes, oRes, cRes, payRes, setRes, tmplRes] = await Promise.all([
+      const [mRes, pRes, oRes, cRes, payRes, setRes, tmplRes, emailRes] = await Promise.all([
         fetch("/api/admin/metrics"),
         fetch("/api/admin/packages"),
         fetch("/api/admin/organizations"),
@@ -231,9 +242,10 @@ export function AdminPackagesClient() {
         fetch("/api/admin/payment-providers"),
         fetch("/api/admin/settings"),
         fetch("/api/admin/email-templates"),
+        fetch("/api/admin/email-settings"),
       ]);
 
-      const [mData, pData, oData, cData, payData, setData, tmplData] = await Promise.all([
+      const [mData, pData, oData, cData, payData, setData, tmplData, emailData] = await Promise.all([
         mRes.json(),
         pRes.json(),
         oRes.json(),
@@ -241,6 +253,7 @@ export function AdminPackagesClient() {
         payRes.json(),
         setRes.json(),
         tmplRes.json(),
+        emailRes.json(),
       ]);
 
       if (mData.metrics) setMetrics(mData.metrics);
@@ -258,6 +271,9 @@ export function AdminPackagesClient() {
       }
       if (tmplData.templates) {
         setEmailTemplates(tmplData.templates);
+      }
+      if (emailData.settings !== undefined) {
+        setEmailSettings(emailData.settings);
       }
     } finally {
       setLoading(false);
@@ -512,6 +528,56 @@ export function AdminPackagesClient() {
       setProviderTestResult((prev) => ({ ...prev, [providerRow.provider]: "✗ Network error." }));
     } finally {
       setProviderSaving(null);
+    }
+  }
+
+  async function handleSaveEmailSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailSettingsSaving(true);
+    setEmailSettingsResult(null);
+    try {
+      const body: Record<string, unknown> = {
+        host: emailSettingsDraft.host ?? emailSettings?.host,
+        port: Number(emailSettingsDraft.port ?? emailSettings?.port ?? 587),
+        secure: (emailSettingsDraft.secure ?? String(emailSettings?.secure ?? false)) === "true",
+        username: emailSettingsDraft.username ?? emailSettings?.username,
+        fromEmail: emailSettingsDraft.fromEmail ?? emailSettings?.fromEmail,
+        fromName: emailSettingsDraft.fromName ?? emailSettings?.fromName ?? "SellerSalt",
+        isActive: (emailSettingsDraft.isActive ?? String(emailSettings?.isActive ?? true)) === "true",
+      };
+      if (emailSettingsDraft.password) body.password = emailSettingsDraft.password;
+
+      const res = await fetch("/api/admin/email-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailSettingsResult(data.error || "Could not save email settings.");
+        return;
+      }
+      setEmailSettingsDraft({});
+      setEmailSettingsResult("Saved.");
+      await loadAll();
+    } catch {
+      setEmailSettingsResult("Network error.");
+    } finally {
+      setEmailSettingsSaving(false);
+    }
+  }
+
+  async function handleTestSmtp() {
+    setSmtpTesting(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch("/api/admin/email-settings/test", { method: "POST" });
+      const data = await res.json();
+      setSmtpTestResult(res.ok ? "✓ Test email sent — check your inbox." : `✗ ${data.error || "Failed to send."}`);
+    } catch {
+      setSmtpTestResult("✗ Network error.");
+    } finally {
+      setSmtpTesting(false);
     }
   }
 
@@ -1223,7 +1289,117 @@ export function AdminPackagesClient() {
 
       {/* 7. EMAIL & 15 LIFECYCLE TEMPLATES */}
       {activeTab === "email" && (
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
+        <div className="space-y-6">
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Heading as="h2" size="h4">SMTP / Email Provider</Heading>
+                <Text size="body-sm" color="secondary" className="mt-0.5">
+                  Configure the outbound mail server used for transactional and lifecycle emails.
+                </Text>
+              </div>
+              {emailSettings && (
+                <Badge variant={emailSettings.isActive ? "success" : "neutral"}>
+                  {emailSettings.isActive ? "Active" : "Inactive"}
+                </Badge>
+              )}
+            </div>
+
+            <form onSubmit={handleSaveEmailSettings} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Host</label>
+                <input
+                  required
+                  value={emailSettingsDraft.host ?? emailSettings?.host ?? ""}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, host: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                  placeholder="smtp.titan.email"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Port</label>
+                <input
+                  required
+                  type="number"
+                  value={emailSettingsDraft.port ?? emailSettings?.port ?? 587}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, port: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Encryption</label>
+                <select
+                  value={emailSettingsDraft.secure ?? String(emailSettings?.secure ?? false)}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, secure: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5 bg-white"
+                >
+                  <option value="true">SSL/TLS (secure)</option>
+                  <option value="false">STARTTLS</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Username</label>
+                <input
+                  required
+                  value={emailSettingsDraft.username ?? emailSettings?.username ?? ""}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, username: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                  placeholder="notifications@sellersalt.com"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Password</label>
+                <input
+                  type="password"
+                  value={emailSettingsDraft.password ?? ""}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, password: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                  placeholder={emailSettings?.hasPassword ? "••••••••" : "Required"}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">From Email</label>
+                <input
+                  required
+                  type="email"
+                  value={emailSettingsDraft.fromEmail ?? emailSettings?.fromEmail ?? ""}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, fromEmail: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-ink-tertiary uppercase">From Name</label>
+                <input
+                  value={emailSettingsDraft.fromName ?? emailSettings?.fromName ?? "SellerSalt"}
+                  onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, fromName: e.target.value }))}
+                  className="w-full text-xs border border-line rounded px-2 py-1.5"
+                />
+              </div>
+              <div className="flex items-end gap-2 col-span-2 sm:col-span-1">
+                <label className="flex items-center gap-1.5 text-xs text-ink-secondary">
+                  <input
+                    type="checkbox"
+                    checked={(emailSettingsDraft.isActive ?? String(emailSettings?.isActive ?? true)) === "true"}
+                    onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, isActive: String(e.target.checked) }))}
+                  />
+                  Active
+                </label>
+              </div>
+
+              <div className="col-span-2 sm:col-span-3 flex items-center gap-2 pt-1">
+                <Button type="submit" variant="primary" size="compact" loading={emailSettingsSaving} className="text-xs bg-[#0E8F5D] hover:bg-[#0C7A52]">
+                  Save
+                </Button>
+                <Button type="button" variant="secondary" size="compact" loading={smtpTesting} disabled={!emailSettings} onClick={handleTestSmtp} className="text-xs">
+                  Send Test Email
+                </Button>
+                {emailSettingsResult && <span className="text-[11px] text-ink-secondary">{emailSettingsResult}</span>}
+                {smtpTestResult && <span className="text-[11px] text-ink-secondary">{smtpTestResult}</span>}
+              </div>
+            </form>
+          </Card>
+
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
           <div>
             <Heading as="h2" size="h4">
               Email System & 15 Lifecycle Templates Registry
@@ -1306,6 +1482,7 @@ export function AdminPackagesClient() {
             </div>
           </div>
         </Card>
+        </div>
       )}
 
       {/* 8. APP BRANDING & SEO CONFIGURATION */}
