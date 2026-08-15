@@ -11,6 +11,11 @@ import {
   RefreshCw,
   ChevronUp,
   Bot,
+  Maximize2,
+  Minimize2,
+  Trash2,
+  Flame,
+  TrendingUp,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui";
 import type { AssistantMessage } from "@/services/assistant/types";
@@ -31,6 +36,8 @@ const SUGGESTED_CHIPS = [
 export function FloatingAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [assistantName, setAssistantName] = useState("SaltBot");
   const [inputQuery, setInputQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,16 +47,25 @@ export function FloatingAssistant() {
       id: "initial_1",
       sender: "assistant",
       intent: "HELP",
-      text: "Hi! I am your Etsy Research Assistant. I can scan your market opportunities, audit competitor sales velocity, and prioritize today's research agenda.",
+      text: "Hi! I am SaltBot, your Etsy Intelligence Copilot. I can scan your market opportunities, audit competitor sales velocity, and prioritize today's research agenda.",
       timestamp: new Date().toISOString(),
     },
   ]);
 
   useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.assistantName) setAssistantName(d.assistantName);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (isOpen && !isMinimized) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isOpen, isMinimized]);
+  }, [messages, isOpen, isMinimized, isFullscreen]);
 
   async function handleSendQuery(queryToSend?: string) {
     const text = (queryToSend || inputQuery).trim();
@@ -99,6 +115,18 @@ export function FloatingAssistant() {
     }
   }
 
+  function handleClearChat() {
+    setMessages([
+      {
+        id: `initial_${Date.now()}`,
+        sender: "assistant",
+        intent: "HELP",
+        text: `Chat reset. What would you like to investigate today on Etsy?`,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+  }
+
   return (
     <>
       {/* Floating Launcher Button */}
@@ -109,39 +137,49 @@ export function FloatingAssistant() {
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 bg-[#141B16] hover:bg-[#0E8F5D] text-white rounded-full shadow-lg border border-[#0E8F5D]/30 transition-all transform hover:scale-105 group"
-          title="Open Etsy Research Copilot"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 bg-white hover:bg-[#FAFAF8] text-[#141B16] rounded-full shadow-lg border border-[#E3E6E0] hover:border-[#0E8F5D] transition-all transform hover:scale-105 group"
+          title={`Open ${assistantName} Copilot`}
         >
           <div className="relative">
-            <Sparkles className="h-5 w-5 text-[#FFB020] animate-pulse" />
-            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020]">
+              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            </span>
+            <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0E8F5D] opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0E8F5D]"></span>
             </span>
           </div>
-          <span className="text-xs font-bold tracking-tight">Ask Assistant</span>
+          <span className="text-xs font-bold tracking-tight text-[#141B16]">
+            Ask {assistantName}
+          </span>
         </button>
       )}
 
-      {/* Floating Support-Chat Window */}
+      {/* Floating or Fullscreen Support-Chat Window */}
       {isOpen && (
         <div
-          className={`fixed bottom-6 right-6 z-50 bg-white rounded-2xl border border-line shadow-2xl transition-all overflow-hidden flex flex-col ${
-            isMinimized
-              ? "w-72 h-14"
-              : "w-[92vw] sm:w-[420px] h-[580px] max-h-[85vh]"
+          className={`fixed z-50 bg-white shadow-2xl transition-all overflow-hidden flex flex-col ${
+            isFullscreen
+              ? "inset-4 sm:inset-8 rounded-2xl border border-line"
+              : isMinimized
+              ? "bottom-6 right-6 w-80 h-14 rounded-2xl border border-line"
+              : "bottom-6 right-6 w-[92vw] sm:w-[480px] h-[640px] max-h-[88vh] rounded-2xl border border-line"
           }`}
         >
           {/* Header */}
-          <div className="px-4 py-3 bg-[#141B16] text-white flex items-center justify-between shrink-0 select-none">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="h-7 w-7 rounded-lg bg-[#0E8F5D]/20 border border-[#0E8F5D]/40 flex items-center justify-center text-[#FFB020]">
+          <div className="px-4 py-3.5 bg-[#141B16] text-white flex items-center justify-between shrink-0 select-none">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-[#0E8F5D]/20 border border-[#0E8F5D]/40 flex items-center justify-center text-[#FFB020]">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-bold truncate">Etsy Intelligence Copilot</div>
-                <div className="text-[10px] text-[#AEB4AC] flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D]" /> Local Engine + AI Fallback
+                <div className="text-xs font-extrabold truncate flex items-center gap-1.5">
+                  <span>{assistantName}</span>
+                  <span className="text-[10px] font-normal text-[#AEB4AC]">Etsy Copilot</span>
+                </div>
+                <div className="text-[10px] text-[#AEB4AC] flex items-center gap-1.5 mt-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D] inline-block" />
+                  <span>Deterministic Engine + AI Multi-LLM</span>
                 </div>
               </div>
             </div>
@@ -149,16 +187,43 @@ export function FloatingAssistant() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="p-1 rounded text-white/70 hover:text-white hover:bg-white/10"
+                onClick={handleClearChat}
+                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                title="Clear conversation"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+
+              {!isMinimized && (
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                  title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Workspace"}
+                >
+                  {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (isFullscreen) setIsFullscreen(false);
+                  setIsMinimized(!isMinimized);
+                }}
+                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
                 title={isMinimized ? "Expand" : "Minimize"}
               >
                 {isMinimized ? <ChevronUp className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
               </button>
+
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
-                className="p-1 rounded text-white/70 hover:text-white hover:bg-white/10"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsFullscreen(false);
+                }}
+                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
                 title="Close"
               >
                 <X className="h-4 w-4" />
@@ -179,13 +244,13 @@ export function FloatingAssistant() {
                       className={`flex gap-2.5 ${isUser ? "justify-end" : "justify-start"}`}
                     >
                       {!isUser && (
-                        <div className="h-6 w-6 rounded-full bg-[#141B16] text-[#0E8F5D] flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="h-3.5 w-3.5" />
+                        <div className="h-7 w-7 rounded-full bg-[#141B16] text-[#0E8F5D] flex items-center justify-center shrink-0 mt-0.5">
+                          <Bot className="h-4 w-4" />
                         </div>
                       )}
 
                       <div
-                        className={`max-w-[85%] rounded-xl p-3 shadow-2xs ${
+                        className={`max-w-[85%] rounded-xl p-3.5 shadow-2xs ${
                           isUser
                             ? "bg-[#141B16] text-white"
                             : "bg-white border border-line text-ink"
@@ -201,7 +266,7 @@ export function FloatingAssistant() {
                             {msg.cards.map((card) => (
                               <div
                                 key={card.id}
-                                className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle space-y-1.5"
+                                className="p-3 rounded-lg bg-[#FAFAF8] border border-line-subtle space-y-2"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="font-bold text-xs text-ink truncate">
@@ -229,9 +294,9 @@ export function FloatingAssistant() {
                                 )}
 
                                 {card.metrics && (
-                                  <div className="grid grid-cols-2 gap-1 pt-1 text-[10px] font-mono">
+                                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-mono">
                                     {card.metrics.map((m, idx) => (
-                                      <div key={idx} className="bg-white p-1 rounded border border-line">
+                                      <div key={idx} className="bg-white p-1.5 rounded border border-line">
                                         <span className="text-ink-tertiary">{m.label}: </span>
                                         <span className="font-bold text-ink">{m.value}</span>
                                       </div>
@@ -263,9 +328,9 @@ export function FloatingAssistant() {
                 })}
 
                 {loading && (
-                  <div className="flex items-center gap-2 text-ink-tertiary text-xs py-1">
+                  <div className="flex items-center gap-2 text-ink-tertiary text-xs py-1.5">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#0E8F5D]" />
-                    <span>Analyzing research data...</span>
+                    <span>{assistantName} is analyzing real Etsy data...</span>
                   </div>
                 )}
 
@@ -273,14 +338,14 @@ export function FloatingAssistant() {
               </div>
 
               {/* Quick Suggestion Chips */}
-              <div className="p-2 bg-white border-t border-line overflow-x-auto whitespace-nowrap scrollbar-none flex gap-1.5">
+              <div className="p-2.5 bg-white border-t border-line overflow-x-auto whitespace-nowrap scrollbar-none flex gap-1.5">
                 {SUGGESTED_CHIPS.map((chip, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleSendQuery(chip)}
                     disabled={loading}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#F4F3EF] hover:bg-[#E7FAF1] text-[11px] font-medium text-ink hover:text-[#0E8F5D] border border-line transition-colors shrink-0"
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#F4F3EF] hover:bg-[#E7FAF1] text-[11px] font-medium text-ink hover:text-[#0E8F5D] border border-line transition-colors shrink-0"
                   >
                     <Sparkles className="h-2.5 w-2.5 text-[#FFB020]" />
                     {chip}
@@ -299,7 +364,7 @@ export function FloatingAssistant() {
                 <Input
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
-                  placeholder="Ask about opportunities, competitors, or daily agenda..."
+                  placeholder={`Ask ${assistantName} about winning products, shops, or keywords...`}
                   className="text-xs"
                   disabled={loading}
                 />
@@ -308,7 +373,7 @@ export function FloatingAssistant() {
                   variant="primary"
                   size="compact"
                   disabled={!inputQuery.trim() || loading}
-                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] shrink-0"
+                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] shrink-0 font-semibold"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </Button>

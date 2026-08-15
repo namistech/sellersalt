@@ -115,11 +115,13 @@ export function ContactClient() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 options={[
-                  { value: "General Product Question", label: "General Product Question" },
-                  { value: "Opportunity Radar & Research Data", label: "Opportunity Radar & Research Data" },
-                  { value: "Billing, Plans & Trials", label: "Billing, Plans & Trials" },
-                  { value: "Bug Report or Technical Issue", label: "Bug Report or Technical Issue" },
-                  { value: "Agency & Multi-Seat Workspaces", label: "Agency & Multi-Seat Workspaces" },
+                  { value: "Account & 2FA Security", label: "Account & 2FA Security" },
+                  { value: "Billing, Plans & $1 Trials", label: "Billing, Plans & $1 Trials" },
+                  { value: "Etsy Store Connection & OAuth", label: "Etsy Store Connection & OAuth" },
+                  { value: "Opportunity Research & Radar", label: "Opportunity Research & Radar" },
+                  { value: "Data Exports (CSV / Google Sheets)", label: "Data Exports (CSV / Google Sheets)" },
+                  { value: "SaltBot AI Intelligence Assistant", label: "SaltBot AI Intelligence Assistant" },
+                  { value: "Technical Bug or Feedback", label: "Technical Bug or Feedback" },
                 ]}
               />
 

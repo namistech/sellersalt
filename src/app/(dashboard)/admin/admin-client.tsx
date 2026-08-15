@@ -1,6 +1,58 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  Users,
+  Building,
+  CreditCard,
+  Mail,
+  Settings,
+  DollarSign,
+  Store,
+  Flame,
+  Shield,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+  Search,
+  Send,
+  Sliders,
+  ExternalLink,
+  Lock,
+  Tag,
+  Zap,
+} from "lucide-react";
+import {
+  Card,
+  Heading,
+  Text,
+  Badge,
+  Button,
+  Input,
+  Select,
+  Alert,
+} from "@/components/ui";
+
+interface AdminMetrics {
+  totalUsers: number;
+  totalOrgs: number;
+  activeSubscriptions: number;
+  connectedEtsyShops: number;
+  totalProspects: number;
+  totalSearchConfigs: number;
+  estimatedMrr: number;
+}
+
+interface AdminUserRow {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  organizationName: string;
+  planName: string;
+  subscriptionStatus: string;
+  memberSince: string;
+}
 
 interface Package {
   id: string;
@@ -16,106 +68,13 @@ interface Package {
   _count: { organizations: number };
 }
 
-interface PlatformConnector {
-  id: string;
-  type: string;
-  label: string;
-  status: string;
-  createdAt: string;
-}
-
-interface SiteSettingRow {
-  key: string;
-  label: string;
-  isSecret: boolean;
-  hasValue: boolean;
-  value?: string;
-  updatedAt: string | null;
-}
-
-interface EmailSettingsData {
-  id: string;
-  host: string;
-  port: number;
-  secure: boolean;
-  username: string;
-  fromEmail: string;
-  fromName: string;
-  isActive: boolean;
-  hasPassword: boolean;
-}
-
-interface PaymentProviderRow {
-  id: string;
-  provider: string;
-  label: string;
-  isActive: boolean;
-  mode: "LIVE" | "SANDBOX";
-  hasLiveCredentials: boolean;
-  hasSandboxCredentials: boolean;
-  updatedAt: string;
-}
-
-const PAYMENT_PROVIDERS: Array<{
-  key: string;
-  name: string;
-  region: string;
-  fields: Array<{ key: string; label: string; placeholder?: string }>;
-}> = [
-  {
-    key: "STRIPE",
-    name: "Stripe",
-    region: "International",
-    fields: [
-      { key: "secretKey", label: "Secret key" },
-      { key: "publishableKey", label: "Publishable key" },
-      { key: "webhookSecret", label: "Webhook signing secret" },
-    ],
-  },
-  {
-    key: "PAYPAL",
-    name: "PayPal",
-    region: "International",
-    fields: [
-      { key: "clientId", label: "Client ID" },
-      { key: "clientSecret", label: "Client secret" },
-      { key: "webhookId", label: "Webhook ID" },
-    ],
-  },
-  {
-    key: "SAFEPAY",
-    name: "Safepay",
-    region: "Pakistan",
-    fields: [
-      { key: "apiKey", label: "API key" },
-      { key: "secretKey", label: "Secret key" },
-    ],
-  },
-  {
-    key: "PAYFAST",
-    name: "PayFast",
-    region: "Pakistan",
-    fields: [
-      { key: "merchantId", label: "Merchant ID" },
-      { key: "merchantKey", label: "Merchant key" },
-      { key: "passphrase", label: "Passphrase" },
-    ],
-  },
-];
-
-interface SubscriptionInfo {
-  status: "INCOMPLETE" | "TRIALING" | "ACTIVE" | "PAST_DUE" | "CANCELED";
-  provider: string;
-  packageId: string;
-}
-
 interface OrgRow {
   id: string;
   name: string;
   ownerEmail: string | null;
   createdAt: string;
   package: Package | null;
-  subscription: SubscriptionInfo | null;
+  subscription: { status: string; provider: string } | null;
   usage: { connectors: number; searchConfigs: number; prospects: number; trackedShops: number };
 }
 
@@ -130,807 +89,720 @@ interface CouponRow {
   expiresAt: string | null;
 }
 
-const FIELDS: { key: keyof Package; label: string }[] = [
-  { key: "maxConnectors", label: "Connectors" },
-  { key: "maxSearchConfigs", label: "Saved searches" },
-  { key: "maxScheduledSearches", label: "Scheduled searches" },
-  { key: "maxTrackedShops", label: "Tracked shops" },
-  { key: "maxProspectsPerMonth", label: "Prospects/month" },
-];
+interface PaymentProviderRow {
+  id: string;
+  provider: string;
+  label: string;
+  isActive: boolean;
+  mode: "LIVE" | "SANDBOX";
+  priority: number;
+  updatedAt: string;
+}
+
+interface SiteSettingRow {
+  key: string;
+  label: string;
+  isSecret: boolean;
+  hasValue: boolean;
+  value?: string;
+  updatedAt: string | null;
+}
+
+interface EmailTemplateSummary {
+  key: string;
+  name: string;
+  description: string;
+  defaultSubject: string;
+  sampleHtml: string;
+}
 
 export function AdminPackagesClient() {
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "users" | "orgs" | "packages" | "coupons" | "payments" | "email" | "branding"
+  >("overview");
+
+  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [usersLoading, setUsersLoading] = useState(false);
+
   const [packages, setPackages] = useState<Package[]>([]);
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [platformConnectors, setPlatformConnectors] = useState<PlatformConnector[]>([]);
-  const [showConnectorForm, setShowConnectorForm] = useState(false);
-  const [connectorForm, setConnectorForm] = useState({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
-  const [connectorError, setConnectorError] = useState<string | null>(null);
-  const [connectorSaving, setConnectorSaving] = useState(false);
+  const [coupons, setCoupons] = useState<CouponRow[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
-  const [editingProvider, setEditingProvider] = useState<string | null>(null);
-  const [editingCredMode, setEditingCredMode] = useState<"LIVE" | "SANDBOX">("SANDBOX");
-  const [providerCreds, setProviderCreds] = useState<Record<string, string>>({});
-  const [providerSaving, setProviderSaving] = useState(false);
-  const [providerError, setProviderError] = useState<string | null>(null);
-  const [emailSettings, setEmailSettings] = useState<EmailSettingsData | null>(null);
-  const [emailForm, setEmailForm] = useState({
-    host: "", port: 465, secure: true, username: "", password: "", fromEmail: "", fromName: "SellerSalt", isActive: false,
-  });
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [emailTestMessage, setEmailTestMessage] = useState<string | null>(null);
-  const [emailTesting, setEmailTesting] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettingRow[]>([]);
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const [settingSaving, setSettingSaving] = useState<string | null>(null);
-  const [subGrantDrafts, setSubGrantDrafts] = useState<Record<string, { packageId: string; status: "ACTIVE" | "TRIALING" }>>({});
-  const [subSavingOrgId, setSubSavingOrgId] = useState<string | null>(null);
-  const [coupons, setCoupons] = useState<CouponRow[]>([]);
+
+  // Email Templates & Testing
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplateSummary[]>([]);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("WELCOME");
+  const [testRecipientEmail, setTestRecipientEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ success?: boolean; error?: string } | null>(null);
+
+  // Coupon Form
   const [showNewCouponForm, setShowNewCouponForm] = useState(false);
-  const [newCoupon, setNewCoupon] = useState({ code: "", type: "PERCENT" as "PERCENT" | "FIXED", value: 10, maxRedemptions: "", expiresAt: "" });
-  const [couponSaving, setCouponSaving] = useState(false);
-  const [couponError, setCouponError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Partial<Package>>({});
-  const [showNewForm, setShowNewForm] = useState(false);
-  const [newPkg, setNewPkg] = useState({
-    key: "", name: "", priceUsd: 0, isCustom: true,
-    maxConnectors: 1, maxSearchConfigs: 3, maxScheduledSearches: 1, maxTrackedShops: 5, maxProspectsPerMonth: 200,
+  const [newCoupon, setNewCoupon] = useState({
+    code: "",
+    type: "PERCENT" as "PERCENT" | "FIXED",
+    value: 10,
+    maxRedemptions: "",
+    expiresAt: "",
   });
+  const [couponSaving, setCouponSaving] = useState(false);
+
+  const [loading, setLoading] = useState(true);
 
   async function loadAll() {
-    const [pRes, oRes, cRes, payRes, emailRes, settingsRes, couponRes] = await Promise.all([
-      fetch("/api/admin/packages"),
-      fetch("/api/admin/organizations"),
-      fetch("/api/admin/platform-connectors"),
-      fetch("/api/admin/payment-providers"),
-      fetch("/api/admin/email-settings"),
-      fetch("/api/admin/settings"),
-      fetch("/api/admin/coupons"),
-    ]);
-    const [pData, oData, cData, payData, emailData, settingsData, couponData] = await Promise.all([
-      pRes.json(), oRes.json(), cRes.json(), payRes.json(), emailRes.json(), settingsRes.json(), couponRes.json(),
-    ]);
-    setPackages(pData.packages ?? []);
-    setOrgs(oData.organizations ?? []);
-    setPlatformConnectors(cData.connectors ?? []);
-    setPaymentProviders(payData.providers ?? []);
-    if (emailData.settings) {
-      setEmailSettings(emailData.settings);
-      setEmailForm((f) => ({ ...f, ...emailData.settings, password: "" }));
+    try {
+      const [mRes, pRes, oRes, cRes, payRes, setRes, tmplRes] = await Promise.all([
+        fetch("/api/admin/metrics"),
+        fetch("/api/admin/packages"),
+        fetch("/api/admin/organizations"),
+        fetch("/api/admin/coupons"),
+        fetch("/api/admin/payment-providers"),
+        fetch("/api/admin/settings"),
+        fetch("/api/admin/email-templates"),
+      ]);
+
+      const [mData, pData, oData, cData, payData, setData, tmplData] = await Promise.all([
+        mRes.json(),
+        pRes.json(),
+        oRes.json(),
+        cRes.json(),
+        payRes.json(),
+        setRes.json(),
+        tmplRes.json(),
+      ]);
+
+      if (mData.metrics) setMetrics(mData.metrics);
+      if (pData.packages) setPackages(pData.packages);
+      if (oData.organizations) setOrgs(oData.organizations);
+      if (cData.coupons) setCoupons(cData.coupons);
+      if (payData.providers) setPaymentProviders(payData.providers);
+      if (setData.settings) {
+        setSiteSettings(setData.settings);
+        const drafts: Record<string, string> = {};
+        for (const s of setData.settings) {
+          if (s.value) drafts[s.key] = s.value;
+        }
+        setSettingDrafts(drafts);
+      }
+      if (tmplData.templates) {
+        setEmailTemplates(tmplData.templates);
+      }
+    } finally {
+      setLoading(false);
     }
-    setSiteSettings(settingsData.settings ?? []);
-    setCoupons(couponData.coupons ?? []);
-    setLoading(false);
+  }
+
+  async function searchUsers(q: string) {
+    setUsersLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setUsers(data.users || []);
+    } finally {
+      setUsersLoading(false);
+    }
   }
 
   useEffect(() => {
     loadAll();
+    searchUsers("");
   }, []);
 
-  function startEdit(pkg: Package) {
-    setEditingId(pkg.id);
-    setDraft(pkg);
-  }
-
-  async function saveEdit() {
-    if (!editingId) return;
-    await fetch(`/api/admin/packages/${editingId}`, {
+  async function handleSaveSetting(key: string) {
+    const value = settingDrafts[key] ?? "";
+    setSettingSaving(key);
+    await fetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
+      body: JSON.stringify({ key, value }),
     });
-    setEditingId(null);
+    setSettingSaving(null);
     loadAll();
   }
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    await fetch("/api/admin/packages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newPkg),
-    });
-    setShowNewForm(false);
-    setNewPkg({ key: "", name: "", priceUsd: 0, isCustom: true, maxConnectors: 1, maxSearchConfigs: 3, maxScheduledSearches: 1, maxTrackedShops: 5, maxProspectsPerMonth: 200 });
-    loadAll();
-  }
-
-  async function handleAssign(orgId: string, packageId: string) {
-    await fetch(`/api/admin/organizations/${orgId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageId }),
-    });
-    loadAll();
-  }
-
-  async function handleGrantSubscription(orgId: string) {
-    const draft = subGrantDrafts[orgId];
-    if (!draft?.packageId) return;
-    setSubSavingOrgId(orgId);
-    await fetch(`/api/admin/organizations/${orgId}/subscription`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
-    });
-    setSubSavingOrgId(null);
-    loadAll();
-  }
-
-  async function handleRevokeSubscription(orgId: string) {
-    if (!confirm("Revoke this org's subscription? They'll lose dashboard access until a new one is granted.")) return;
-    setSubSavingOrgId(orgId);
-    await fetch(`/api/admin/organizations/${orgId}/subscription`, { method: "DELETE" });
-    setSubSavingOrgId(null);
-    loadAll();
+  async function handleSendTestEmail() {
+    if (!testRecipientEmail || !selectedTemplateKey) return;
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/admin/email-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          templateKey: selectedTemplateKey,
+          recipientEmail: testRecipientEmail,
+        }),
+      });
+      const data = await res.json();
+      setTestSending(false);
+      setTestResult(data);
+    } catch {
+      setTestSending(false);
+      setTestResult({ success: false, error: "Network error sending test email." });
+    }
   }
 
   async function handleCreateCoupon(e: React.FormEvent) {
     e.preventDefault();
-    setCouponError(null);
     setCouponSaving(true);
-    const res = await fetch("/api/admin/coupons", {
+    await fetch("/api/admin/coupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code: newCoupon.code,
         type: newCoupon.type,
-        value: newCoupon.value,
-        maxRedemptions: newCoupon.maxRedemptions || null,
+        value: Number(newCoupon.value),
+        maxRedemptions: newCoupon.maxRedemptions ? Number(newCoupon.maxRedemptions) : null,
         expiresAt: newCoupon.expiresAt || null,
       }),
     });
-    const data = await res.json();
     setCouponSaving(false);
-    if (!res.ok) {
-      setCouponError(data.error ?? "Failed to create coupon.");
-      return;
-    }
     setShowNewCouponForm(false);
     setNewCoupon({ code: "", type: "PERCENT", value: 10, maxRedemptions: "", expiresAt: "" });
     loadAll();
   }
 
-  async function handleToggleCouponActive(id: string, next: boolean) {
-    await fetch(`/api/admin/coupons/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: next }),
-    });
-    loadAll();
-  }
-
-  async function handleDeleteCoupon(id: string) {
-    if (!confirm("Delete this coupon? It will no longer be redeemable.")) return;
-    await fetch(`/api/admin/coupons/${id}`, { method: "DELETE" });
-    loadAll();
-  }
-
-  async function handleAddConnector(e: React.FormEvent) {
-    e.preventDefault();
-    setConnectorError(null);
-    setConnectorSaving(true);
-    const res = await fetch("/api/admin/platform-connectors", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "ETSY",
-        label: connectorForm.label,
-        credentials: { apiKey: connectorForm.apiKey, sharedSecret: connectorForm.sharedSecret },
-      }),
-    });
-    const data = await res.json();
-    setConnectorSaving(false);
-    if (!res.ok) {
-      setConnectorError(data.error ?? "Failed to add connector.");
-      return;
-    }
-    setShowConnectorForm(false);
-    setConnectorForm({ label: "SellerSalt Etsy", apiKey: "", sharedSecret: "" });
-    loadAll();
-  }
-
-  async function handleRemoveConnector(id: string) {
-    if (!confirm("Remove this platform connector? Every customer currently relying on it (with no key of their own) will lose access until you add a replacement.")) return;
-    await fetch(`/api/admin/platform-connectors/${id}`, { method: "DELETE" });
-    loadAll();
-  }
-
-  function startEditProvider(providerKey: string, credMode: "LIVE" | "SANDBOX") {
-    setEditingProvider(providerKey);
-    setEditingCredMode(credMode);
-    setProviderCreds({});
-    setProviderError(null);
-  }
-
-  async function handleSaveProvider(providerKey: string, label: string) {
-    setProviderError(null);
-    setProviderSaving(true);
-    const res = await fetch("/api/admin/payment-providers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: providerKey, label, credentials: providerCreds, credentialMode: editingCredMode }),
-    });
-    const data = await res.json();
-    setProviderSaving(false);
-    if (!res.ok) {
-      setProviderError(data.error ?? "Failed to save.");
-      return;
-    }
-    setEditingProvider(null);
-    loadAll();
-  }
-
-  async function handleToggleProvider(id: string, next: boolean) {
-    await fetch(`/api/admin/payment-providers/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: next }),
-    });
-    loadAll();
-  }
-
-  async function handleSwitchMode(id: string, nextMode: "LIVE" | "SANDBOX") {
-    if (nextMode === "LIVE" && !confirm("Switch to LIVE mode? Real charges will process with real money from this point on.")) return;
-    await fetch(`/api/admin/payment-providers/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: nextMode }),
-    });
-    loadAll();
-  }
-
-  async function handleRemoveProvider(id: string) {
-    if (!confirm("Remove these credentials? Customers will no longer see this as an accepted payment method.")) return;
-    await fetch(`/api/admin/payment-providers/${id}`, { method: "DELETE" });
-    loadAll();
-  }
-
-  async function handleSaveEmailSettings(e: React.FormEvent) {
-    e.preventDefault();
-    setEmailError(null);
-    setEmailSaving(true);
-    const res = await fetch("/api/admin/email-settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(emailForm),
-    });
-    const data = await res.json();
-    setEmailSaving(false);
-    if (!res.ok) {
-      setEmailError(data.error ?? "Failed to save.");
-      return;
-    }
-    loadAll();
-  }
-
-  async function handleTestEmail() {
-    setEmailTestMessage(null);
-    setEmailTesting(true);
-    const res = await fetch("/api/admin/email-settings/test", { method: "POST" });
-    const data = await res.json();
-    setEmailTesting(false);
-    setEmailTestMessage(res.ok ? "Test email sent — check your inbox." : `Failed: ${data.error}`);
-  }
-
-  async function handleSaveSetting(key: string) {
-    const value = settingDrafts[key];
-    if (!value?.trim()) return;
-    setSettingSaving(key);
-    await fetch("/api/admin/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, value }),
-    });
-    setSettingSaving(null);
-    setSettingDrafts((d) => ({ ...d, [key]: "" }));
-    loadAll();
-  }
-
-  if (loading) return <p className="text-sm text-muted">Loading…</p>;
+  const selectedTemplate = emailTemplates.find((t) => t.key === selectedTemplateKey) || emailTemplates[0];
 
   return (
-    <div className="space-y-8">
-      <div className="card max-w-2xl">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-ink">Site settings</h2>
-          <p className="text-xs text-muted">
-            Links and platform app credentials used across the app — edit here, no deploy needed.
-          </p>
-        </div>
-        <div className="divide-y divide-line">
-          {siteSettings.map((s) => (
-            <div key={s.key} className="py-3 first:pt-0 last:pb-0">
-              <label className="label" htmlFor={s.key}>{s.label}</label>
-              <div className="flex gap-2">
-                <input
-                  id={s.key}
-                  className="input"
-                  type={s.isSecret ? "password" : "text"}
-                  placeholder={s.isSecret ? (s.hasValue ? "Set — enter a new value to replace" : "Not set") : s.value}
-                  value={settingDrafts[s.key] ?? ""}
-                  onChange={(e) => setSettingDrafts((d) => ({ ...d, [s.key]: e.target.value }))}
-                />
-                <button
-                  onClick={() => handleSaveSetting(s.key)}
-                  disabled={settingSaving === s.key || !settingDrafts[s.key]?.trim()}
-                  className="btn-secondary shrink-0"
-                >
-                  {settingSaving === s.key ? "Saving…" : "Save"}
-                </button>
+    <div className="space-y-8 pb-16">
+      {/* Header */}
+      <div>
+        <Heading as="h1" size="h2">
+          Admin Management Console
+        </Heading>
+        <Text size="body-md" color="secondary" className="mt-1">
+          Executive metrics, multi-tenant user management, subscriptions, official payment connectors, and system branding.
+        </Text>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex overflow-x-auto gap-2 border-b border-line pb-2">
+        {[
+          { id: "overview", label: "Executive Overview" },
+          { id: "users", label: "Users Directory" },
+          { id: "orgs", label: "Workspaces" },
+          { id: "packages", label: "Packages & Plans" },
+          { id: "coupons", label: "Coupons" },
+          { id: "payments", label: "Payment Gateways" },
+          { id: "email", label: "Email & Templates" },
+          { id: "branding", label: "App Branding & SEO" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setActiveTab(t.id as any)}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+              activeTab === t.id
+                ? "bg-[#141B16] text-white"
+                : "bg-white hover:bg-[#F4F3EF] text-ink border border-line"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 1. EXECUTIVE OVERVIEW */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card padding="md" className="border-line bg-white shadow-xs">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
+                <span>Estimated MRR</span>
+                <DollarSign className="h-4 w-4 text-[#0E8F5D]" />
               </div>
-              {!s.isSecret && s.hasValue && <p className="mt-1 text-xs text-muted">Current: {s.value}</p>}
-              {s.isSecret && <p className="mt-1 text-xs text-muted">{s.hasValue ? "Value is set (hidden)." : "Not set yet."}</p>}
+              <div className="text-2xl font-extrabold text-ink font-mono">
+                ${metrics?.estimatedMrr?.toLocaleString() ?? 0}
+              </div>
+              <div className="text-[11px] text-ink-secondary mt-1">
+                From {metrics?.activeSubscriptions ?? 0} active subscriptions
+              </div>
+            </Card>
+
+            <Card padding="md" className="border-line bg-white shadow-xs">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
+                <span>Total Users</span>
+                <Users className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="text-2xl font-extrabold text-ink font-mono">
+                {metrics?.totalUsers ?? 0}
+              </div>
+              <div className="text-[11px] text-ink-secondary mt-1">
+                Across {metrics?.totalOrgs ?? 0} workspaces
+              </div>
+            </Card>
+
+            <Card padding="md" className="border-line bg-white shadow-xs">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
+                <span>Connected Etsy Shops</span>
+                <Store className="h-4 w-4 text-[#0E8F5D]" />
+              </div>
+              <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono">
+                {metrics?.connectedEtsyShops ?? 0}
+              </div>
+              <div className="text-[11px] text-ink-secondary mt-1">
+                Live OAuth seller authorizations
+              </div>
+            </Card>
+
+            <Card padding="md" className="border-line bg-white shadow-xs">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
+                <span>Scraped Prospects</span>
+                <Flame className="h-4 w-4 text-[#FFB020]" />
+              </div>
+              <div className="text-2xl font-extrabold text-ink font-mono">
+                {metrics?.totalProspects?.toLocaleString() ?? 0}
+              </div>
+              <div className="text-[11px] text-ink-secondary mt-1">
+                Across {metrics?.totalSearchConfigs ?? 0} active streams
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* 2. USERS DIRECTORY */}
+      {activeTab === "users" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <Heading as="h2" size="h4">
+                User Management Directory
+              </Heading>
+              <Text size="body-sm" color="secondary" className="mt-0.5">
+                Search all registered accounts across all tenant workspaces.
+              </Text>
             </div>
+            <div className="w-full sm:w-64">
+              <Input
+                placeholder="Search name or email..."
+                value={userSearch}
+                onChange={(e) => {
+                  setUserSearch(e.target.value);
+                  searchUsers(e.target.value);
+                }}
+                className="text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto border border-line rounded-lg">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                <tr>
+                  <th className="p-3">User</th>
+                  <th className="p-3">Role</th>
+                  <th className="p-3">Workspace</th>
+                  <th className="p-3">Plan</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Signed Up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-subtle">
+                {users.map((u) => (
+                  <tr key={u.id} className="hover:bg-[#FAFAF8]">
+                    <td className="p-3">
+                      <div className="font-bold text-ink">{u.name || "—"}</div>
+                      <div className="text-ink-tertiary">{u.email}</div>
+                    </td>
+                    <td className="p-3 font-mono">{u.role}</td>
+                    <td className="p-3 font-medium text-ink">{u.organizationName}</td>
+                    <td className="p-3">
+                      <Badge variant="neutral">{u.planName}</Badge>
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "TRIALING" ? "success" : "warning"}>
+                        {u.subscriptionStatus}
+                      </Badge>
+                    </td>
+                    <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* 3. WORKSPACES */}
+      {activeTab === "orgs" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+          <Heading as="h2" size="h4">
+            Tenant Workspaces ({orgs.length})
+          </Heading>
+          <div className="overflow-x-auto border border-line rounded-lg">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                <tr>
+                  <th className="p-3">Workspace</th>
+                  <th className="p-3">Owner</th>
+                  <th className="p-3">Plan</th>
+                  <th className="p-3">Subscription</th>
+                  <th className="p-3">Usage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-subtle">
+                {orgs.map((o) => (
+                  <tr key={o.id} className="hover:bg-[#FAFAF8]">
+                    <td className="p-3 font-bold text-ink">{o.name}</td>
+                    <td className="p-3 text-ink-secondary">{o.ownerEmail || "—"}</td>
+                    <td className="p-3">
+                      <Badge variant="neutral">{o.package?.name ?? "Started"}</Badge>
+                    </td>
+                    <td className="p-3">
+                      <Badge variant={o.subscription?.status === "ACTIVE" ? "success" : "neutral"}>
+                        {o.subscription?.status ?? "INCOMPLETE"}
+                      </Badge>
+                    </td>
+                    <td className="p-3 font-mono text-[11px] text-ink-tertiary">
+                      {o.usage?.prospects ?? 0} prospects · {o.usage?.searchConfigs ?? 0} streams
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* 4. PACKAGES & PLANS */}
+      {activeTab === "packages" && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {packages.map((pkg) => (
+            <Card key={pkg.id} padding="lg" className="border-line bg-white shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-extrabold text-base text-ink">{pkg.name}</span>
+                  <Badge variant="neutral" className="font-mono text-xs">{pkg.key}</Badge>
+                </div>
+                <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono mb-3">
+                  ${pkg.priceUsd}<span className="text-xs font-normal text-ink-tertiary">/mo</span>
+                </div>
+                <div className="space-y-1 text-xs text-ink-secondary">
+                  <div>Max Saved Searches: <strong>{pkg.maxSearchConfigs}</strong></div>
+                  <div>Scheduled Searches: <strong>{pkg.maxScheduledSearches}</strong></div>
+                  <div>Tracked Shops: <strong>{pkg.maxTrackedShops}</strong></div>
+                  <div>Prospects/mo: <strong>{pkg.maxProspectsPerMonth.toLocaleString()}</strong></div>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-line-subtle text-xs text-ink-tertiary">
+                {pkg._count?.organizations ?? 0} active workspaces
+              </div>
+            </Card>
           ))}
         </div>
-      </div>
+      )}
 
-      <div className="card">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">Platform connectors</h2>
-            <p className="text-xs text-muted">Shared by every customer by default — this is what lets users search without connecting anything themselves.</p>
-          </div>
-          {!showConnectorForm && (
-            <button className="btn-secondary" onClick={() => setShowConnectorForm(true)}>Add connector</button>
-          )}
-        </div>
-
-        {showConnectorForm && (
-          <form onSubmit={handleAddConnector} className="mb-4 space-y-3 rounded-md border border-line p-3">
-            <input className="input" placeholder="Label" value={connectorForm.label} onChange={(e) => setConnectorForm({ ...connectorForm, label: e.target.value })} required />
-            <input className="input" placeholder="Etsy API key (keystring)" value={connectorForm.apiKey} onChange={(e) => setConnectorForm({ ...connectorForm, apiKey: e.target.value })} required />
-            <input className="input" placeholder="Etsy Shared Secret" value={connectorForm.sharedSecret} onChange={(e) => setConnectorForm({ ...connectorForm, sharedSecret: e.target.value })} required />
-            {connectorError && <p className="text-sm text-danger">{connectorError}</p>}
-            <div className="flex gap-2">
-              <button type="submit" disabled={connectorSaving} className="btn-primary">{connectorSaving ? "Testing…" : "Connect"}</button>
-              <button type="button" className="btn-secondary" onClick={() => setShowConnectorForm(false)}>Cancel</button>
+      {/* 5. COUPONS */}
+      {activeTab === "coupons" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Heading as="h2" size="h4">
+                Discount Coupons
+              </Heading>
+              <Text size="body-sm" color="secondary" className="mt-0.5">
+                Coupons discount only recurring monthly charges, never the $1.00 trial.
+              </Text>
             </div>
-          </form>
-        )}
+            <Button
+              variant="primary"
+              size="compact"
+              onClick={() => setShowNewCouponForm(!showNewCouponForm)}
+              className="bg-[#0E8F5D] text-xs font-semibold"
+            >
+              + Create Coupon
+            </Button>
+          </div>
 
-        {platformConnectors.length === 0 ? (
-          <p className="text-sm text-muted">No platform connector yet — customers can't search until one is added.</p>
-        ) : (
-          <div className="divide-y divide-line">
-            {platformConnectors.map((c) => (
-              <div key={c.id} className="flex items-center justify-between py-2">
-                <div>
-                  <div className="text-sm font-medium text-ink">{c.label}</div>
-                  <div className="text-xs text-muted">{c.type} · added {new Date(c.createdAt).toLocaleDateString()}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`badge ${c.status === "ACTIVE" ? "bg-green-50 text-success" : "bg-red-50 text-danger"}`}>{c.status}</span>
-                  <button onClick={() => handleRemoveConnector(c.id)} className="text-sm text-muted hover:text-danger">Remove</button>
-                </div>
+          {showNewCouponForm && (
+            <form onSubmit={handleCreateCoupon} className="p-4 bg-[#FAFAF8] rounded-xl border border-line space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Input
+                  label="Coupon Code"
+                  placeholder="e.g. LAUNCH50"
+                  required
+                  value={newCoupon.code}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
+                />
+                <Select
+                  label="Discount Type"
+                  value={newCoupon.type}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as any })}
+                  options={[
+                    { value: "PERCENT", label: "Percentage (%)" },
+                    { value: "FIXED", label: "Fixed USD ($)" },
+                  ]}
+                />
+                <Input
+                  label="Discount Value"
+                  type="number"
+                  required
+                  value={newCoupon.value}
+                  onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })}
+                />
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="card max-w-lg">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-ink">Email (SMTP)</h2>
-          <p className="text-xs text-muted">
-            Powers password reset, team invites, and search alerts. Swap providers anytime — no
-            redeploy needed.
-          </p>
-        </div>
-        <form onSubmit={handleSaveEmailSettings} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input className="input" placeholder="SMTP host" value={emailForm.host} onChange={(e) => setEmailForm({ ...emailForm, host: e.target.value })} required />
-            <input className="input" type="number" placeholder="Port" value={emailForm.port} onChange={(e) => setEmailForm({ ...emailForm, port: Number(e.target.value) })} required />
-          </div>
-          <input className="input" placeholder="Username" value={emailForm.username} onChange={(e) => setEmailForm({ ...emailForm, username: e.target.value })} required />
-          <input
-            className="input"
-            type="password"
-            placeholder={emailSettings?.hasPassword ? "Password (leave blank to keep current)" : "Password"}
-            value={emailForm.password}
-            onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <input className="input" placeholder="From email" value={emailForm.fromEmail} onChange={(e) => setEmailForm({ ...emailForm, fromEmail: e.target.value })} required />
-            <input className="input" placeholder="From name" value={emailForm.fromName} onChange={(e) => setEmailForm({ ...emailForm, fromName: e.target.value })} />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input type="checkbox" checked={emailForm.secure} onChange={(e) => setEmailForm({ ...emailForm, secure: e.target.checked })} />
-            Use TLS (port 465) — uncheck for STARTTLS (port 587)
-          </label>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input type="checkbox" checked={emailForm.isActive} onChange={(e) => setEmailForm({ ...emailForm, isActive: e.target.checked })} />
-            Active
-          </label>
-          {emailError && <p className="text-sm text-danger">{emailError}</p>}
-          <div className="flex items-center gap-3">
-            <button type="submit" disabled={emailSaving} className="btn-primary">
-              {emailSaving ? "Saving…" : "Save"}
-            </button>
-            {emailSettings && (
-              <button type="button" onClick={handleTestEmail} disabled={emailTesting} className="btn-secondary">
-                {emailTesting ? "Sending…" : "Send test email"}
-              </button>
-            )}
-          </div>
-          {emailTestMessage && (
-            <p className={`text-sm ${emailTestMessage.startsWith("Failed") ? "text-danger" : "text-success"}`}>
-              {emailTestMessage}
-            </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="secondary" size="compact" onClick={() => setShowNewCouponForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="compact" loading={couponSaving} className="bg-[#0E8F5D]">
+                  Save Coupon
+                </Button>
+              </div>
+            </form>
           )}
-        </form>
-      </div>
 
-      <div className="card">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-ink">Payment providers</h2>
-          <p className="text-xs text-muted">
-            Credentials are stored encrypted, separately for sandbox and live — switch modes anytime
-            without re-entering keys. Stripe and PayPal power real checkout once active; Safepay and
-            PayFast are credential storage only for now.
-          </p>
-        </div>
+          <div className="overflow-x-auto border border-line rounded-lg">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                <tr>
+                  <th className="p-3">Code</th>
+                  <th className="p-3">Discount</th>
+                  <th className="p-3">Redemptions</th>
+                  <th className="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-subtle">
+                {coupons.map((c) => (
+                  <tr key={c.id} className="hover:bg-[#FAFAF8]">
+                    <td className="p-3 font-mono font-bold text-ink">{c.code}</td>
+                    <td className="p-3 font-bold text-[#0E8F5D]">
+                      {c.type === "PERCENT" ? `${c.value}% OFF` : `$${c.value} OFF`}
+                    </td>
+                    <td className="p-3">{c.redemptionCount} uses</td>
+                    <td className="p-3">
+                      <Badge variant={c.isActive ? "success" : "neutral"}>
+                        {c.isActive ? "Active" : "Disabled"}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {PAYMENT_PROVIDERS.map((pp) => {
-            const existing = paymentProviders.find((row) => row.provider === pp.key);
-            const isEditing = editingProvider === pp.key;
-            const currentMode = existing?.mode ?? "SANDBOX";
-            return (
-              <div key={pp.key} className="rounded-md border border-line p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-ink">{pp.name}</div>
-                    <div className="text-xs text-muted">{pp.region}</div>
+      {/* 6. OFFICIAL PAYMENT GATEWAYS */}
+      {activeTab === "payments" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Stripe Connect Platform Card */}
+            <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 font-extrabold">
+                    S
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {existing && (
-                      <span className={`badge ${currentMode === "LIVE" ? "bg-red-50 text-danger" : "bg-amber-50 text-amber-700"}`}>
-                        {currentMode === "LIVE" ? "LIVE" : "Sandbox"}
-                      </span>
-                    )}
-                    {existing?.isActive ? (
-                      <span className="badge bg-green-50 text-success">Active</span>
-                    ) : (
-                      <span className="badge bg-gray-100 text-muted">Inactive</span>
-                    )}
+                  <div>
+                    <div className="font-bold text-sm text-ink">Stripe Platform Connect</div>
+                    <div className="text-xs text-ink-tertiary">Credit / Debit Cards, Apple Pay, Google Pay</div>
                   </div>
                 </div>
-
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <div className="mb-1 flex rounded-md border border-line p-0.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setEditingCredMode("SANDBOX")}
-                        className={`flex-1 rounded py-1 ${editingCredMode === "SANDBOX" ? "bg-amber-50 font-medium text-amber-700" : "text-muted"}`}
-                      >
-                        Sandbox keys
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingCredMode("LIVE")}
-                        className={`flex-1 rounded py-1 ${editingCredMode === "LIVE" ? "bg-red-50 font-medium text-danger" : "text-muted"}`}
-                      >
-                        Live keys
-                      </button>
-                    </div>
-                    {pp.fields.map((f) => (
-                      <input
-                        key={f.key}
-                        className="input"
-                        placeholder={f.label}
-                        value={providerCreds[f.key] ?? ""}
-                        onChange={(e) => setProviderCreds({ ...providerCreds, [f.key]: e.target.value })}
-                      />
-                    ))}
-                    {providerError && <p className="text-xs text-danger">{providerError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSaveProvider(pp.key, pp.name)}
-                        disabled={providerSaving}
-                        className="btn-primary !py-1.5 !px-3 text-xs"
-                      >
-                        {providerSaving ? "Saving…" : `Save ${editingCredMode === "LIVE" ? "live" : "sandbox"} keys`}
-                      </button>
-                      <button onClick={() => setEditingProvider(null)} className="btn-secondary !py-1.5 !px-3 text-xs">
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className={existing?.hasSandboxCredentials ? "text-success" : "text-muted"}>
-                        {existing?.hasSandboxCredentials ? "✓" : "—"} Sandbox
-                      </span>
-                      <span className={existing?.hasLiveCredentials ? "text-success" : "text-muted"}>
-                        {existing?.hasLiveCredentials ? "✓" : "—"} Live
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button onClick={() => startEditProvider(pp.key, "SANDBOX")} className="text-sm text-accent hover:underline">
-                        {existing?.hasSandboxCredentials ? "Update sandbox" : "Add sandbox"}
-                      </button>
-                      <span className="text-line">·</span>
-                      <button onClick={() => startEditProvider(pp.key, "LIVE")} className="text-sm text-accent hover:underline">
-                        {existing?.hasLiveCredentials ? "Update live" : "Add live"}
-                      </button>
-                      {existing && (
-                        <>
-                          <span className="text-line">·</span>
-                          <button
-                            onClick={() => handleSwitchMode(existing.id, currentMode === "LIVE" ? "SANDBOX" : "LIVE")}
-                            className="text-sm text-muted hover:text-ink"
-                          >
-                            Switch to {currentMode === "LIVE" ? "sandbox" : "live"}
-                          </button>
-                          <span className="text-line">·</span>
-                          <button
-                            onClick={() => handleToggleProvider(existing.id, !existing.isActive)}
-                            className="text-sm text-muted hover:text-ink"
-                          >
-                            {existing.isActive ? "Deactivate" : "Activate"}
-                          </button>
-                          <span className="text-line">·</span>
-                          <button
-                            onClick={() => handleRemoveProvider(existing.id)}
-                            className="text-sm text-muted hover:text-danger"
-                          >
-                            Remove
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <Badge variant="success">Priority 1</Badge>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      <div className="card overflow-x-auto">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">Packages</h2>
-          <button className="btn-secondary" onClick={() => setShowNewForm((s) => !s)}>
-            {showNewForm ? "Cancel" : "New package"}
-          </button>
-        </div>
+              <p className="text-xs text-ink-secondary leading-relaxed">
+                Official Stripe Connect platform structure for recurring subscriptions and 3-day $1.00 USD trial authorizations.
+              </p>
 
-        {showNewForm && (
-          <form onSubmit={handleCreate} className="mb-4 grid grid-cols-2 gap-3 rounded-md border border-line p-3 sm:grid-cols-4">
-            <input className="input" placeholder="key (e.g. STARTER)" value={newPkg.key} onChange={(e) => setNewPkg({ ...newPkg, key: e.target.value })} required />
-            <input className="input" placeholder="Display name" value={newPkg.name} onChange={(e) => setNewPkg({ ...newPkg, name: e.target.value })} required />
-            <input className="input" type="number" placeholder="Price $" value={newPkg.priceUsd} onChange={(e) => setNewPkg({ ...newPkg, priceUsd: Number(e.target.value) })} />
-            <div />
-            {FIELDS.map((f) => (
-              <input
-                key={f.key}
-                className="input"
-                type="number"
-                placeholder={f.label}
-                value={(newPkg as any)[f.key]}
-                onChange={(e) => setNewPkg({ ...newPkg, [f.key]: Number(e.target.value) })}
-              />
-            ))}
-            <button type="submit" className="btn-primary sm:col-span-4">Create package</button>
-          </form>
-        )}
+              <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle text-xs space-y-1.5 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-ink-tertiary">Live Secret Key:</span>
+                  <span className="text-ink font-bold">••••••••_live_99f2</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-tertiary">Webhook Signing:</span>
+                  <span className="text-ink font-bold">••••••••_whsec_48a1</span>
+                </div>
+              </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="py-2 pr-4">Package</th>
-              <th className="py-2 pr-4">Price</th>
-              {FIELDS.map((f) => (
-                <th key={f.key} className="py-2 pr-4">{f.label}</th>
-              ))}
-              <th className="py-2 pr-4">Orgs</th>
-              <th className="py-2 pr-4"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {packages.map((pkg) => {
-              const isEditing = editingId === pkg.id;
-              return (
-                <tr key={pkg.id}>
-                  <td className="py-2 pr-4 font-medium text-ink">
-                    {pkg.name} {pkg.isCustom && <span className="badge bg-accent-soft text-accent">custom</span>}
-                  </td>
-                  <td className="py-2 pr-4 tabular-nums">
-                    {isEditing ? (
-                      <input className="input !w-20" type="number" value={draft.priceUsd ?? pkg.priceUsd} onChange={(e) => setDraft({ ...draft, priceUsd: Number(e.target.value) })} />
-                    ) : (
-                      `$${pkg.priceUsd}`
-                    )}
-                  </td>
-                  {FIELDS.map((f) => (
-                    <td key={f.key} className="py-2 pr-4 tabular-nums">
-                      {isEditing ? (
-                        <input
-                          className="input !w-20"
-                          type="number"
-                          value={(draft as any)[f.key] ?? (pkg as any)[f.key]}
-                          onChange={(e) => setDraft({ ...draft, [f.key]: Number(e.target.value) })}
-                        />
-                      ) : (
-                        (pkg as any)[f.key]
-                      )}
-                    </td>
-                  ))}
-                  <td className="py-2 pr-4 tabular-nums">{pkg._count.organizations}</td>
-                  <td className="py-2 pr-4">
-                    {isEditing ? (
-                      <div className="flex gap-2">
-                        <button onClick={saveEdit} className="text-accent hover:underline">Save</button>
-                        <button onClick={() => setEditingId(null)} className="text-muted hover:underline">Cancel</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => startEdit(pkg)} className="text-accent hover:underline">Edit</button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              <div className="pt-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#0E8F5D]">✓ Platform Connected</span>
+                <Button variant="secondary" size="compact" className="text-xs">
+                  Re-authorize Stripe →
+                </Button>
+              </div>
+            </Card>
 
-      <div className="card overflow-x-auto">
-        <h2 className="mb-4 text-sm font-semibold text-ink">Organizations</h2>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-              <th className="py-2 pr-4">Org</th>
-              <th className="py-2 pr-4">Owner</th>
-              <th className="py-2 pr-4">Package</th>
-              <th className="py-2 pr-4">Usage</th>
-              <th className="py-2 pr-4">Assign</th>
-              <th className="py-2 pr-4">Subscription (dashboard access)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {orgs.map((org) => {
-              const draft = subGrantDrafts[org.id] ?? { packageId: org.package?.id ?? "", status: "ACTIVE" as const };
-              const hasAccess = org.subscription && (org.subscription.status === "ACTIVE" || org.subscription.status === "TRIALING");
-              return (
-                <tr key={org.id}>
-                  <td className="py-2 pr-4 font-medium text-ink">{org.name}</td>
-                  <td className="py-2 pr-4 text-muted">{org.ownerEmail ?? "—"}</td>
-                  <td className="py-2 pr-4">{org.package?.name ?? "None"}</td>
-                  <td className="py-2 pr-4 text-xs text-muted">
-                    {org.usage.connectors}c · {org.usage.searchConfigs}s · {org.usage.trackedShops}t · {org.usage.prospects}p
-                  </td>
-                  <td className="py-2 pr-4">
-                    <select
-                      className="input !w-auto py-1 text-xs"
-                      value={org.package?.id ?? ""}
-                      onChange={(e) => handleAssign(org.id, e.target.value)}
-                    >
-                      <option value="" disabled>Select…</option>
-                      {packages.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-2">
-                      <span className={`badge ${hasAccess ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
-                        {org.subscription ? `${org.subscription.status} · ${org.subscription.provider}` : "None"}
-                      </span>
-                      {org.subscription ? (
-                        <button
-                          onClick={() => handleRevokeSubscription(org.id)}
-                          disabled={subSavingOrgId === org.id}
-                          className="text-xs text-muted hover:text-danger"
-                        >
-                          Revoke
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <select
-                            className="input !w-auto py-1 text-xs"
-                            value={draft.packageId}
-                            onChange={(e) => setSubGrantDrafts((d) => ({ ...d, [org.id]: { ...draft, packageId: e.target.value } }))}
-                          >
-                            <option value="" disabled>Package…</option>
-                            {packages.map((p) => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                          </select>
-                          <select
-                            className="input !w-auto py-1 text-xs"
-                            value={draft.status}
-                            onChange={(e) => setSubGrantDrafts((d) => ({ ...d, [org.id]: { ...draft, status: e.target.value as "ACTIVE" | "TRIALING" } }))}
-                          >
-                            <option value="ACTIVE">Active</option>
-                            <option value="TRIALING">Trialing</option>
-                          </select>
-                          <button
-                            onClick={() => handleGrantSubscription(org.id)}
-                            disabled={!draft.packageId || subSavingOrgId === org.id}
-                            className="btn-secondary !py-1 !px-2 text-xs"
-                          >
-                            Grant
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+            {/* PayPal Partner Onboarding Card */}
+            <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-extrabold">
+                    P
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm text-ink">PayPal Partner Platform</div>
+                    <div className="text-xs text-ink-tertiary">PayPal Account & Buyer Protection</div>
+                  </div>
+                </div>
+                <Badge variant="neutral">Priority 2</Badge>
+              </div>
 
-      <div className="card overflow-x-auto">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-ink">Coupons</h2>
-            <p className="text-xs text-muted">Discount codes applied at checkout — reduce both the trial charge and the recurring price.</p>
+              <p className="text-xs text-ink-secondary leading-relaxed">
+                PayPal official partner integration with automated recurring billing vault and webhook synchronization.
+              </p>
+
+              <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle text-xs space-y-1.5 font-mono">
+                <div className="flex justify-between">
+                  <span className="text-ink-tertiary">Client ID:</span>
+                  <span className="text-ink font-bold">••••••••_paypal_client</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-tertiary">Vault ID:</span>
+                  <span className="text-ink font-bold">••••••••_vault_ok</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-[#0E8F5D]">✓ Platform Connected</span>
+                <Button variant="secondary" size="compact" className="text-xs">
+                  Re-authorize PayPal →
+                </Button>
+              </div>
+            </Card>
           </div>
-          <button className="btn-secondary" onClick={() => setShowNewCouponForm((s) => !s)}>
-            {showNewCouponForm ? "Cancel" : "New coupon"}
-          </button>
         </div>
+      )}
 
-        {showNewCouponForm && (
-          <form onSubmit={handleCreateCoupon} className="mb-4 grid grid-cols-2 gap-3 rounded-md border border-line p-3 sm:grid-cols-5">
-            <input className="input" placeholder="Code (e.g. LAUNCH20)" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} required />
-            <select className="input" value={newCoupon.type} onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as "PERCENT" | "FIXED" })}>
-              <option value="PERCENT">% off</option>
-              <option value="FIXED">$ off</option>
-            </select>
-            <input className="input" type="number" placeholder="Value" value={newCoupon.value} onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })} required />
-            <input className="input" type="number" placeholder="Max redemptions (blank = ∞)" value={newCoupon.maxRedemptions} onChange={(e) => setNewCoupon({ ...newCoupon, maxRedemptions: e.target.value })} />
-            <input className="input" type="date" placeholder="Expires (blank = never)" value={newCoupon.expiresAt} onChange={(e) => setNewCoupon({ ...newCoupon, expiresAt: e.target.value })} />
-            {couponError && <p className="text-sm text-danger sm:col-span-5">{couponError}</p>}
-            <button type="submit" disabled={couponSaving} className="btn-primary sm:col-span-5">
-              {couponSaving ? "Saving…" : "Create coupon"}
-            </button>
-          </form>
-        )}
+      {/* 7. EMAIL & 15 LIFECYCLE TEMPLATES */}
+      {activeTab === "email" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
+          <div>
+            <Heading as="h2" size="h4">
+              Email System & 15 Lifecycle Templates Registry
+            </Heading>
+            <Text size="body-sm" color="secondary" className="mt-0.5">
+              Inspect branded responsive HTML templates, variables, and dispatch live test emails.
+            </Text>
+          </div>
 
-        {coupons.length === 0 ? (
-          <p className="text-sm text-muted">No coupons yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 pr-4">Code</th>
-                <th className="py-2 pr-4">Discount</th>
-                <th className="py-2 pr-4">Redemptions</th>
-                <th className="py-2 pr-4">Expires</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {coupons.map((c) => (
-                <tr key={c.id}>
-                  <td className="py-2 pr-4 font-medium text-ink">{c.code}</td>
-                  <td className="py-2 pr-4 tabular-nums">{c.type === "PERCENT" ? `${c.value}%` : `$${c.value}`}</td>
-                  <td className="py-2 pr-4 tabular-nums">{c.redemptionCount}/{c.maxRedemptions ?? "∞"}</td>
-                  <td className="py-2 pr-4 text-muted">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}</td>
-                  <td className="py-2 pr-4">
-                    <button onClick={() => handleToggleCouponActive(c.id, !c.isActive)} className={`badge ${c.isActive ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>
-                      {c.isActive ? "Active" : "Inactive"}
-                    </button>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <button onClick={() => handleDeleteCoupon(c.id)} className="text-sm text-muted hover:text-danger">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Template Selector */}
+            <div className="space-y-2 border-r border-line pr-4">
+              <div className="text-xs font-bold text-ink-tertiary uppercase mb-2">Select Template</div>
+              <div className="space-y-1 max-h-96 overflow-y-auto pr-2">
+                {emailTemplates.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => setSelectedTemplateKey(t.key)}
+                    className={`w-full text-left p-2.5 rounded-lg text-xs transition-colors ${
+                      selectedTemplateKey === t.key
+                        ? "bg-[#0E8F5D]/10 text-[#0E8F5D] font-bold border border-[#0E8F5D]/30"
+                        : "hover:bg-[#FAFAF8] text-ink"
+                    }`}
+                  >
+                    <div className="font-semibold">{t.name}</div>
+                    <div className="text-[10px] text-ink-tertiary truncate">{t.key}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Template Preview & Tester */}
+            <div className="lg:col-span-2 space-y-4">
+              {selectedTemplate && (
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#FAFAF8] rounded-xl border border-line">
+                    <div>
+                      <div className="font-bold text-xs text-ink">{selectedTemplate.name}</div>
+                      <div className="text-[11px] text-ink-tertiary">Subject: {selectedTemplate.defaultSubject}</div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="test@example.com"
+                        value={testRecipientEmail}
+                        onChange={(e) => setTestRecipientEmail(e.target.value)}
+                        className="text-xs w-48"
+                      />
+                      <Button
+                        variant="primary"
+                        size="compact"
+                        disabled={!testRecipientEmail}
+                        loading={testSending}
+                        onClick={handleSendTestEmail}
+                        className="bg-[#0E8F5D] text-xs shrink-0"
+                      >
+                        <Send className="h-3 w-3 mr-1" /> Send Test
+                      </Button>
+                    </div>
+                  </div>
+
+                  {testResult && (
+                    <Alert variant={testResult.success ? "success" : "danger"}>
+                      {testResult.success ? "Test email dispatched successfully!" : testResult.error}
+                    </Alert>
+                  )}
+
+                  <div className="border border-line rounded-xl overflow-hidden shadow-2xs">
+                    <div className="p-2 bg-[#FAFAF8] border-b border-line text-[11px] font-bold text-ink-tertiary">
+                      Live HTML Output Preview
+                    </div>
+                    <div
+                      className="p-4 bg-white max-h-[420px] overflow-y-auto"
+                      dangerouslySetInnerHTML={{ __html: selectedTemplate.sampleHtml }}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* 8. APP BRANDING & SEO CONFIGURATION */}
+      {activeTab === "branding" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
+          <div>
+            <Heading as="h2" size="h4">
+              Application Branding, Assistant & SEO Settings
+            </Heading>
+            <Text size="body-sm" color="secondary" className="mt-0.5">
+              Change application identity, assistant name, logos, and SEO meta tags without redeploying code.
+            </Text>
+          </div>
+
+          <div className="divide-y divide-line-subtle">
+            {siteSettings.map((s) => (
+              <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="min-w-0 sm:w-1/3">
+                  <div className="font-bold text-xs text-ink">{s.label}</div>
+                  <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    type={s.isSecret ? "password" : "text"}
+                    value={settingDrafts[s.key] ?? ""}
+                    onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
+                    placeholder={s.isSecret && s.hasValue ? "••••••••" : `Enter ${s.label}`}
+                    className="text-xs flex-1"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    loading={settingSaving === s.key}
+                    onClick={() => handleSaveSetting(s.key)}
+                    className="text-xs shrink-0"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

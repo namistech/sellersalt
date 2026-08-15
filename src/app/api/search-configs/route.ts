@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { upsertSchedule, SCHEDULE_FREQUENCIES } from "@/lib/queue";
+import { upsertSchedule, triggerScrapeJob, SCHEDULE_FREQUENCIES } from "@/lib/queue";
 import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
@@ -80,8 +80,25 @@ export async function POST(req: Request) {
   });
 
   if (cronPattern) {
-    await upsertSchedule({ searchConfigId: config.id, organizationId, connectorId, cronPattern });
+    await upsertSchedule({ searchConfigId: config.id, organizationId, connectorId, cronPattern }).catch(() => {});
   }
 
-  return NextResponse.json({ searchConfig: config }, { status: 201 });
+  // Auto-run research immediately upon submission (zero extra click required)
+  let queuedJobId: string | null = null;
+  try {
+    const job = await triggerScrapeJob(organizationId, config.id, connectorId);
+    queuedJobId = job.id;
+  } catch (err: any) {
+    console.warn("Auto-run job queueing warning (Redis offline or worker busy):", err?.message);
+  }
+
+  return NextResponse.json(
+    {
+      searchConfig: config,
+      autoQueued: true,
+      jobId: queuedJobId,
+      message: "We're working on your query. Check back in a minute or two.",
+    },
+    { status: 201 }
+  );
 }

@@ -13,10 +13,14 @@ import {
   CheckCircle2,
   Sparkles,
   Lock,
+  Target,
+  Zap,
+  BookOpen,
 } from "lucide-react";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { Card, Badge, Button, Heading, Text } from "@/components/ui";
+import { computeShopWinningSignals, computeProductWinningSignals } from "@/services/intelligence/winning-signals";
 
 interface ShopDetailPageProps {
   params: Promise<{ shopExternalId: string }>;
@@ -57,6 +61,14 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
   const activeListings = primary.activeListings ?? 1;
   const sellingRatio = primary.avgSellingRatio ?? (totalSales / activeListings);
 
+  const shopSignals = computeShopWinningSignals({
+    totalSales,
+    activeListings,
+    estDailySales: estDaily,
+    shopAgeMonths: primary.shopAgeMonths,
+    reviewCount: primary.reviewCount,
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
       <PublicHeader />
@@ -71,8 +83,8 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
           <span className="text-[#141B16] font-medium">{primary.shopName}</span>
         </div>
 
-        {/* Shop Hero Card */}
-        <Card padding="lg" className="border-line shadow-xs bg-white">
+        {/* Shop Opportunity Hero Card */}
+        <Card padding="lg" className="border-line shadow-xs bg-white space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               {primary.shopIconUrl ? (
@@ -91,8 +103,12 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-2xl font-extrabold text-[#141B16]">{primary.shopName}</h1>
                   <Badge variant="success">Etsy Verified</Badge>
+                  <Badge variant="gold">
+                    <Sparkles className="h-3 w-3 mr-1 inline text-[#FFB020]" />
+                    Opportunity Score: {shopSignals.opportunityScore}/100
+                  </Badge>
                 </div>
-                <div className="text-xs text-[#7C847E] flex flex-wrap items-center gap-2 mt-1">
+                <div className="text-xs text-[#7C847E] flex flex-wrap items-center gap-2 mt-1.5">
                   <span>{Math.round(primary.shopAgeMonths)} months on Etsy</span>
                   <span>·</span>
                   <span className="text-amber-600 font-semibold">
@@ -100,6 +116,10 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
                   </span>
                   <span>·</span>
                   <span>{activeListings} active listings</span>
+                  <span>·</span>
+                  <Badge variant={shopSignals.recommendation === "SHORTLIST" ? "success" : "neutral"}>
+                    Recommended: {shopSignals.recommendation}
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -111,7 +131,7 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line bg-white hover:bg-[#F4F3EF] text-xs font-semibold text-[#141B16] transition-colors"
               >
-                <span>Visit Store on Etsy</span>
+                <span>Visit on Etsy</span>
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
 
@@ -123,9 +143,26 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
             </div>
           </div>
 
+          {/* Intelligence Matrix: Why Interesting & What to Study */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-line-subtle text-xs">
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-[#0E8F5D]" /> Why This Shop is Interesting:
+              </div>
+              <p className="text-ink-secondary leading-relaxed">{shopSignals.whyInteresting}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="font-bold text-ink flex items-center gap-1.5">
+                <BookOpen className="h-4 w-4 text-purple-600" /> What to Study:
+              </div>
+              <p className="text-ink-secondary leading-relaxed">{shopSignals.whatToStudy}</p>
+            </div>
+          </div>
+
           {/* Keywords */}
           {keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-6 mt-6 border-t border-line-subtle">
+            <div className="flex flex-wrap gap-1.5 pt-4 border-t border-line-subtle">
               <span className="text-xs font-semibold text-[#7C847E] mr-1">Discovered Niches:</span>
               {keywords.map((k) => (
                 <span
@@ -143,7 +180,7 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card padding="md" className="border-line bg-white text-center shadow-xs">
             <div className="text-[11px] font-bold text-[#7C847E] uppercase tracking-wider mb-1">
-              Estimated Velocity
+              Estimated Daily Velocity
             </div>
             <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono">
               {estDaily.toFixed(1)} <span className="text-xs font-sans text-[#7C847E]">sales/day</span>
@@ -163,12 +200,14 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
 
           <Card padding="md" className="border-line bg-white text-center shadow-xs">
             <div className="text-[11px] font-bold text-[#7C847E] uppercase tracking-wider mb-1">
-              Catalog Yield
+              Catalog Yield Efficiency
             </div>
             <div className="text-2xl font-extrabold text-[#141B16] font-mono">
               {sellingRatio.toFixed(1)}x
             </div>
-            <div className="text-[11px] text-[#7C847E] mt-1">Sales per active listing</div>
+            <div className="text-[11px] text-[#7C847E] mt-1">
+              {shopSignals.catalogEfficiency === "HIGH_YIELD" ? "High Yield (>30x)" : "Moderate Yield"}
+            </div>
           </Card>
         </div>
 
@@ -204,51 +243,67 @@ export default async function PublicShopDetailPage({ params }: ShopDetailPagePro
           </div>
 
           <div className="divide-y divide-line-subtle border-t border-line-subtle">
-            {prospects.map((p) => (
-              <div key={p.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  {p.listingImageUrl ? (
-                    <img
-                      src={p.listingImageUrl}
-                      alt=""
-                      className="h-12 w-12 rounded-lg border border-line object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg bg-[#F4F3EF] border border-line flex items-center justify-center text-xs font-bold text-[#7C847E] shrink-0">
-                      ETSY
-                    </div>
-                  )}
+            {prospects.map((p) => {
+              const pSignals = computeProductWinningSignals({
+                estDailySales: p.estDailySales,
+                totalSales: p.totalSales,
+                activeListings: p.activeListings,
+                reviewCount: p.reviewCount,
+                reviewAverage: p.reviewAverage,
+                price: p.price,
+                shopAgeMonths: p.shopAgeMonths,
+              });
 
-                  <div className="min-w-0">
-                    <div className="font-bold text-xs text-[#141B16] truncate max-w-md">
-                      {p.listingTitle}
-                    </div>
-                    <div className="text-[11px] text-[#7C847E] mt-0.5 flex items-center gap-2">
-                      <span>Niche: <strong className="text-[#141B16]">{p.keyword}</strong></span>
-                      <span>·</span>
-                      <span>Price: <strong className="text-[#141B16]">${p.price.toFixed(2)}</strong></span>
+              return (
+                <div key={p.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {p.listingImageUrl ? (
+                      <img
+                        src={p.listingImageUrl}
+                        alt=""
+                        className="h-12 w-12 rounded-lg border border-line object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-[#F4F3EF] border border-line flex items-center justify-center text-xs font-bold text-[#7C847E] shrink-0">
+                        ETSY
+                      </div>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs text-[#141B16] truncate max-w-md">
+                        {p.listingTitle}
+                      </div>
+                      <div className="text-[11px] text-[#7C847E] mt-0.5 flex flex-wrap items-center gap-2">
+                        <span>Niche: <strong className="text-[#141B16]">{p.keyword}</strong></span>
+                        <span>·</span>
+                        <span>Price: <strong className="text-[#141B16]">${p.price.toFixed(2)}</strong></span>
+                        <span>·</span>
+                        <span className="text-[#0E8F5D] font-semibold">
+                          Score: {pSignals.opportunityScore}/100
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  <a
-                    href={p.listingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded text-[#7C847E] hover:text-[#141B16]"
-                    title="View on Etsy"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                  <Link href="/checkout?plan=PRO">
-                    <Button variant="secondary" size="compact" className="text-xs">
-                      Analyze Listing →
-                    </Button>
-                  </Link>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <a
+                      href={p.listingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded text-[#7C847E] hover:text-[#141B16]"
+                      title="View on Etsy"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <Link href="/checkout?plan=PRO">
+                      <Button variant="secondary" size="compact" className="text-xs">
+                        Analyze Listing →
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </main>

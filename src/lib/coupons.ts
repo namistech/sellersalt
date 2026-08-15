@@ -16,6 +16,10 @@ export async function validateCoupon(rawCode: string): Promise<{ coupon: Coupon 
   return { coupon };
 }
 
+/**
+ * Coupon codes MUST NOT discount the $1 trial charge.
+ * Coupon discounts apply only to the recurring monthly subscription amount.
+ */
 export function applyCouponDiscount(
   pkg: Pick<Package, "priceUsd" | "trialPriceUsd">,
   coupon: Pick<Coupon, "type" | "value">
@@ -26,13 +30,13 @@ export function applyCouponDiscount(
   };
 
   return {
-    trialPriceUsd: pkg.trialPriceUsd !== null && pkg.trialPriceUsd !== undefined ? discount(pkg.trialPriceUsd) : null,
+    // Trial price is locked to exact plan trial price ($1.00 USD), never discounted
+    trialPriceUsd: pkg.trialPriceUsd ?? 1.0,
     priceUsd: discount(pkg.priceUsd),
   };
 }
 
-/** Called only once a checkout session/subscription is actually created —
- * the validate/preview endpoint must never call this. */
+/** Called only once a checkout session/subscription is actually created */
 export async function redeemCoupon(couponId: string) {
   await prisma.coupon.update({ where: { id: couponId }, data: { redemptionCount: { increment: 1 } } });
 }

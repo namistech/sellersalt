@@ -213,7 +213,12 @@ export default function ProspectsPage() {
               <Button
                 variant="secondary"
                 leadingIcon={<Download className="h-4 w-4" />}
-                onClick={() => downloadCsv(`sellersalt-prospects-${new Date().toISOString().slice(0, 10)}.csv`, filtered)}
+                onClick={() =>
+                  window.open(
+                    `/api/prospects/export?searchConfigId=${searchFilter !== "all" ? searchFilter : ""}`,
+                    "_blank"
+                  )
+                }
               >
                 Export CSV
               </Button>

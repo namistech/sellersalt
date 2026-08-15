@@ -95,10 +95,10 @@ export function NewSearchDrawer({ open, onClose, connectors, onSubmit }: NewSear
         {connectors.length === 0 && <Alert variant="warning">Connect a marketplace before creating a search.</Alert>}
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit" variant="primary" loading={submitting} disabled={connectors.length === 0}>
-            Save search
+          <Button type="submit" variant="primary" loading={submitting} disabled={connectors.length === 0} className="bg-[#0E8F5D] hover:bg-[#0C7A52]">
+            Save & Run Search →
           </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
         </div>
