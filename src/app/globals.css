@@ -4,29 +4,102 @@
 
 @layer base {
   :root {
-    --color-ink: 11 12 14;
-    --color-paper: 250 250 250;
-    --color-surface: 255 255 255;
-    --color-line: 228 228 231;
-    --color-muted: 113 113 122;
-    --color-accent-soft: 239 244 255;
+    /* Legacy token names — kept so existing markup (bg-paper, text-ink,
+       border-line, text-muted, bg-accent, bg-accent-soft, etc.) keeps
+       working unmodified. They now resolve to the SellerSalt locked
+       palette (docs/MASTER_BLUEPRINT.md, Decision 2) instead of the old
+       blue/zinc palette. New work should prefer the full semantic token
+       set below (docs/design/design-system-v1.md §3) over these. */
+    --color-ink: 20 27 22;        /* #141B16 — locked primary ink */
+    --color-paper: 250 250 248;   /* #FAFAF8 — bg-page */
+    --color-surface: 255 255 255; /* #FFFFFF — bg-surface */
+    --color-line: 227 230 224;    /* #E3E6E0 — border-default */
+    --color-muted: 124 132 126;   /* #7C847E — text-tertiary */
+    --color-accent-soft: 231 250 241; /* #E7FAF1 — brand-primary-subtle */
+
+    /* SellerSalt semantic design tokens — docs/design/design-system-v1.md §3.
+       Source of truth for all future component work. */
+
+    /* Background */
+    --color-bg-page: 250 250 248;       /* #FAFAF8 */
+    --color-bg-surface: 255 255 255;    /* #FFFFFF */
+    --color-bg-elevated: 255 255 255;   /* #FFFFFF — paired with shadow-md, not a distinct color */
+    --color-bg-muted: 244 243 239;      /* #F4F3EF */
+    --color-bg-inverse: 20 27 22;       /* #141B16 */
+
+    /* Text */
+    --color-text-primary: 20 27 22;     /* #141B16 */
+    --color-text-secondary: 82 91 85;   /* #525B55 */
+    --color-text-tertiary: 124 132 126; /* #7C847E */
+    --color-text-disabled: 174 180 172; /* #AEB4AC */
+    --color-text-inverse: 247 249 247;  /* #F7F9F7 */
+
+    /* Border */
+    --color-border-default: 227 230 224; /* #E3E6E0 */
+    --color-border-subtle: 237 239 234;  /* #EDEFEA */
+    --color-border-strong: 199 204 196;  /* #C7CCC4 */
+    --color-border-focus: 22 199 132;    /* #16C784 */
+
+    /* Brand */
+    --color-brand-primary: 22 199 132;         /* #16C784 */
+    --color-brand-primary-hover: 16 156 104;   /* #109C68 */
+    --color-brand-primary-active: 12 122 82;   /* #0C7A52 */
+    --color-brand-primary-subtle: 231 250 241; /* #E7FAF1 */
+
+    /* Gold accent (distinct from status-warning — see design-system-v1.md §3) */
+    --color-gold: 255 176 32; /* #FFB020 */
+
+    /* Status: positive (intentionally shares the brand-primary hue — design-system-v1.md §3) */
+    --color-status-positive: 22 199 132;          /* #16C784 */
+    --color-status-positive-subtle: 231 250 241;  /* #E7FAF1 */
+    --color-status-positive-strong: 14 143 93;    /* #0E8F5D */
+
+    /* Status: warning */
+    --color-status-warning: 217 119 6;          /* #D97706 */
+    --color-status-warning-subtle: 253 241 223; /* #FDF1DF */
+
+    /* Score system only (design-system-v1.md §13) — the "Poor" health
+       tier, sitting between Warning and Danger. Not a general-purpose
+       status color (no badge/alert uses it) — kept separate from the
+       status-* group for that reason, added now because the Score
+       component in this task is the first consumer. */
+    --color-score-poor: 194 65 12; /* #C2410C */
+
+    /* Status: danger */
+    --color-status-danger: 220 38 38;         /* #DC2626 */
+    --color-status-danger-subtle: 252 234 233;/* #FCEAE9 */
+
+    /* Status: info */
+    --color-status-info: 43 108 176;         /* #2B6CB0 */
+    --color-status-info-subtle: 233 241 250; /* #E9F1FA */
+
+    /* Data visualization */
+    --color-data-series-1: 22 199 132;  /* #16C784 */
+    --color-data-series-2: 255 176 32;  /* #FFB020 */
+    --color-data-series-3: 43 108 176;  /* #2B6CB0 */
+    --color-data-series-4: 139 92 246;  /* #8B5CF6 */
+    --color-data-series-5: 14 148 136;  /* #0E9488 */
+    --color-data-series-6: 220 107 76;  /* #DC6B4C */
+    --color-data-series-7: 124 132 126; /* #7C847E */
+    --color-data-positive: 22 199 132;   /* #16C784 */
+    --color-data-negative: 220 38 38;    /* #DC2626 */
+    --color-data-neutral: 124 132 126;   /* #7C847E */
+    --color-data-comparison-primary: 22 199 132;   /* #16C784 */
+    --color-data-comparison-secondary: 124 132 126;/* #7C847E */
   }
 
-  .dark {
-    --color-ink: 244 244 245;
-    --color-paper: 9 9 11;
-    --color-surface: 24 24 27;
-    --color-line: 39 39 42;
-    --color-muted: 161 161 170;
-    --color-accent-soft: 30 41 71;
-  }
+  /* Dark mode is not part of the current target product
+     (docs/MASTER_BLUEPRINT.md, Decision 2) unless explicitly
+     reintroduced later. No .dark override block exists — the .dark
+     class is never applied by any code path (see src/app/layout.tsx
+     and src/app/(dashboard)/theme-toggle.tsx). tailwind.config.ts keeps
+     darkMode: "class" so the ~28 existing `dark:` utility usages across
+     5 files still compile; they are now inert dead code rather than a
+     rewritten page, per this task's scope. */
 
   html {
     -webkit-font-smoothing: antialiased;
     color-scheme: light;
-  }
-  html.dark {
-    color-scheme: dark;
   }
   body {
     @apply bg-paper text-ink transition-colors duration-150;

@@ -1,38 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
-import { ProspectTable, type ProspectRow } from "../prospect-table";
-
-interface Connector {
-  id: string;
-  label: string;
-  type: string;
-}
-interface SearchConfig {
-  id: string;
-  name: string;
-  keywords: string[];
-  minPrice: number;
-  maxPrice: number;
-  scheduleCron: string | null;
-  createdAt: string;
-}
-
-const FREQUENCY_LABELS: Record<string, string> = {
-  MANUAL: "Manual only",
-  EVERY_6_HOURS: "Every 6 hours",
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-};
-
-function frequencyFromCron(cron: string | null): string {
-  if (!cron) return "MANUAL";
-  if (cron === "0 */6 * * *") return "EVERY_6_HOURS";
-  if (cron === "0 6 * * *") return "DAILY";
-  if (cron === "0 6 * * 1") return "WEEKLY";
-  return "MANUAL";
-}
+import { useEffect, useMemo, useState } from "react";
+import { Download, Plus, Search as SearchIcon, Radar } from "lucide-react";
+import { PageHeader } from "@/components/shell";
+import { Button, Card, Input, Select, Alert, Tabs, Heading, Text } from "@/components/ui";
+import { Table, EmptyState, ResultsCount, FilterGroup, ActiveFilters, type Column } from "@/components/data";
+import { fetchProspects, updateProspect, type ProspectRow, type ProspectStatus } from "@/services/prospects";
+import {
+  fetchSearchConfigs,
+  createSearchConfig,
+  updateSearchConfigSchedule,
+  scheduleFrequencyFromCron,
+  SCHEDULE_FREQUENCY_LABELS,
+  type SearchConfigSummary,
+  type ScheduleFrequency,
+} from "@/services/searchConfigs";
+import { fetchConnectors, type ConnectorSummary } from "@/services/connectors";
+import { runSearch } from "@/services/jobs";
+import { ServiceError } from "@/services/http";
+import { PROSPECT_STATUS_OPTIONS, buildProspectColumns } from "../prospect-columns";
+import { NewSearchDrawer } from "../new-search-drawer";
 
 const CSV_COLUMNS: Array<{ key: keyof ProspectRow; label: string }> = [
   { key: "shopName", label: "Shop" },
@@ -46,25 +33,19 @@ const CSV_COLUMNS: Array<{ key: keyof ProspectRow; label: string }> = [
   { key: "listingTitle", label: "Listing" },
   { key: "listingUrl", label: "Listing URL" },
   { key: "price", label: "Price" },
+  { key: "status", label: "Status" },
 ];
 
 function toCsv(rows: ProspectRow[]): string {
   const header = CSV_COLUMNS.map((c) => c.label).join(",");
   const body = rows
-    .map((r) =>
-      CSV_COLUMNS.map((c) => {
-        const val = r[c.key];
-        const str = val == null ? "" : String(val);
-        return `"${str.replace(/"/g, '""')}"`;
-      }).join(",")
-    )
+    .map((r) => CSV_COLUMNS.map((c) => `"${String(r[c.key] ?? "").replace(/"/g, '""')}"`).join(","))
     .join("\n");
   return `${header}\n${body}`;
 }
 
 function downloadCsv(filename: string, rows: ProspectRow[]) {
-  const csv = toCsv(rows);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -73,42 +54,36 @@ function downloadCsv(filename: string, rows: ProspectRow[]) {
   URL.revokeObjectURL(url);
 }
 
+type SortKey = "shopAgeMonths" | "reviewCount" | "activeListings" | "totalSales" | "avgSellingRatio" | "estDailySales" | "price";
+
 export default function ProspectsPage() {
-  const [connectors, setConnectors] = useState<Connector[]>([]);
-  const [searchConfigs, setSearchConfigs] = useState<SearchConfig[]>([]);
+  const [tab, setTab] = useState<"results" | "saved">("results");
+  const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
+  const [searchConfigs, setSearchConfigs] = useState<SearchConfigSummary[]>([]);
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [running, setRunning] = useState<string | null>(null);
   const [savingSchedule, setSavingSchedule] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    connectorId: "",
-    name: "",
-    keywords: "digital planner, crochet pattern PDF, svg bundle",
-    minPrice: 10,
-    maxPrice: 20,
-    minShopAgeMonths: 12,
-    maxShopAgeMonths: 24,
-    minReviewCount: 20,
-    scheduleFrequency: "MANUAL",
-  });
+  const [searchFilter, setSearchFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<Set<ProspectStatus>>(new Set());
+  const [sortKey, setSortKey] = useState<SortKey | undefined>(undefined);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   async function loadAll() {
-    const [cRes, sRes, pRes] = await Promise.all([
-      fetch("/api/connectors"),
-      fetch("/api/search-configs"),
-      fetch("/api/prospects"),
-    ]);
-    const [cData, sData, pData] = await Promise.all([cRes.json(), sRes.json(), pRes.json()]);
-    setConnectors(cData.connectors ?? []);
-    setSearchConfigs(sData.searchConfigs ?? []);
-    setProspects(pData.prospects ?? []);
-    if (!form.connectorId && cData.connectors?.length > 0) {
-      setForm((f) => ({ ...f, connectorId: cData.connectors[0].id }));
+    setLoadError(null);
+    try {
+      const [c, s, p] = await Promise.all([fetchConnectors(), fetchSearchConfigs(), fetchProspects()]);
+      setConnectors(c);
+      setSearchConfigs(s);
+      setProspects(p);
+    } catch (e) {
+      setLoadError(e instanceof ServiceError ? e.message : "Couldn't load Prospects. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -116,247 +91,286 @@ export default function ProspectsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleCreateConfig(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const res = await fetch("/api/search-configs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        keywords: form.keywords.split(",").map((k) => k.trim()).filter(Boolean),
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error ?? "Failed to create search.");
-      return;
-    }
-    setShowForm(false);
-    loadAll();
+  async function handleCreateSearch(input: Parameters<typeof createSearchConfig>[0]) {
+    await createSearchConfig(input);
+    setDrawerOpen(false);
+    await loadAll();
   }
 
   async function handleRun(searchConfigId: string) {
     setRunning(searchConfigId);
-    await fetch("/api/jobs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ searchConfigId }),
-    });
-    setRunning(null);
-    loadAll();
+    try {
+      await runSearch(searchConfigId);
+    } catch {
+      // Surfaced generically — a queue/Redis failure here doesn't block the rest of the page.
+    } finally {
+      setRunning(null);
+      loadAll();
+    }
   }
 
-  async function handleScheduleChange(searchConfigId: string, scheduleFrequency: string) {
+  async function handleScheduleChange(searchConfigId: string, scheduleFrequency: ScheduleFrequency) {
     setSavingSchedule(searchConfigId);
-    const res = await fetch(`/api/search-configs/${searchConfigId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scheduleFrequency }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Failed to update schedule.");
+    try {
+      await updateSearchConfigSchedule(searchConfigId, scheduleFrequency);
+    } finally {
+      setSavingSchedule(null);
+      loadAll();
     }
-    setSavingSchedule(null);
-    loadAll();
   }
 
   async function handleToggleFavorite(id: string, next: boolean) {
     setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: next } : p)));
-    await fetch(`/api/prospects/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isFavorite: next }),
+    try {
+      await updateProspect(id, { isFavorite: next });
+    } catch {
+      setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, isFavorite: !next } : p)));
+    }
+  }
+
+  async function handleStatusChange(id: string, status: ProspectStatus) {
+    const previous = prospects.find((p) => p.id === id)?.status;
+    setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    try {
+      await updateProspect(id, { status });
+    } catch {
+      if (previous) setProspects((prev) => prev.map((p) => (p.id === id ? { ...p, status: previous } : p)));
+    }
+  }
+
+  function toggleStatusFilter(status: ProspectStatus) {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
     });
+  }
+
+  const filtered = useMemo(() => {
+    let rows = prospects;
+    if (searchFilter !== "all") rows = rows.filter((p) => p.searchConfigId === searchFilter);
+    if (statusFilter.size > 0) rows = rows.filter((p) => statusFilter.has(p.status));
+    if (!sortKey) return rows;
+    return [...rows].sort((a, b) => {
+      const av = (a[sortKey] ?? 0) as number;
+      const bv = (b[sortKey] ?? 0) as number;
+      return sortDir === "asc" ? av - bv : bv - av;
+    });
+  }, [prospects, searchFilter, statusFilter, sortKey, sortDir]);
+
+  function handleSort(key: string) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key as SortKey);
+      setSortDir("desc");
+    }
+  }
+
+  const columns: Column<ProspectRow>[] = buildProspectColumns({
+    onToggleFavorite: handleToggleFavorite,
+    onStatusChange: handleStatusChange,
+    showSearchName: tab === "results" && searchFilter === "all" ? (row) => searchConfigs.find((s) => s.id === row.searchConfigId)?.name : undefined,
+  });
+
+  const activeFilters = [
+    ...(searchFilter !== "all" ? [{ key: "search", label: `Search: ${searchConfigs.find((s) => s.id === searchFilter)?.name ?? ""}` }] : []),
+    ...Array.from(statusFilter).map((s) => ({ key: `status:${s}`, label: PROSPECT_STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s })),
+  ];
+
+  function clearFilters() {
+    setSearchFilter("all");
+    setStatusFilter(new Set());
   }
 
   if (!loading && connectors.length === 0) {
     return (
       <div>
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-ink">Prospects</h1>
-        <p className="mb-6 text-sm text-muted">
-          Connect a marketplace first, then define a search to start finding prospects.
-        </p>
-        <a href="/connectors" className="btn-primary">Go to connectors</a>
+        <PageHeader title="Prospects" description="Results are grouped under the search that found them." />
+        <Card padding="lg">
+          <EmptyState
+            title="Connect a marketplace first"
+            description="Then define a search to start finding prospects."
+            action={
+              <Button variant="primary" href="/connectors">
+                Go to connectors
+              </Button>
+            }
+          />
+        </Card>
       </div>
     );
   }
 
   return (
     <div>
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Prospects</h1>
-          <p className="mt-1 text-sm text-muted">
-            Results are grouped under the search that found them. Set a search to run on a
-            schedule to build up trend history automatically — Total Sales and Sales/Listing
-            come from Etsy's real lifetime sales count for the shop.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {prospects.length > 0 && (
-            <button
-              className="btn-secondary"
-              onClick={() => downloadCsv(`sellersalt-prospects-${new Date().toISOString().slice(0, 10)}.csv`, prospects)}
-            >
-              <Download className="mr-1.5 inline h-4 w-4" />
-              Export CSV
-            </button>
-          )}
-          {!showForm && (
-            <button className="btn-primary shrink-0" onClick={() => setShowForm(true)}>
-              New search
-            </button>
-          )}
-        </div>
-      </header>
-
-      {showForm && (
-        <form onSubmit={handleCreateConfig} className="card mb-6 space-y-4">
-          <h2 className="text-sm font-semibold text-ink">Define a search</h2>
-
-          <div>
-            <label className="label">Connector</label>
-            <div className="flex flex-wrap gap-2">
-              {connectors.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setForm({ ...form, connectorId: c.id })}
-                  className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
-                    form.connectorId === c.id
-                      ? "border-accent bg-accent-soft text-accent"
-                      : "border-line text-ink hover:border-ink"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="label">Search name</label>
-            <input
-              className="input"
-              required
-              placeholder="Digital downloads - Q1"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="label">Keywords (comma separated)</label>
-            <input
-              className="input"
-              value={form.keywords}
-              onChange={(e) => setForm({ ...form, keywords: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="label">Min price ($)</label>
-              <input type="number" className="input" value={form.minPrice}
-                onChange={(e) => setForm({ ...form, minPrice: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Max price ($)</label>
-              <input type="number" className="input" value={form.maxPrice}
-                onChange={(e) => setForm({ ...form, maxPrice: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Min shop age (mo)</label>
-              <input type="number" className="input" value={form.minShopAgeMonths}
-                onChange={(e) => setForm({ ...form, minShopAgeMonths: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Max shop age (mo)</label>
-              <input type="number" className="input" value={form.maxShopAgeMonths}
-                onChange={(e) => setForm({ ...form, maxShopAgeMonths: Number(e.target.value) })} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Min reviews</label>
-              <input type="number" className="input" value={form.minReviewCount}
-                onChange={(e) => setForm({ ...form, minReviewCount: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Run automatically</label>
-              <select
-                className="input"
-                value={form.scheduleFrequency}
-                onChange={(e) => setForm({ ...form, scheduleFrequency: e.target.value })}
-              >
-                {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-danger">{error}</p>}
-
+      <PageHeader
+        title="Prospects"
+        description="Total Sales and Sales/Listing come from Etsy's real lifetime sales count for the shop."
+        primaryAction={
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary">Save search</button>
-            <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
+            {tab === "results" && filtered.length > 0 && (
+              <Button
+                variant="secondary"
+                leadingIcon={<Download className="h-4 w-4" />}
+                onClick={() => downloadCsv(`sellersalt-prospects-${new Date().toISOString().slice(0, 10)}.csv`, filtered)}
+              >
+                Export CSV
+              </Button>
+            )}
+            <Button variant="primary" leadingIcon={<Plus className="h-4 w-4" />} onClick={() => setDrawerOpen(true)}>
+              New search
+            </Button>
           </div>
-        </form>
+        }
+      />
+
+      {loadError && (
+        <Alert variant="danger" title="Couldn't load Prospects" className="mb-6">
+          {loadError}
+        </Alert>
       )}
 
-      {loading ? (
-        <p className="text-sm text-muted">Loading…</p>
-      ) : searchConfigs.length === 0 ? (
-        <p className="text-sm text-muted">No saved searches yet. Click "New search" to create one.</p>
-      ) : (
-        <div className="space-y-6">
-          {searchConfigs.map((s) => {
-            const rows = prospects.filter((p) => (p as any).searchConfigId === s.id);
-            return (
-              <div key={s.id} className="card">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-ink">{s.name}</div>
-                    <div className="text-xs text-muted">
-                      {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice}
-                    </div>
+      <Tabs value={tab} onChange={(v) => setTab(v as "results" | "saved")}>
+        <Tabs.List aria-label="Prospects views">
+          <Tabs.Trigger value="results">Results</Tabs.Trigger>
+          <Tabs.Trigger value="saved">Saved Searches</Tabs.Trigger>
+        </Tabs.List>
+
+        <Tabs.Panel value="results">
+          {!loading && searchConfigs.length === 0 ? (
+            <Card padding="lg" className="mt-4">
+              <EmptyState
+                icon={<SearchIcon />}
+                title="No saved searches yet"
+                description='Click "New search" to define keywords and filters — results appear here once a search runs.'
+                action={
+                  <Button variant="primary" onClick={() => setDrawerOpen(true)}>
+                    New search
+                  </Button>
+                }
+              />
+            </Card>
+          ) : (
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Select
+                  aria-label="Filter by search"
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  options={[{ value: "all", label: "All searches" }, ...searchConfigs.map((s) => ({ value: s.id, label: s.name }))]}
+                  className="!w-auto"
+                />
+                <FilterGroup label="Status" activeSummary={statusFilter.size > 0 ? `Status (${statusFilter.size})` : undefined}>
+                  <div className="flex flex-col gap-2">
+                    {PROSPECT_STATUS_OPTIONS.map((opt) => (
+                      <label key={opt.value} className="flex items-center gap-2 text-body-sm text-ink">
+                        <input
+                          type="checkbox"
+                          checked={statusFilter.has(opt.value)}
+                          onChange={() => toggleStatusFilter(opt.value)}
+                          className="h-[18px] w-[18px] rounded-xs border-line-strong accent-accent"
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      className="input !w-auto py-1.5 text-xs"
-                      value={frequencyFromCron(s.scheduleCron)}
-                      disabled={savingSchedule === s.id}
-                      onChange={(e) => handleScheduleChange(s.id, e.target.value)}
-                    >
-                      {Object.entries(FREQUENCY_LABELS).map(([key, label]) => (
-                        <option key={key} value={key}>{label}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleRun(s.id)}
-                      disabled={running === s.id}
-                      className="btn-secondary shrink-0"
-                    >
-                      {running === s.id ? "Queuing…" : "Run now"}
-                    </button>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <ProspectTable
-                    rows={rows}
-                    onToggleFavorite={handleToggleFavorite}
-                    emptyMessage='No results yet. Click "Run now" — check the Jobs page for progress.'
-                  />
-                </div>
+                </FilterGroup>
+                <ResultsCount count={filtered.length} label={filtered.length === 1 ? "prospect" : "prospects"} className="ml-auto" />
               </div>
-            );
-          })}
-        </div>
-      )}
+              {activeFilters.length > 0 && <ActiveFilters filters={activeFilters} onRemove={() => clearFilters()} onClearAll={clearFilters} />}
+
+              <Table<ProspectRow>
+                aria-label="Prospects"
+                columns={columns}
+                rows={filtered}
+                getRowId={(p) => p.id}
+                sortKey={sortKey}
+                sortDirection={sortDir}
+                onSort={handleSort}
+                loading={loading}
+                density="compact"
+                emptyState={
+                  <EmptyState
+                    title={prospects.length === 0 ? "No results yet" : "No results for these filters"}
+                    description={
+                      prospects.length === 0
+                        ? 'Run a search from the Saved Searches tab — check the Jobs page for progress.'
+                        : "Try clearing your filters."
+                    }
+                    action={prospects.length > 0 ? <Button variant="secondary" onClick={clearFilters}>Clear filters</Button> : undefined}
+                  />
+                }
+              />
+            </div>
+          )}
+        </Tabs.Panel>
+
+        <Tabs.Panel value="saved">
+          {loading ? (
+            <Text size="body-sm" color="secondary" className="mt-4">
+              Loading…
+            </Text>
+          ) : searchConfigs.length === 0 ? (
+            <Card padding="lg" className="mt-4">
+              <EmptyState
+                icon={<SearchIcon />}
+                title='No saved searches yet — click "New search" to create one'
+                action={
+                  <Button variant="primary" onClick={() => setDrawerOpen(true)}>
+                    New search
+                  </Button>
+                }
+              />
+            </Card>
+          ) : (
+            <div className="mt-4 flex flex-col gap-3">
+              {searchConfigs.map((s) => {
+                const resultCount = prospects.filter((p) => p.searchConfigId === s.id).length;
+                return (
+                  <Card key={s.id} padding="md">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <Heading as="h3" size="h4">
+                          {s.name}
+                        </Heading>
+                        <Text size="body-sm" color="secondary" className="mt-0.5">
+                          {s.keywords.join(", ")} · ${s.minPrice}–${s.maxPrice} · {resultCount} result{resultCount === 1 ? "" : "s"}
+                        </Text>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          aria-label={`Schedule for ${s.name}`}
+                          value={scheduleFrequencyFromCron(s.scheduleCron)}
+                          disabled={savingSchedule === s.id}
+                          onChange={(e) => handleScheduleChange(s.id, e.target.value as ScheduleFrequency)}
+                          options={Object.entries(SCHEDULE_FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))}
+                          className="!w-auto"
+                        />
+                        <Button
+                          variant="secondary"
+                          leadingIcon={<Radar className="h-4 w-4" />}
+                          onClick={() => handleRun(s.id)}
+                          loading={running === s.id}
+                        >
+                          Run now
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </Tabs.Panel>
+      </Tabs>
+
+      <NewSearchDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        connectors={connectors}
+        onSubmit={handleCreateSearch}
+      />
     </div>
   );
 }
