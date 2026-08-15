@@ -48,10 +48,13 @@ interface AdminUserRow {
   name: string | null;
   email: string;
   role: string;
+  membershipId: string | null;
+  organizationId: string | null;
   organizationName: string;
   planName: string;
   subscriptionStatus: string;
   memberSince: string;
+  suspended: boolean;
 }
 
 interface Package {
@@ -60,6 +63,9 @@ interface Package {
   name: string;
   priceUsd: number;
   isCustom: boolean;
+  isActive: boolean;
+  trialDays: number | null;
+  trialPriceUsd: number | null;
   maxConnectors: number;
   maxSearchConfigs: number;
   maxScheduledSearches: number;
@@ -154,6 +160,25 @@ export function AdminPackagesClient() {
 
   const [loading, setLoading] = useState(true);
 
+  // User row actions
+  const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
+  const [userActionError, setUserActionError] = useState<string | null>(null);
+
+  // Org row actions
+  const [orgActionLoading, setOrgActionLoading] = useState<string | null>(null);
+  const [orgActionError, setOrgActionError] = useState<string | null>(null);
+
+  // Package edit/create — draft values are always raw input strings;
+  // converted to numbers only when sent to the API.
+  const [packageDrafts, setPackageDrafts] = useState<Record<string, Record<string, string>>>({});
+  const [packageSaving, setPackageSaving] = useState<string | null>(null);
+  const [showNewPackageForm, setShowNewPackageForm] = useState(false);
+  const [newPackage, setNewPackage] = useState({
+    key: "", name: "", priceUsd: 0,
+    maxConnectors: 1, maxSearchConfigs: 3, maxScheduledSearches: 1, maxTrackedShops: 5, maxProspectsPerMonth: 200,
+  });
+  const [packageCreating, setPackageCreating] = useState(false);
+
   async function loadAll() {
     try {
       const [mRes, pRes, oRes, cRes, payRes, setRes, tmplRes] = await Promise.all([
@@ -212,6 +237,155 @@ export function AdminPackagesClient() {
     loadAll();
     searchUsers("");
   }, []);
+
+  async function handleUserAction(userId: string, body: Record<string, unknown>) {
+    setUserActionLoading(userId);
+    setUserActionError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUserActionError(data.error || "Action failed.");
+        return;
+      }
+      await searchUsers(userSearch);
+    } catch {
+      setUserActionError("Network error.");
+    } finally {
+      setUserActionLoading(null);
+    }
+  }
+
+  async function handleDeleteUser(userId: string, email: string) {
+    if (!confirm(`Permanently delete ${email}? This cannot be undone.`)) return;
+    setUserActionLoading(userId);
+    setUserActionError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setUserActionError(data.error || "Delete failed.");
+        return;
+      }
+      await searchUsers(userSearch);
+    } catch {
+      setUserActionError("Network error.");
+    } finally {
+      setUserActionLoading(null);
+    }
+  }
+
+  async function handleOrgAction(orgId: string, method: "PATCH" | "PUT" | "DELETE", body?: Record<string, unknown>, path = "") {
+    setOrgActionLoading(orgId);
+    setOrgActionError(null);
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}${path}`, {
+        method,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOrgActionError(data.error || "Action failed.");
+        return;
+      }
+      await loadAll();
+    } catch {
+      setOrgActionError("Network error.");
+    } finally {
+      setOrgActionLoading(null);
+    }
+  }
+
+  function updatePackageDraft(id: string, field: string, value: string) {
+    setPackageDrafts((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  }
+
+  async function handleSavePackage(pkg: Package) {
+    const draft = packageDrafts[pkg.id] ?? {};
+    setPackageSaving(pkg.id);
+    try {
+      const res = await fetch(`/api/admin/packages/${pkg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: draft.name ?? pkg.name,
+          priceUsd: draft.priceUsd ?? pkg.priceUsd,
+          maxConnectors: draft.maxConnectors ?? pkg.maxConnectors,
+          maxSearchConfigs: draft.maxSearchConfigs ?? pkg.maxSearchConfigs,
+          maxScheduledSearches: draft.maxScheduledSearches ?? pkg.maxScheduledSearches,
+          maxTrackedShops: draft.maxTrackedShops ?? pkg.maxTrackedShops,
+          maxProspectsPerMonth: draft.maxProspectsPerMonth ?? pkg.maxProspectsPerMonth,
+        }),
+      });
+      if (res.ok) {
+        setPackageDrafts((prev) => {
+          const next = { ...prev };
+          delete next[pkg.id];
+          return next;
+        });
+        await loadAll();
+      }
+    } finally {
+      setPackageSaving(null);
+    }
+  }
+
+  async function handleTogglePackageActive(pkg: Package) {
+    setPackageSaving(pkg.id);
+    try {
+      await fetch(`/api/admin/packages/${pkg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !pkg.isActive }),
+      });
+      await loadAll();
+    } finally {
+      setPackageSaving(null);
+    }
+  }
+
+  async function handleDeletePackage(pkg: Package) {
+    if (!confirm(`Delete package "${pkg.name}"? Organizations must be reassigned first.`)) return;
+    setPackageSaving(pkg.id);
+    try {
+      const res = await fetch(`/api/admin/packages/${pkg.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Could not delete package.");
+        return;
+      }
+      await loadAll();
+    } finally {
+      setPackageSaving(null);
+    }
+  }
+
+  async function handleCreatePackage(e: React.FormEvent) {
+    e.preventDefault();
+    setPackageCreating(true);
+    try {
+      const res = await fetch("/api/admin/packages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPackage),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Could not create package.");
+        return;
+      }
+      setShowNewPackageForm(false);
+      setNewPackage({ key: "", name: "", priceUsd: 0, maxConnectors: 1, maxSearchConfigs: 3, maxScheduledSearches: 1, maxTrackedShops: 5, maxProspectsPerMonth: 200 });
+      await loadAll();
+    } finally {
+      setPackageCreating(false);
+    }
+  }
 
   async function handleSaveSetting(key: string) {
     const value = settingDrafts[key] ?? "";
@@ -392,6 +566,8 @@ export function AdminPackagesClient() {
             </div>
           </div>
 
+          {userActionError && <Alert variant="danger">{userActionError}</Alert>}
+
           <div className="overflow-x-auto border border-line rounded-lg">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
@@ -402,19 +578,42 @@ export function AdminPackagesClient() {
                   <th className="p-3">Plan</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Signed Up</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-[#FAFAF8]">
+                  <tr key={u.id} className={`hover:bg-[#FAFAF8] ${u.suspended ? "opacity-60" : ""}`}>
                     <td className="p-3">
                       <div className="font-bold text-ink">{u.name || "—"}</div>
                       <div className="text-ink-tertiary">{u.email}</div>
+                      {u.suspended && <Badge variant="danger" className="mt-1">Suspended</Badge>}
                     </td>
-                    <td className="p-3 font-mono">{u.role}</td>
+                    <td className="p-3">
+                      <select
+                        value={u.role}
+                        disabled={!u.membershipId || userActionLoading === u.id}
+                        onChange={(e) => handleUserAction(u.id, { role: e.target.value })}
+                        className="font-mono text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50"
+                      >
+                        <option value="OWNER">OWNER</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="MEMBER">MEMBER</option>
+                      </select>
+                    </td>
                     <td className="p-3 font-medium text-ink">{u.organizationName}</td>
                     <td className="p-3">
-                      <Badge variant="neutral">{u.planName}</Badge>
+                      <select
+                        value={packages.find((p) => p.name === u.planName)?.id ?? ""}
+                        disabled={!u.organizationId || userActionLoading === u.id}
+                        onChange={(e) => e.target.value && handleUserAction(u.id, { packageId: e.target.value })}
+                        className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
+                      >
+                        <option value="" disabled>{u.planName}</option>
+                        {packages.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="p-3">
                       <Badge variant={u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "TRIALING" ? "success" : "warning"}>
@@ -422,6 +621,28 @@ export function AdminPackagesClient() {
                       </Badge>
                     </td>
                     <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          loading={userActionLoading === u.id}
+                          onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
+                          className="text-[11px]"
+                        >
+                          {u.suspended ? "Unsuspend" : "Suspend"}
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="compact"
+                          loading={userActionLoading === u.id}
+                          onClick={() => handleDeleteUser(u.id, u.email)}
+                          className="text-[11px]"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -436,6 +657,7 @@ export function AdminPackagesClient() {
           <Heading as="h2" size="h4">
             Tenant Workspaces ({orgs.length})
           </Heading>
+          {orgActionError && <Alert variant="danger">{orgActionError}</Alert>}
           <div className="overflow-x-auto border border-line rounded-lg">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
@@ -445,6 +667,7 @@ export function AdminPackagesClient() {
                   <th className="p-3">Plan</th>
                   <th className="p-3">Subscription</th>
                   <th className="p-3">Usage</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-subtle">
@@ -453,7 +676,17 @@ export function AdminPackagesClient() {
                     <td className="p-3 font-bold text-ink">{o.name}</td>
                     <td className="p-3 text-ink-secondary">{o.ownerEmail || "—"}</td>
                     <td className="p-3">
-                      <Badge variant="neutral">{o.package?.name ?? "Started"}</Badge>
+                      <select
+                        value={o.package?.id ?? ""}
+                        disabled={orgActionLoading === o.id}
+                        onChange={(e) => e.target.value && handleOrgAction(o.id, "PATCH", { packageId: e.target.value })}
+                        className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
+                      >
+                        <option value="" disabled>{o.package?.name ?? "Started"}</option>
+                        {packages.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="p-3">
                       <Badge variant={o.subscription?.status === "ACTIVE" ? "success" : "neutral"}>
@@ -462,6 +695,47 @@ export function AdminPackagesClient() {
                     </td>
                     <td className="p-3 font-mono text-[11px] text-ink-tertiary">
                       {o.usage?.prospects ?? 0} prospects · {o.usage?.searchConfigs ?? 0} streams
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          loading={orgActionLoading === o.id}
+                          onClick={() =>
+                            o.package?.id &&
+                            handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "TRIALING" }, "/subscription")
+                          }
+                          className="text-[11px]"
+                          title="Grant a trialing subscription on the current package"
+                        >
+                          Extend Trial
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          loading={orgActionLoading === o.id}
+                          onClick={() =>
+                            o.package?.id &&
+                            handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "ACTIVE" }, "/subscription")
+                          }
+                          className="text-[11px]"
+                          title="Grant an active subscription on the current package, bypassing billing"
+                        >
+                          Grant Access
+                        </Button>
+                        {o.subscription && (
+                          <Button
+                            variant="destructive"
+                            size="compact"
+                            loading={orgActionLoading === o.id}
+                            onClick={() => handleOrgAction(o.id, "DELETE", undefined, "/subscription")}
+                            className="text-[11px]"
+                          >
+                            Cancel Sub
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -473,29 +747,133 @@ export function AdminPackagesClient() {
 
       {/* 4. PACKAGES & PLANS */}
       {activeTab === "packages" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {packages.map((pkg) => (
-            <Card key={pkg.id} padding="lg" className="border-line bg-white shadow-xs space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-extrabold text-base text-ink">{pkg.name}</span>
-                  <Badge variant="neutral" className="font-mono text-xs">{pkg.key}</Badge>
+        <div className="space-y-5">
+          <div className="flex justify-end">
+            <Button variant="primary" size="compact" onClick={() => setShowNewPackageForm((s) => !s)} className="text-xs">
+              {showNewPackageForm ? "Cancel" : "+ New Package"}
+            </Button>
+          </div>
+
+          {showNewPackageForm && (
+            <Card padding="lg" className="border-line bg-[#FAFAF8] shadow-xs">
+              <form onSubmit={handleCreatePackage} className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Key</label>
+                  <input required value={newPackage.key} onChange={(e) => setNewPackage((p) => ({ ...p, key: e.target.value.toUpperCase() }))} className="w-full text-xs border border-line rounded px-2 py-1.5" placeholder="ENTERPRISE" />
                 </div>
-                <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono mb-3">
-                  ${pkg.priceUsd}<span className="text-xs font-normal text-ink-tertiary">/mo</span>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Name</label>
+                  <input required value={newPackage.name} onChange={(e) => setNewPackage((p) => ({ ...p, name: e.target.value }))} className="w-full text-xs border border-line rounded px-2 py-1.5" placeholder="Enterprise" />
                 </div>
-                <div className="space-y-1 text-xs text-ink-secondary">
-                  <div>Max Saved Searches: <strong>{pkg.maxSearchConfigs}</strong></div>
-                  <div>Scheduled Searches: <strong>{pkg.maxScheduledSearches}</strong></div>
-                  <div>Tracked Shops: <strong>{pkg.maxTrackedShops}</strong></div>
-                  <div>Prospects/mo: <strong>{pkg.maxProspectsPerMonth.toLocaleString()}</strong></div>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Price/mo ($)</label>
+                  <input type="number" min="0" value={newPackage.priceUsd} onChange={(e) => setNewPackage((p) => ({ ...p, priceUsd: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
                 </div>
-              </div>
-              <div className="pt-3 border-t border-line-subtle text-xs text-ink-tertiary">
-                {pkg._count?.organizations ?? 0} active workspaces
-              </div>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Search Streams</label>
+                  <input type="number" min="0" value={newPackage.maxSearchConfigs} onChange={(e) => setNewPackage((p) => ({ ...p, maxSearchConfigs: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Scheduled Searches</label>
+                  <input type="number" min="0" value={newPackage.maxScheduledSearches} onChange={(e) => setNewPackage((p) => ({ ...p, maxScheduledSearches: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Tracked Shops</label>
+                  <input type="number" min="0" value={newPackage.maxTrackedShops} onChange={(e) => setNewPackage((p) => ({ ...p, maxTrackedShops: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Prospects/mo</label>
+                  <input type="number" min="0" value={newPackage.maxProspectsPerMonth} onChange={(e) => setNewPackage((p) => ({ ...p, maxProspectsPerMonth: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
+                </div>
+                <div>
+                  <input type="number" min="0" value={newPackage.maxConnectors} onChange={(e) => setNewPackage((p) => ({ ...p, maxConnectors: Number(e.target.value) }))} className="hidden" />
+                  <Button type="submit" variant="primary" size="compact" loading={packageCreating} className="text-xs w-full">Create</Button>
+                </div>
+              </form>
             </Card>
-          ))}
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {packages.map((pkg) => {
+              const draft = packageDrafts[pkg.id] ?? {};
+              return (
+                <Card key={pkg.id} padding="lg" className={`border-line bg-white shadow-xs space-y-3 flex flex-col justify-between ${!pkg.isActive ? "opacity-60" : ""}`}>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <input
+                        value={draft.name ?? pkg.name}
+                        onChange={(e) => updatePackageDraft(pkg.id, "name", e.target.value)}
+                        className="font-extrabold text-sm text-ink border-b border-transparent hover:border-line focus:border-[#0E8F5D] focus:outline-none bg-transparent w-2/3"
+                      />
+                      <Badge variant="neutral" className="font-mono text-[10px]">{pkg.key}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-xl font-extrabold text-[#0E8F5D] font-mono">
+                      $
+                      <input
+                        type="number"
+                        min="0"
+                        value={draft.priceUsd ?? pkg.priceUsd}
+                        onChange={(e) => updatePackageDraft(pkg.id, "priceUsd", e.target.value)}
+                        className="w-16 border-b border-transparent hover:border-line focus:border-[#0E8F5D] focus:outline-none bg-transparent"
+                      />
+                      <span className="text-xs font-normal text-ink-tertiary">/mo</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-ink-secondary">
+                      <label className="flex flex-col gap-0.5">
+                        Search Streams
+                        <input type="number" min="0" value={draft.maxSearchConfigs ?? pkg.maxSearchConfigs} onChange={(e) => updatePackageDraft(pkg.id, "maxSearchConfigs", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
+                      </label>
+                      <label className="flex flex-col gap-0.5">
+                        Scheduled
+                        <input type="number" min="0" value={draft.maxScheduledSearches ?? pkg.maxScheduledSearches} onChange={(e) => updatePackageDraft(pkg.id, "maxScheduledSearches", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
+                      </label>
+                      <label className="flex flex-col gap-0.5">
+                        Tracked Shops
+                        <input type="number" min="0" value={draft.maxTrackedShops ?? pkg.maxTrackedShops} onChange={(e) => updatePackageDraft(pkg.id, "maxTrackedShops", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
+                      </label>
+                      <label className="flex flex-col gap-0.5">
+                        Prospects/mo
+                        <input type="number" min="0" value={draft.maxProspectsPerMonth ?? pkg.maxProspectsPerMonth} onChange={(e) => updatePackageDraft(pkg.id, "maxProspectsPerMonth", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
+                      </label>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-line-subtle space-y-2">
+                    <div className="flex items-center justify-between text-[11px] text-ink-tertiary">
+                      <span>{pkg._count?.organizations ?? 0} active workspaces</span>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePackageActive(pkg)}
+                        className={`font-semibold ${pkg.isActive ? "text-[#0E8F5D]" : "text-ink-tertiary"}`}
+                      >
+                        {pkg.isActive ? "● Active" : "○ Hidden"}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="primary"
+                        size="compact"
+                        loading={packageSaving === pkg.id}
+                        disabled={!packageDrafts[pkg.id]}
+                        onClick={() => handleSavePackage(pkg)}
+                        className="text-[11px] flex-1 bg-[#0E8F5D] hover:bg-[#0C7A52]"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="compact"
+                        loading={packageSaving === pkg.id}
+                        onClick={() => handleDeletePackage(pkg)}
+                        className="text-[11px]"
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 

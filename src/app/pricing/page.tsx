@@ -70,7 +70,7 @@ const FAQ_ITEMS = [
 
 export default async function PublicPricingPage() {
   const packages = await prisma.package.findMany({
-    where: { isCustom: false },
+    where: { isCustom: false, isActive: true },
     orderBy: { priceUsd: "asc" },
   });
 

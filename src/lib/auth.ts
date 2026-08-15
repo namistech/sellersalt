@@ -71,6 +71,7 @@ export const authOptions: NextAuthOptions = {
           include: { memberships: { include: { organization: true } } },
         });
         if (!user) return null;
+        if (user.suspendedAt) throw new Error("ACCOUNT_SUSPENDED");
 
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
@@ -123,6 +124,7 @@ export const authOptions: NextAuthOptions = {
           include: { user: { include: { memberships: { include: { organization: true } } } } },
         });
         if (!stored) return null;
+        if (stored.user.suspendedAt) throw new Error("ACCOUNT_SUSPENDED");
 
         let verification;
         try {
@@ -197,6 +199,8 @@ export const authOptions: NextAuthOptions = {
             include: { memberships: { include: { organization: true } } },
           });
         }
+
+        if (dbUser.suspendedAt) return false; // NextAuth treats a false return as access denied
 
         // Persist Google / OAuth profile picture if available
         const avatarUrl = user.image || (profile as any)?.picture || null;

@@ -71,7 +71,7 @@ export default async function RootPage() {
 
   await ensureDefaultPackages();
   const packages = await prisma.package.findMany({
-    where: { key: { in: ["STARTED", "PRO", "AGENCY"] } },
+    where: { key: { in: ["STARTED", "PRO", "AGENCY"] }, isActive: true },
     select: {
       key: true,
       name: true,

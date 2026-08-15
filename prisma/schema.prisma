@@ -42,12 +42,13 @@ enum Plan {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
   name         String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  suspendedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   memberships Membership[]
   passwordResetTokens PasswordResetToken[]
@@ -323,6 +324,10 @@ model Package {
   name     String
   priceUsd Float   @default(0)
   isCustom Boolean @default(false)
+  // Inactive packages are hidden from the public pricing page and checkout,
+  // but existing organizations already on one keep working — this is a
+  // visibility/sales toggle, not a hard cutoff.
+  isActive Boolean @default(true)
 
   maxConnectors        Int @default(1)
   maxSearchConfigs     Int @default(3)

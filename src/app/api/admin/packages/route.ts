@@ -40,6 +40,7 @@ export async function POST(req: Request) {
       name,
       priceUsd: Number(priceUsd) || 0,
       isCustom: Boolean(isCustom),
+      isActive: body.isActive !== false,
       maxConnectors: Number(maxConnectors) || 1,
       maxSearchConfigs: Number(maxSearchConfigs) || 3,
       maxScheduledSearches: Number(maxScheduledSearches) || 1,

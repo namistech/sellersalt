@@ -17,6 +17,7 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "Access was denied — you cancelled the authorization, or your account isn't allowed to sign in this way.",
   Configuration: "Sign-in is temporarily misconfigured on our end. Please try again shortly or use email sign-in.",
   Verification: "That sign-in link is invalid or has expired.",
+  ACCOUNT_SUSPENDED: "This account has been suspended. Contact support@sellersalt.com if you believe this is a mistake.",
   Default: "Something went wrong signing you in. Please try again.",
 };
 
@@ -66,6 +67,11 @@ function LoginForm() {
       setError("That code isn't valid. Check your authenticator app, or use a backup code.");
       return;
     }
+    if (res?.error === "ACCOUNT_SUSPENDED") {
+      setError(OAUTH_ERROR_MESSAGES.ACCOUNT_SUSPENDED);
+      setNeedsTwoFactor(false);
+      return;
+    }
     if (res?.error) {
       setError("That email and password don't match an account.");
       setNeedsTwoFactor(false);
@@ -98,6 +104,10 @@ function LoginForm() {
         redirect: false,
       });
 
+      if (res?.error === "ACCOUNT_SUSPENDED") {
+        setError(OAUTH_ERROR_MESSAGES.ACCOUNT_SUSPENDED);
+        return;
+      }
       if (res?.error) {
         setError("That passkey isn't recognized. Please try again or use another sign-in method.");
         return;

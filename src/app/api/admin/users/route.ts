@@ -39,17 +39,21 @@ export async function GET(req: Request) {
   });
 
   const formatted = users.map((u) => {
-    const primaryOrg = u.memberships[0]?.organization;
-    const role = u.memberships[0]?.role || "MEMBER";
+    const membership = u.memberships[0];
+    const primaryOrg = membership?.organization;
+    const role = membership?.role || "MEMBER";
     return {
       id: u.id,
       name: u.name,
       email: u.email,
       role,
+      membershipId: membership?.id ?? null,
+      organizationId: primaryOrg?.id ?? null,
       organizationName: primaryOrg?.name || "No Workspace",
       planName: primaryOrg?.package?.name || "Starter",
       subscriptionStatus: primaryOrg?.subscription?.status || "INCOMPLETE",
       memberSince: u.createdAt,
+      suspended: Boolean(u.suspendedAt),
     };
   });
 

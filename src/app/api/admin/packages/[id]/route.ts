@@ -14,14 +14,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const body = await req.json();
-  const allowedFields = [
-    "name", "priceUsd", "maxConnectors", "maxSearchConfigs",
+  const numericFields = [
+    "priceUsd", "maxConnectors", "maxSearchConfigs",
     "maxScheduledSearches", "maxTrackedShops", "maxProspectsPerMonth",
+    "trialDays", "trialPriceUsd",
   ];
   const data: Record<string, any> = {};
-  for (const field of allowedFields) {
+  for (const field of numericFields) {
     if (body[field] != null) data[field] = typeof body[field] === "number" ? body[field] : Number(body[field]) || body[field];
   }
+  if (body.name != null) data.name = String(body.name);
+  if (typeof body.isActive === "boolean") data.isActive = body.isActive;
 
   const updated = await prisma.package.update({ where: { id }, data });
   return NextResponse.json({ package: updated });
