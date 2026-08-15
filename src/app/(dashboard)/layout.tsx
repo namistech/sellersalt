@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/is-admin";
+import { isStagingVerificationAccount } from "@/lib/staging-verification";
 import { prisma } from "@/lib/db";
 import { buildRealWorkspaceContext } from "@/services/session";
 import { DashboardShell } from "./dashboard-shell";
@@ -12,12 +13,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = session.user as any;
   const isAdmin = isAdminEmail(user?.email);
+  const isStagingVerification = isStagingVerificationAccount(user?.email);
 
   // Every plan (including Started) now requires completed checkout — no
-  // free tier exists anymore. Admins are exempt so the founder/team can't
-  // lock themselves out; everyone else without an active or trialing
-  // subscription gets sent to finish checkout before reaching the app.
-  if (!isAdmin && user?.organizationId) {
+  // free tier exists anymore. Admins and designated staging verification
+  // test accounts are exempt so testing can proceed without a live Stripe charge;
+  // everyone else without an active or trialing subscription gets sent to finish checkout.
+  if (!isAdmin && !isStagingVerification && user?.organizationId) {
     const sub = await prisma.subscription.findUnique({ where: { organizationId: user.organizationId } });
     const hasAccess = sub && (sub.status === "ACTIVE" || sub.status === "TRIALING");
     if (!hasAccess) redirect("/checkout");
