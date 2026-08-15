@@ -140,6 +140,34 @@ interface PaymentProviderRow {
   hasSandboxCredentials: boolean;
 }
 
+interface AiModelRow {
+  id: string;
+  modelId: string;
+  displayName: string;
+  contextLength: number | null;
+  inputPricePerMillion: number | null;
+  outputPricePerMillion: number | null;
+  isFree: boolean;
+  supportsVision: boolean;
+  supportsTools: boolean;
+  supportsStructuredOutput: boolean;
+}
+
+interface AiProviderRow {
+  id: string;
+  provider: "OPENROUTER" | "NVIDIA" | "GEMINI" | "OPENAI";
+  label: string;
+  isActive: boolean;
+  hasApiKey: boolean;
+  defaultModelId: string | null;
+  priority: number;
+  modelsLastFetchedAt: string | null;
+  lastTestedAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestMessage: string | null;
+  models: AiModelRow[];
+}
+
 interface SiteSettingRow {
   key: string;
   label: string;
@@ -159,7 +187,7 @@ interface EmailTemplateSummary {
 
 export function AdminPackagesClient() {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "orgs" | "packages" | "coupons" | "payments" | "email" | "branding"
+    "overview" | "users" | "orgs" | "packages" | "coupons" | "payments" | "ai" | "email" | "branding"
   >("overview");
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
@@ -171,6 +199,10 @@ export function AdminPackagesClient() {
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const [coupons, setCoupons] = useState<CouponRow[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
+  const [aiProviders, setAiProviders] = useState<AiProviderRow[]>([]);
+  const [aiKeyDrafts, setAiKeyDrafts] = useState<Record<string, string>>({});
+  const [aiActionLoading, setAiActionLoading] = useState<string | null>(null);
+  const [aiActionResult, setAiActionResult] = useState<Record<string, string>>({});
   const [siteSettings, setSiteSettings] = useState<SiteSettingRow[]>([]);
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const [settingSaving, setSettingSaving] = useState<string | null>(null);
@@ -234,23 +266,25 @@ export function AdminPackagesClient() {
 
   async function loadAll() {
     try {
-      const [mRes, pRes, oRes, cRes, payRes, setRes, tmplRes, emailRes] = await Promise.all([
+      const [mRes, pRes, oRes, cRes, payRes, aiRes, setRes, tmplRes, emailRes] = await Promise.all([
         fetch("/api/admin/metrics"),
         fetch("/api/admin/packages"),
         fetch("/api/admin/organizations"),
         fetch("/api/admin/coupons"),
         fetch("/api/admin/payment-providers"),
+        fetch("/api/admin/ai-providers"),
         fetch("/api/admin/settings"),
         fetch("/api/admin/email-templates"),
         fetch("/api/admin/email-settings"),
       ]);
 
-      const [mData, pData, oData, cData, payData, setData, tmplData, emailData] = await Promise.all([
+      const [mData, pData, oData, cData, payData, aiData, setData, tmplData, emailData] = await Promise.all([
         mRes.json(),
         pRes.json(),
         oRes.json(),
         cRes.json(),
         payRes.json(),
+        aiRes.json(),
         setRes.json(),
         tmplRes.json(),
         emailRes.json(),
@@ -261,6 +295,7 @@ export function AdminPackagesClient() {
       if (oData.organizations) setOrgs(oData.organizations);
       if (cData.coupons) setCoupons(cData.coupons);
       if (payData.providers) setPaymentProviders(payData.providers);
+      if (aiData.providers) setAiProviders(aiData.providers);
       if (setData.settings) {
         setSiteSettings(setData.settings);
         const drafts: Record<string, string> = {};
@@ -531,6 +566,114 @@ export function AdminPackagesClient() {
     }
   }
 
+  async function handleSaveAiKey(provider: AiProviderRow["provider"]) {
+    const apiKey = aiKeyDrafts[provider];
+    if (!apiKey) return;
+    setAiActionLoading(provider);
+    try {
+      await fetch("/api/admin/ai-providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, apiKey }),
+      });
+      setAiKeyDrafts((prev) => ({ ...prev, [provider]: "" }));
+      await loadAll();
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  async function handleToggleAiActive(row: AiProviderRow) {
+    setAiActionLoading(row.provider);
+    try {
+      await fetch("/api/admin/ai-providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: row.provider, isActive: !row.isActive }),
+      });
+      await loadAll();
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  async function handleSetAiPriority(row: AiProviderRow, priority: number) {
+    setAiActionLoading(row.provider);
+    try {
+      await fetch("/api/admin/ai-providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: row.provider, priority }),
+      });
+      await loadAll();
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  async function handleSetAiDefaultModel(row: AiProviderRow, defaultModelId: string) {
+    setAiActionLoading(row.provider);
+    try {
+      await fetch("/api/admin/ai-providers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: row.provider, defaultModelId }),
+      });
+      await loadAll();
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  async function handleTestAiProvider(row: AiProviderRow) {
+    setAiActionLoading(row.provider);
+    setAiActionResult((prev) => ({ ...prev, [row.provider]: "Testing…" }));
+    try {
+      const res = await fetch(`/api/admin/ai-providers/${row.id}/test`, { method: "POST" });
+      const data = await res.json();
+      setAiActionResult((prev) => ({ ...prev, [row.provider]: `${data.ok ? "✓" : "✗"} ${data.message}` }));
+      await loadAll();
+    } catch {
+      setAiActionResult((prev) => ({ ...prev, [row.provider]: "✗ Network error." }));
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  async function handleRefreshAiModels(row: AiProviderRow) {
+    setAiActionLoading(row.provider);
+    setAiActionResult((prev) => ({ ...prev, [row.provider]: "Refreshing…" }));
+    try {
+      const res = await fetch(`/api/admin/ai-providers/${row.id}/refresh-models`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setAiActionResult((prev) => ({ ...prev, [row.provider]: `✗ ${data.error || "Refresh failed."}` }));
+        return;
+      }
+      setAiActionResult((prev) => ({
+        ...prev,
+        [row.provider]: `✓ ${data.modelCount} model(s) loaded${data.defaultChanged ? " — default model updated" : ""}.`,
+      }));
+      await loadAll();
+    } catch {
+      setAiActionResult((prev) => ({ ...prev, [row.provider]: "✗ Network error." }));
+    } finally {
+      setAiActionLoading(null);
+    }
+  }
+
+  function timeAgo(iso: string | null): string {
+    if (!iso) return "never";
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.round(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    const days = Math.round(hours / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
+
   async function handleSaveEmailSettings(e: React.FormEvent) {
     e.preventDefault();
     setEmailSettingsSaving(true);
@@ -658,6 +801,7 @@ export function AdminPackagesClient() {
           { id: "packages", label: "Packages & Plans" },
           { id: "coupons", label: "Coupons" },
           { id: "payments", label: "Payment Gateways" },
+          { id: "ai", label: "AI Providers" },
           { id: "email", label: "Email & Templates" },
           { id: "branding", label: "App Branding & SEO" },
         ].map((t) => (
@@ -1279,6 +1423,118 @@ export function AdminPackagesClient() {
                         {row.isActive ? "Deactivate" : "Activate"}
                       </Button>
                     )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* AI PROVIDERS — SaltBot LLM fallback chain */}
+      {activeTab === "ai" && (
+        <div className="space-y-5">
+          <Text size="body-sm" color="secondary">
+            SaltBot tries active providers in priority order (lowest number first), using whichever model is selected below. Models are fetched live from each provider's own catalog — never hardcoded — so "Refresh Models" is how a broken/renamed model ID gets fixed.
+          </Text>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {[...aiProviders].sort((a, b) => a.priority - b.priority).map((row) => {
+              const result = aiActionResult[row.provider];
+              const busy = aiActionLoading === row.provider;
+              return (
+                <Card key={row.provider} padding="lg" className="border-line bg-white shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-sm text-ink">{row.label}</div>
+                      <div className="text-[11px] text-ink-tertiary mt-0.5">
+                        Models last updated: {timeAgo(row.modelsLastFetchedAt)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-bold text-ink-tertiary uppercase">Priority</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={row.priority}
+                        disabled={busy}
+                        onChange={(e) => handleSetAiPriority(row, Number(e.target.value))}
+                        className="w-14 text-xs border border-line rounded px-1.5 py-1"
+                      />
+                      <Badge variant={row.isActive && row.hasApiKey ? "success" : "neutral"}>
+                        {row.isActive && row.hasApiKey ? "Connected" : "Not Connected"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="password"
+                      value={aiKeyDrafts[row.provider] ?? ""}
+                      onChange={(e) => setAiKeyDrafts((prev) => ({ ...prev, [row.provider]: e.target.value }))}
+                      placeholder={row.hasApiKey ? "••••••••••••" : "Enter API key"}
+                      className="flex-1 text-xs border border-line rounded px-2 py-1.5 font-mono"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={busy}
+                      disabled={!aiKeyDrafts[row.provider]}
+                      onClick={() => handleSaveAiKey(row.provider)}
+                      className="text-[11px] shrink-0"
+                    >
+                      Save Key
+                    </Button>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-ink-tertiary uppercase">Default Model</label>
+                    <select
+                      value={row.defaultModelId ?? ""}
+                      disabled={busy || row.models.length === 0}
+                      onChange={(e) => handleSetAiDefaultModel(row, e.target.value)}
+                      className="w-full text-xs border border-line rounded px-2 py-1.5 bg-white mt-1 disabled:opacity-50"
+                    >
+                      {row.models.length === 0 ? (
+                        <option value="">No models loaded yet — click Refresh Models</option>
+                      ) : (
+                        row.models.map((m) => (
+                          <option key={m.modelId} value={m.modelId}>
+                            {m.displayName}
+                            {m.isFree ? " (free)" : m.inputPricePerMillion != null ? ` ($${m.inputPricePerMillion.toFixed(2)}/1M in)` : ""}
+                            {m.contextLength ? ` · ${(m.contextLength / 1000).toFixed(0)}k ctx` : ""}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    {row.models.length > 0 && (
+                      <div className="text-[11px] text-ink-tertiary mt-1">{row.models.length} model(s) available</div>
+                    )}
+                  </div>
+
+                  {result && <p className="text-[11px] text-ink-secondary">{result}</p>}
+                  {!result && row.lastTestMessage && (
+                    <p className="text-[11px] text-ink-tertiary">
+                      Last check ({timeAgo(row.lastTestedAt)}): {row.lastTestOk ? "✓" : "✗"} {row.lastTestMessage}
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleTestAiProvider(row)} className="text-[11px]">
+                      Test Connection
+                    </Button>
+                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleRefreshAiModels(row)} className="text-[11px]">
+                      Refresh Models
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={busy}
+                      onClick={() => handleToggleAiActive(row)}
+                      className="text-[11px] ml-auto"
+                    >
+                      {row.isActive ? "Deactivate" : "Activate"}
+                    </Button>
                   </div>
                 </Card>
               );

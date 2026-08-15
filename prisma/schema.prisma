@@ -407,6 +407,79 @@ enum PaymentProviderType {
   MANUAL
 }
 
+// ---------- AI provider / model registry ----------
+// Fixes the root cause of SaltBot's LLM calls failing silently: model IDs
+// were hardcoded per provider in code (e.g. a specific OpenRouter free-tier
+// slug), with no way to know if that model still exists on the provider's
+// side. This table is a real, admin-refreshable catalog fetched from each
+// provider's own model-list API — never invented — so a hardcoded string
+// can never again drift out from under a working API key.
+model AiProvider {
+  id       String         @id @default(cuid())
+  provider AiProviderType @unique
+  label    String
+  isActive Boolean        @default(false)
+  encryptedApiKey String?
+  // The modelId (AiModel.modelId, not a hard FK) actually used for real
+  // calls. Loose reference rather than a relation because the model catalog
+  // is wholesale-replaced on every discovery refresh — a hard FK would
+  // require special-casing "the currently selected model" during a refresh.
+  defaultModelId String?
+  // SaltBot's LLM fallback order — lower number tried first among active
+  // providers. Defaults match the already-documented OpenRouter -> NVIDIA
+  // -> Gemini -> OpenAI chain.
+  priority Int @default(100)
+
+  modelsLastFetchedAt DateTime?
+  lastTestedAt        DateTime?
+  lastTestOk          Boolean?
+  lastTestMessage     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models AiModel[]
+
+  @@index([priority])
+}
+
+enum AiProviderType {
+  OPENROUTER
+  NVIDIA
+  GEMINI
+  OPENAI
+}
+
+// One row per model reported by a provider's own catalog endpoint at the
+// last refresh. Wholesale-replaced (delete + reinsert) on each "Refresh
+// Models" — this is a cache of provider-reported truth, not something
+// SellerSalt edits piecemeal.
+model AiModel {
+  id                       String   @id @default(cuid())
+  providerId               String
+  modelId                  String
+  displayName              String
+  contextLength            Int?
+  // USD per 1M tokens. Null when the provider doesn't report pricing for
+  // this model (never fabricated).
+  inputPricePerMillion     Float?
+  outputPricePerMillion    Float?
+  isFree                   Boolean  @default(false)
+  supportsVision           Boolean  @default(false)
+  supportsTools            Boolean  @default(false)
+  supportsStructuredOutput Boolean  @default(false)
+  // Full provider-reported metadata blob, kept alongside the extracted
+  // fields above so future capability checks don't need another migration.
+  raw                      Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  provider AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, modelId])
+  @@index([providerId])
+}
+
 // ---------- Subscriptions ----------
 // One row per org's current subscription state. Driven by webhooks, not by
 // the initial checkout response — renewals, failures, and cancellations all

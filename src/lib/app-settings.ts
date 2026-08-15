@@ -26,16 +26,12 @@ export const SETTING_DEFINITIONS = [
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
 
-  // SaltBot Level 2 LLM fallback — tried in this order (OpenRouter -> NVIDIA
-  // -> Gemini -> OpenAI), only when the deterministic intent engine can't
-  // answer a query itself. Code already read these via getSetting() with an
-  // `as any` cast because they weren't registered here — meaning an admin
-  // could never actually set them through the admin UI. Registering them
-  // makes that UI work; the priority order itself stays in llm-provider.ts.
-  { key: "openrouter_api_key", label: "OpenRouter API Key (SaltBot LLM fallback, priority 1)", isSecret: true },
-  { key: "nvidia_api_key", label: "NVIDIA API Key (SaltBot LLM fallback, priority 2)", isSecret: true },
-  { key: "gemini_api_key", label: "Google Gemini API Key (SaltBot LLM fallback, priority 3)", isSecret: true },
-  { key: "openai_api_key", label: "OpenAI API Key (SaltBot LLM fallback, priority 4)", isSecret: true },
+  // SaltBot LLM provider credentials (OpenRouter/NVIDIA/Gemini/OpenAI) used
+  // to live here as generic AppSetting rows. Superseded by the dedicated
+  // AiProvider table (migration 20260815203713_add_ai_provider_model_
+  // registry, which also migrated any already-configured key over) — that
+  // table also tracks status/priority/model selection, which a plain
+  // key-value row can't. See src/lib/ai-providers.ts.
 
   // Secondary Channel Credentials
   { key: "shopify_client_id", label: "Shopify Client ID", isSecret: false },
