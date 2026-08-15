@@ -8,8 +8,7 @@ import type { NotificationItem, SearchResultItem, WorkspaceContext } from "@/ser
 import { GlobalSearch } from "./GlobalSearch";
 import { MobileNav } from "./MobileNav";
 import { NotificationCenter } from "./NotificationCenter";
-import { AssistantDrawer } from "@/components/assistant/AssistantDrawer";
-import { FloatingAssistant } from "@/components/assistant/FloatingAssistant";
+import { SaltBot } from "@/components/assistant/SaltBot";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
@@ -111,9 +110,8 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} results={searchResults} />
-      <AssistantDrawer open={assistantOpen} onClose={() => setAssistantOpen(false)} />
       <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} />
-      <FloatingAssistant />
+      <SaltBot open={assistantOpen} onOpenChange={setAssistantOpen} />
     </div>
   );
 }

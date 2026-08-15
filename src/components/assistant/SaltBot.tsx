@@ -7,20 +7,24 @@ import {
   X,
   Minus,
   Send,
-  ExternalLink,
   RefreshCw,
   ChevronUp,
   Bot,
   Maximize2,
   Minimize2,
   Trash2,
-  Flame,
-  TrendingUp,
   ArrowRight,
-  Compass,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui";
 import type { AssistantMessage } from "@/services/assistant/types";
+
+// The ONE SaltBot UI — header trigger, floating bubble, chat window, and
+// fullscreen mode all render through this single component. Previously
+// there were two independent implementations (a Drawer-based one opened
+// from the header, and this floating-bubble one) that could visually and
+// behaviorally drift from each other — see this component's git history.
+// AppShell mounts exactly one instance and controls it via open/onOpenChange
+// so the header button and the floating bubble both operate the same window.
 
 const SUGGESTED_QUERIES = [
   "What are my best opportunities today?",
@@ -35,8 +39,20 @@ const SUGGESTED_QUERIES = [
   "What should I do next?",
 ];
 
-export function FloatingAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+export interface SaltBotProps {
+  /** Omit for standalone/uncontrolled use (manages its own open state). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen ?? internalOpen;
+  function setIsOpen(next: boolean) {
+    onOpenChange?.(next);
+    if (controlledOpen === undefined) setInternalOpen(next);
+  }
+
   const [isMinimized, setIsMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [assistantName, setAssistantName] = useState("SaltBot");
@@ -171,7 +187,9 @@ export function FloatingAssistant() {
         </button>
       )}
 
-      {/* Floating or Fullscreen Support-Chat Window */}
+      {/* Floating or Fullscreen Chat Window — light theme throughout, including
+          the header (previously a dark #141B16 bar, which this project's
+          design rules explicitly disallow for SaltBot). */}
       {isOpen && (
         <div
           className={`fixed z-50 bg-white shadow-2xl transition-all overflow-hidden flex flex-col ${
@@ -183,17 +201,17 @@ export function FloatingAssistant() {
           }`}
         >
           {/* Header */}
-          <div className="px-4 py-3.5 bg-[#141B16] text-white flex items-center justify-between shrink-0 select-none">
+          <div className="px-4 py-3.5 bg-white border-b border-line text-ink flex items-center justify-between shrink-0 select-none">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="h-8 w-8 rounded-lg bg-[#0E8F5D]/20 border border-[#0E8F5D]/40 flex items-center justify-center text-[#FFB020]">
+              <div className="h-8 w-8 rounded-lg bg-[#0E8F5D]/10 border border-[#0E8F5D]/30 flex items-center justify-center text-[#0E8F5D]">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-extrabold truncate flex items-center gap-1.5">
+                <div className="text-xs font-extrabold truncate flex items-center gap-1.5 text-ink">
                   <span>{assistantName}</span>
-                  <span className="text-[10px] font-normal text-[#AEB4AC]">Etsy Copilot</span>
+                  <span className="text-[10px] font-normal text-ink-tertiary">Etsy Copilot</span>
                 </div>
-                <div className="text-[10px] text-[#AEB4AC] flex items-center gap-1.5 mt-0.5">
+                <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D] inline-block" />
                   <span>Deterministic Engine + AI Fallback</span>
                 </div>
@@ -204,7 +222,7 @@ export function FloatingAssistant() {
               <button
                 type="button"
                 onClick={handleClearChat}
-                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                className="p-1.5 rounded text-ink-tertiary hover:text-ink hover:bg-surface-muted"
                 title="Clear conversation"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -214,7 +232,7 @@ export function FloatingAssistant() {
                 <button
                   type="button"
                   onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                  className="p-1.5 rounded text-ink-tertiary hover:text-ink hover:bg-surface-muted"
                   title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Workspace"}
                 >
                   {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
@@ -227,7 +245,7 @@ export function FloatingAssistant() {
                   if (isFullscreen) setIsFullscreen(false);
                   setIsMinimized(!isMinimized);
                 }}
-                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                className="p-1.5 rounded text-ink-tertiary hover:text-ink hover:bg-surface-muted"
                 title={isMinimized ? "Expand" : "Minimize"}
               >
                 {isMinimized ? <ChevronUp className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
@@ -239,7 +257,7 @@ export function FloatingAssistant() {
                   setIsOpen(false);
                   setIsFullscreen(false);
                 }}
-                className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10"
+                className="p-1.5 rounded text-ink-tertiary hover:text-ink hover:bg-surface-muted"
                 title="Close"
               >
                 <X className="h-4 w-4" />
@@ -320,7 +338,7 @@ export function FloatingAssistant() {
 
                                 {card.href && (
                                   <div className="pt-1.5">
-                                    <Link href={card.href}>
+                                    <Link href={card.href} onClick={() => setIsOpen(false)}>
                                       <Button
                                         variant="secondary"
                                         size="compact"
@@ -336,12 +354,36 @@ export function FloatingAssistant() {
                             ))}
                           </div>
                         )}
+
+                        {/* Actions if any */}
+                        {msg.actions && msg.actions.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {msg.actions.map((act, idx) =>
+                              act.href ? (
+                                <Link key={idx} href={act.href} onClick={() => setIsOpen(false)}>
+                                  <Button size="compact" variant="primary" className="text-[11px]">
+                                    {act.label}
+                                  </Button>
+                                </Link>
+                              ) : act.actionKey ? (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => handleSendQuery(act.actionKey!)}
+                                  className="rounded border border-[#0E8F5D] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E8F5D] hover:bg-[#0E8F5D]/10 transition"
+                                >
+                                  {act.label}
+                                </button>
+                              ) : null
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
 
-                {/* Vertical Prebuilt Queries (One per row) */}
+                {/* Vertical Prebuilt Queries (one per row, never a horizontal chip row) */}
                 {showSuggestions && (
                   <div className="pt-2 space-y-2">
                     <div className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider px-1">
