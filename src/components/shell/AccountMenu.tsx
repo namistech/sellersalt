@@ -14,6 +14,7 @@ import { useDropdown } from "./dropdown-utils";
 export interface AccountMenuProps {
   name: string;
   email: string;
+  avatarUrl?: string | null;
   roleLabel: string;
   isAdmin?: boolean;
   onNavigate: (href: string) => void;
@@ -21,7 +22,7 @@ export interface AccountMenuProps {
   className?: string;
 }
 
-export function AccountMenu({ name, email, roleLabel, isAdmin, onNavigate, onSignOut, className }: AccountMenuProps) {
+export function AccountMenu({ name, email, avatarUrl, roleLabel, isAdmin, onNavigate, onSignOut, className }: AccountMenuProps) {
   const { open, setOpen, ref } = useDropdown<HTMLDivElement>();
 
   function go(href: string) {
@@ -39,7 +40,7 @@ export function AccountMenu({ name, email, roleLabel, isAdmin, onNavigate, onSig
         onClick={() => setOpen((o) => !o)}
         className={cn("flex items-center gap-2 rounded-md px-1.5 py-1 transition hover:bg-surface-muted", FOCUS_RING)}
       >
-        <Avatar name={name} size="sm" />
+        <Avatar src={avatarUrl ?? undefined} name={name} size="sm" />
         <span className="hidden text-left sm:block">
           <Text as="span" size="body-sm" weight="medium" className="block max-w-[140px] truncate">
             {name}

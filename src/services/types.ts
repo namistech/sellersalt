@@ -31,6 +31,7 @@ export interface WorkspaceUser {
   id: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
 }
 
 export interface WorkspaceOrganization {

@@ -33,6 +33,16 @@ export const SETTING_DEFINITIONS = [
   { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
   { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
   { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
+
+  // Object Storage (avatars and other uploads). Without this, uploads fall
+  // back to local container disk, which does NOT survive a redeploy —
+  // configure this before relying on avatar uploads in production.
+  { key: "s3_bucket", label: "S3/R2 Bucket Name", isSecret: false },
+  { key: "s3_region", label: "S3/R2 Region (e.g. us-east-1, or \"auto\" for R2)", isSecret: false },
+  { key: "s3_access_key_id", label: "S3/R2 Access Key ID", isSecret: false },
+  { key: "s3_secret_access_key", label: "S3/R2 Secret Access Key", isSecret: true },
+  { key: "s3_endpoint", label: "S3-compatible Endpoint URL (blank for real AWS S3; required for R2/Spaces/MinIO)", isSecret: false },
+  { key: "s3_public_base_url", label: "Public Base URL for uploaded files (e.g. CDN domain; blank to use the bucket's default URL)", isSecret: false },
 ] as const;
 
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];

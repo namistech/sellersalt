@@ -112,6 +112,7 @@ export function Topbar({
         <AccountMenu
           name={context.user.name}
           email={context.user.email}
+          avatarUrl={context.user.avatarUrl}
           roleLabel={context.roleLabel}
           isAdmin={context.capabilities.has("admin:preview")}
           onNavigate={onNavigate}

@@ -64,6 +64,7 @@ export default function ProfilePage() {
   const [organizationName, setOrganizationName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile Form States
@@ -107,6 +108,7 @@ export default function ProfilePage() {
         setOriginalEmail(d.email ?? "");
         setOrganizationName(d.organizationName ?? "");
         setAvatarUrl(d.avatarUrl ?? null);
+        setAvatarFailed(false);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -151,6 +153,7 @@ export default function ProfilePage() {
       }
 
       setAvatarUrl(data.avatarUrl);
+      setAvatarFailed(false);
       setProfileMessage("Avatar updated successfully.");
     } catch {
       setAvatarUploading(false);
@@ -449,10 +452,11 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="relative group">
-              {avatarUrl ? (
+              {avatarUrl && !avatarFailed ? (
                 <img
                   src={avatarUrl}
                   alt={name || email}
+                  onError={() => setAvatarFailed(true)}
                   className="h-20 w-20 rounded-2xl object-cover border-2 border-line shadow-sm"
                 />
               ) : (

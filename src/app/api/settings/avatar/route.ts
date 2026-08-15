@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const storage = getStorageProvider();
+    const storage = await getStorageProvider();
     const result = await storage.upload(buffer, file.name, file.type);
 
     const settingKey = `user_avatar_${userId}`;
@@ -58,7 +58,7 @@ export async function DELETE() {
     const setting = await prisma.appSetting.findUnique({ where: { key: settingKey } });
 
     if (setting?.value) {
-      const storage = getStorageProvider();
+      const storage = await getStorageProvider();
       await storage.delete(setting.value);
       await prisma.appSetting.delete({ where: { key: settingKey } });
     }

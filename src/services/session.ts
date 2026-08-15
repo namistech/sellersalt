@@ -16,6 +16,7 @@ export interface RealSessionInput {
   userId?: string | null;
   userName?: string | null;
   userEmail?: string | null;
+  userAvatarUrl?: string | null;
   organizationId?: string | null;
   organizationName?: string | null;
   isAdmin: boolean;
@@ -33,6 +34,7 @@ export function buildRealWorkspaceContext(input: RealSessionInput): WorkspaceCon
       id: input.userId ?? "",
       name: input.userName ?? input.userEmail ?? "",
       email: input.userEmail ?? "",
+      avatarUrl: input.userAvatarUrl ?? null,
     },
     organization: {
       id: input.organizationId ?? "",

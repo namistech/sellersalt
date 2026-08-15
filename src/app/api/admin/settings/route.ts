@@ -51,3 +51,7 @@ export async function POST(req: Request) {
   await setSetting(key as SettingKey, value.trim());
   return NextResponse.json({ ok: true });
 }
+
+// The admin UI saves individual settings via PATCH (update semantics fit
+// better than POST for a single-field edit) — same upsert-by-key handler.
+export { POST as PATCH };

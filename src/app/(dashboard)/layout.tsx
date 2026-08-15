@@ -29,10 +29,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (!hasAccess) redirect("/checkout");
   }
 
+  const avatarSetting = user?.id
+    ? await prisma.appSetting.findUnique({ where: { key: `user_avatar_${user.id}` } })
+    : null;
+
   const context = buildRealWorkspaceContext({
     userId: user?.id,
     userName: user?.name,
     userEmail: user?.email,
+    userAvatarUrl: avatarSetting?.value ?? null,
     organizationId: user?.organizationId,
     organizationName: user?.organizationName,
     isAdmin,
