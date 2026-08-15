@@ -188,19 +188,51 @@ team invites, password reset, scheduled-search email notifications, public
 marketing homepage (own scoped design system, `.sellersalt-marketing`
 prefix, live pricing from `Package` table).
 
-**Seller channels** (admin-only, real and working):
-- WooCommerce — real app-authorization OAuth flow (`/wc-auth/v1/authorize`,
-  no manual key copying) plus a manual-key fallback for stores where the
-  OAuth redirect gets blocked by security plugins/Cloudflare
-- Shopify — real OAuth via GraphQL Admin API (REST is legacy for new apps
-  as of 2025, built correctly for that from day one), write scope included
-  for future cross-listing
-- Etsy-seller — real PKCE OAuth with automatic hourly token refresh
-  (Etsy tokens expire in ~1 hour, unlike the others)
+**Seller channels**:
+- WooCommerce (admin-only) — real app-authorization OAuth flow
+  (`/wc-auth/v1/authorize`, no manual key copying) plus a manual-key
+  fallback for stores where the OAuth redirect gets blocked by security
+  plugins/Cloudflare
+- Shopify (admin-only) — real OAuth via GraphQL Admin API (REST is legacy
+  for new apps as of 2025, built correctly for that from day one), write
+  scope included for future cross-listing
+- Etsy-seller (**customer-facing as of 2026-08-15**, see MVP Scope
+  section) — real PKCE OAuth with automatic hourly token refresh (Etsy
+  tokens expire in ~1 hour, unlike the others). redirect_uri is built
+  from `NEXTAUTH_URL` only (`appUrl()` pattern), never request headers —
+  see Lessons Learned #5 if OAuth errors resurface. One Etsy developer
+  app backs both this flow and the separate "Sign in with Etsy" NextAuth
+  identity provider; both auto-link/upsert into the same `SellerChannel`
+  row via a shared `resolveEtsyShopId()` helper so they can't diverge.
 - Currency-aware Analytics dashboard — revenue shown per-store in its own
   currency, deliberately never blended into one misleading total
 - All three request write scope now (upgraded from read-only) so
   cross-listing won't need customers to reconnect later
+
+**Identity/account security** (as of 2026-08-15, all real — see CLAUDE.md
+git history / commit messages for the specific incidents each one fixed):
+- **Object storage**: real S3/R2 client (`@aws-sdk/client-s3`) behind
+  `src/lib/storage/factory.ts`, credentials via Admin → Site Settings
+  (`s3_bucket`/`s3_region`/`s3_access_key_id`/`s3_secret_access_key`/
+  `s3_endpoint`/`s3_public_base_url`) with env-var fallback. **Not yet
+  configured** — no bucket credentials exist yet, so avatar uploads still
+  fall back to local container disk, which does not survive a redeploy.
+  This is the actual fix needed to stop avatars from breaking; it's an
+  external-credential gap, not a code gap.
+- **Passkeys (WebAuthn)** — real end-to-end: `@simplewebauthn/server` +
+  `@simplewebauthn/browser`, new `WebAuthnCredential` Prisma model
+  (migration `20260815181416_add_webauthn_credentials`, applied to
+  staging), registration + a real discoverable-credential login path via
+  a `"passkey"` NextAuth CredentialsProvider, list/rename/remove UI.
+  `rpID`/`origin` come from `NEXTAUTH_URL` only, same reasoning as the
+  Etsy redirect_uri fix.
+- **2FA (TOTP)** — setup/QR/backup codes were already real; QR is now
+  rendered client-side (`qrcode` package) instead of leaking the secret
+  to a third-party image service; secret + recovery codes are encrypted
+  at rest; and it's now actually **enforced at login** (previously a
+  no-op toggle) via a two-step credentials flow. Regenerate/copy backup
+  codes and a real disable-confirmation (password or code required) were
+  added — didn't exist before.
 
 **Billing — real, not just credential storage**:
 - Stripe: fully dynamic Checkout Sessions (inline `price_data`, no
