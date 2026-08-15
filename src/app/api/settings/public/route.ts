@@ -10,6 +10,14 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const values = await getSettings(["shopify_affiliate_url", "netdrix_shopify_order_url", "netdrix_woocommerce_order_url"]);
+  const values = await getSettings([
+    "shopify_affiliate_url",
+    "netdrix_shopify_order_url",
+    "netdrix_woocommerce_order_url",
+    "assistant_name",
+    "assistant_logo_url",
+    "app_name",
+    "support_email",
+  ]);
   return NextResponse.json({ settings: values });
 }

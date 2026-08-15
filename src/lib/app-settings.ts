@@ -10,6 +10,8 @@ export const SETTING_DEFINITIONS = [
   { key: "app_logo_url", label: "App Logo (URL)", isSecret: false },
   { key: "app_favicon_url", label: "App Favicon / Icon (URL)", isSecret: false },
   { key: "support_email", label: "Public Support Email", isSecret: false },
+  { key: "assistant_name", label: "SaltBot Assistant Display Name", isSecret: false },
+  { key: "assistant_logo_url", label: "SaltBot Assistant Logo (URL)", isSecret: false },
 
   // SEO & Social Defaults
   { key: "seo_default_title", label: "Default SEO Meta Title", isSecret: false },

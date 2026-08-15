@@ -75,7 +75,10 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
     fetch("/api/settings/public")
       .then((r) => r.json())
       .then((d) => {
-        if (d.assistantName) setAssistantName(d.assistantName);
+        // Was reading d.assistantName (wrong key AND wrong nesting) —
+        // the real response shape is { settings: { assistant_name } },
+        // so this admin setting silently never took effect before.
+        if (d.settings?.assistant_name) setAssistantName(d.settings.assistant_name);
       })
       .catch(() => {});
   }, []);

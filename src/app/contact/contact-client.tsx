@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Mail, MessageSquare, Clock, Sparkles, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Card, Button, Input, Select, Textarea, Alert, Heading, Text } from "@/components/ui";
 
-export function ContactClient() {
+export function ContactClient({ supportEmail }: { supportEmail: string }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("General Product Question");
@@ -42,7 +42,7 @@ export function ContactClient() {
       setEmail("");
       setMessage("");
     } catch {
-      setErrorMessage("Network error sending message. Please email support@sellersalt.com directly.");
+      setErrorMessage(`Network error sending message. Please email ${supportEmail} directly.`);
       setLoading(false);
     }
   }
@@ -162,10 +162,10 @@ export function ContactClient() {
               <div>
                 <div className="font-bold text-sm text-[#141B16]">Direct Email</div>
                 <a
-                  href="mailto:support@sellersalt.com"
+                  href={`mailto:${supportEmail}`}
                   className="text-xs font-semibold text-[#16C784] hover:underline"
                 >
-                  support@sellersalt.com
+                  {supportEmail}
                 </a>
               </div>
             </div>
