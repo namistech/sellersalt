@@ -40,10 +40,10 @@ Guidelines:
 export class MultiProviderLLMService {
   private async getProviderKeys() {
     const [openRouterKey, nvidiaKey, geminiKey, openAiKey] = await Promise.all([
-      getSetting("openrouter_api_key" as any) || process.env.OPENROUTER_API_KEY,
-      getSetting("nvidia_api_key" as any) || process.env.NVIDIA_API_KEY,
-      getSetting("gemini_api_key" as any) || process.env.GEMINI_API_KEY,
-      getSetting("openai_api_key" as any) || process.env.OPENAI_API_KEY,
+      getSetting("openrouter_api_key").then((v) => v || process.env.OPENROUTER_API_KEY),
+      getSetting("nvidia_api_key").then((v) => v || process.env.NVIDIA_API_KEY),
+      getSetting("gemini_api_key").then((v) => v || process.env.GEMINI_API_KEY),
+      getSetting("openai_api_key").then((v) => v || process.env.OPENAI_API_KEY),
     ]);
 
     return { openRouterKey, nvidiaKey, geminiKey, openAiKey };

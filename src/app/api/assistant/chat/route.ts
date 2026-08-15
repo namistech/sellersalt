@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { processDeterministicIntent } from "@/services/assistant/intent-engine";
+import { processDeterministicIntent, isLikelyOnTopic, OFF_TOPIC_MESSAGE } from "@/services/assistant/intent-engine";
 import { multiProviderLLM } from "@/services/assistant/llm-provider";
+import type { AssistantMessage } from "@/services/assistant/types";
 
 export async function POST(req: Request) {
   try {
@@ -31,6 +32,28 @@ export async function POST(req: Request) {
     // If deterministic recognized an explicit intent, return immediately (zero token cost)
     if (deterministicMessage.intent !== ("UNKNOWN" as any) && deterministicMessage.intent !== "HELP") {
       return NextResponse.json({ message: deterministicMessage });
+    }
+
+    // Hard guardrail: genuinely off-topic queries never reach the LLM at
+    // all. This is deterministic and runs before any LLM call — the LLM's
+    // own system prompt also asks it to stay on-topic, but that's a soft
+    // instruction an LLM can be argued out of; this check can't be.
+    if (deterministicMessage.intent === ("UNKNOWN" as any) && !isLikelyOnTopic(trimmedQuery)) {
+      const offTopicMessage: AssistantMessage = {
+        id: `asst-${Date.now()}`,
+        sender: "assistant",
+        intent: "UNKNOWN" as any,
+        timestamp: new Date().toISOString(),
+        isDeterministic: true,
+        text: OFF_TOPIC_MESSAGE,
+        actions: [
+          { label: "Find top opportunities", actionKey: "Find my top opportunities", variant: "primary" },
+          { label: "Fastest growing competitors", actionKey: "Show my fastest-growing competitors", variant: "secondary" },
+          { label: "What should I research today?", actionKey: "What should I research today?", variant: "outline" },
+          { label: "Low competition niches", actionKey: "Find low-competition products", variant: "outline" },
+        ],
+      };
+      return NextResponse.json({ message: offTopicMessage });
     }
 
     // 2. If conversational / general query, invoke Level 2 Multi-Provider LLM Fallback (OpenRouter -> NVIDIA -> Gemini)
@@ -69,9 +92,9 @@ export async function POST(req: Request) {
           id: `err-${Date.now()}`,
           sender: "assistant",
           intent: "HELP",
-          title: "System Notification",
-          body: "I encountered a momentary issue processing your request. Try asking about your top opportunities or daily research agenda.",
+          text: "I encountered a momentary issue processing your request. Try asking about your top opportunities or daily research agenda.",
           timestamp: new Date().toISOString(),
+          isDeterministic: true,
         },
       },
       { status: 500 }

@@ -122,6 +122,35 @@ export function classifyIntent(query: string): AssistantIntentType {
   return "UNKNOWN";
 }
 
+// A query the specific phrase-matchers above didn't recognize can still be
+// a legitimate, on-topic question worth an LLM's help rephrasing/
+// synthesizing (e.g. "how's my jewelry niche doing lately"). This is the
+// deterministic guardrail against the OTHER case: genuinely unrelated
+// queries ("write me a poem", "what's the capital of France") that have
+// no business reaching the LLM at all. Keep this list broad — a false
+// "on-topic" here just means the LLM's own system prompt (which also
+// constrains it to SellerSalt topics) gets a chance to redirect; a false
+// "off-topic" would incorrectly refuse a real question, which is the
+// worse failure mode, so the keyword list errs generous.
+const ON_TOPIC_KEYWORDS = [
+  "etsy", "shop", "store", "product", "listing", "keyword", "niche",
+  "competitor", "compet", "price", "pricing", "sale", "revenue", "profit",
+  "review", "rating", "trend", "research", "prospect", "opportunit",
+  "favorite", "shortlist", "track", "watch", "plan", "workspace",
+  "subscription", "billing", "plan", "account", "connector", "search",
+  "velocity", "demand", "seller", "market", "catalog", "sellersalt",
+  "saltbot", "assistant", "dashboard", "radar", "spy", "discover",
+  "yesterday", "today", "changed", "growing", "winning", "hello", "hi",
+];
+
+export function isLikelyOnTopic(query: string): boolean {
+  const q = query.toLowerCase();
+  return ON_TOPIC_KEYWORDS.some((kw) => q.includes(kw));
+}
+
+export const OFF_TOPIC_MESSAGE =
+  "I'm still under development and that request isn't currently within my SellerSalt capabilities. I can currently help with Etsy opportunities, products, shops, keywords, competitors, trends, saved research and your SellerSalt workspace.";
+
 export async function processDeterministicIntent(
   query: string,
   organizationId: string
