@@ -42,10 +42,10 @@ test("Phase P2: Unsupported / Non-Editor Page Detection", async (t) => {
     assert.strictEqual(classifyEtsyUrl("https://www.google.com/search?q=etsy"), EtsyPageType.NOT_ETSY);
   });
 
-  await t.test("classifies a public Etsy listing page as ETSY_OTHER, not the editor", () => {
+  await t.test("classifies a public Etsy listing page as ETSY_LISTING_PUBLIC, not the editor", () => {
     assert.strictEqual(
       classifyEtsyUrl("https://www.etsy.com/listing/999888777/handmade-item"),
-      EtsyPageType.ETSY_OTHER
+      EtsyPageType.ETSY_LISTING_PUBLIC
     );
   });
 
