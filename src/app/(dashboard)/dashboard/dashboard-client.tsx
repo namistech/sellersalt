@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus, Radar } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Button } from "@/components/ui";
@@ -61,6 +62,45 @@ export function DashboardClient({ initialData, connectors, userName }: Dashboard
         hasTrackedShops={data.competitorRadar.length > 0}
         hasProspects={pulse.totalProspects > 0 || data.topOpportunities.length > 0}
       />
+
+      {/* Quick Actions Command Center Bar */}
+      <div className="p-3.5 rounded-2xl bg-white border border-line shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-bold text-ink flex items-center gap-1.5 px-2 text-[11px] uppercase tracking-wider text-ink-tertiary">
+          ⚡ Quick Intelligence:
+        </span>
+        <div className="flex flex-wrap items-center gap-2 flex-1 justify-end">
+          <Link
+            href="/radar"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
+          >
+            <span>🔥</span> Find Products
+          </Link>
+          <Link
+            href="/categories"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
+          >
+            <span>📁</span> Explore Categories
+          </Link>
+          <Link
+            href="/keyword-research"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
+          >
+            <span>#</span> Keyword Research
+          </Link>
+          <Link
+            href="/spy"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
+          >
+            <span>👁️</span> Spy on Competitor
+          </Link>
+          <Link
+            href="/planner"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
+          >
+            <span>📑</span> Open Planner
+          </Link>
+        </div>
+      </div>
 
       {/* Row 1: Research Pulse */}
       <DashboardPulse pulse={pulse} />

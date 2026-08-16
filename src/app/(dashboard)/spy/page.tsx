@@ -41,6 +41,7 @@ import {
   Dialog,
   Avatar,
   HowItWorksGuide,
+  HowItWorksToggle,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -107,6 +108,7 @@ export default function SpyOnCompetitorPage() {
   const [shops, setShops] = useState<TrackedShopSummary[]>([]);
   const [quota, setQuota] = useState<TrackingQuotaInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // View Controls & Filtering
@@ -222,17 +224,18 @@ export default function SpyOnCompetitorPage() {
           </Text>
         </div>
 
-        {quota && (
-          <div className="flex items-center gap-2.5 text-xs">
+        <div className="flex items-center gap-2.5 text-xs">
+          {quota && (
             <div className="px-3 py-1.5 rounded-lg bg-surface border border-line shadow-2xs">
               <span className="text-ink-tertiary">Tracked Slots:</span>{" "}
               <strong className="text-ink tabular-nums">
                 {quota.trackedShopsCount} / {quota.maxTrackedShops}
               </strong>
             </div>
-            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-          </div>
-        )}
+          )}
+          <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+          <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+        </div>
       </div>
 
       {error && (
@@ -241,8 +244,10 @@ export default function SpyOnCompetitorPage() {
         </Alert>
       )}
 
-      {/* Contextual Guide */}
+      {/* Expandable Guide */}
       <HowItWorksGuide
+        isOpen={showGuide}
+        onToggle={() => setShowGuide(!showGuide)}
         title="How Competitor Surveillance Works"
         description="SellerSalt captures historical marketplace records for any Etsy shop to reveal real daily transaction deltas, catalog additions, and review velocity."
         steps={[

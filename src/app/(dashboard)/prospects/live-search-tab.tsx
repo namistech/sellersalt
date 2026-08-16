@@ -33,6 +33,8 @@ import {
   Text,
   Eyebrow,
   Alert,
+  SafeImage,
+  CountrySelector,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import {
@@ -156,7 +158,12 @@ export function LiveSearchTab() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2 border-t border-line-subtle text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2 border-t border-line-subtle text-xs">
+            <div>
+              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Marketplace Country</label>
+              <CountrySelector size="sm" className="w-full h-8" />
+            </div>
+
             <div>
               <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Price ($)</label>
               <Input
@@ -287,17 +294,12 @@ export function LiveSearchTab() {
 
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 p-4 rounded-2xl bg-[#FAFAF8] border border-line">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    {topItem.listing.imageUrl ? (
-                      <img
-                        src={topItem.listing.imageUrl}
-                        alt=""
-                        className="h-20 w-20 rounded-xl object-cover border border-line shrink-0 shadow-2xs"
-                      />
-                    ) : (
-                      <div className="h-20 w-20 rounded-xl bg-surface-muted border border-line flex items-center justify-center text-xs font-bold text-ink-tertiary shrink-0">
-                        ETSY
-                      </div>
-                    )}
+                    <SafeImage
+                      src={topItem.listing.imageUrl}
+                      alt={topItem.listing.title}
+                      fallbackType="product"
+                      className="h-20 w-20 rounded-xl object-cover border border-line shrink-0 shadow-2xs"
+                    />
 
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -435,17 +437,12 @@ export function LiveSearchTab() {
                 <div className="space-y-3">
                   {/* Image & Radar Score Header */}
                   <div className="relative">
-                    {item.listing.imageUrl ? (
-                      <img
-                        src={item.listing.imageUrl}
-                        alt={item.listing.title}
-                        className="h-44 w-full rounded-lg object-cover border border-line"
-                      />
-                    ) : (
-                      <div className="h-44 w-full rounded-lg bg-surface-muted border border-line flex items-center justify-center text-xs font-bold text-ink-tertiary">
-                        ETSY LISTING
-                      </div>
-                    )}
+                    <SafeImage
+                      src={item.listing.imageUrl}
+                      alt={item.listing.title}
+                      fallbackType="product"
+                      className="h-44 w-full rounded-lg object-cover border border-line"
+                    />
 
                     {/* Checkbox for Comparison */}
                     <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-xs p-1 rounded-md shadow-xs border border-line flex items-center">

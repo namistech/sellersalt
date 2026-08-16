@@ -38,6 +38,7 @@ import {
   IntelligenceCard,
   ViewSwitch,
   HowItWorksGuide,
+  HowItWorksToggle,
   SafeImage,
   type ViewMode,
 } from "@/components/ui";
@@ -101,6 +102,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
   const [isSavedToPlanner, setIsSavedToPlanner] = useState(false);
   const [savingPlanner, setSavingPlanner] = useState(false);
   const [viewMode, setViewMode] = useResearchState<ViewMode>("product_tags_view", "table");
+  const [showGuide, setShowGuide] = useState(false);
 
   // Universal Score Evaluation
   const evaluatedScore = evaluateProductOpportunity({
@@ -250,8 +252,27 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
-      {/* Contextual Guide */}
+      {/* Breadcrumb Navigation & Inline Guide Trigger */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs text-ink-tertiary">
+          <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
+            Opportunity Radar
+          </Link>
+          <span>/</span>
+          <Link href={`/shops/${product.shopId}`} className="hover:text-ink font-semibold transition-colors">
+            {product.shopName}
+          </Link>
+          <span>/</span>
+          <span className="text-ink font-bold truncate max-w-md">{product.title}</span>
+        </div>
+
+        <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+      </div>
+
+      {/* Expandable Guide */}
       <HowItWorksGuide
+        isOpen={showGuide}
+        onToggle={() => setShowGuide(!showGuide)}
         title="How Product Opportunity Intelligence Works"
         description="SellerSalt audits listing tags, calculates unit economics after transaction fees, and benchmarks sales velocity against category medians."
         steps={[
@@ -272,19 +293,6 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           },
         ]}
       />
-
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs text-ink-tertiary">
-        <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
-          Opportunity Radar
-        </Link>
-        <span>/</span>
-        <Link href={`/shops/${product.shopId}`} className="hover:text-ink font-semibold transition-colors">
-          {product.shopName}
-        </Link>
-        <span>/</span>
-        <span className="text-ink font-bold truncate max-w-md">{product.title}</span>
-      </div>
 
       {/* ==================================================================== */}
       {/* SECTION 1: PRODUCT IDENTITY HEADER */}

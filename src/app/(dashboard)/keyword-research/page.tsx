@@ -19,7 +19,20 @@ import {
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard, ViewSwitch, CountrySelector, type ViewMode } from "@/components/ui";
+import {
+  Card,
+  Input,
+  Button,
+  Badge,
+  Heading,
+  Text,
+  IntelligenceCard,
+  ViewSwitch,
+  CountrySelector,
+  HowItWorksGuide,
+  HowItWorksToggle,
+  type ViewMode,
+} from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart, HorizontalBarChart } from "@/components/data/charts";
 import {
@@ -199,11 +212,44 @@ export default function KeywordResearchPage() {
     link.click();
   }
 
+  const [showGuide, setShowGuide] = useState(false);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
         title="Standalone Keyword Research"
         description="Harvest high-ranking tags, long-tail search phrases, and competitor keywords cold across Etsy's live marketplace."
+        primaryAction={
+          <div className="flex items-center gap-2.5">
+            <CountrySelector size="sm" />
+            <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+          </div>
+        }
+      />
+
+      <HowItWorksGuide
+        isOpen={showGuide}
+        onToggle={() => setShowGuide(!showGuide)}
+        title="How Standalone Keyword Research Works"
+        description="SellerSalt extracts and scores high-performing keyword phrases directly from top-ranking organic Etsy listings."
+        steps={[
+          {
+            title: "1. Search Any Seed Keyword",
+            description: "Enter any seed term or product niche to sample top-ranking organic Etsy listings.",
+            badge: "Etsy Verified",
+          },
+          {
+            title: "2. Evaluate Long-Tail Phrases",
+            description: "Analyze search intent, word count density, and Etsy 20-character tag compliance.",
+            badge: "Tag Analysis",
+          },
+          {
+            title: "3. Plan & Shortlist Keywords",
+            description: "Add promising search terms to your Workspace Planner or export complete CSV dossiers.",
+            badge: "Workspace Planner",
+          },
+        ]}
       />
 
       {/* Main Search Input Form */}

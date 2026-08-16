@@ -24,7 +24,21 @@ import {
   Plus,
   Zap,
 } from "lucide-react";
-import { Card, Heading, Text, Button, Badge, IntelligenceCard, Input, ViewSwitch, HowItWorksGuide, SafeImage, CountrySelector, type ViewMode } from "@/components/ui";
+import {
+  Card,
+  Heading,
+  Text,
+  Button,
+  Badge,
+  IntelligenceCard,
+  Input,
+  ViewSwitch,
+  HowItWorksGuide,
+  HowItWorksToggle,
+  SafeImage,
+  CountrySelector,
+  type ViewMode,
+} from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import {
   BarChart,
@@ -168,10 +182,40 @@ export function CategoryHuntingClient({
     { month: "Dec", index: 165, isPeak: true },
   ];
 
+  const [showGuide, setShowGuide] = useState(false);
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
-      {/* Contextual Guide */}
+      {/* ==================================================================== */}
+      {/* 1. SEARCH / FILTER CONTROLS (AT TOP OF PAGE) */}
+      {/* ==================================================================== */}
+      <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-[#0E8F5D] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                <FolderTree className="h-4 w-4" />
+              </div>
+              <Heading as="h1" size="h2">
+                Category Hunting &amp; Taxonomy Exploration
+              </Heading>
+            </div>
+            <Text size="body-sm" color="secondary" className="mt-1">
+              Search any buyer category or navigate sub-branches to evaluate market entry feasibility.
+            </Text>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <CountrySelector size="sm" />
+            <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+          </div>
+        </div>
+
+      {/* Expandable Guide */}
       <HowItWorksGuide
+        isOpen={showGuide}
+        onToggle={() => setShowGuide(!showGuide)}
         title="How Category Hunting Works"
         description="Explore Etsy's official buyer taxonomy hierarchy to uncover sub-niches with high transaction velocity and low incumbent competition."
         steps={[
@@ -192,31 +236,6 @@ export function CategoryHuntingClient({
           },
         ]}
       />
-
-      {/* ==================================================================== */}
-      {/* 1. SEARCH / FILTER CONTROLS (AT TOP OF PAGE) */}
-      {/* ==================================================================== */}
-      <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-[#0E8F5D] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                <FolderTree className="h-4 w-4" />
-              </div>
-              <Heading as="h1" size="h2">
-                Category Hunting &amp; Taxonomy Exploration
-              </Heading>
-            </div>
-            <Text size="body-sm" color="secondary" className="mt-1">
-              Search any buyer category or navigate sub-branches to evaluate market entry feasibility.
-            </Text>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <CountrySelector size="sm" />
-            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-          </div>
-        </div>
 
         {/* Top Search Input & Root Quick Chips */}
         <div className="space-y-3 pt-1">

@@ -48,6 +48,7 @@ import {
   HowItWorksGuide,
   Avatar,
   SafeImage,
+  HowItWorksToggle,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -58,9 +59,12 @@ import {
   RankingVisualizer,
   ProgressMeter,
   DualSeriesChart,
+  AreaChart,
+  LineChart,
   MiniTrend,
   type ChartState,
 } from "@/components/data/charts";
+import { Share2 } from "lucide-react";
 import type { CompleteShopIntelligenceProfile } from "@/types/shop-research";
 import type { Prospect } from "@prisma/client";
 import { addProductToPlanner } from "@/services/product-hunting-client";
@@ -102,6 +106,12 @@ export function ShopDetailClient({
   // Listing View Controls
   const [viewMode, setViewMode] = useResearchState<ViewMode>("shop_listings_view", "table");
   const [sortBy, setSortBy] = useState<"oppScore" | "sales" | "price" | "title">("oppScore");
+
+  // Guide, Share & Planner state
+  const [showGuide, setShowGuide] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
+  const [savingShopPlanner, setSavingShopPlanner] = useState(false);
+  const [savedShopPlanner, setSavedShopPlanner] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -374,10 +384,60 @@ export function ShopDetailClient({
     }
   }
 
+  function handleShareShop() {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedShare(true);
+      setTimeout(() => setCopiedShare(false), 2500);
+    }
+  }
+
+  async function handleSaveShopToPlanner() {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    setSavingShopPlanner(true);
+    try {
+      await fetch("/api/planner/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Competitor Store: ${shopName}`,
+          notes: `Tracked store in ${location}. Lifetime sales: ${totalSales.toLocaleString()}, Daily velocity: ~${estDaily.toFixed(1)}/day.`,
+          stage: "DISCOVERED",
+          category: "Competitor Store",
+          targetPrice: avgPrice,
+        }),
+      });
+      setSavedShopPlanner(true);
+      setTimeout(() => setSavedShopPlanner(false), 3000);
+    } catch {
+      alert("Failed to save shop to workspace planner.");
+    } finally {
+      setSavingShopPlanner(false);
+    }
+  }
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
-      {/* Contextual Guide */}
+      {/* Breadcrumb Navigation & Inline Guide Trigger */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-xs text-ink-tertiary">
+          <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
+            Competitor Surveillance
+          </Link>
+          <span>/</span>
+          <span className="text-ink font-bold">{shopName}</span>
+        </div>
+
+        <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
+      </div>
+
+      {/* Expandable Guide */}
       <HowItWorksGuide
+        isOpen={showGuide}
+        onToggle={() => setShowGuide(!showGuide)}
         title="How Shop Research & Competition Intelligence Works"
         description="SellerSalt analyzes verified public Etsy shop metrics, evaluates catalog efficiency, and computes deterministic competition feasibility scores."
         steps={[
@@ -398,15 +458,6 @@ export function ShopDetailClient({
           },
         ]}
       />
-
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-xs text-ink-tertiary">
-        <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
-          Competitor Surveillance
-        </Link>
-        <span>/</span>
-        <span className="text-ink font-bold">{shopName}</span>
-      </div>
 
       {/* ==================================================================== */}
       {/* SECTION 1: SHOP RESEARCH DOSSIER HEADER */}
@@ -491,6 +542,34 @@ export function ShopDetailClient({
                   </>
                 )}
               </Button>
+
+              <Button
+                variant="secondary"
+                size="compact"
+                loading={savingShopPlanner}
+                onClick={handleSaveShopToPlanner}
+                className="text-xs font-semibold"
+              >
+                {savedShopPlanner ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 mr-1 text-[#0E8F5D]" /> Saved to Planner
+                  </>
+                ) : (
+                  <>
+                    <Bookmark className="h-3.5 w-3.5 mr-1 text-ink-tertiary" /> Save Store
+                  </>
+                )}
+              </Button>
+
+              <button
+                type="button"
+                onClick={handleShareShop}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-ink-secondary hover:text-ink px-3 py-2 rounded-lg border border-line hover:bg-surface-muted transition shadow-2xs"
+                title="Copy share link"
+              >
+                <Share2 className="h-3.5 w-3.5 text-ink-tertiary" />
+                <span>{copiedShare ? "Link Copied!" : "Share"}</span>
+              </button>
 
               <a
                 href={shopUrl}
@@ -751,6 +830,29 @@ export function ShopDetailClient({
                 <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Active Listings</span>
                 <span className="font-bold text-ink tabular-nums">{latestSnapshot.activeListings}</span>
               </div>
+            </div>
+          )}
+
+          {trendPoints.length >= 2 ? (
+            <div className="p-4 rounded-xl bg-white border border-line space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-ink">6-Hour Longitudinal Sales Deltas</span>
+                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+              </div>
+              <AreaChart
+                data={trendPoints}
+                xKey="date"
+                series={[{ key: "sales", label: "Delta Sales", colorIndex: 0 }]}
+                height={160}
+                valueFormatter={(v: number | string) => `${v} delta sales`}
+              />
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-xl bg-white/70 border border-[#0E8F5D]/20 text-xs text-ink-secondary flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[#0E8F5D] shrink-0" />
+              <span>
+                Surveillance active — Initial snapshot captured. Continuous 6-hour cron surveillance will plot longitudinal sales movements as further snapshots are taken.
+              </span>
             </div>
           )}
         </Card>
