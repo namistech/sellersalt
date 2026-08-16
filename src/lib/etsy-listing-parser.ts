@@ -58,9 +58,19 @@ export function parseEtsyListingInput(input?: string | number | null): ListingPa
     }
   }
 
+  // 3. Check for bare alphanumeric shop name (e.g. "LayerSculpt3D", "ModPawsPrints")
+  if (/^[a-zA-Z0-9_-]{3,50}$/.test(trimmed) && /[a-zA-Z]/.test(trimmed)) {
+    return {
+      listingId: null,
+      isShopUrl: true,
+      shopName: trimmed,
+      error: `"${trimmed}" appears to be an Etsy shop name rather than a listing. To research this store, visit Shop Intelligence.`,
+    };
+  }
+
   return {
     listingId: null,
     isShopUrl: false,
-    error: `Could not parse a valid Etsy listing ID from "${trimmed}". Expected a URL like "https://www.etsy.com/listing/123456789" or a numeric ID.`,
+    error: `Could not parse a valid Etsy listing ID from "${trimmed}". Expected a URL like "https://www.etsy.com/listing/123456789" or a numeric listing ID.`,
   };
 }

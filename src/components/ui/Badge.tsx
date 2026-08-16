@@ -5,16 +5,16 @@ export type BadgeVariant = "neutral" | "success" | "warning" | "danger" | "info"
 export type BadgeTone = "light" | "dark";
 
 const LIGHT_VARIANT_CLASS: Record<BadgeVariant, string> = {
-  neutral: "bg-surface-muted text-ink-secondary border border-line-subtle",
-  success: "bg-success-subtle text-success-strong border border-success/20",
-  warning: "bg-[#FDF1DF] text-[#92400E] border border-[#F59E0B]/30",
-  danger: "bg-danger-subtle text-danger border border-danger/20",
-  info: "bg-info-subtle text-info border border-info/20",
-  gold: "bg-[#FFF8E6] text-[#8A5A00] border border-[#FFB020]/30",
+  neutral: "bg-[#F0F2EE] text-[#2D3730] border border-[#D5DDD6]",
+  success: "bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/40",
+  warning: "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/40",
+  danger: "bg-[#FEE2E2] text-[#DC2626] border border-[#EF4444]/40",
+  info: "bg-[#EFF6FF] text-[#1D4ED8] border border-[#3B82F6]/40",
+  gold: "bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/40 font-bold",
 };
 
 const DARK_VARIANT_CLASS: Record<BadgeVariant, string> = {
-  neutral: "bg-[#1C261F] text-[#9EAA9F] border border-[#2A362D]",
+  neutral: "bg-[#1C261F] text-[#D1DCD2] border border-[#2A362D]",
   success: "bg-[#0D281E] text-[#16C784] border border-[#1B4D39]",
   warning: "bg-[#2A1E0B] text-[#FBBF24] border border-[#78480F]",
   danger: "bg-[#2D1214] text-[#F87171] border border-[#591C20]",

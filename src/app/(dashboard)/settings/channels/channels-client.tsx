@@ -229,6 +229,67 @@ export function ChannelsClient() {
         </div>
       </Card>
 
+      {/* Etsy Connector Diagnostics & Scope Capability Matrix */}
+      <Card padding="lg" className="border-line bg-surface shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-[#0E8F5D]" />
+            <Heading as="h2" size="h4">
+              OAuth Scope &amp; Capability Diagnostics
+            </Heading>
+          </div>
+          <Badge variant="neutral" className="text-xs font-mono">
+            Etsy Open API v3
+          </Badge>
+        </div>
+
+        <p className="text-xs text-ink-secondary leading-relaxed">
+          SellerSalt uses official Etsy OAuth 2.0 PKCE scopes. Standard Read scopes enable listing extraction and SEO diagnostics, while write scopes enable direct draft creation in accordance with Rule 7 and Rule 9.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div className="p-3 rounded-xl border border-line bg-surface-muted space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-ink">Shop Profile &amp; Policies</span>
+              <Badge variant="success" className="text-[10px]">shops_r · Active</Badge>
+            </div>
+            <p className="text-[11px] text-ink-tertiary">
+              Reads shop metadata, review metrics, and active listing counts.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-line bg-surface-muted space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-ink">Listing SEO &amp; Tag Extraction</span>
+              <Badge variant="success" className="text-[10px]">listings_r · Active</Badge>
+            </div>
+            <p className="text-[11px] text-ink-tertiary">
+              Reads titles, 13 tags, materials, and taxonomy paths for SEO diagnostics.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-line bg-surface-muted space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-ink">Listing Draft Creation</span>
+              <Badge variant="warning" className="text-[10px]">listings_w · Rule 9 Gate</Badge>
+            </div>
+            <p className="text-[11px] text-ink-tertiary">
+              Creates listings strictly in draft state requiring human approval before publishing.
+            </p>
+          </div>
+
+          <div className="p-3 rounded-xl border border-line bg-surface-muted space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-ink">Order &amp; Revenue Analytics</span>
+              <Badge variant="neutral" className="text-[10px]">transactions_r · Read</Badge>
+            </div>
+            <p className="text-[11px] text-ink-tertiary">
+              Synchronizes shop velocity and longitudinal customer order volume.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       {/* Connected Shops Table */}
       <Card padding="lg" className="border-line bg-surface shadow-xs space-y-4">
         <Heading as="h2" size="h4">
