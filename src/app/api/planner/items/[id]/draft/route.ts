@@ -9,7 +9,7 @@ import { logIntelligenceEvent } from "@/services/intelligence/events";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const plannerItemId = params.id;
+    const { id: plannerItemId } = await params;
     const item = await prisma.plannerItem.findFirst({
       where: { id: plannerItemId, organizationId },
     });
