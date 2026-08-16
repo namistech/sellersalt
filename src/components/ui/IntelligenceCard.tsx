@@ -3,7 +3,6 @@
 import React, { ReactNode } from "react";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "./cn";
-import { Badge } from "./Badge";
 import { Button } from "./Button";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 
@@ -60,34 +59,34 @@ export function IntelligenceCard({
   const getVerdictStyle = () => {
     switch (verdictVariant) {
       case "success":
-        return "bg-[#0E8F5D]/20 text-[#16C784] border-[#0E8F5D]/30";
+        return "bg-[#0D281E] text-[#16C784] border-[#1B4D39]";
       case "warning":
-        return "bg-[#D97706]/20 text-[#F59E0B] border-[#D97706]/30";
+        return "bg-[#2E1E09] text-[#FFB020] border-[#593A11]";
       case "danger":
-        return "bg-[#DC2626]/20 text-[#EF4444] border-[#DC2626]/30";
+        return "bg-[#2D1214] text-[#F87171] border-[#591C20]";
       case "info":
-        return "bg-[#2563EB]/20 text-[#60A5FA] border-[#2563EB]/30";
+        return "bg-[#0E2038] text-[#60A5FA] border-[#1E3A5F]";
       default:
-        return "bg-[#2A362D] text-[#9EAA9F] border-[#3A483E]";
+        return "bg-[#1C261F] text-[#9EAA9F] border-[#2A362D]";
     }
   };
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 shadow-md",
+        "relative overflow-hidden rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 sm:p-7 shadow-sm",
         className
       )}
     >
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-        {/* Main Intelligence Column */}
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 lg:gap-8">
+        {/* Main Intelligence Column (Golden Ratio Primary ~1.618) */}
         <div className="space-y-4 flex-1 min-w-0">
           {/* Header Signal Badge */}
           <div className="flex flex-wrap items-center gap-2.5">
             {badgeText && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1C261F] border border-[#2A362D] text-[11px] font-bold tracking-wider text-[#0E8F5D] uppercase">
-                <span className="flex h-2 w-2 rounded-full bg-[#0E8F5D] animate-pulse" />
-                {badgeIcon || <Sparkles className="h-3 w-3" />}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1C261F] border border-[#2A362D] text-[11px] font-bold tracking-wider text-[#16C784] uppercase">
+                <span className="flex h-2 w-2 rounded-full bg-[#16C784] animate-pulse" />
+                {badgeIcon || <Sparkles className="h-3 w-3 text-[#FFB020]" />}
                 {badgeText}
               </div>
             )}
@@ -96,23 +95,23 @@ export function IntelligenceCard({
 
           {/* Title & Verdict */}
           <div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white leading-snug">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white leading-snug">
               {title}
             </h2>
             {verdictLabel && (
-              <div className="mt-2.5 inline-flex items-center gap-2">
+              <div className="mt-2.5 inline-flex flex-wrap items-center gap-3">
                 <span
                   className={cn(
-                    "px-3 py-1 rounded-lg text-xs sm:text-sm font-extrabold border tracking-wide",
+                    "px-3 py-1 rounded-lg text-xs font-bold border tracking-wide",
                     getVerdictStyle()
                   )}
                 >
                   {verdictLabel}
                 </span>
                 {score !== undefined && (
-                  <span className="text-xs font-bold text-[#9EAA9F]">
-                    Index: <span className="font-mono text-white font-black">{score}</span>
-                    {typeof score === "number" && <span className="text-[#6D7870]">/{scoreMax}</span>}
+                  <span className="text-xs font-medium text-[#9EAA9F]">
+                    Score: <span className="font-mono text-white font-bold tabular-nums">{score}</span>
+                    {typeof score === "number" && <span className="text-[#6D7870] font-mono">/{scoreMax}</span>}
                   </span>
                 )}
               </div>
@@ -121,7 +120,7 @@ export function IntelligenceCard({
 
           {/* Natural Language Explanation */}
           {description && (
-            <p className="text-xs sm:text-sm text-[#9EAA9F] leading-relaxed max-w-3xl">
+            <p className="text-xs sm:text-sm text-[#A5B2A6] leading-relaxed max-w-3xl">
               {description}
             </p>
           )}
@@ -148,9 +147,9 @@ export function IntelligenceCard({
           )}
         </div>
 
-        {/* Optional Side Panel (Score Meter, Key Metrics Box, or Chart) */}
+        {/* Supporting Side Panel (Score Meter, Key Metrics Box, or Chart - Golden Ratio Secondary ~1.0) */}
         {sidePanel && (
-          <div className="lg:w-80 shrink-0 bg-[#1C261F] border border-[#2A362D] rounded-xl p-4.5 space-y-3">
+          <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 bg-[#1A231C] border border-[#2D3A30] rounded-xl p-5 sm:p-6 space-y-4 shadow-inner-xs">
             {sidePanel}
           </div>
         )}

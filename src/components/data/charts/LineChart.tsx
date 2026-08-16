@@ -24,6 +24,7 @@ export interface ChartSeries {
   key: string;
   label: string;
   colorIndex?: number;
+  strokeDasharray?: string;
 }
 
 export interface LineChartProps {
@@ -55,6 +56,7 @@ export function LineChart({ data, xKey, series, height = 240, state = "ready", v
                 name={s.label}
                 stroke={seriesColor(s.colorIndex ?? i)}
                 strokeWidth={2}
+                strokeDasharray={s.strokeDasharray}
                 dot={false}
                 activeDot={{ r: 4 }}
               />

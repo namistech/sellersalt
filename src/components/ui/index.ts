@@ -39,7 +39,7 @@ export { Switch } from "./Switch";
 export type { SwitchProps } from "./Switch";
 
 export { Badge } from "./Badge";
-export type { BadgeProps, BadgeVariant } from "./Badge";
+export type { BadgeProps, BadgeVariant, BadgeTone } from "./Badge";
 
 export { StatusIndicator } from "./StatusIndicator";
 export type { StatusIndicatorProps, Status } from "./StatusIndicator";
@@ -80,3 +80,5 @@ export type { BreadcrumbsProps, BreadcrumbItem } from "./Breadcrumbs";
 export { IntelligenceCard } from "./IntelligenceCard";
 export type { IntelligenceCardProps } from "./IntelligenceCard";
 
+export { ViewSwitch } from "./ViewSwitch";
+export type { ViewSwitchProps, ViewMode } from "./ViewSwitch";

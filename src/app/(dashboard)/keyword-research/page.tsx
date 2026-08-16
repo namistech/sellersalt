@@ -19,9 +19,9 @@ import {
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard } from "@/components/ui";
+import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard, ViewSwitch, type ViewMode } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
-import { BarChart } from "@/components/data/charts";
+import { BarChart, HorizontalBarChart } from "@/components/data/charts";
 import {
   searchStandaloneKeywords,
   savePlannedKeyword,
@@ -34,6 +34,7 @@ import type {
   KeywordTailClassification,
   KeywordIntentClassification,
 } from "@/types/keyword-research";
+import { useResearchState } from "@/lib/research-persistence";
 
 type MatchMode = "contains" | "exact" | "starts" | "ends";
 type WordFilter = "all" | "1" | "2" | "3" | "4plus";
@@ -48,17 +49,18 @@ const COMPETITION_COLORS: Record<KeywordCompetitionRating, string> = {
 };
 
 export default function KeywordResearchPage() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useResearchState<string>("kw_query", "");
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
 
   // Filters & Sorting
-  const [matchMode, setMatchMode] = useState<MatchMode>("contains");
-  const [wordFilter, setWordFilter] = useState<WordFilter>("all");
+  const [matchMode, setMatchMode] = useResearchState<MatchMode>("kw_match", "contains");
+  const [wordFilter, setWordFilter] = useResearchState<WordFilter>("kw_words", "all");
   const [onlyTagCompliant, setOnlyTagCompliant] = useState(false);
-  const [selectedIntent, setSelectedIntent] = useState<string>("ALL");
-  const [selectedComp, setSelectedComp] = useState<string>("ALL");
+  const [selectedIntent, setSelectedIntent] = useResearchState<string>("kw_intent", "ALL");
+  const [selectedComp, setSelectedComp] = useResearchState<string>("kw_comp", "ALL");
   const [sortBy, setSortBy] = useState<SortOption>("frequency");
+  const [viewMode, setViewMode] = useResearchState<ViewMode>("kw_view_mode", "grid");
 
   // State
   const [searchResponse, setSearchResponse] = useState<KeywordSearchResponse | null>(null);
@@ -408,21 +410,19 @@ export default function KeywordResearchPage() {
                   </div>
                   <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                 </div>
-                <BarChart
+                <HorizontalBarChart
                   data={[...searchResponse.keywords]
                     .sort((a, b) => b.percentage - a.percentage)
                     .slice(0, 5)
                     .map((k) => ({
-                      term: k.term,
-                      percentage: k.percentage,
+                      label: k.term,
+                      value: k.percentage,
+                      color: "#0E8F5D",
                     }))}
-                  xKey="term"
-                  layout="vertical"
                   yAxisWidth={140}
-                  series={[{ key: "percentage", label: "% of sampled listings", colorIndex: 0 }]}
                   valueFormatter={(v) => `${v}%`}
-                  height={150}
-                  accessibleSummary="Bar chart of top keywords ranked by catalog penetration percentage."
+                  height={160}
+                  accessibleSummary="Horizontal bar chart of top keywords ranked by catalog penetration percentage."
                 />
               </Card>
 
@@ -437,37 +437,37 @@ export default function KeywordResearchPage() {
                   </div>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
-                <BarChart
+                <HorizontalBarChart
                   data={[
                     {
-                      type: "Head Term (1w)",
-                      avgDemand: (() => {
+                      label: "Head Term (1w)",
+                      value: (() => {
                         const items = searchResponse.keywords.filter((k) => k.tailClassification === "HEAD_TERM");
                         return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
                       })(),
+                      color: "#16C784",
                     },
                     {
-                      type: "Mid-Tail (2-3w)",
-                      avgDemand: (() => {
+                      label: "Mid-Tail (2-3w)",
+                      value: (() => {
                         const items = searchResponse.keywords.filter((k) => k.tailClassification === "MID_TAIL");
                         return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
                       })(),
+                      color: "#3B82F6",
                     },
                     {
-                      type: "Long-Tail (4w+)",
-                      avgDemand: (() => {
+                      label: "Long-Tail (4w+)",
+                      value: (() => {
                         const items = searchResponse.keywords.filter((k) => k.tailClassification === "LONG_TAIL");
                         return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
                       })(),
+                      color: "#8B5CF6",
                     },
                   ]}
-                  xKey="type"
-                  layout="vertical"
                   yAxisWidth={120}
-                  series={[{ key: "avgDemand", label: "Avg Favorites Proxy", colorIndex: 1 }]}
                   valueFormatter={(v) => `${Number(v).toLocaleString()} favs`}
-                  height={150}
-                  accessibleSummary="Bar chart comparing average buyer demand across head, mid, and long tail keywords."
+                  height={160}
+                  accessibleSummary="Horizontal bar chart comparing average buyer demand across head, mid, and long tail keywords."
                 />
               </Card>
             </div>
@@ -483,7 +483,8 @@ export default function KeywordResearchPage() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <ViewSwitch value={viewMode} onChange={setViewMode} modes={["grid", "table"]} />
                 <Button
                   variant="secondary"
                   size="compact"
@@ -572,114 +573,179 @@ export default function KeywordResearchPage() {
             </div>
           </Card>
 
-          {/* Harvested Keywords Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredKeywords.map((item) => {
-              const isPlanned = plannedKeywords[item.term];
-              const isSavedPlanner = savedPlannerTerms[item.term];
-              const isSaving = savingPlannerTerm === item.term;
-
-              return (
-                <Card
-                  key={item.term}
-                  padding="sm"
-                  className="border-line bg-white shadow-2xs hover:border-line-subtle transition-all flex flex-col justify-between space-y-2.5"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => executeSearch(item.term)}
-                          className="font-bold text-xs text-ink hover:text-[#0E8F5D] text-left truncate block transition-colors"
-                          title="Click to research this keyword"
-                        >
-                          {item.term}
-                        </button>
-                        <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
-                          <span>{item.wordCount} words</span>
-                          <span>·</span>
-                          <span className={item.isTagCompliant ? "text-[#0E8F5D] font-medium" : "text-amber-700"}>
-                            {item.charCount} chars {item.isTagCompliant ? "(Etsy Tag)" : "(Title Only)"}
+          {/* Harvested Keywords Content: Grid vs Dense Table */}
+          {viewMode === "table" ? (
+            <div className="border border-line rounded-xl overflow-hidden bg-white">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3">Keyword Phrase</th>
+                    <th className="p-3">Length</th>
+                    <th className="p-3">Frequency</th>
+                    <th className="p-3">Relevance</th>
+                    <th className="p-3">Est. Demand</th>
+                    <th className="p-3">Competition</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-subtle">
+                  {filteredKeywords.map((item) => {
+                    const isPlanned = plannedKeywords[item.term];
+                    const isSavedPlanner = savedPlannerTerms[item.term];
+                    return (
+                      <tr key={item.term} className="hover:bg-surface-muted transition">
+                        <td className="p-3 font-bold text-ink">
+                          <button
+                            type="button"
+                            onClick={() => executeSearch(item.term)}
+                            className="hover:text-[#0E8F5D] text-left transition-colors"
+                          >
+                            {item.term}
+                          </button>
+                        </td>
+                        <td className="p-3 text-ink-tertiary">
+                          {item.wordCount}w · {item.charCount}c
+                        </td>
+                        <td className="p-3 font-mono font-bold text-ink tabular-nums">
+                          {item.frequency}x <span className="text-[10px] text-ink-tertiary font-sans font-normal">({item.percentage}%)</span>
+                        </td>
+                        <td className="p-3 font-mono font-bold text-[#0E8F5D] tabular-nums">
+                          {item.relevanceScore}%
+                        </td>
+                        <td className="p-3 font-mono text-ink tabular-nums">
+                          {item.estimatedDemandSignal}
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${COMPETITION_COLORS[item.competitionLevel]}`}>
+                            {item.competitionLevel.replace("_", " ")}
                           </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Button
+                            variant={isSavedPlanner ? "secondary" : "primary"}
+                            size="compact"
+                            disabled={isSavedPlanner}
+                            onClick={() => handleAddTermToPlanner(item)}
+                            className="text-[10px] px-2 py-1 bg-[#0E8F5D] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                          >
+                            {isSavedPlanner ? "Added" : "+ Planner"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredKeywords.map((item) => {
+                const isPlanned = plannedKeywords[item.term];
+                const isSavedPlanner = savedPlannerTerms[item.term];
+                const isSaving = savingPlannerTerm === item.term;
+
+                return (
+                  <Card
+                    key={item.term}
+                    padding="sm"
+                    className="border-line bg-white shadow-2xs hover:border-line-subtle transition-all flex flex-col justify-between space-y-2.5"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => executeSearch(item.term)}
+                            className="font-bold text-xs text-ink hover:text-[#0E8F5D] text-left truncate block transition-colors"
+                            title="Click to research this keyword"
+                          >
+                            {item.term}
+                          </button>
+                          <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
+                            <span>{item.wordCount} words</span>
+                            <span>·</span>
+                            <span className={item.isTagCompliant ? "text-[#0E8F5D] font-medium" : "text-amber-700"}>
+                              {item.charCount} chars {item.isTagCompliant ? "(Etsy Tag)" : "(Title Only)"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${COMPETITION_COLORS[item.competitionLevel]}`}>
+                          {item.competitionLevel.replace("_", " ")}
                         </div>
                       </div>
 
-                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${COMPETITION_COLORS[item.competitionLevel]}`}>
-                        {item.competitionLevel.replace("_", " ")}
+                      {/* Metrics Row */}
+                      <div className="grid grid-cols-3 gap-1 pt-2 border-t border-line-subtle text-center">
+                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                          <div className="text-[9px] text-ink-tertiary uppercase">Frequency</div>
+                          <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.frequency}x</div>
+                          <div className="text-[9px] text-ink-tertiary">{item.percentage}% of sample</div>
+                        </div>
+
+                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                          <div className="text-[9px] text-ink-tertiary uppercase">Relevance</div>
+                          <div className="text-xs font-mono font-extrabold text-[#0E8F5D] tabular-nums">{item.relevanceScore}%</div>
+                          <div className="text-[9px] text-ink-tertiary">Semantic match</div>
+                        </div>
+
+                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                          <div className="text-[9px] text-ink-tertiary uppercase">Est. Demand</div>
+                          <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.estimatedDemandSignal}</div>
+                          <div className="text-[9px] text-ink-tertiary">Avg. favorites</div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Metrics Row */}
-                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-line-subtle text-center">
-                      <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Frequency</div>
-                        <div className="text-xs font-mono font-extrabold text-ink">{item.frequency}x</div>
-                        <div className="text-[9px] text-ink-tertiary">{item.percentage}% of sample</div>
+                    {/* Actions Row */}
+                    <div className="flex items-center justify-between pt-2 border-t border-line-subtle">
+                      <div className="flex items-center gap-1">
+                        <Link
+                          href={`/prospects?search=${encodeURIComponent(item.term)}`}
+                          className="p-1.5 rounded-md text-ink-tertiary hover:text-ink hover:bg-surface-muted transition-colors"
+                          title="Search marketplace in Prospects"
+                        >
+                          <Compass className="h-3.5 w-3.5" />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => handleBookmark(item.term)}
+                          className={`p-1.5 rounded-md text-xs transition-colors ${
+                            isPlanned
+                              ? "text-[#0E8F5D] bg-[#E7FAF1]"
+                              : "text-ink-tertiary hover:text-ink hover:bg-surface-muted"
+                          }`}
+                          title={isPlanned ? "Saved in Planned Keywords" : "Save to Planned Keywords"}
+                        >
+                          <Bookmark className={`h-3.5 w-3.5 ${isPlanned ? "fill-current" : ""}`} />
+                        </button>
                       </div>
 
-                      <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Relevance</div>
-                        <div className="text-xs font-mono font-extrabold text-[#0E8F5D]">{item.relevanceScore}%</div>
-                        <div className="text-[9px] text-ink-tertiary">Semantic match</div>
-                      </div>
-
-                      <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Est. Demand</div>
-                        <div className="text-xs font-mono font-extrabold text-ink">{item.estimatedDemandSignal}</div>
-                        <div className="text-[9px] text-ink-tertiary">Avg. favorites</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Row */}
-                  <div className="flex items-center justify-between pt-2 border-t border-line-subtle">
-                    <div className="flex items-center gap-1">
-                      <Link
-                        href={`/prospects?search=${encodeURIComponent(item.term)}`}
-                        className="p-1.5 rounded-md text-ink-tertiary hover:text-ink hover:bg-surface-muted transition-colors"
-                        title="Search marketplace in Prospects"
+                      <Button
+                        variant={isSavedPlanner ? "secondary" : "primary"}
+                        size="compact"
+                        loading={isSaving}
+                        disabled={isSavedPlanner}
+                        onClick={() => handleAddTermToPlanner(item)}
+                        className="text-[11px] font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
                       >
-                        <Compass className="h-3.5 w-3.5" />
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => handleBookmark(item.term)}
-                        className={`p-1.5 rounded-md text-xs transition-colors ${
-                          isPlanned
-                            ? "text-[#0E8F5D] bg-[#E7FAF1]"
-                            : "text-ink-tertiary hover:text-ink hover:bg-surface-muted"
-                        }`}
-                        title={isPlanned ? "Saved in Planned Keywords" : "Save to Planned Keywords"}
-                      >
-                        <Bookmark className={`h-3.5 w-3.5 ${isPlanned ? "fill-current" : ""}`} />
-                      </button>
+                        {isSavedPlanner ? (
+                          <>
+                            <Check className="h-3 w-3 mr-1" /> Added to Planner
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3 mr-1" /> Add to Planner
+                          </>
+                        )}
+                      </Button>
                     </div>
-
-                    <Button
-                      variant={isSavedPlanner ? "secondary" : "primary"}
-                      size="compact"
-                      loading={isSaving}
-                      disabled={isSavedPlanner}
-                      onClick={() => handleAddTermToPlanner(item)}
-                      className="text-[11px] font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
-                    >
-                      {isSavedPlanner ? (
-                        <>
-                          <Check className="h-3 w-3 mr-1" /> Added to Planner
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3 w-3 mr-1" /> Add to Planner
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           {/* Observed Top Listings Gallery */}
           {searchResponse.topListings.length > 0 && (

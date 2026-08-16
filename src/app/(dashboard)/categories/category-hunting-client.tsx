@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Card, Heading, Text, Button, Badge, IntelligenceCard } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
-import { BarChart } from "@/components/data/charts";
+import { BarChart, HorizontalBarChart } from "@/components/data/charts";
 import { TaxonomyTreeBrowser } from "@/components/intelligence/TaxonomyTreeBrowser";
 import {
   fetchCategoryRoots,
@@ -32,6 +32,7 @@ import { addProductToPlanner } from "@/services/product-hunting-client";
 import type { EtsyRawTaxonomyNode, FlattenedTaxonomyNode } from "@/connectors/etsy/taxonomy";
 import type { CategoryIntelligenceProfile } from "@/types/category-hunting";
 import type { ProductHuntingResult } from "@/types/product-hunting";
+import { useResearchState } from "@/lib/research-persistence";
 
 interface CategoryHuntingClientProps {
   initialRoots: EtsyRawTaxonomyNode[];
@@ -43,10 +44,11 @@ export function CategoryHuntingClient({
   initialTaxonomyId,
 }: CategoryHuntingClientProps) {
   const [roots] = useState<EtsyRawTaxonomyNode[]>(initialRoots);
-  const [selectedTaxonomyId, setSelectedTaxonomyId] = useState<number | null>(
+  const [selectedTaxonomyId, setSelectedTaxonomyId] = useResearchState<number | null>(
+    "cat_selected_id",
     initialTaxonomyId || (initialRoots[0]?.id ?? null)
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useResearchState<string>("cat_search_query", "");
   const [searchResults, setSearchResults] = useState<FlattenedTaxonomyNode[]>([]);
   const [profile, setProfile] = useState<CategoryIntelligenceProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -465,16 +467,13 @@ export function CategoryHuntingClient({
                     </div>
                     <DataProvenanceBadge type="ESTIMATED" />
                   </div>
-                  <BarChart
+                  <HorizontalBarChart
                     data={[
-                      { tier: "10th %ile (Budget)", price: Number(profile.benchmarks.price10thPercentile.toFixed(2)) },
-                      { tier: "Median (Sweet Spot)", price: Number(profile.benchmarks.medianPrice.toFixed(2)) },
-                      { tier: "90th %ile (Premium)", price: Number(profile.benchmarks.price90thPercentile.toFixed(2)) },
+                      { label: "10th %ile (Budget)", value: Number(profile.benchmarks.price10thPercentile.toFixed(2)), color: "#3B82F6" },
+                      { label: "Median (Sweet Spot)", value: Number(profile.benchmarks.medianPrice.toFixed(2)), color: "#0E8F5D" },
+                      { label: "90th %ile (Premium)", value: Number(profile.benchmarks.price90thPercentile.toFixed(2)), color: "#8B5CF6" },
                     ]}
-                    xKey="tier"
-                    layout="vertical"
                     yAxisWidth={130}
-                    series={[{ key: "price", label: "Price ($)", colorIndex: 0 }]}
                     valueFormatter={(v) => `$${Number(v).toFixed(2)}`}
                     height={140}
                     accessibleSummary={`Pricing corridor for ${profile.name} spanning $${profile.benchmarks.price10thPercentile.toFixed(2)} to $${profile.benchmarks.price90thPercentile.toFixed(2)}.`}
@@ -493,15 +492,13 @@ export function CategoryHuntingClient({
                     <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                   </div>
                   {profile.extractedKeywords.length > 0 ? (
-                    <BarChart
+                    <HorizontalBarChart
                       data={profile.extractedKeywords.slice(0, 4).map((k) => ({
-                        tag: k.tag,
-                        percentage: k.percentage,
+                        label: k.tag,
+                        value: k.percentage,
+                        color: "#0E8F5D",
                       }))}
-                      xKey="tag"
-                      layout="vertical"
                       yAxisWidth={130}
-                      series={[{ key: "percentage", label: "% of sample", colorIndex: 2 }]}
                       valueFormatter={(v) => `${v}%`}
                       height={140}
                       accessibleSummary={`Top extracted keywords by penetration in ${profile.name}.`}
@@ -519,26 +516,29 @@ export function CategoryHuntingClient({
                 <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
-                      <FolderTree className="h-3.5 w-3.5 text-[#0E8F5D]" /> Sub-Niches & Child Branches ({profile.children.length})
+                      <FolderTree className="h-3.5 w-3.5 text-[#0E8F5D]" /> Sub-Niches &amp; Child Taxonomy Nodes ({profile.children.length})
                     </span>
                     <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                     {profile.children.map((child) => (
-                      <div
+                      <button
                         key={child.id}
+                        type="button"
                         onClick={() => setSelectedTaxonomyId(child.id)}
-                        className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] hover:border-line-subtle hover:bg-white cursor-pointer transition-all flex items-center justify-between gap-2 shadow-2xs"
+                        className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] hover:shadow-2xs text-left transition flex items-center justify-between group"
                       >
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-ink truncate">{child.name}</div>
+                          <div className="font-bold text-xs text-ink group-hover:text-[#0E8F5D] truncate">
+                            {child.name}
+                          </div>
                           <div className="text-[10px] text-ink-tertiary">
                             {child.childCount > 0 ? `${child.childCount} sub-branches` : "Leaf node"}
                           </div>
                         </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-ink-tertiary shrink-0" />
-                      </div>
+                        <ChevronRight className="h-4 w-4 text-ink-tertiary group-hover:text-[#0E8F5D] transition-transform group-hover:translate-x-0.5" />
+                      </button>
                     ))}
                   </div>
                 </Card>
@@ -645,7 +645,12 @@ export function CategoryHuntingClient({
                             )}
 
                             <div className="min-w-0 flex-1 space-y-0.5">
-                              <div className="font-bold text-xs text-ink truncate">{sample.listing.title}</div>
+                              <Link
+                                href={`/products/${sample.listing.listingId}`}
+                                className="font-bold text-xs text-ink hover:text-[#0E8F5D] transition-colors truncate block"
+                              >
+                                {sample.listing.title}
+                              </Link>
                               <div className="text-[11px] text-ink-tertiary flex items-center gap-2">
                                 <span>Shop: <strong className="text-ink">{sample.shop.shopName}</strong></span>
                                 <span>·</span>

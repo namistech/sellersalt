@@ -34,16 +34,17 @@ import {
   fetchTrackingQuota,
   fetchTrackedShopHistory,
 } from "@/services/tracking-client";
-import { BarChart, LineChart } from "@/components/data/charts";
+import { BarChart, LineChart, Sparkline } from "@/components/data/charts";
 import type {
   TrackedShopSummary,
   TrackedListingSummary,
   TrackingAlertItem,
   TrackingQuotaInfo,
 } from "@/types/tracking";
+import { useResearchState } from "@/lib/research-persistence";
 
 export default function TrackedCompetitorsPage() {
-  const [activeTab, setActiveTab] = useState<"shops" | "listings" | "alerts" | "quota">("shops");
+  const [activeTab, setActiveTab] = useResearchState<"shops" | "listings" | "alerts" | "quota">("spy_active_tab", "shops");
 
   const [shops, setShops] = useState<TrackedShopSummary[]>([]);
   const [listings, setListings] = useState<TrackedListingSummary[]>([]);
@@ -521,7 +522,12 @@ export default function TrackedCompetitorsPage() {
                   {listings.map((l) => (
                     <tr key={l.id} className="hover:bg-[#FAFAF8]">
                       <td className="py-3 pr-4 font-medium text-ink max-w-[320px] truncate">
-                        <div className="font-semibold text-ink truncate">{l.title}</div>
+                        <Link
+                          href={`/products/${l.listingExternalId}`}
+                          className="font-bold text-ink hover:text-[#0E8F5D] transition-colors truncate block"
+                        >
+                          {l.title}
+                        </Link>
                         <div className="text-[10px] text-ink-tertiary flex items-center gap-2">
                           <span>Listing #{l.listingExternalId}</span>
                           {l.shopName && <span>• Shop: {l.shopName}</span>}

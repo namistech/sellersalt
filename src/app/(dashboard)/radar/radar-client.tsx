@@ -31,6 +31,8 @@ import {
   Text,
   IconButton,
   IntelligenceCard,
+  ViewSwitch,
+  type ViewMode,
 } from "@/components/ui";
 import { EmptyState, Table, type Column } from "@/components/data";
 import { fetchConnectors, type ConnectorSummary } from "@/services/connectors";
@@ -39,6 +41,7 @@ import { updateProspect } from "@/services/prospects";
 import { addProductToPlanner } from "@/services/product-hunting-client";
 import { ProductResearchDrawer } from "@/components/intelligence/ProductResearchDrawer";
 import { NewSearchDrawer } from "../new-search-drawer";
+import { useResearchState } from "@/lib/research-persistence";
 
 interface RadarClientProps {
   initialData: OpportunityRadarData;
@@ -59,12 +62,13 @@ export function RadarClient({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
 
-  // Local filter states
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [typeFilter, setTypeFilter] = useState<string>(selectedType);
-  const [configFilter, setConfigFilter] = useState<string>(searchConfigId || "ALL");
-  const [scoreFilter, setScoreFilter] = useState<number>(minScore);
-  const [sortBy, setSortBy] = useState<string>("score");
+  // Research persistence states
+  const [searchQuery, setSearchQuery] = useResearchState<string>("radar_query", initialQuery);
+  const [typeFilter, setTypeFilter] = useResearchState<string>("radar_type", selectedType);
+  const [configFilter, setConfigFilter] = useResearchState<string>("radar_config", searchConfigId || "ALL");
+  const [scoreFilter, setScoreFilter] = useResearchState<number>("radar_min_score", minScore);
+  const [sortBy, setSortBy] = useResearchState<string>("radar_sort", "score");
+  const [viewMode, setViewMode] = useResearchState<ViewMode>("radar_view_mode", "table");
 
   // Local state for optimistic updates
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialData.allOpportunities);
@@ -814,28 +818,33 @@ export function RadarClient({
             </Text>
           </div>
 
-          {/* Quick Type Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { key: "ALL", label: "All Opportunities" },
-              { key: "EMERGING", label: "🔥 Emerging" },
-              { key: "HIDDEN_GEM", label: "💎 Hidden Gems" },
-              { key: "GROWING", label: "📈 Growing" },
-              { key: "COMPETITION_RISING", label: "⚠️ Crowded" },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setTypeFilter(tab.key)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  typeFilter === tab.key
-                    ? "bg-brand-primary text-white shadow-xs"
-                    : "bg-surface-muted text-ink-secondary hover:bg-line-subtle hover:text-ink border border-line-subtle"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Quick Type Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[
+                { key: "ALL", label: "All Opportunities" },
+                { key: "EMERGING", label: "🔥 Emerging" },
+                { key: "HIDDEN_GEM", label: "💎 Hidden Gems" },
+                { key: "GROWING", label: "📈 Growing" },
+                { key: "COMPETITION_RISING", label: "⚠️ Crowded" },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setTypeFilter(tab.key)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                    typeFilter === tab.key
+                      ? "bg-brand-primary text-white shadow-xs"
+                      : "bg-surface-muted text-ink-secondary hover:bg-line-subtle hover:text-ink border border-line-subtle"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* View Mode Toggle */}
+            <ViewSwitch value={viewMode} onChange={setViewMode} modes={["table", "grid"]} />
           </div>
         </div>
 
@@ -953,6 +962,81 @@ export function RadarClient({
               }
             />
           </Card>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredOpportunities.map((opp) => (
+              <Card
+                key={opp.id}
+                padding="md"
+                className="border-line bg-surface shadow-2xs hover:shadow-xs transition-all space-y-3 flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    {renderTypeBadge(opp.type)}
+                    <span className="font-mono text-xs font-bold text-[#0E8F5D] bg-[#E7FAF1] px-2 py-0.5 rounded border border-[#16C784]/20 tabular-nums">
+                      Score {opp.score}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    {opp.listingImageUrl ? (
+                      <img
+                        src={opp.listingImageUrl}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
+                        Etsy
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/products/${opp.prospectId}`}
+                        className="font-bold text-xs text-ink hover:text-[#0E8F5D] line-clamp-2 transition-colors"
+                      >
+                        {opp.listingTitle || opp.shopName}
+                      </Link>
+                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-tertiary">
+                        <Link href={`/shops/${opp.shopExternalId}`} className="text-ink-secondary hover:underline">
+                          {opp.shopName}
+                        </Link>
+                        <span>·</span>
+                        <span className="font-mono font-semibold text-ink">${opp.price.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-ink-secondary line-clamp-2 italic bg-surface-muted p-2 rounded-md border border-line-subtle">
+                    "{opp.reason}"
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-line-subtle flex items-center justify-between gap-2">
+                  <Link href={`/products/${opp.prospectId}`} className="flex-1">
+                    <Button variant="secondary" size="compact" className="w-full text-xs font-semibold">
+                      Inspect →
+                    </Button>
+                  </Link>
+
+                  <Button
+                    variant={savedPlannerMap[opp.id] || opp.isShortlisted ? "secondary" : "primary"}
+                    size="compact"
+                    loading={savingPlannerId === opp.id}
+                    disabled={savedPlannerMap[opp.id] || opp.isShortlisted}
+                    onClick={() => handleQuickAddToPlanner(opp)}
+                    className="text-xs bg-[#0E8F5D] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                  >
+                    {savedPlannerMap[opp.id] || opp.isShortlisted ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <Bookmark className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
         ) : (
           <Table<OpportunityItem>
             columns={columns}
