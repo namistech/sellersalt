@@ -47,6 +47,7 @@ import {
   ViewSwitch,
   HowItWorksGuide,
   Avatar,
+  SafeImage,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -412,10 +413,14 @@ export function ShopDetailClient({
       {/* ==================================================================== */}
       <div className="rounded-2xl border border-line bg-white shadow-xs overflow-hidden">
         {/* Visual Cover / Banner Pattern */}
-        <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-[#141B16] via-[#1C261F] to-[#141B16] relative">
+        <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-[#141B16] via-[#1C261F] to-[#141B16] relative overflow-hidden">
           {shopBannerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={shopBannerUrl} alt={shopName} className="w-full h-full object-cover opacity-60" />
+            <SafeImage
+              src={shopBannerUrl}
+              alt={shopName}
+              fallbackType="shop"
+              className="w-full h-full object-cover opacity-60"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center opacity-10">
               <Store className="h-28 w-28 text-[#16C784]" />
@@ -430,10 +435,14 @@ export function ShopDetailClient({
         <div className="p-6 sm:p-8 pt-0 relative space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14">
             <div className="flex items-end gap-4">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden shrink-0">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden shrink-0 flex items-center justify-center">
                 {shopIconUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={shopIconUrl} alt={shopName} className="w-full h-full object-cover" />
+                  <SafeImage
+                    src={shopIconUrl}
+                    alt={shopName}
+                    fallbackType="shop"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <Avatar name={shopName} size="lg" className="w-full h-full text-xl" />
                 )}

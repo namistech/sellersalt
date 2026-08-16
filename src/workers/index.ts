@@ -131,26 +131,46 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
 }
 
 async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
-  const { shopWatchId, connectorId, shopExternalId } = job.data;
+  const { shopWatchId, organizationId, connectorId, shopExternalId } = job.data;
 
-  const connectorRow = await prisma.connector.findUniqueOrThrow({ where: { id: connectorId } });
-  const connector = getConnector(connectorRow.type);
-  if (!connector.getShopStats) return;
+  try {
+    let connectorRow = connectorId
+      ? await prisma.connector.findUnique({ where: { id: connectorId } })
+      : null;
 
-  const credentials = JSON.parse(decrypt(connectorRow.encryptedCredentials));
-  const stats = await connector.getShopStats(credentials, shopExternalId);
-  if (!stats) return;
+    if (!connectorRow) {
+      connectorRow =
+        (await prisma.connector.findFirst({ where: { organizationId, type: "ETSY", status: "ACTIVE" } })) ||
+        (await prisma.connector.findFirst({ where: { organizationId: null, type: "ETSY", status: "ACTIVE" } }));
+    }
 
-  await prisma.shopSnapshot.create({
-    data: {
-      shopWatchId,
-      totalSales: stats.totalSales,
-      reviewCount: stats.reviewCount,
-      reviewAverage: stats.reviewAverage,
-      activeListings: stats.activeListings,
-      numFavorers: stats.numFavorers,
-    },
-  });
+    if (!connectorRow) {
+      console.warn(`[SHOP_WATCH_WORKER] No active connector found for org ${organizationId}`);
+      return;
+    }
+
+    const connector = getConnector(connectorRow.type);
+    if (!connector.getShopStats) return;
+
+    const credentials = JSON.parse(decrypt(connectorRow.encryptedCredentials));
+    const stats = await connector.getShopStats(credentials, shopExternalId);
+    if (!stats) return;
+
+    await prisma.shopSnapshot.create({
+      data: {
+        shopWatchId,
+        totalSales: stats.totalSales,
+        reviewCount: stats.reviewCount,
+        reviewAverage: stats.reviewAverage,
+        activeListings: stats.activeListings,
+        numFavorers: stats.numFavorers,
+      },
+    });
+
+    console.log(`[SHOP_WATCH_WORKER] Captured snapshot for shop ${shopExternalId} (${stats.shopName})`);
+  } catch (err: any) {
+    console.error(`[SHOP_WATCH_WORKER_ERROR] Failed shop watch for ${shopExternalId}:`, err.message);
+  }
 }
 
 async function handleVerificationReminderJob(job: { data: VerificationReminderJobData }) {

@@ -1,6 +1,6 @@
 export function extractEtsyShopName(input: string): string | null {
   if (!input || typeof input !== "string") return null;
-  const trimmed = input.trim();
+  const trimmed = input.trim().replace(/\/+$/, "");
   if (!trimmed) return null;
 
   // 1. Check for standard Etsy shop URL (e.g. etsy.com/shop/ShopName or https://www.etsy.com/shop/ShopName)

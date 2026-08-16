@@ -1,7 +1,25 @@
 "use client";
 
 import React, { useState } from "react";
-import { Image as ImageIcon, Store, ShoppingBag } from "lucide-react";
+import { Store, ShoppingBag, User } from "lucide-react";
+
+export function normalizeImageUrl(url?: string | null): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // Upgrade protocol-relative URLs
+  if (trimmed.startsWith("//")) {
+    return `https:${trimmed}`;
+  }
+
+  // Upgrade HTTP to HTTPS for mixed-content prevention on Etsy assets
+  if (trimmed.startsWith("http://")) {
+    return `https://${trimmed.slice(7)}`;
+  }
+
+  return trimmed;
+}
 
 export interface SafeImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
   src?: string | null;
@@ -22,7 +40,8 @@ export function SafeImage({
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const isValidUrl = Boolean(src && typeof src === "string" && src.trim().length > 0 && !hasError);
+  const normalizedSrc = normalizeImageUrl(src);
+  const isValidUrl = Boolean(normalizedSrc && !hasError);
 
   if (!isValidUrl) {
     return (
@@ -32,6 +51,8 @@ export function SafeImage({
       >
         {fallbackType === "shop" ? (
           <Store className="h-6 w-6 text-[#0E8F5D] opacity-40 mb-1" />
+        ) : fallbackType === "avatar" ? (
+          <User className="h-6 w-6 text-[#0E8F5D] opacity-40 mb-1" />
         ) : (
           <ShoppingBag className="h-6 w-6 text-[#0E8F5D] opacity-40 mb-1" />
         )}
@@ -47,7 +68,7 @@ export function SafeImage({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src!}
+      src={normalizedSrc!}
       alt={alt}
       onError={() => setHasError(true)}
       onLoad={() => setIsLoaded(true)}

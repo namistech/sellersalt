@@ -11,8 +11,10 @@ import {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    const organizationId = (session?.user as any)?.organizationId as string | undefined;
-    const items = await getFeatureRequests(organizationId);
+    const user = session?.user as any;
+    const organizationId = user?.organizationId as string | undefined;
+    const isAdmin = user?.role === "ADMIN" || user?.isAdmin === true;
+    const items = await getFeatureRequests(organizationId, isAdmin);
     return NextResponse.json({ success: true, items });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to load roadmap." }, { status: 500 });

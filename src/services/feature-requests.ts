@@ -137,12 +137,39 @@ export function findSimilarFeatures(title: string, threshold = 0.35): FeatureReq
   return FEATURE_STORE.filter((item) => calculateTitleSimilarity(item.title, title) >= threshold);
 }
 
-export async function getFeatureRequests(organizationId?: string): Promise<FeatureRequestItem[]> {
+export async function getFeatureRequests(organizationId?: string, isAdmin = false): Promise<FeatureRequestItem[]> {
   const userVotes = organizationId ? VOTES_STORE.get(organizationId) || new Set() : new Set();
-  return FEATURE_STORE.map((item) => ({
-    ...item,
-    hasUpvoted: userVotes.has(item.id),
-  })).sort((a, b) => b.upvotes - a.upvotes);
+  return FEATURE_STORE.filter((item) => {
+    if (isAdmin) return true;
+    if (item.status === "PENDING_REVIEW") {
+      return organizationId && item.authorOrgId === organizationId;
+    }
+    return item.status !== "DECLINED";
+  })
+    .map((item) => ({
+      ...item,
+      hasUpvoted: userVotes.has(item.id),
+    }))
+    .sort((a, b) => b.upvotes - a.upvotes);
+}
+
+export async function adminUpdateFeatureRequest(params: {
+  id: string;
+  status?: FeatureStatus;
+  adminResponse?: string;
+  title?: string;
+  description?: string;
+}): Promise<FeatureRequestItem> {
+  const item = FEATURE_STORE.find((f) => f.id === params.id);
+  if (!item) throw new Error("Feature request not found.");
+
+  if (params.status) item.status = params.status;
+  if (params.adminResponse !== undefined) item.adminResponse = params.adminResponse;
+  if (params.title) item.title = params.title;
+  if (params.description) item.description = params.description;
+  item.updatedAt = new Date().toISOString();
+
+  return item;
 }
 
 export async function createFeatureRequest(params: {
