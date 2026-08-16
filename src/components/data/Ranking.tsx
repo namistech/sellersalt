@@ -67,15 +67,16 @@ export function PositionIndicator({ rank, highlightTop = 3, className }: Positio
     <span
       className={cn(
         "inline-flex h-6 min-w-6 items-center justify-center rounded-sm px-1.5",
-        isTop ? "bg-gold/15 text-gold" : "bg-surface-muted text-ink-secondary",
+        isTop ? "bg-gold/15 text-gold-strong" : "bg-surface-muted text-ink-secondary",
         className
       )}
     >
-      {/* !text-gold: Tailwind's important-modifier, not tailwind-merge
+      {/* !text-gold-strong: Tailwind's important-modifier, not tailwind-merge
           (not installed) — needed because a plain className would race
           DataText's own tone-derived text color class for specificity,
-          with no guaranteed win order between them. */}
-      <DataText size="data-sm" tone="secondary" className={isTop ? "!text-gold" : undefined}>
+          with no guaranteed win order between them. Uses -strong, not the
+          bare gold token, for the same contrast reason as the badge above. */}
+      <DataText size="data-sm" tone="secondary" className={isTop ? "!text-gold-strong" : undefined}>
         #{rank}
       </DataText>
     </span>

@@ -12,14 +12,16 @@ export type BadgeVariant = "neutral" | "success" | "warning" | "danger" | "info"
 const VARIANT_CLASS: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-ink-secondary",
   success: "bg-success-subtle text-success-strong",
-  warning: "bg-warn-subtle text-warn",
+  warning: "bg-warn-subtle text-warn-strong",
   danger: "bg-danger-subtle text-danger",
   info: "bg-info-subtle text-info",
   // No "gold-subtle" token exists in design-system-v1.md's status set
   // (gold is a single brand-accent value, not a full status token
   // family) — computed here via Tailwind's opacity modifier on the
   // existing `gold` token rather than inventing a new raw hex value.
-  gold: "bg-gold/15 text-gold",
+  // text-gold-strong (not the bare gold token) for the same contrast
+  // reason as warning above — see globals.css's --color-gold-strong.
+  gold: "bg-gold/15 text-gold-strong",
 };
 
 export interface BadgeProps {

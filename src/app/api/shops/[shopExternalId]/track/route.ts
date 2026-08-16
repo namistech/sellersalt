@@ -60,12 +60,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
     update: { isActive: true },
   });
 
-  await startShopWatch({
-    shopWatchId: watch.id,
-    organizationId,
-    connectorId: active.connectorRow.id,
-    shopExternalId,
-  });
+  // Scheduling the recurring snapshot job is best-effort: a transient
+  // Redis/BullMQ hiccup here must not fail the user-facing "track this
+  // shop" action after the ShopWatch row is already correctly created —
+  // same pattern already used in the (otherwise unused) sibling route
+  // src/app/api/tracking/shops/route.ts. Without this, any queue error
+  // surfaced as an uncaught 500 on every "Track Shop" click.
+  try {
+    await startShopWatch({
+      shopWatchId: watch.id,
+      organizationId,
+      connectorId: active.connectorRow.id,
+      shopExternalId,
+    });
+  } catch (err) {
+    console.error("[SHOP_TRACK_SCHEDULE_ERROR]", err);
+  }
 
   return NextResponse.json({ ok: true, watch });
 }
@@ -81,7 +91,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ shop
   if (!watch) return NextResponse.json({ error: "Not tracked." }, { status: 404 });
 
   await prisma.shopWatch.update({ where: { id: watch.id }, data: { isActive: false } });
-  await stopShopWatch(watch.id);
+  try {
+    await stopShopWatch(watch.id);
+  } catch (err) {
+    console.error("[SHOP_UNTRACK_SCHEDULE_ERROR]", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -51,7 +51,12 @@ const config: Config = {
           dark: "rgb(var(--color-brand-primary-hover) / <alpha-value>)",
           active: "rgb(var(--color-brand-primary-active) / <alpha-value>)",
         },
-        gold: "rgb(var(--color-gold) / <alpha-value>)",
+        gold: {
+          DEFAULT: "rgb(var(--color-gold) / <alpha-value>)",
+          // Use as text color instead of the bare gold token — see
+          // globals.css's --color-gold-strong comment for the contrast math.
+          strong: "rgb(var(--color-gold-strong) / <alpha-value>)",
+        },
         success: {
           DEFAULT: "rgb(var(--color-status-positive) / <alpha-value>)",
           subtle: "rgb(var(--color-status-positive-subtle) / <alpha-value>)",
@@ -60,6 +65,9 @@ const config: Config = {
         warn: {
           DEFAULT: "rgb(var(--color-status-warning) / <alpha-value>)",
           subtle: "rgb(var(--color-status-warning-subtle) / <alpha-value>)",
+          // Use as text color instead of the bare warn token on warn-subtle
+          // backgrounds — see globals.css's --color-status-warning-strong.
+          strong: "rgb(var(--color-status-warning-strong) / <alpha-value>)",
         },
         danger: {
           DEFAULT: "rgb(var(--color-status-danger) / <alpha-value>)",

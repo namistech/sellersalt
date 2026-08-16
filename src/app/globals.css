@@ -48,6 +48,10 @@
 
     /* Gold accent (distinct from status-warning — see design-system-v1.md §3) */
     --color-gold: 255 176 32; /* #FFB020 */
+    /* Darker foreground for gold TEXT on gold/gold-subtle backgrounds —
+       #FFB020 on bg-gold/15 is ~1.7:1 contrast, far under WCAG AA. Never
+       use --color-gold itself as foreground text color; this is. */
+    --color-gold-strong: 138 90 0; /* #8A5A00 */
 
     /* Status: positive (intentionally shares the brand-primary hue — design-system-v1.md §3) */
     --color-status-positive: 14 143 93;           /* #0E8F5D */
@@ -57,6 +61,11 @@
     /* Status: warning */
     --color-status-warning: 217 119 6;          /* #D97706 */
     --color-status-warning-subtle: 253 241 223; /* #FDF1DF */
+    /* Darker amber/brown foreground for warning TEXT — #D97706 on
+       bg-warn-subtle is ~2.9:1, under WCAG AA. Mirrors -positive-strong's
+       pattern; several components already referenced text-warn-strong
+       expecting this to exist. */
+    --color-status-warning-strong: 146 64 14; /* #92400E */
 
     /* Score system only (design-system-v1.md §13) — the "Poor" health
        tier, sitting between Warning and Danger. Not a general-purpose

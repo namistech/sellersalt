@@ -12,7 +12,10 @@ export type AlertVariant = "info" | "success" | "warning" | "danger";
 const VARIANT_CONFIG: Record<AlertVariant, { icon: ReactNode; border: string; bg: string; iconColor: string; role: "status" | "alert" }> = {
   info: { icon: <Info />, border: "border-l-info", bg: "bg-info-subtle", iconColor: "text-info", role: "status" },
   success: { icon: <CheckCircle />, border: "border-l-success", bg: "bg-success-subtle", iconColor: "text-success", role: "status" },
-  warning: { icon: <AlertTriangle />, border: "border-l-warn", bg: "bg-warn-subtle", iconColor: "text-warn", role: "alert" },
+  // text-warn (not -strong) on bg-warn-subtle is ~2.9:1 — fails even the
+  // 3:1 WCAG floor for icons/UI graphics, unlike success/info/danger's
+  // DEFAULT tones here which already clear it. Uses -strong instead.
+  warning: { icon: <AlertTriangle />, border: "border-l-warn", bg: "bg-warn-subtle", iconColor: "text-warn-strong", role: "alert" },
   danger: { icon: <XCircle />, border: "border-l-danger", bg: "bg-danger-subtle", iconColor: "text-danger", role: "alert" },
 };
 
