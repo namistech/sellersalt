@@ -25,6 +25,7 @@ import {
   ShoppingBag,
   Bell,
   ChevronRight,
+  Tag,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import {
@@ -630,8 +631,16 @@ export default function SpyOnCompetitorPage() {
                   <div className="pt-3 border-t border-line-subtle flex items-center justify-between gap-2">
                     <Link href={`/shops/${shop.shopExternalId}`} className="flex-1">
                       <Button variant="primary" size="compact" className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold text-white">
-                        Open Research Dossier
+                        Analyze Listings
                       </Button>
+                    </Link>
+
+                    <Link
+                      href={`/keyword-research?query=${encodeURIComponent(shop.shopName)}`}
+                      className="p-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-[#E7FAF1] text-ink hover:text-[#0E8F5D] text-xs font-bold transition flex items-center gap-1"
+                      title="Mine Keyword Cluster from Shop"
+                    >
+                      <Tag className="h-3.5 w-3.5" />
                     </Link>
 
                     <Button

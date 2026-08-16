@@ -61,6 +61,8 @@ const DISCOVER_ITEMS: NavigationItem[] = [
 ];
 
 const OPERATE_ITEMS: NavigationItem[] = [
+  { id: "workspace", label: "Execution Workspace", href: "/workspace", icon: Layers },
+  { id: "drafts", label: "Etsy Drafts", href: "/drafts", icon: FileText },
   { id: "connected-shops", label: "Connected Shops", href: "/settings/channels", icon: Store },
   { id: "operate-analytics", label: "Analytics", href: "/analytics", icon: BarChart3 },
 ];
