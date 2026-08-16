@@ -37,6 +37,7 @@ import {
   HowItWorksToggle,
   SafeImage,
   CountrySelector,
+  MarketplaceSelector,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -211,6 +212,9 @@ export function CategoryHuntingClient({
             <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
           </div>
         </div>
+
+        {/* Multi-Marketplace Selector */}
+        <MarketplaceSelector className="w-fit" />
 
       {/* Expandable Guide */}
       <HowItWorksGuide

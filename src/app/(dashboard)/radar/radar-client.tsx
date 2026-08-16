@@ -33,6 +33,7 @@ import {
   IntelligenceCard,
   ViewSwitch,
   SafeImage,
+  MarketplaceSelector,
   type ViewMode,
 } from "@/components/ui";
 import { EmptyState, Table, type Column } from "@/components/data";
@@ -484,6 +485,9 @@ export function RadarClient({
           </Button>
         </div>
       </div>
+
+      {/* Multi-Marketplace Selector */}
+      <MarketplaceSelector className="w-fit" />
 
       {/* ---------------------------------------------------------------- */}
       {/* ROW 1: RADAR PULSE METRICS                                      */}

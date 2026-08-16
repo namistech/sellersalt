@@ -83,6 +83,12 @@ export function PlannerClient() {
   const [detailItem, setDetailItem] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingDetail, setSavingDetail] = useState(false);
+  const [detailWorkspaceTab, setDetailWorkspaceTab] = useState<"OPPORTUNITY" | "KEYWORDS" | "CONTENT_ASSISTANT" | "MARKETPLACE_DRAFT">("OPPORTUNITY");
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<any | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [draftCreationResult, setDraftCreationResult] = useState<any | null>(null);
+  const [creatingDraft, setCreatingDraft] = useState(false);
 
   // Quick Create Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -143,6 +149,70 @@ export function PlannerClient() {
       alert("Failed to update status: " + err.message);
       loadItems();
     }
+  }
+
+  async function handleGenerateContent() {
+    if (!detailItem) return;
+    setAssistantLoading(true);
+    try {
+      const res = await fetch(`/api/planner/items/${detailItem.id}/draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          primaryKeyword: detailItem.targetKeywords?.[0] || detailItem.title,
+          secondaryKeywords: detailItem.targetKeywords?.slice(1),
+          category: detailItem.targetCategory,
+          targetPrice: detailItem.targetPrice,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.content) {
+        setGeneratedContent(data.content);
+        setDetailWorkspaceTab("CONTENT_ASSISTANT");
+      } else {
+        alert(data.error || "Failed to generate listing content.");
+      }
+    } catch (err: any) {
+      alert("Error generating content: " + err.message);
+    } finally {
+      setAssistantLoading(false);
+    }
+  }
+
+  async function handleCreateDraft() {
+    if (!detailItem) return;
+    setCreatingDraft(true);
+    try {
+      const res = await fetch(`/api/planner/items/${detailItem.id}/draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          createDraft: true,
+          primaryKeyword: detailItem.targetKeywords?.[0] || detailItem.title,
+          secondaryKeywords: detailItem.targetKeywords?.slice(1),
+          category: detailItem.targetCategory,
+          targetPrice: detailItem.targetPrice,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDraftCreationResult(data.draftResult);
+        setDetailItem({ ...detailItem, status: PlannerItemStatus.DRAFT_CREATED });
+        loadItems();
+      } else {
+        alert(data.error || "Failed to create draft.");
+      }
+    } catch (err: any) {
+      alert("Error creating draft: " + err.message);
+    } finally {
+      setCreatingDraft(false);
+    }
+  }
+
+  function handleCopy(text: string, field: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   async function handleSaveDetail() {
@@ -676,126 +746,408 @@ export function PlannerClient() {
                 </div>
               </div>
 
-              {/* Research Snapshot & Provenance */}
-              {detailItem.researchSnapshot && (
-                <Card padding="md" className="border-line bg-[#FAFAF8] space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink uppercase tracking-wide">
-                      Frozen Research Snapshot
-                    </span>
-                    <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-                  </div>
+              {/* Workspace Navigation Tabs */}
+              <div className="flex items-center gap-1 border-b border-line pb-2">
+                <button
+                  type="button"
+                  onClick={() => setDetailWorkspaceTab("OPPORTUNITY")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    detailWorkspaceTab === "OPPORTUNITY"
+                      ? "bg-ink text-white shadow-2xs"
+                      : "text-ink-secondary hover:bg-surface-muted"
+                  }`}
+                >
+                  📊 Opportunity &amp; Economics
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailWorkspaceTab("KEYWORDS")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    detailWorkspaceTab === "KEYWORDS"
+                      ? "bg-ink text-white shadow-2xs"
+                      : "text-ink-secondary hover:bg-surface-muted"
+                  }`}
+                >
+                  🏷️ Keywords ({detailItem.targetKeywords?.length || 0})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailWorkspaceTab("CONTENT_ASSISTANT")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    detailWorkspaceTab === "CONTENT_ASSISTANT"
+                      ? "bg-[#0E8F5D] text-white shadow-2xs"
+                      : "text-ink-secondary hover:bg-surface-muted"
+                  }`}
+                >
+                  ✍️ Listing Assistant
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDetailWorkspaceTab("MARKETPLACE_DRAFT")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    detailWorkspaceTab === "MARKETPLACE_DRAFT"
+                      ? "bg-purple-800 text-white shadow-2xs"
+                      : "text-ink-secondary hover:bg-surface-muted"
+                  }`}
+                >
+                  📦 Marketplace Draft
+                </button>
+              </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                    {detailItem.researchSnapshot.opportunityScore !== undefined && (
-                      <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Opportunity Score</div>
-                        <div className="text-sm font-mono font-extrabold text-[#0E8F5D]">
-                          {detailItem.researchSnapshot.opportunityScore}
-                        </div>
+              {/* TAB 1: OPPORTUNITY & UNIT ECONOMICS */}
+              {detailWorkspaceTab === "OPPORTUNITY" && (
+                <div className="space-y-4">
+                  {/* Research Snapshot & Provenance */}
+                  {detailItem.researchSnapshot && (
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                          Frozen Research Snapshot
+                        </span>
+                        <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                       </div>
-                    )}
-                    {detailItem.researchSnapshot.overallScore !== undefined && (
-                      <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">SEO Score</div>
-                        <div className="text-sm font-mono font-extrabold text-[#FFB020]">
-                          {detailItem.researchSnapshot.overallScore}/100
-                        </div>
-                      </div>
-                    )}
-                    {detailItem.researchSnapshot.estDailySales !== undefined && (
-                      <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Est. Velocity</div>
-                        <div className="text-sm font-mono font-extrabold text-ink">
-                          {detailItem.researchSnapshot.estDailySales.toFixed(1)}/day
-                        </div>
-                      </div>
-                    )}
-                    {detailItem.researchSnapshot.totalSales !== undefined && (
-                      <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                        <div className="text-[9px] text-ink-tertiary uppercase">Shop Total Sales</div>
-                        <div className="text-sm font-mono font-extrabold text-ink">
-                          {detailItem.researchSnapshot.totalSales.toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
 
-                  {detailItem.sourceListingUrl && (
-                    <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
-                      <span className="text-[11px] text-ink-tertiary truncate max-w-sm">
-                        Source Listing: {detailItem.sourceListingTitle || detailItem.sourceListingUrl}
-                      </span>
-                      <a
-                        href={detailItem.sourceListingUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-semibold text-[#0E8F5D] inline-flex items-center gap-1 hover:underline shrink-0"
-                      >
-                        <span>View on Etsy</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        {detailItem.researchSnapshot.opportunityScore !== undefined && (
+                          <div className="bg-white p-2 rounded-lg border border-line-subtle">
+                            <div className="text-[9px] text-ink-tertiary uppercase">Score</div>
+                            <div className="text-sm font-mono font-extrabold text-[#0E8F5D]">
+                              {detailItem.researchSnapshot.opportunityScore}/100
+                            </div>
+                          </div>
+                        )}
+                        {detailItem.researchSnapshot.estDailySales !== undefined && (
+                          <div className="bg-white p-2 rounded-lg border border-line-subtle">
+                            <div className="text-[9px] text-ink-tertiary uppercase">Velocity</div>
+                            <div className="text-sm font-mono font-extrabold text-ink">
+                              {detailItem.researchSnapshot.estDailySales.toFixed(1)}/day
+                            </div>
+                          </div>
+                        )}
+                        {detailItem.researchSnapshot.totalSales !== undefined && (
+                          <div className="bg-white p-2 rounded-lg border border-line-subtle">
+                            <div className="text-[9px] text-ink-tertiary uppercase">Store Orders</div>
+                            <div className="text-sm font-mono font-extrabold text-ink">
+                              {detailItem.researchSnapshot.totalSales.toLocaleString()}
+                            </div>
+                          </div>
+                        )}
+                        {detailItem.researchSnapshot.reviewCount !== undefined && (
+                          <div className="bg-white p-2 rounded-lg border border-line-subtle">
+                            <div className="text-[9px] text-ink-tertiary uppercase">Review Moat</div>
+                            <div className="text-sm font-mono font-extrabold text-ink">
+                              {detailItem.researchSnapshot.reviewCount.toLocaleString()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {detailItem.sourceListingUrl && (
+                        <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
+                          <span className="text-[11px] text-ink-tertiary truncate max-w-sm">
+                            Source: {detailItem.sourceListingTitle || detailItem.sourceListingUrl}
+                          </span>
+                          <a
+                            href={detailItem.sourceListingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-semibold text-[#0E8F5D] inline-flex items-center gap-1 hover:underline shrink-0"
+                          >
+                            <span>View on Etsy</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
+                    </Card>
                   )}
-                </Card>
+
+                  {/* Unit Economics Calculator */}
+                  <Card padding="md" className="border-line bg-white space-y-4">
+                    <Heading as="h3" size="h4">Unit Economics &amp; Margin Modeling</Heading>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-ink">Target Selling Price ($)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={detailItem.targetPrice || ""}
+                          onChange={(e) => setDetailItem({ ...detailItem, targetPrice: e.target.value })}
+                          placeholder="e.g. 32.00"
+                          className="h-9 text-xs font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-ink">Estimated COGS ($)</label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={detailItem.estimatedCogs || ""}
+                          onChange={(e) => setDetailItem({ ...detailItem, estimatedCogs: e.target.value })}
+                          placeholder="e.g. 8.50"
+                          className="h-9 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Margin Calculation */}
+                    {(() => {
+                      const price = parseFloat(detailItem.targetPrice) || 0;
+                      const cogs = parseFloat(detailItem.estimatedCogs) || 0;
+                      const etsyFee = price > 0 ? price * 0.095 + 0.20 : 0;
+                      const netMargin = price > 0 ? Math.max(0, price - cogs - etsyFee) : 0;
+                      const marginPct = price > 0 ? ((netMargin / price) * 100).toFixed(1) : "0";
+                      const dailyVel = detailItem.researchSnapshot?.estDailySales || 2.0;
+                      const monthlyProfit = (dailyVel * 30.44 * netMargin).toFixed(0);
+
+                      return (
+                        <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line grid grid-cols-3 gap-2 text-center text-xs">
+                          <div>
+                            <div className="text-[10px] text-ink-tertiary uppercase">Etsy Fees (9.5%+$0.20)</div>
+                            <div className="font-mono font-bold text-ink-secondary">${etsyFee.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-ink-tertiary uppercase">Net Profit / Unit</div>
+                            <div className="font-mono font-extrabold text-[#0E8F5D]">${netMargin.toFixed(2)} ({marginPct}%)</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-ink-tertiary uppercase">Est. Monthly Profit</div>
+                            <div className="font-mono font-extrabold text-ink">${monthlyProfit}/mo</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </Card>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-ink">Strategic Notes &amp; Roadmap</label>
+                    <textarea
+                      rows={3}
+                      value={detailItem.notes || ""}
+                      onChange={(e) => setDetailItem({ ...detailItem, notes: e.target.value })}
+                      placeholder="Enter market observations, product differentiators, packaging ideas..."
+                      className="w-full rounded-lg border border-line p-2.5 text-xs text-ink focus:border-[#0E8F5D] focus:ring-1 focus:ring-[#0E8F5D]"
+                    />
+                  </div>
+                </div>
               )}
 
-              {/* Strategic Targets */}
-              <div className="space-y-3">
-                <Heading as="h3" size="h4">Strategic Targets & Planning</Heading>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-ink">Target Selling Price ($)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={detailItem.targetPrice || ""}
-                      onChange={(e) => setDetailItem({ ...detailItem, targetPrice: e.target.value })}
-                      placeholder="e.g. 28.00"
-                      className="h-9 text-xs font-mono"
-                    />
+              {/* TAB 2: KEYWORDS & TAG CLUSTER */}
+              {detailWorkspaceTab === "KEYWORDS" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Heading as="h3" size="h4">Target Keywords &amp; Tag Strategy</Heading>
+                    <Badge variant="neutral" className="text-xs font-mono">
+                      {(detailItem.targetKeywords || []).length} keywords
+                    </Badge>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-ink">Estimated COGS ($)</label>
+                    <label className="text-xs font-bold text-ink">Add / Edit Target Keywords (Comma-separated)</label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      value={detailItem.estimatedCogs || ""}
-                      onChange={(e) => setDetailItem({ ...detailItem, estimatedCogs: e.target.value })}
-                      placeholder="e.g. 7.50"
-                      className="h-9 text-xs font-mono"
+                      value={(detailItem.targetKeywords || []).join(", ")}
+                      onChange={(e) =>
+                        setDetailItem({
+                          ...detailItem,
+                          targetKeywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
+                        })
+                      }
+                      placeholder="leather passport, travel wallet, custom gift..."
+                      className="h-9 text-xs"
                     />
                   </div>
-                </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-ink">Target Keywords (Comma-separated)</label>
-                  <Input
-                    value={(detailItem.targetKeywords || []).join(", ")}
-                    onChange={(e) =>
-                      setDetailItem({
-                        ...detailItem,
-                        targetKeywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
-                      })
-                    }
-                    placeholder="leather passport, travel wallet, custom gift..."
-                    className="h-9 text-xs"
-                  />
-                </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(detailItem.targetKeywords || []).map((kw: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#FAFAF8] text-ink border border-line flex items-center gap-1.5 shadow-2xs"
+                      >
+                        <span>#{kw}</span>
+                        <span className="text-[10px] text-ink-tertiary font-mono">
+                          {kw.length}/20 chars
+                        </span>
+                      </span>
+                    ))}
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-ink">Strategic Notes & Roadmap</label>
-                  <textarea
-                    rows={4}
-                    value={detailItem.notes || ""}
-                    onChange={(e) => setDetailItem({ ...detailItem, notes: e.target.value })}
-                    placeholder="Enter market observations, product differentiators, packaging ideas..."
-                    className="w-full rounded-lg border border-line p-2.5 text-xs text-ink focus:border-[#0E8F5D] focus:ring-1 focus:ring-[#0E8F5D]"
-                  />
+                  <div className="p-3 rounded-xl bg-surface-muted text-xs text-ink-secondary space-y-1 border border-line">
+                    <div className="font-bold text-ink">Etsy Tag Rules:</div>
+                    <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-ink-tertiary">
+                      <li>Up to 13 tags per listing</li>
+                      <li>Maximum 20 characters per tag</li>
+                      <li>Multi-word phrases (long-tail) rank higher than single words</li>
+                    </ul>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* TAB 3: LISTING CONTENT ASSISTANT */}
+              {detailWorkspaceTab === "CONTENT_ASSISTANT" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Heading as="h3" size="h4">Listing Content Assistant</Heading>
+                      <Text size="body-sm" color="secondary" className="mt-0.5">
+                        Generates structured title, 13 tags, 10-part description &amp; attributes with &lt;15% originality guarantee.
+                      </Text>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="compact"
+                      loading={assistantLoading}
+                      onClick={handleGenerateContent}
+                      className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-semibold text-xs shrink-0"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                      Generate Content
+                    </Button>
+                  </div>
+
+                  {generatedContent ? (
+                    <div className="space-y-4">
+                      {/* Originality Badge */}
+                      <div className="p-2.5 rounded-xl bg-[#E7FAF1] border border-[#16C784]/30 flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#0E8F5D]">
+                          🛡️ {generatedContent.originalityReport.verdict}
+                        </span>
+                        <span className="font-mono text-[10px] font-bold text-ink-secondary">
+                          {generatedContent.originalityReport.competitorSimilarityPercent}% competitor overlap
+                        </span>
+                      </div>
+
+                      {/* Title Box */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-ink">
+                            Optimized Title ({generatedContent.titleLength}/140 chars)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(generatedContent.title, "title")}
+                            className="text-xs text-[#0E8F5D] font-bold hover:underline"
+                          >
+                            {copiedField === "title" ? "Copied!" : "Copy Title"}
+                          </button>
+                        </div>
+                        <div className="p-2.5 rounded-xl border border-line bg-white text-xs font-semibold text-ink leading-relaxed">
+                          <span className="bg-amber-100 text-amber-900 px-1 py-0.5 rounded font-bold">
+                            {generatedContent.first40Chars}
+                          </span>
+                          <span>{generatedContent.title.slice(40)}</span>
+                        </div>
+                      </div>
+
+                      {/* 13 Tags Grid */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-ink">
+                            Recommended Tags ({generatedContent.tags.length}/13)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(generatedContent.tags.map((t: any) => t.tag).join(", "), "tags")}
+                            className="text-xs text-[#0E8F5D] font-bold hover:underline"
+                          >
+                            {copiedField === "tags" ? "Copied All!" : "Copy All Tags"}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {generatedContent.tags.map((t: any, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded-md text-xs font-semibold bg-[#FAFAF8] text-ink border border-line flex items-center gap-1"
+                            >
+                              <span>{t.tag}</span>
+                              <span className="text-[9px] text-ink-tertiary font-mono">({t.characterCount})</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Description Box */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-ink">10-Part High-Converting Description</label>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(generatedContent.description, "desc")}
+                            className="text-xs text-[#0E8F5D] font-bold hover:underline"
+                          >
+                            {copiedField === "desc" ? "Copied!" : "Copy Description"}
+                          </button>
+                        </div>
+                        <textarea
+                          rows={6}
+                          readOnly
+                          value={generatedContent.description}
+                          className="w-full rounded-xl border border-line p-3 text-xs text-ink bg-[#FAFAF8] font-mono leading-relaxed focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center rounded-xl border border-dashed border-line bg-[#FAFAF8] space-y-2">
+                      <Sparkles className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
+                      <div className="text-xs font-bold text-ink">Listing Content Not Yet Generated</div>
+                      <p className="text-[11px] text-ink-tertiary max-w-sm mx-auto">
+                        Click &quot;Generate Content&quot; to synthesize an optimized title, 13 tags, and structured description from this opportunity&apos;s keyword cluster.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: MARKETPLACE DRAFT SYNC */}
+              {detailWorkspaceTab === "MARKETPLACE_DRAFT" && (
+                <div className="space-y-4">
+                  <Heading as="h3" size="h4">Etsy Marketplace Draft Preparation</Heading>
+
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <ShieldCheck className="h-4 w-4 text-amber-700" />
+                      <span>Rule 9: Human Review &amp; Approval Gate</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800">
+                      SellerSalt drafts are created strictly in <strong>draft</strong> state. Content is never published live to marketplace customers without your explicit approval.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Button
+                      variant="primary"
+                      size="default"
+                      loading={creatingDraft}
+                      onClick={handleCreateDraft}
+                      className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-xs h-10"
+                    >
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Create Validated Etsy Draft
+                    </Button>
+
+                    {draftCreationResult && (
+                      <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-xs space-y-2">
+                        <div className="font-bold text-[#0E8F5D] flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>{draftCreationResult.message}</span>
+                        </div>
+                        {draftCreationResult.etsyDraftUrl && (
+                          <a
+                            href={draftCreationResult.etsyDraftUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0E8F5D] hover:underline"
+                          >
+                            <span>Open in Etsy Listing Manager</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Bottom Actions */}

@@ -15,6 +15,7 @@ import { DashboardCompetitorRadar } from "./dashboard-competitor-radar";
 import { DashboardMomentum } from "./dashboard-momentum";
 import { DashboardStreams } from "./dashboard-streams";
 import { DashboardOnboardingGuide } from "./dashboard-onboarding-guide";
+import { AssistantDailyBriefing } from "./assistant-daily-briefing";
 
 interface DashboardClientProps {
   initialData: DashboardData;
@@ -101,6 +102,14 @@ export function DashboardClient({ initialData, connectors, userName }: Dashboard
           </Link>
         </div>
       </div>
+
+      {/* Seller Assistant Daily Intelligence Briefing */}
+      <AssistantDailyBriefing
+        userName={userName}
+        activeSearchesCount={pulse.activeSearches}
+        trackedCompetitorsCount={data.competitorRadar.length}
+        topOpportunityCount={data.topOpportunities.length}
+      />
 
       {/* Row 1: Research Pulse */}
       <DashboardPulse pulse={pulse} />

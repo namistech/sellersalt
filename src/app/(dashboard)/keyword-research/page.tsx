@@ -29,6 +29,7 @@ import {
   IntelligenceCard,
   ViewSwitch,
   CountrySelector,
+  MarketplaceSelector,
   HowItWorksGuide,
   HowItWorksToggle,
   type ViewMode,
@@ -227,6 +228,9 @@ export default function KeywordResearchPage() {
           </div>
         }
       />
+
+      {/* Multi-Marketplace Selector */}
+      <MarketplaceSelector className="w-fit" />
 
       <HowItWorksGuide
         isOpen={showGuide}
