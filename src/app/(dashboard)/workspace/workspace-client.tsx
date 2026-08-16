@@ -19,6 +19,8 @@ import {
   Play,
   RotateCcw,
   Zap,
+  Flame,
+  Activity,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import {
@@ -38,6 +40,7 @@ import {
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { calculateSellerHealthScore, type SellerHealthReport } from "@/services/intelligence/seller-health";
+import { getMarketIntelligenceFeed, type MarketSignalEvent } from "@/services/intelligence/market-feed";
 
 interface TaskItem {
   id: string;
@@ -51,19 +54,20 @@ interface TaskItem {
   actionHref: string;
   urgency: "HIGH" | "MEDIUM";
   icon: string;
+  impactScore: number;
 }
 
 const PIPELINE_STAGES = [
-  { id: "RESEARCHED", number: 1, label: "Researched", count: 18, href: "/radar" },
-  { id: "SHORTLISTED", number: 2, label: "Shortlisted", count: 7, href: "/planner?status=BACKLOG" },
-  { id: "OPPORTUNITY", number: 3, label: "Opportunity", count: 5, href: "/planner" },
-  { id: "KEYWORDS", number: 4, label: "Keywords", count: 4, href: "/keyword-research" },
-  { id: "STRATEGY", number: 5, label: "Strategy", count: 3, href: "/planner" },
-  { id: "CONTENT", number: 6, label: "Content", count: 3, href: "/planner" },
-  { id: "DRAFT", number: 7, label: "Draft", count: 2, href: "/drafts" },
-  { id: "REVIEW", number: 8, label: "Review", count: 2, href: "/drafts" },
-  { id: "PUBLISHED", number: 9, label: "Published", count: 6, href: "/settings/channels" },
-  { id: "MONITORING", number: 10, label: "Monitoring", count: 4, href: "/spy/tracked" },
+  { id: "RESEARCHED", number: 1, label: "Researched", count: 18, href: "/radar", convRate: "39%" },
+  { id: "SHORTLISTED", number: 2, label: "Shortlisted", count: 7, href: "/planner?status=BACKLOG", convRate: "71%" },
+  { id: "OPPORTUNITY", number: 3, label: "Opportunity", count: 5, href: "/planner", convRate: "80%" },
+  { id: "KEYWORDS", number: 4, label: "Keywords", count: 4, href: "/keyword-research", convRate: "75%" },
+  { id: "STRATEGY", number: 5, label: "Strategy", count: 3, href: "/planner", convRate: "100%" },
+  { id: "CONTENT", number: 6, label: "Content", count: 3, href: "/planner", convRate: "67%" },
+  { id: "DRAFT", number: 7, label: "Draft", count: 2, href: "/drafts", convRate: "100%" },
+  { id: "REVIEW", number: 8, label: "Review", count: 2, href: "/drafts", convRate: "100%" },
+  { id: "PUBLISHED", number: 9, label: "Published", count: 6, href: "/settings/channels", convRate: "67%" },
+  { id: "MONITORING", number: 10, label: "Monitoring", count: 4, href: "/spy/tracked", convRate: "—" },
 ];
 
 export function WorkspaceClient() {
@@ -83,6 +87,9 @@ export function WorkspaceClient() {
     avgDailySales: 3.1,
   });
 
+  // Market signals
+  const marketSignals: MarketSignalEvent[] = getMarketIntelligenceFeed();
+
   const continueTasks: TaskItem[] = [
     {
       id: "task-1",
@@ -96,6 +103,7 @@ export function WorkspaceClient() {
       actionHref: "/planner",
       urgency: "HIGH",
       icon: "🎯",
+      impactScore: 92,
     },
     {
       id: "task-2",
@@ -109,6 +117,7 @@ export function WorkspaceClient() {
       actionHref: "/keyword-research",
       urgency: "HIGH",
       icon: "#",
+      impactScore: 86,
     },
     {
       id: "task-3",
@@ -122,6 +131,7 @@ export function WorkspaceClient() {
       actionHref: "/drafts",
       urgency: "HIGH",
       icon: "📦",
+      impactScore: 95,
     },
     {
       id: "task-4",
@@ -135,8 +145,12 @@ export function WorkspaceClient() {
       actionHref: "/spy",
       urgency: "MEDIUM",
       icon: "👁️",
+      impactScore: 78,
     },
   ];
+
+  // Highest Impact Priority Queue (sorted by impactScore descending)
+  const priorityQueue = [...continueTasks].sort((a, b) => b.impactScore - a.impactScore);
 
   const filteredTasks = continueTasks.filter((t) => {
     if (selectedStage !== "ALL" && t.stage !== selectedStage) return false;
@@ -168,14 +182,14 @@ export function WorkspaceClient() {
         description="SellerSalt connects research, keyword clustering, content generation, and Etsy draft creation into one continuous execution pipeline."
         steps={[
           {
-            title: "1. Continue Unfinished Work",
-            description: "Pick up active opportunities at any stage from shortlisted items to ready-to-review drafts.",
-            badge: "Workflow Memory",
+            title: "1. Priority Execution Queue",
+            description: "Work through your highest-impact opportunities ordered by potential revenue yield.",
+            badge: "Priority Queue",
           },
           {
-            title: "2. Track Pipeline Velocity",
-            description: "Filter through the 10-stage operating board to eliminate bottlenecks and optimize catalog yield.",
-            badge: "Pipeline Board",
+            title: "2. Track Pipeline Health",
+            description: "Monitor stage-to-stage conversion rates to eliminate publishing bottlenecks.",
+            badge: "Pipeline Health",
           },
           {
             title: "3. Health Score Optimization",
@@ -185,7 +199,50 @@ export function WorkspaceClient() {
         ]}
       />
 
-      {/* LEVEL 1: SELLER HEALTH SCORE INTELLIGENCE CARD */}
+      {/* LEVEL 1: HIGHEST IMPACT PRIORITY ACTIONS QUEUE */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white shadow-md space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame className="h-4 w-4 text-[#FFB020]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-white">
+              Highest-Impact Priority Actions
+            </span>
+          </div>
+          <span className="text-[11px] text-[#9EAA9F]">Ordered by Business Impact</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {priorityQueue.slice(0, 3).map((item) => (
+            <div
+              key={item.id}
+              className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-2.5 flex flex-col justify-between hover:border-[#16C784]/40 transition"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[10px]">
+                  <span className="text-[#16C784] font-bold uppercase">
+                    Stage {item.stageNumber}: {item.stage}
+                  </span>
+                  <span className="font-mono text-[#9EAA9F]">Impact: {item.impactScore}/100</span>
+                </div>
+                <h4 className="text-xs font-bold text-white truncate" title={item.title}>
+                  {item.title}
+                </h4>
+                <p className="text-[11px] text-[#9EAA9F] truncate">{item.category}</p>
+              </div>
+
+              <Link
+                href={item.actionHref}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] transition shadow-2xs"
+              >
+                <span>{item.actionLabel}</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* LEVEL 2: SELLER HEALTH SCORE INTELLIGENCE CARD */}
       <IntelligenceCard
         badgeText="SELLER OPERATING HEALTH SCORE"
         badgeIcon={<Zap className="h-3.5 w-3.5 text-[#FFB020]" />}
@@ -259,13 +316,13 @@ export function WorkspaceClient() {
         </div>
       </IntelligenceCard>
 
-      {/* LEVEL 2: 10-STAGE OPERATING PIPELINE BOARD */}
+      {/* LEVEL 3: 10-STAGE OPERATING PIPELINE & CONVERSION FUNNEL */}
       <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="h-4 w-4 text-[#0E8F5D]" />
             <span className="text-xs font-bold text-ink uppercase tracking-wide">
-              Operating Pipeline Board ({PIPELINE_STAGES.reduce((s, p) => s + p.count, 0)} Total Active Items)
+              Operating Pipeline &amp; Conversion Health ({PIPELINE_STAGES.reduce((s, p) => s + p.count, 0)} Total Active Items)
             </span>
           </div>
           <button
@@ -277,7 +334,7 @@ export function WorkspaceClient() {
           </button>
         </div>
 
-        {/* Scrollable Stage Pills */}
+        {/* Scrollable Stage Pills with Conversion Rates */}
         <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 pt-1">
           {PIPELINE_STAGES.map((stg) => {
             const isSelected = selectedStage === stg.id;
@@ -298,13 +355,61 @@ export function WorkspaceClient() {
                 <div className="text-base font-mono font-extrabold pt-0.5">
                   {stg.count}
                 </div>
+                <div className="text-[8px] text-ink-tertiary font-mono pt-0.5">
+                  Conv: {stg.convRate}
+                </div>
               </button>
             );
           })}
         </div>
       </Card>
 
-      {/* LEVEL 3: CONTINUE WHERE YOU LEFT OFF SECTION */}
+      {/* LEVEL 4: MARKET INTELLIGENCE LIVE SIGNALS */}
+      <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-[#0E8F5D]" />
+            <span className="text-xs font-bold text-ink uppercase tracking-wide">
+              Market Intelligence Live Signals
+            </span>
+          </div>
+          <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {marketSignals.map((sig) => (
+            <div
+              key={sig.id}
+              className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D]/40 transition space-y-2 flex flex-col justify-between"
+            >
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">{sig.icon} <strong className="text-ink font-bold">{sig.title}</strong></span>
+                  <span className="text-[10px] text-ink-tertiary font-mono">{sig.timestamp}</span>
+                </div>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  {sig.whatHappened}
+                </p>
+                <p className="text-[11px] text-ink-tertiary">
+                  <strong>Impact:</strong> {sig.whyItMatters}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-line-subtle flex justify-end">
+                <Link
+                  href={sig.actionHref}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-[#0E8F5D] text-white hover:bg-[#0C7A52] transition shadow-2xs"
+                >
+                  <span>{sig.actionLabel}</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* LEVEL 5: CONTINUE WHERE YOU LEFT OFF SECTION */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
