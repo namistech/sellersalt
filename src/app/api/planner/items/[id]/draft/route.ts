@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateListingContent } from "@/services/listing-assistant";
+import { buildOpportunityPackage } from "@/services/listing-strategy";
 import { createEtsyListingDraft } from "@/services/etsy-draft-creation";
+import { logIntelligenceEvent } from "@/services/intelligence/events";
 
 export async function POST(
   req: NextRequest,
@@ -32,8 +34,26 @@ export async function POST(
     const secondaryKeywords = body.secondaryKeywords || item.targetKeywords.slice(1);
     const category = body.category || item.targetCategory || "Handmade Goods";
     const targetPrice = body.targetPrice || item.targetPrice || 29.99;
+    const estimatedCogs = body.estimatedCogs || item.estimatedCogs || 8.0;
 
-    // Generate compliant listing content
+    const researchSnapshot = (item.researchSnapshot as any) || {};
+
+    // 1. Build Opportunity Package & Listing Strategy
+    const opportunityPackage = buildOpportunityPackage({
+      productTitle: item.title,
+      price: targetPrice,
+      estimatedCogs,
+      category,
+      shopName: item.sourceShopName || undefined,
+      shopTotalSales: researchSnapshot.totalSales,
+      shopReviewCount: researchSnapshot.reviewCount,
+      estDailySales: researchSnapshot.estDailySales,
+      opportunityScore: researchSnapshot.opportunityScore,
+      primaryKeyword,
+      secondaryKeywords,
+    });
+
+    // 2. Generate compliant listing content
     const content = generateListingContent({
       productTitle: item.title,
       primaryKeyword,
@@ -45,7 +65,17 @@ export async function POST(
       competitorTitles: item.sourceListingTitle ? [item.sourceListingTitle] : [],
     });
 
-    // Create Draft if requested
+    // 3. Log intelligence event
+    await logIntelligenceEvent({
+      organizationId,
+      userId,
+      eventType: "LISTING_STRATEGY_GENERATED",
+      entityId: plannerItemId,
+      entityType: "PLANNER_ITEM",
+      metadata: { primaryKeyword, targetPrice },
+    });
+
+    // 4. Create Draft if requested
     let draftResult = null;
     if (body.createDraft) {
       draftResult = await createEtsyListingDraft({
@@ -57,10 +87,20 @@ export async function POST(
         tags: content.tags.map((t) => t.tag),
         price: targetPrice,
       });
+
+      await logIntelligenceEvent({
+        organizationId,
+        userId,
+        eventType: "ETSY_DRAFT_CREATED",
+        entityId: draftResult.localDraftId,
+        entityType: "DRAFT",
+        metadata: { plannerItemId },
+      });
     }
 
     return NextResponse.json({
       success: true,
+      opportunityPackage,
       content,
       draftResult,
     });

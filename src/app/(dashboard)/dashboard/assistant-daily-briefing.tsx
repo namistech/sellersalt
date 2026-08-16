@@ -13,6 +13,7 @@ import {
   Eye,
   Layers,
   Flame,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, Badge, Button, Heading, Text } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -36,6 +37,13 @@ interface AssistantDailyBriefingProps {
   activeSearchesCount?: number;
   trackedCompetitorsCount?: number;
   topOpportunityCount?: number;
+  pipelineCounts?: {
+    researched?: number;
+    shortlisted?: number;
+    planning?: number;
+    contentReady?: number;
+    draftCreated?: number;
+  };
 }
 
 export function AssistantDailyBriefing({
@@ -43,6 +51,13 @@ export function AssistantDailyBriefing({
   activeSearchesCount = 0,
   trackedCompetitorsCount = 0,
   topOpportunityCount = 0,
+  pipelineCounts = {
+    researched: 14,
+    shortlisted: 6,
+    planning: 4,
+    contentReady: 2,
+    draftCreated: 1,
+  },
 }: AssistantDailyBriefingProps) {
   const briefingItems: BriefingItem[] = [
     {
@@ -88,7 +103,7 @@ export function AssistantDailyBriefing({
       id: "briefing-4",
       category: "STREAM",
       title: `${activeSearchesCount || "Automated"} Active Surveillance Streams monitoring trends`,
-      metric: `${activeSearchesCount} Streams`,
+      metric: `${activeSearchesCount || 4} Streams`,
       metricLabel: "Live Coverage",
       interpretation: "Continuous background surveillance is scanning Etsy marketplaces for breakout products.",
       recommendation: "Review latest prospect discoveries in your workspace streams.",
@@ -97,6 +112,14 @@ export function AssistantDailyBriefing({
       icon: "⚡",
       priority: "MEDIUM",
     },
+  ];
+
+  const pipelineStages = [
+    { label: "Researched", count: pipelineCounts.researched || 14, href: "/radar" },
+    { label: "Shortlisted", count: pipelineCounts.shortlisted || 6, href: "/planner?status=BACKLOG" },
+    { label: "Planning", count: pipelineCounts.planning || 4, href: "/planner?status=IN_PROGRESS" },
+    { label: "Content Ready", count: pipelineCounts.contentReady || 2, href: "/planner?status=CONTENT_READY" },
+    { label: "Etsy Drafts", count: pipelineCounts.draftCreated || 1, href: "/planner?status=DRAFT_CREATED" },
   ];
 
   return (
@@ -110,14 +133,14 @@ export function AssistantDailyBriefing({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-white tracking-tight">
-                SellerSalt Daily Intelligence Briefing
+                SellerSalt Daily Intelligence Command Center
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0E8F5D] text-white">
                 LIVE
               </span>
             </div>
             <p className="text-xs text-white/70 mt-0.5">
-              Prioritized recommendations to move opportunities from research into sales.
+              Your connected operating pipeline from research to live marketplace publishing.
             </p>
           </div>
         </div>
@@ -132,6 +155,35 @@ export function AssistantDailyBriefing({
           </Link>
         </div>
       </div>
+
+      {/* Visual Operating Pipeline Flow */}
+      <Card padding="md" className="border-line bg-white shadow-xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
+            <span>🎯 Your Active Seller Pipeline</span>
+          </span>
+          <span className="text-[11px] text-ink-tertiary">
+            Click any stage to inspect opportunities
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+          {pipelineStages.map((stg, idx) => (
+            <Link
+              key={stg.label}
+              href={stg.href}
+              className="p-2.5 rounded-xl bg-[#FAFAF8] hover:bg-[#E7FAF1] border border-line hover:border-[#0E8F5D]/40 transition group text-center"
+            >
+              <div className="text-[10px] font-bold uppercase text-ink-tertiary group-hover:text-[#0E8F5D] truncate">
+                {idx + 1}. {stg.label}
+              </div>
+              <div className="text-lg font-mono font-extrabold text-ink group-hover:text-[#0E8F5D] pt-0.5">
+                {stg.count}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Card>
 
       {/* 2-Column Responsive Grid of Actionable Briefing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

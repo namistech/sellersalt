@@ -27,6 +27,7 @@ import {
   X,
   Store,
   Compass,
+  ArrowRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Card, Input, Button, Badge, Heading, Text } from "@/components/ui";
@@ -83,9 +84,10 @@ export function PlannerClient() {
   const [detailItem, setDetailItem] = useState<any | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingDetail, setSavingDetail] = useState(false);
-  const [detailWorkspaceTab, setDetailWorkspaceTab] = useState<"OPPORTUNITY" | "KEYWORDS" | "CONTENT_ASSISTANT" | "MARKETPLACE_DRAFT">("OPPORTUNITY");
+  const [detailWorkspaceTab, setDetailWorkspaceTab] = useState<"OPPORTUNITY" | "KEYWORDS" | "STRATEGY" | "CONTENT_ASSISTANT" | "MARKETPLACE_DRAFT">("OPPORTUNITY");
   const [assistantLoading, setAssistantLoading] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any | null>(null);
+  const [opportunityPackage, setOpportunityPackage] = useState<any | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [draftCreationResult, setDraftCreationResult] = useState<any | null>(null);
   const [creatingDraft, setCreatingDraft] = useState(false);
@@ -168,6 +170,9 @@ export function PlannerClient() {
       const data = await res.json();
       if (data.success && data.content) {
         setGeneratedContent(data.content);
+        if (data.opportunityPackage) {
+          setOpportunityPackage(data.opportunityPackage);
+        }
         setDetailWorkspaceTab("CONTENT_ASSISTANT");
       } else {
         alert(data.error || "Failed to generate listing content.");
@@ -772,6 +777,17 @@ export function PlannerClient() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setDetailWorkspaceTab("STRATEGY")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    detailWorkspaceTab === "STRATEGY"
+                      ? "bg-ink text-white shadow-2xs"
+                      : "text-ink-secondary hover:bg-surface-muted"
+                  }`}
+                >
+                  🎯 Listing Strategy
+                </button>
+                <button
+                  type="button"
                   onClick={() => setDetailWorkspaceTab("CONTENT_ASSISTANT")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                     detailWorkspaceTab === "CONTENT_ASSISTANT"
@@ -979,6 +995,111 @@ export function PlannerClient() {
                       <li>Maximum 20 characters per tag</li>
                       <li>Multi-word phrases (long-tail) rank higher than single words</li>
                     </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: LISTING STRATEGY BLUEPRINT */}
+              {detailWorkspaceTab === "STRATEGY" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Heading as="h3" size="h4">Strategic Listing Blueprint</Heading>
+                      <Text size="body-sm" color="secondary" className="mt-0.5">
+                        Synthesize market evidence into clear positioning before generating content.
+                      </Text>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="compact"
+                      loading={assistantLoading}
+                      onClick={handleGenerateContent}
+                      className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-semibold text-xs shrink-0"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 mr-1" />
+                      Build Full Strategy &amp; Copy
+                    </Button>
+                  </div>
+
+                  {/* Recommendation Verdict */}
+                  <div className="p-3.5 rounded-xl bg-[#E7FAF1] border border-[#16C784]/30 flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-bold text-[#0E8F5D] flex items-center gap-1.5">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>{opportunityPackage?.strategy?.verdictLabel || "Good Opportunity — High Feasibility"}</span>
+                      </div>
+                      <p className="text-[11px] text-ink-secondary">
+                        Deterministic recommendation derived from price corridor, velocity, and review moat.
+                      </p>
+                    </div>
+                    <Badge variant="success" className="text-xs font-bold font-mono shrink-0">
+                      Score: {detailItem.researchSnapshot?.opportunityScore || 75}/100
+                    </Badge>
+                  </div>
+
+                  {/* 6 Strategy Pillars Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">1. Positioning Strategy</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.positioning ||
+                          `Compete on premium artisan craftsmanship and personalized gifting options in ${detailItem.targetCategory || "Handmade Goods"}.`}
+                      </div>
+                    </Card>
+
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">2. Primary Buyer Intent</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.primaryBuyerIntent ||
+                          `Shoppers searching for '${detailItem.targetKeywords?.[0] || detailItem.title}' with custom personalization and fast dispatch.`}
+                      </div>
+                    </Card>
+
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">3. Keyword Priority (First 40 Chars)</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.keywordStrategy ||
+                          `Lock '${detailItem.targetKeywords?.[0] || detailItem.title}' in the first 40 title characters with long-tail secondary tags.`}
+                      </div>
+                    </Card>
+
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">4. Pricing Corridor &amp; Margin</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.pricingStrategy ||
+                          `Target $${detailItem.targetPrice || "32.00"} with estimated 60%+ net profit margin after Etsy fees.`}
+                      </div>
+                    </Card>
+
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">5. Differentiation Points</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.differentiation ||
+                          "Emphasize custom engraving options, superior photography, and transparent care instructions."}
+                      </div>
+                    </Card>
+
+                    <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
+                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">6. Competitive Risk Mitigation</div>
+                      <div className="text-xs font-semibold text-ink">
+                        {opportunityPackage?.strategy?.competitiveRisk ||
+                          "Incumbent stores have accumulated reviews; focus on long-tail high-intent search tags to bypass broad keyword competition."}
+                      </div>
+                    </Card>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <Button
+                      variant="primary"
+                      size="default"
+                      loading={assistantLoading}
+                      onClick={handleGenerateContent}
+                      className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-xs"
+                    >
+                      <span>Proceed to Listing Content Assistant</span>
+                      <ArrowRight className="h-4 w-4 ml-1.5" />
+                    </Button>
                   </div>
                 </div>
               )}

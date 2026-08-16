@@ -86,6 +86,56 @@ export default function KeywordResearchPage() {
   const [plannedKeywords, setPlannedKeywords] = useState<Record<string, boolean>>({});
   const [savingPlannerTerm, setSavingPlannerTerm] = useState<string | null>(null);
   const [savedPlannerTerms, setSavedPlannerTerms] = useState<Record<string, boolean>>({});
+  const [selectedClusterTerms, setSelectedClusterTerms] = useState<Record<string, boolean>>({});
+  const [savingCluster, setSavingCluster] = useState(false);
+  const [clusterSavedSuccess, setClusterSavedSuccess] = useState(false);
+
+  function toggleTermSelection(term: string) {
+    setSelectedClusterTerms((prev) => ({
+      ...prev,
+      [term]: !prev[term],
+    }));
+  }
+
+  async function handleAddClusterToPlanner() {
+    const terms = Object.keys(selectedClusterTerms).filter((t) => selectedClusterTerms[t]);
+    if (!terms.length || !searchResponse) return;
+
+    setSavingCluster(true);
+    try {
+      const res = await fetch("/api/planner/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Keyword Cluster: ${searchResponse.query}`,
+          type: "KEYWORD_CLUSTER",
+          targetKeywords: terms,
+          notes: `Synthesized cluster with ${terms.length} keywords for search term "${searchResponse.query}".`,
+          researchSnapshot: {
+            query: searchResponse.query,
+            opportunityScore: Math.max(10, 100 - searchResponse.summary.competitionScore),
+            competitionScore: searchResponse.summary.competitionScore,
+            totalEtsySupply: searchResponse.summary.totalEtsySupply,
+            avgPrice: searchResponse.summary.avgPrice,
+            avgFavorers: searchResponse.summary.avgFavorers,
+            clusterTermsCount: terms.length,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setClusterSavedSuccess(true);
+        setTimeout(() => setClusterSavedSuccess(false), 4000);
+      } else {
+        alert(data.error || "Failed to add cluster to Planner.");
+      }
+    } catch (err: any) {
+      alert("Error saving cluster: " + err.message);
+    } finally {
+      setSavingCluster(false);
+    }
+  }
 
   async function executeSearch(targetQuery?: string) {
     const q = (targetQuery || query).trim();
@@ -627,12 +677,69 @@ export default function KeywordResearchPage() {
             </div>
           </Card>
 
+          {/* Keyword Cluster Dock */}
+          {(() => {
+            const selectedCount = Object.values(selectedClusterTerms).filter(Boolean).length;
+            if (selectedCount === 0) return null;
+            return (
+              <Card padding="md" className="border-[#0E8F5D] bg-[#E7FAF1] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-[#0E8F5D] text-white flex items-center justify-center font-bold font-mono shrink-0">
+                    {selectedCount}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[#0E8F5D]">
+                      Keyword Cluster Selected ({selectedCount} tags)
+                    </div>
+                    <p className="text-[11px] text-ink-secondary">
+                      Synthesize and link this keyword cluster directly to your Opportunity Planner.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => setSelectedClusterTerms({})}
+                    className="text-xs"
+                  >
+                    Clear Selection
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="compact"
+                    loading={savingCluster}
+                    onClick={handleAddClusterToPlanner}
+                    className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-xs"
+                  >
+                    {clusterSavedSuccess ? "✓ Cluster Added to Planner!" : `+ Add ${selectedCount} Tags to Planner`}
+                  </Button>
+                </div>
+              </Card>
+            );
+          })()}
+
           {/* Harvested Keywords Content: Grid vs Dense Table */}
           {viewMode === "table" ? (
             <div className="border border-line rounded-xl overflow-hidden bg-white">
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
                   <tr>
+                    <th className="p-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={filteredKeywords.length > 0 && filteredKeywords.every((k) => selectedClusterTerms[k.term])}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          const next: Record<string, boolean> = {};
+                          if (checked) {
+                            filteredKeywords.forEach((k) => (next[k.term] = true));
+                          }
+                          setSelectedClusterTerms(next);
+                        }}
+                        className="rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+                      />
+                    </th>
                     <th className="p-3">Keyword Phrase</th>
                     <th className="p-3">Length</th>
                     <th className="p-3">Frequency</th>
@@ -646,8 +753,17 @@ export default function KeywordResearchPage() {
                   {filteredKeywords.map((item) => {
                     const isPlanned = plannedKeywords[item.term];
                     const isSavedPlanner = savedPlannerTerms[item.term];
+                    const isSelected = !!selectedClusterTerms[item.term];
                     return (
-                      <tr key={item.term} className="hover:bg-surface-muted transition">
+                      <tr key={item.term} className={`hover:bg-surface-muted transition ${isSelected ? "bg-[#E7FAF1]/40" : ""}`}>
+                        <td className="p-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleTermSelection(item.term)}
+                            className="rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+                          />
+                        </td>
                         <td className="p-3 font-bold text-ink">
                           <button
                             type="button"
@@ -697,30 +813,41 @@ export default function KeywordResearchPage() {
                 const isPlanned = plannedKeywords[item.term];
                 const isSavedPlanner = savedPlannerTerms[item.term];
                 const isSaving = savingPlannerTerm === item.term;
+                const isSelected = !!selectedClusterTerms[item.term];
 
                 return (
                   <Card
                     key={item.term}
                     padding="sm"
-                    className="border-line bg-white shadow-2xs hover:border-line-subtle transition-all flex flex-col justify-between space-y-2.5"
+                    className={`border-line bg-white shadow-2xs hover:border-line-subtle transition-all flex flex-col justify-between space-y-2.5 ${
+                      isSelected ? "border-[#0E8F5D] ring-1 ring-[#0E8F5D]/30 bg-[#E7FAF1]/20" : ""
+                    }`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => executeSearch(item.term)}
-                            className="font-bold text-xs text-ink hover:text-[#0E8F5D] text-left truncate block transition-colors"
-                            title="Click to research this keyword"
-                          >
-                            {item.term}
-                          </button>
-                          <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
-                            <span>{item.wordCount} words</span>
-                            <span>·</span>
-                            <span className={item.isTagCompliant ? "text-[#0E8F5D] font-medium" : "text-amber-700"}>
-                              {item.charCount} chars {item.isTagCompliant ? "(Etsy Tag)" : "(Title Only)"}
-                            </span>
+                        <div className="flex items-start gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleTermSelection(item.term)}
+                            className="mt-0.5 rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+                          />
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => executeSearch(item.term)}
+                              className="font-bold text-xs text-ink hover:text-[#0E8F5D] text-left truncate block transition-colors"
+                              title="Click to research this keyword"
+                            >
+                              {item.term}
+                            </button>
+                            <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
+                              <span>{item.wordCount} words</span>
+                              <span>·</span>
+                              <span className={item.isTagCompliant ? "text-[#0E8F5D] font-medium" : "text-amber-700"}>
+                                {item.charCount} chars {item.isTagCompliant ? "(Etsy Tag)" : "(Title Only)"}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
