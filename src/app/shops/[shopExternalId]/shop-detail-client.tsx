@@ -29,7 +29,7 @@ import {
   Award,
   AlertTriangle,
 } from "lucide-react";
-import { Card, Badge, Button, Heading, Text, Eyebrow, IconButton } from "@/components/ui";
+import { Card, Badge, Button, Heading, Text, Eyebrow, IconButton, IntelligenceCard } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart, type ChartState } from "@/components/data/charts";
 import type { CompleteShopIntelligenceProfile } from "@/types/shop-research";
@@ -492,82 +492,43 @@ export function ShopDetailClient({
       {/* ==================================================================== */}
       {/* SECTION 2: STRATEGIC COMPETITION VERDICT (LEVEL 1: PRIMARY DECISION) */}
       {/* ==================================================================== */}
-      <Card variant="feature" padding="lg" className="space-y-6">
-        {/* Header & Hero Verdict Banner */}
-        <div className="pb-5 border-b border-line space-y-4">
-          <div className="flex items-center justify-between">
-            <Eyebrow tone="gold">Strategic Competition Verdict</Eyebrow>
-            <DataProvenanceBadge type="SELLERSALT_SCORE" />
-          </div>
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
-            {/* Left: Large Verdict, Question & Natural Language Explanation */}
-            <div className="space-y-2 min-w-0 max-w-2xl">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
-                  Verdict:
-                </span>
-                <Badge variant={competeVerdict.badgeVariant} className="text-sm font-bold px-3 py-1">
-                  {competeVerdict.label}
-                </Badge>
-              </div>
-
-              <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-                Should you compete with {shopName}?
-              </h2>
-
-              <p className="text-xs text-ink-tertiary font-medium">
-                {competeVerdict.subheadline}
-              </p>
-
-              <p className="text-sm text-ink-secondary leading-relaxed pt-1">
-                {competeVerdict.naturalLanguageExplanation}
-              </p>
+      <IntelligenceCard
+        badgeText="STRATEGIC COMPETITION VERDICT"
+        badgeIcon={<Sparkles className="h-3.5 w-3.5 text-[#FFB020]" />}
+        title={`Should you compete with ${shopName}?`}
+        score={verdict.opportunityScore}
+        scoreMax={100}
+        verdictLabel={competeVerdict.label}
+        verdictVariant={competeVerdict.badgeVariant}
+        provenance="SELLERSALT_SCORE"
+        description={competeVerdict.naturalLanguageExplanation}
+        actionLabel={tracked ? "★ Tracking Active in ShopWatch" : "+ Track Competitor Shop"}
+        onAction={handleToggleTrack}
+        sidePanel={
+          <div className="space-y-3">
+            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+              Competition Spectrum
             </div>
-
-            {/* Right: Prominent Opportunity Score & 3-Band Spectrum */}
-            <div className="shrink-0 flex flex-col items-center sm:items-end justify-center p-4 rounded-xl bg-white border border-line shadow-2xs space-y-2">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-extrabold text-ink font-mono tracking-tight">
-                  {verdict.opportunityScore}
-                </span>
-                <span className="text-sm font-bold text-ink-tertiary font-mono">/ 100</span>
+            <div className="w-full space-y-1.5 pt-1">
+              <div className="grid grid-cols-3 h-2.5 w-full rounded-full overflow-hidden bg-[#2A362D] gap-0.5">
+                <div className={`h-full ${verdict.opportunityScore < 45 ? "bg-red-500" : "bg-red-900/40"}`} />
+                <div className={`h-full ${verdict.opportunityScore >= 45 && verdict.opportunityScore < 75 ? "bg-[#FFB020]" : "bg-amber-900/40"}`} />
+                <div className={`h-full ${verdict.opportunityScore >= 75 ? "bg-[#16C784]" : "bg-emerald-900/40"}`} />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
-                Opportunity Score
-              </span>
-
-              {/* 3-Band Score Spectrum */}
-              <div className="w-48 space-y-1 pt-1">
-                <div className="grid grid-cols-3 h-2 w-full rounded-full overflow-hidden bg-surface-muted gap-0.5">
-                  <div
-                    className={`h-full ${verdict.opportunityScore < 45 ? "bg-red-500" : "bg-red-200"}`}
-                    title="High Barrier (< 45)"
-                  />
-                  <div
-                    className={`h-full ${verdict.opportunityScore >= 45 && verdict.opportunityScore < 75 ? "bg-[#FFB020]" : "bg-amber-100"}`}
-                    title="Moderate (45-74)"
-                  />
-                  <div
-                    className={`h-full ${verdict.opportunityScore >= 75 ? "bg-[#0E8F5D]" : "bg-emerald-100"}`}
-                    title="Easy to Compete (≥ 75)"
-                  />
-                </div>
-                <div className="flex justify-between text-[9px] text-ink-tertiary font-medium font-mono">
-                  <span>High Barrier</span>
-                  <span>Moderate</span>
-                  <span>Easy</span>
-                </div>
+              <div className="flex justify-between text-[9px] text-[#9EAA9F] font-medium font-mono">
+                <span>High Barrier</span>
+                <span>Moderate</span>
+                <span>Easy</span>
               </div>
             </div>
+            <p className="text-[11px] text-[#9EAA9F] leading-tight pt-1 border-t border-[#2A362D]">
+              {verdict.summary}
+            </p>
           </div>
+        }
+      />
 
-          {/* Engine Summary Text */}
-          <div className="p-3.5 rounded-xl bg-[#F4F3EF]/60 border border-line-subtle text-xs text-ink-secondary leading-relaxed">
-            <strong className="text-ink font-semibold">Intelligence Summary: </strong>
-            {verdict.summary}
-          </div>
-        </div>
+      <Card padding="lg" className="space-y-6 bg-white border-line">
 
         {/* Supporting Factors Breakdown */}
         <div className="space-y-3">

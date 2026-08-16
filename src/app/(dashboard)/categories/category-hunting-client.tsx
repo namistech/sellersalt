@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
-import { Card, Heading, Text, Button, Badge } from "@/components/ui";
+import { Card, Heading, Text, Button, Badge, IntelligenceCard } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart } from "@/components/data/charts";
 import { TaxonomyTreeBrowser } from "@/components/intelligence/TaxonomyTreeBrowser";
@@ -287,89 +287,79 @@ export function CategoryHuntingClient({
               </Card>
 
               {/* LEVEL 1: MARKET OPPORTUNITY & ENTRY VERDICT (PRIMARY DECISION SURFACE) */}
-              <Card variant="feature" padding="lg" className="space-y-5 bg-white">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
-                    Market Entry Intelligence
-                  </span>
-                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
-                  {/* Left: Verdict Banner & Natural Language Evaluation */}
-                  <div className="space-y-2 min-w-0 max-w-2xl">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
-                        Market Opportunity:
-                      </span>
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold border ${profile.benchmarks.verdictColor}`}>
-                        {profile.benchmarks.verdictBadge}
+              <IntelligenceCard
+                badgeText="MARKET ENTRY INTELLIGENCE"
+                badgeIcon={<Layers className="h-3.5 w-3.5 text-[#FFB020]" />}
+                title={`Is "${profile.name}" a market worth entering?`}
+                score={profile.benchmarks.opportunityScore}
+                scoreMax={100}
+                verdictLabel={profile.benchmarks.verdictBadge}
+                verdictVariant={
+                  profile.benchmarks.opportunityScore >= 70
+                    ? "success"
+                    : profile.benchmarks.opportunityScore >= 45
+                    ? "warning"
+                    : "danger"
+                }
+                provenance="SELLERSALT_SCORE"
+                description={
+                  profile.benchmarks.opportunityScore >= 70
+                    ? `This category shows favorable market dynamics with an opportunity score of ${profile.benchmarks.opportunityScore}/100 and healthy daily velocity (~${profile.benchmarks.avgDailySalesProxy.toFixed(1)} sales/day per store).`
+                    : profile.benchmarks.opportunityScore >= 45
+                    ? `This category has moderate incumbent competition (${profile.benchmarks.nicheSaturationIndex}). Entry requires a differentiated product angle and targeted long-tail SEO.`
+                    : `This category has heavy saturation and high incumbent review barriers (${profile.benchmarks.reviewSaturationAverage.toLocaleString()} avg reviews). Niche down into specific sub-branches before entering.`
+                }
+                actionLabel={savedPlannerCategory ? "Saved in Planner" : "Save Category to Planner"}
+                onAction={handleAddCategoryToPlanner}
+                sidePanel={
+                  <div className="space-y-3">
+                    <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                      Market Saturation &amp; Entry
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Saturation Index:</span>
+                        <span className="font-bold text-white">{profile.benchmarks.nicheSaturationIndex}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Avg Daily Velocity:</span>
+                        <span className="font-mono font-bold text-[#16C784]">~{profile.benchmarks.avgDailySalesProxy.toFixed(1)} / day</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Avg Incumbent Reviews:</span>
+                        <span className="font-mono font-bold text-[#F59E0B]">{profile.benchmarks.reviewSaturationAverage.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Observed Median Price:</span>
+                        <span className="font-mono font-bold text-white">${profile.benchmarks.medianPrice.toFixed(2)}</span>
                       </div>
                     </div>
-
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-                      Is {profile.name} worth entering?
-                    </h2>
-
-                    <p className="text-sm text-ink-secondary leading-relaxed pt-1">
-                      {profile.benchmarks.opportunityScore >= 70
-                        ? `This category shows favorable market dynamics with an opportunity score of ${profile.benchmarks.opportunityScore}/100 and healthy daily velocity (~${profile.benchmarks.avgDailySalesProxy.toFixed(1)} sales/day per store).`
-                        : profile.benchmarks.opportunityScore >= 45
-                        ? `This category has moderate incumbent competition (${profile.benchmarks.nicheSaturationIndex}). Entry requires a differentiated product angle and targeted long-tail SEO.`
-                        : `This category has heavy saturation and high incumbent review barriers (${profile.benchmarks.reviewSaturationAverage.toLocaleString()} avg reviews). Niche down into specific sub-branches before entering.`}
-                    </p>
                   </div>
-
-                  {/* Right: Score Callout & Saturation Index */}
-                  <div className="shrink-0 flex flex-col items-center sm:items-end justify-center p-4 rounded-xl bg-white border border-line shadow-2xs space-y-2">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-4xl font-extrabold text-ink font-mono tracking-tight">
-                        {profile.benchmarks.opportunityScore}
-                      </span>
-                      <span className="text-sm font-bold text-ink-tertiary font-mono">/ 100</span>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
-                      Category Opportunity Score
-                    </span>
-                    <Badge
-                      variant={
-                        profile.benchmarks.opportunityScore >= 70
-                          ? "success"
-                          : profile.benchmarks.opportunityScore >= 45
-                          ? "warning"
-                          : "neutral"
-                      }
-                      className="text-[10px]"
-                    >
-                      {profile.benchmarks.nicheSaturationIndex} Saturation
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* Strategic Advice Playbook (Level 1 Guidance) */}
+                }
+              >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
-                  <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                    <div className="font-bold text-ink flex items-center gap-1.5">
+                  <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1">
+                    <div className="font-bold text-white flex items-center gap-1.5">
                       <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" /> What to Study:
                     </div>
-                    <p className="text-ink-secondary leading-relaxed">{profile.strategicAdvice.whatToStudy}</p>
+                    <p className="text-[#9EAA9F] leading-relaxed">{profile.strategicAdvice.whatToStudy}</p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                    <div className="font-bold text-ink flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" /> What to Avoid:
+                  <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-400" /> What to Avoid:
                     </div>
-                    <p className="text-ink-secondary leading-relaxed">{profile.strategicAdvice.whatToAvoid}</p>
+                    <p className="text-[#9EAA9F] leading-relaxed">{profile.strategicAdvice.whatToAvoid}</p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                    <div className="font-bold text-ink flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-[#0E8F5D]" /> Recommended Action:
+                  <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1">
+                    <div className="font-bold text-white flex items-center gap-1.5">
+                      <Check className="h-3.5 w-3.5 text-[#16C784]" /> Recommended Action:
                     </div>
-                    <p className="text-ink-secondary leading-relaxed">{profile.strategicAdvice.whatToDoNext}</p>
+                    <p className="text-[#9EAA9F] leading-relaxed">{profile.strategicAdvice.whatToDoNext}</p>
                   </div>
                 </div>
-              </Card>
+              </IntelligenceCard>
 
               {/* LEVEL 2: 8-BENCHMARK KPI GRID */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

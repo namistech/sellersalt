@@ -45,7 +45,14 @@ const STATUS_DOT_CLASS: Record<NonNullable<AvatarProps["status"]>, string> = {
 
 export function Avatar({ src, name, size = "md", status, className }: AvatarProps) {
   const [imgFailed, setImgFailed] = useState(false);
-  const showImage = src && !imgFailed;
+  const [prevSrc, setPrevSrc] = useState(src);
+
+  if (src !== prevSrc) {
+    setPrevSrc(src);
+    setImgFailed(false);
+  }
+
+  const showImage = Boolean(src && !imgFailed);
 
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>

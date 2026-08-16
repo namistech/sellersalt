@@ -120,7 +120,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/shops/${item.shopExternalId}`}
+                          href={`/products/${item.id}`}
                           className={cn(
                             "text-ink hover:text-brand-primary truncate",
                             isTopFinding ? "font-bold text-base" : "font-medium text-sm"

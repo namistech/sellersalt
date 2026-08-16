@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Input, Button, Badge, Heading, Text } from "@/components/ui";
+import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart } from "@/components/data/charts";
 import {
@@ -274,75 +274,63 @@ export default function KeywordResearchPage() {
               searchResponse.keywords[0];
 
             return (
-              <Card variant="feature" padding="lg" className="space-y-5 bg-white">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
-                    Keyword Targeting Intelligence
-                  </span>
-                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
-                </div>
-
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
-                  {/* Left: Decision Statement & Guidance */}
-                  <div className="space-y-2 min-w-0 max-w-2xl">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
-                        Competition Barrier:
-                      </span>
-                      <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${COMPETITION_COLORS[searchResponse.summary.competitionLevel]}`}>
-                        {searchResponse.summary.competitionLevel.replace("_", " ")} ({searchResponse.summary.competitionScore}/100)
-                      </div>
-                    </div>
-
-                    <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
-                      Which search terms should you target for &ldquo;{searchResponse.query}&rdquo;?
-                    </h2>
-
-                    <p className="text-sm text-ink-secondary leading-relaxed pt-1">
-                      {searchResponse.summary.competitionScore >= 70
-                        ? `Broad head terms for "${searchResponse.query}" have high listing density (${searchResponse.summary.totalEtsySupply.toLocaleString()} competing listings). Target 3+ word long-tail phrases below to capture targeted buyer demand with lower ranking friction.`
-                        : `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100) with strong buyer favoriting velocity (~${searchResponse.summary.avgFavorers.toLocaleString()} avg favorites). Prioritize tag-compliant phrases in your title and 13 tags.`}
-                    </p>
-                  </div>
-
-                  {/* Right: Top Recommended Tag Callout */}
-                  {topRecommended && (
-                    <div className="shrink-0 p-4 rounded-xl bg-white border border-line shadow-2xs space-y-2 min-w-[220px]">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary block">
+              <IntelligenceCard
+                badgeText="KEYWORD TARGETING INTELLIGENCE"
+                badgeIcon={<Search className="h-3.5 w-3.5 text-[#FFB020]" />}
+                title={`Which search terms should you target for "${searchResponse.query}"?`}
+                score={searchResponse.summary.competitionScore}
+                scoreMax={100}
+                verdictLabel={`${searchResponse.summary.competitionLevel.replace("_", " ")} Competition`}
+                verdictVariant={
+                  searchResponse.summary.competitionScore <= 40
+                    ? "success"
+                    : searchResponse.summary.competitionScore <= 70
+                    ? "warning"
+                    : "danger"
+                }
+                provenance="SELLERSALT_SCORE"
+                description={
+                  searchResponse.summary.competitionScore >= 70
+                    ? `Broad head terms for "${searchResponse.query}" have high listing density (${searchResponse.summary.totalEtsySupply.toLocaleString()} competing listings). Target 3+ word long-tail phrases below to capture targeted buyer demand with lower ranking friction.`
+                    : `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100) with strong buyer favoriting velocity (~${searchResponse.summary.avgFavorers.toLocaleString()} avg favorites). Prioritize tag-compliant phrases in your title and 13 tags.`
+                }
+                actionLabel={topRecommended && savedPlannerTerms[topRecommended.term] ? "Added to Planner" : "+ Target Top Tag in Planner"}
+                onAction={topRecommended ? () => handleAddTermToPlanner(topRecommended) : undefined}
+                sidePanel={
+                  topRecommended ? (
+                    <div className="space-y-3">
+                      <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
                         Top Recommended Target Tag
-                      </span>
-                      <div className="text-base font-extrabold text-ink truncate">
+                      </div>
+                      <div className="text-base font-extrabold text-white truncate font-mono">
                         &ldquo;{topRecommended.term}&rdquo;
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-ink-tertiary">
-                        <span className="text-[#0E8F5D] font-semibold">{topRecommended.percentage}% sample usage</span>
-                        <span>·</span>
-                        <span>{topRecommended.wordCount} words</span>
-                      </div>
-                      <div className="pt-1">
-                        <Button
-                          variant="primary"
-                          size="compact"
-                          loading={savingPlannerTerm === topRecommended.term}
-                          disabled={Boolean(savedPlannerTerms[topRecommended.term])}
-                          onClick={() => handleAddTermToPlanner(topRecommended)}
-                          className="w-full text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
-                        >
-                          {savedPlannerTerms[topRecommended.term] ? (
-                            <>
-                              <Check className="h-3 w-3 mr-1" /> Added to Planner
-                            </>
-                          ) : (
-                            <>
-                              <Bookmark className="h-3 w-3 mr-1" /> Target in Planner
-                            </>
-                          )}
-                        </Button>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-[#9EAA9F]">Sample Frequency:</span>
+                          <span className="text-[#16C784] font-bold">{topRecommended.percentage}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#9EAA9F]">Phrase Length:</span>
+                          <span className="text-white font-bold">{topRecommended.wordCount} words</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#9EAA9F]">Tag Compliant (&le;20 chars):</span>
+                          <span className="text-[#16C784] font-bold">{topRecommended.isTagCompliant ? "Yes" : "No"}</span>
+                        </div>
                       </div>
                     </div>
-                  )}
+                  ) : undefined
+                }
+              >
+                <div className="flex flex-wrap items-center gap-4 text-xs text-[#9EAA9F] pt-1">
+                  <span>Harvested: <strong className="text-white font-mono">{searchResponse.keywords.length}</strong> phrases</span>
+                  <span>·</span>
+                  <span>Long-Tail Ratio: <strong className="text-[#16C784] font-mono">{searchResponse.keywords.length > 0 ? Math.round((searchResponse.keywords.filter((k) => k.tailClassification === "LONG_TAIL").length / searchResponse.keywords.length) * 100) : 0}%</strong></span>
+                  <span>·</span>
+                  <span>Tag-Compliant: <strong className="text-white font-mono">{searchResponse.keywords.filter((k) => k.isTagCompliant).length}</strong> keywords</span>
                 </div>
-              </Card>
+              </IntelligenceCard>
             );
           })()}
 

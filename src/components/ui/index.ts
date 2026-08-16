@@ -76,3 +76,7 @@ export type { TabsProps, TabsListProps, TabsTriggerProps, TabsPanelProps } from 
 
 export { Breadcrumbs } from "./Breadcrumbs";
 export type { BreadcrumbsProps, BreadcrumbItem } from "./Breadcrumbs";
+
+export { IntelligenceCard } from "./IntelligenceCard";
+export type { IntelligenceCardProps } from "./IntelligenceCard";
+

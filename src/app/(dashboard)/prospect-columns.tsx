@@ -145,21 +145,31 @@ export function buildProspectColumns({
       key: "listing",
       header: "Listing",
       render: (p) => (
-        <a
-          href={p.listingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex max-w-[240px] items-center gap-2 text-ink hover:text-[#0E8F5D] transition-colors"
-          title="Open listing on Etsy in new tab"
-        >
-          {p.listingImageUrl ? (
-            <img src={p.listingImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover border border-line" />
-          ) : (
-            <span className="h-8 w-8 shrink-0 rounded-md bg-line-subtle" />
+        <div className="flex max-w-[260px] items-center gap-2">
+          <Link
+            href={`/products/${p.id}`}
+            className="flex items-center gap-2 min-w-0 text-ink hover:text-[#0E8F5D] transition-colors"
+            title="Inspect Product Intelligence"
+          >
+            {p.listingImageUrl ? (
+              <img src={p.listingImageUrl} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover border border-line" />
+            ) : (
+              <span className="h-8 w-8 shrink-0 rounded-md bg-line-subtle" />
+            )}
+            <span className="truncate text-xs font-medium">{p.listingTitle}</span>
+          </Link>
+          {p.listingUrl && (
+            <a
+              href={p.listingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ink-tertiary hover:text-ink shrink-0"
+              title="Open listing on Etsy"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </a>
           )}
-          <span className="truncate text-xs">{p.listingTitle}</span>
-          <ExternalLink className="h-3 w-3 shrink-0 text-ink-tertiary" />
-        </a>
+        </div>
       ),
     },
     {

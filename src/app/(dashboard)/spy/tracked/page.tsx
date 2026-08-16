@@ -22,7 +22,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Button, Badge, Alert, Heading, Text, Eyebrow, Dialog } from "@/components/ui";
+import { Card, Button, Badge, Alert, Heading, Text, Eyebrow, Dialog, IntelligenceCard } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { SpyTabs } from "../spy-tabs";
 import {
@@ -267,48 +267,56 @@ export default function TrackedCompetitorsPage() {
                 const hasDelta = (topGainer.deltas.salesDelta7d ?? 0) > 0;
 
                 return (
-                  <div className="p-5 rounded-2xl bg-[#FAFAF8] border border-line flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-                    <div className="space-y-2 min-w-0 max-w-2xl">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
-                          Momentum Leader:
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
-                          {topGainer.shopName}
-                        </span>
-                        {topGainer.velocity.isSpike && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
-                            ⚡ Spike Alert
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="text-lg sm:text-xl font-extrabold text-ink tracking-tight">
-                        Which competitor is gaining the most momentum?
-                      </h3>
-
-                      <p className="text-sm text-ink-secondary leading-relaxed">
-                        {hasDelta
-                          ? `${topGainer.shopName} leads your monitored competitor portfolio with +${topGainer.deltas.salesDelta7d} verified sales gained over the past 7 days (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day).`
-                          : `${topGainer.shopName} has the highest estimated daily velocity (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day) among your monitored stores.`}
-                      </p>
-                    </div>
-
-                    <div className="shrink-0 flex items-center gap-4 self-end md:self-auto">
-                      <div className="text-right">
-                        <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono leading-none">
-                          +{topGainer.deltas.salesDelta7d ?? 0}
+                  <IntelligenceCard
+                    badgeText="SURVEILLANCE MOMENTUM LEADER"
+                    badgeIcon={<Radar className="h-3.5 w-3.5 text-[#FFB020]" />}
+                    title="Which competitor is gaining the most momentum?"
+                    verdictLabel={`${topGainer.shopName}${topGainer.velocity.isSpike ? " · ⚡ Spike Alert" : ""}`}
+                    verdictVariant={topGainer.velocity.isSpike ? "warning" : "success"}
+                    provenance="ACTUAL_ETSY_DATA"
+                    description={
+                      hasDelta
+                        ? `${topGainer.shopName} leads your monitored competitor portfolio with +${topGainer.deltas.salesDelta7d} verified sales gained over the past 7 days (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day).`
+                        : `${topGainer.shopName} has the highest estimated daily velocity (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day) among your monitored stores.`
+                    }
+                    actionLabel="Inspect Competitor Intelligence"
+                    onAction={() => {
+                      window.location.href = `/shops/${topGainer.shopExternalId}`;
+                    }}
+                    sidePanel={
+                      <div className="space-y-3">
+                        <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                          7-Day Performance Delta
                         </div>
-                        <span className="text-[10px] font-semibold text-ink-tertiary">7-Day Sales Delta</span>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-[#9EAA9F]">Sales Delta (7d):</span>
+                            <span className="font-mono font-bold text-[#16C784]">+{topGainer.deltas.salesDelta7d ?? 0} orders</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[#9EAA9F]">Est. Daily Velocity:</span>
+                            <span className="font-mono font-bold text-white">~{topGainer.velocity.estDailySales.toFixed(1)} / day</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[#9EAA9F]">Catalog Listings:</span>
+                            <span className="font-mono font-bold text-white">{topGainer.latestSnapshot?.activeListings ?? "—"} listings</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[#9EAA9F]">Lifetime Sales:</span>
+                            <span className="font-mono font-bold text-white">{topGainer.latestSnapshot?.totalSales?.toLocaleString() ?? "—"}</span>
+                          </div>
+                        </div>
                       </div>
-
-                      <Link href={`/shops/${topGainer.shopExternalId}`}>
-                        <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold">
-                          Inspect Intelligence →
-                        </Button>
-                      </Link>
+                    }
+                  >
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-[#9EAA9F] pt-1">
+                      <span>Monitored Shop: <Link href={`/shops/${topGainer.shopExternalId}`} className="text-[#16C784] font-bold hover:underline">{topGainer.shopName}</Link></span>
+                      <span>·</span>
+                      <span>Review Accumulation: <strong className="text-white font-mono">{topGainer.latestSnapshot?.reviewCount ?? 0}</strong> reviews</span>
+                      <span>·</span>
+                      <span>Health State: <strong className="text-[#16C784]">{topGainer.health}</strong></span>
                     </div>
-                  </div>
+                  </IntelligenceCard>
                 );
               })()}
 

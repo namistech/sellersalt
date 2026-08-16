@@ -30,6 +30,7 @@ import {
   Select,
   Text,
   IconButton,
+  IntelligenceCard,
 } from "@/components/ui";
 import { EmptyState, Table, type Column } from "@/components/data";
 import { fetchConnectors, type ConnectorSummary } from "@/services/connectors";
@@ -602,51 +603,116 @@ export function RadarClient({
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            {initialData.spotlightOpportunities.map((opp) => (
-              <Card
-                key={opp.id}
-                padding="md"
-                className="relative flex flex-col justify-between border-line shadow-xs hover:border-line-strong hover:shadow-sm transition-all bg-surface"
+          {/* Level 1: Dominant #1 Breakout Opportunity Card */}
+          {initialData.spotlightOpportunities[0] && (() => {
+            const top = initialData.spotlightOpportunities[0];
+            const isTopSaved = savedPlannerMap[top.id] || top.status === "SHORTLISTED";
+            return (
+              <IntelligenceCard
+                badgeText="TOP BREAKOUT OPPORTUNITY"
+                badgeIcon={<Flame className="h-3.5 w-3.5 text-[#FFB020]" />}
+                title={top.listingTitle || top.shopName}
+                score={top.score}
+                scoreMax={100}
+                verdictLabel="High Opportunity Breakout"
+                verdictVariant="success"
+                provenance="SELLERSALT_SCORE"
+                description={`Discovered in ${top.keyword} with an estimated ${top.estDailySales.toFixed(1)} daily transactions (~$${(top.estDailySales * 30.44 * top.price).toFixed(0)}/mo) and lean catalog yield of ${top.avgSellingRatio.toFixed(1)} sales/listing.`}
+                actionLabel={isTopSaved ? "Saved in Planner" : "+ Add to Workspace Planner"}
+                onAction={() => handleQuickAddToPlanner(top)}
+                secondaryAction={
+                  <Link href={`/products/${top.prospectId}`}>
+                    <Button variant="secondary" size="compact" className="text-xs bg-[#1C261F] text-white border-[#2A362D] hover:bg-[#2A362D]">
+                      Inspect Product Details →
+                    </Button>
+                  </Link>
+                }
+                sidePanel={
+                  <div className="space-y-3">
+                    <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                      Breakout Metrics
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Observed Price:</span>
+                        <span className="font-mono font-bold text-white">${top.price.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Daily Sales Velocity:</span>
+                        <span className="font-mono font-bold text-[#16C784]">{top.estDailySales.toFixed(1)} / day</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Catalog Yield:</span>
+                        <span className="font-mono font-bold text-white">{top.avgSellingRatio.toFixed(1)}x</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#9EAA9F]">Review Threshold:</span>
+                        <span className="font-mono font-bold text-[#F59E0B]">{top.reviewCount} reviews</span>
+                      </div>
+                    </div>
+                  </div>
+                }
               >
-                <div>
-                  {/* Top Badge Row */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    {renderTypeBadge(opp.type)}
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs font-bold text-brand-primary bg-brand-primary-subtle px-2 py-0.5 rounded border border-brand-primary/30">
-                        Score {opp.score}
-                      </span>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-4 text-xs text-[#9EAA9F]">
+                  <span>Store: <Link href={`/shops/${top.shopExternalId}`} className="text-[#16C784] font-bold hover:underline">{top.shopName}</Link></span>
+                  <span>·</span>
+                  <span>Target Niche: <strong className="text-white">{top.keyword}</strong></span>
+                  <span>·</span>
+                  <span>Discovered: {top.signals.freshness.metricValue}</span>
+                </div>
+              </IntelligenceCard>
+            );
+          })()}
 
-                  {/* 1. WHAT: Opportunity details */}
-                  <div className="flex items-start gap-3">
-                    {opp.listingImageUrl ? (
-                      <img
-                        src={opp.listingImageUrl}
-                        alt=""
-                        className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
-                        Etsy
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <Link
-                        href={`/shops/${opp.shopExternalId}`}
-                        className="font-semibold text-sm text-ink hover:text-brand-primary line-clamp-2 transition-colors"
-                      >
-                        {opp.listingTitle || opp.shopName}
-                      </Link>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-ink-tertiary">
-                        <span className="font-medium text-ink-secondary">{opp.shopName}</span>
-                        <span>·</span>
-                        <span className="font-semibold text-ink">${opp.price.toFixed(2)}</span>
+          {/* Supporting Spotlight Opportunities Grid */}
+          {initialData.spotlightOpportunities.length > 1 && (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {initialData.spotlightOpportunities.slice(1).map((opp) => (
+                <Card
+                  key={opp.id}
+                  padding="md"
+                  className="relative flex flex-col justify-between border-line shadow-xs hover:border-line-strong hover:shadow-sm transition-all bg-surface"
+                >
+                  <div>
+                    {/* Top Badge Row */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      {renderTypeBadge(opp.type)}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-bold text-brand-primary bg-brand-primary-subtle px-2 py-0.5 rounded border border-brand-primary/30">
+                          Score {opp.score}
+                        </span>
                       </div>
                     </div>
-                  </div>
+
+                    {/* 1. WHAT: Opportunity details */}
+                    <div className="flex items-start gap-3">
+                      {opp.listingImageUrl ? (
+                        <img
+                          src={opp.listingImageUrl}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
+                          Etsy
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <Link
+                          href={`/products/${opp.prospectId}`}
+                          className="font-semibold text-sm text-ink hover:text-brand-primary line-clamp-2 transition-colors"
+                        >
+                          {opp.listingTitle || opp.shopName}
+                        </Link>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-ink-tertiary">
+                          <Link href={`/shops/${opp.shopExternalId}`} className="font-medium text-ink-secondary hover:underline">
+                            {opp.shopName}
+                          </Link>
+                          <span>·</span>
+                          <span className="font-semibold text-ink">${opp.price.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
 
                   {/* 2. WHY: Deterministic explanation */}
                   <div className="mt-3.5 rounded-lg bg-surface-muted p-2.5 border border-line-subtle">
@@ -729,7 +795,8 @@ export function RadarClient({
                 </div>
               </Card>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
