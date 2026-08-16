@@ -8,8 +8,8 @@
 export { cn, FOCUS_RING } from "./cn";
 export type { ClassValue } from "./cn";
 
-export { Heading, Text, Label, Caption, DataText } from "./Typography";
-export type { HeadingProps, TextProps, LabelProps, CaptionProps, DataTextProps } from "./Typography";
+export { Heading, Text, Label, Caption, Eyebrow, DataText } from "./Typography";
+export type { HeadingProps, TextProps, LabelProps, CaptionProps, EyebrowProps, DataTextProps } from "./Typography";
 
 export { Button } from "./Button";
 export type { ButtonProps, ButtonVariant, ButtonSize } from "./Button";

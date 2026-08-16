@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Card, Button, Badge, Input, Heading, Text } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
+import { BarChart } from "@/components/data/charts";
 import {
   fetchRevenueAnalytics,
   fetchListingYieldAnalytics,
@@ -347,7 +348,56 @@ export function AnalyticsClient() {
       {/* Tab 1: Executive Overview */}
       {activeTab === "overview" && waterfall && (
         <div className="space-y-6">
-          {/* Top 4 KPI Stat Cards */}
+          {/* LEVEL 1: NET PROFIT RETENTION & FEE DRAG (PRIMARY DECISION SURFACE) */}
+          <Card variant="feature" padding="lg" className="space-y-4 bg-white">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
+                Cashflow & Margin Intelligence
+              </span>
+              <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
+              <div className="space-y-2 min-w-0 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
+                    Financial Verdict:
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                    waterfall.contributionMargin >= 50
+                      ? "bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30"
+                      : waterfall.contributionMargin >= 25
+                      ? "bg-[#FFF8E6] text-[#B37800] border border-[#FFB020]/30"
+                      : "bg-red-50 text-red-800 border border-red-200"
+                  }`}>
+                    {waterfall.contributionMargin}% Net Margin Retention
+                  </span>
+                </div>
+
+                <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
+                  Where is your store&apos;s money actually going?
+                </h2>
+
+                <p className="text-sm text-ink-secondary leading-relaxed pt-1">
+                  From <strong className="text-ink font-mono">{waterfall.currency} {waterfall.grossSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> in gross customer receipts, your store keeps <strong className="text-[#0E8F5D] font-mono">{waterfall.currency} {waterfall.trueNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> in true net earnings ({waterfall.contributionMargin}% take-home). Etsy fees consumed <strong className="text-ink font-mono">{waterfall.currency} {waterfall.totalEtsyFees.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong> ({waterfall.feeRatio}% fee drag) and direct costs consumed <strong className="text-ink font-mono">{waterfall.currency} {waterfall.totalSellerCosts.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>.
+                </p>
+              </div>
+
+              <div className="shrink-0 flex flex-col items-center sm:items-end justify-center p-4 rounded-xl bg-white border border-line shadow-2xs space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+                  True Net Take-Home
+                </span>
+                <div className="text-3xl font-extrabold text-[#0E8F5D] font-mono">
+                  {waterfall.currency} {waterfall.trueNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </div>
+                <div className="text-[11px] text-ink-tertiary">
+                  Across {waterfall.orderCount} orders ({waterfall.totalUnitsSold} units)
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* LEVEL 2: TOP 4 KPI STAT CARDS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 1. Gross Revenue */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-1.5">
@@ -448,6 +498,34 @@ export function AnalyticsClient() {
             <span className="text-xs font-mono font-bold text-ink bg-[#FAFAF8] px-2.5 py-1 rounded-lg border border-line">
               Currency: {waterfall.currency}
             </span>
+          </div>
+
+          {/* P&L Component Breakdown Visualizer */}
+          <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                  P&L Component Breakdown ({waterfall.currency})
+                </span>
+                <p className="text-[11px] text-ink-tertiary">Visual comparison of gross receipts, platform fees, operational costs, and retained earnings.</p>
+              </div>
+              <DataProvenanceBadge type="ESTIMATED" />
+            </div>
+            <BarChart
+              data={[
+                { component: "Gross Sales", amount: Number(waterfall.grossSales.toFixed(2)) },
+                { component: "Etsy Fees", amount: Number(waterfall.totalEtsyFees.toFixed(2)) },
+                { component: "Seller Costs", amount: Number(waterfall.totalSellerCosts.toFixed(2)) },
+                { component: "True Net Profit", amount: Number(waterfall.trueNetProfit.toFixed(2)) },
+              ]}
+              xKey="component"
+              layout="vertical"
+              yAxisWidth={120}
+              series={[{ key: "amount", label: `Amount (${waterfall.currency})`, colorIndex: 0 }]}
+              valueFormatter={(v) => `${waterfall.currency} ${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+              height={160}
+              accessibleSummary={`P&L component breakdown showing gross sales of ${waterfall.currency} ${waterfall.grossSales.toFixed(2)} and net profit of ${waterfall.currency} ${waterfall.trueNetProfit.toFixed(2)}.`}
+            />
           </div>
 
           <div className="space-y-3 text-xs">

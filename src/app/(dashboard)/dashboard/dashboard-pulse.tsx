@@ -10,20 +10,21 @@ interface DashboardPulseProps {
 
 export function DashboardPulse({ pulse }: DashboardPulseProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <Link href="/prospects" className="transition-transform hover:-translate-y-0.5 sm:col-span-2 lg:col-span-2">
+        <MetricCard
+          featured
+          label="Prospects Found"
+          value={pulse.totalProspects}
+          comparisonLabel={`${pulse.pendingProspects} awaiting review`}
+        />
+      </Link>
+
       <Link href="/prospects?tab=saved" className="transition-transform hover:-translate-y-0.5">
         <MetricCard
           label="Active Searches"
           value={pulse.activeSearches}
           comparisonLabel={`${pulse.scheduledSearches} scheduled · ${pulse.maxSearches} limit`}
-        />
-      </Link>
-
-      <Link href="/prospects" className="transition-transform hover:-translate-y-0.5">
-        <MetricCard
-          label="Prospects Found"
-          value={pulse.totalProspects}
-          comparisonLabel={`${pulse.pendingProspects} awaiting review`}
         />
       </Link>
 

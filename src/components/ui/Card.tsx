@@ -22,12 +22,19 @@ interface CardBaseProps {
 
 /** Static card — bordered, no shadow. */
 export interface CardProps extends CardBaseProps, Omit<HTMLAttributes<HTMLDivElement>, "className" | "children"> {
-  variant?: "default" | "elevated";
+  /** "feature" is the one primary-finding panel per section/page — an
+   * accent left-edge (reusing the same border-l-* pattern Alert.tsx
+   * already uses for status) plus a firmer border, never a background
+   * fill or shadow spectacle. Everything else stays "default" — visual
+   * hierarchy comes from using this sparingly, not from a second
+   * "louder" card style applied broadly. */
+  variant?: "default" | "elevated" | "feature";
 }
 
 const VARIANT_CLASS: Record<NonNullable<CardProps["variant"]>, string> = {
   default: "border border-line bg-surface",
   elevated: "bg-surface shadow-md",
+  feature: "border border-line-strong border-l-4 border-l-accent bg-surface shadow-xs",
 };
 
 export function Card({ variant = "default", padding = "md", className, children, ...rest }: CardProps) {

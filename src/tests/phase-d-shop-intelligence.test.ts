@@ -111,6 +111,24 @@ describe("Phase D: Strategic Shop Verdict & Opportunity Classification", () => {
     assert.ok(verdict.whatToDoNext.length > 0);
   });
 
+  it("generates moderate to compete verdict for balanced mid-tier shops", () => {
+    const verdict = computeStrategicShopVerdict({
+      opportunityScore: 58,
+      totalSales: 12000,
+      activeListings: 180,
+      estDailySales: 4.5,
+      shopAgeMonths: 36,
+      reviewCount: 1200,
+      avgObservedPrice: 28.0,
+    });
+
+    assert.equal(verdict.opportunityScore, 58);
+    assert.equal(verdict.verdictBadge, "MODERATE TO COMPETE");
+    assert.equal(verdict.verdictLabel, "Consistent Market Performer");
+    assert.ok(verdict.whyInteresting.includes("Steady recurring transactions"));
+    assert.ok(verdict.whatToStudy.includes("pricing tiers"));
+  });
+
   it("generates high barrier verdict for saturated legacy shops", () => {
     const verdict = computeStrategicShopVerdict({
       opportunityScore: 35,

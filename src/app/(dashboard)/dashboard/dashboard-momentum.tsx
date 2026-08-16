@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, Heading, Text } from "@/components/ui";
+import { Card, Heading, Eyebrow, Text } from "@/components/ui";
 import { AreaChart, type ChartState } from "@/components/data";
 
 interface DashboardMomentumProps {
@@ -16,9 +16,7 @@ export function DashboardMomentum({ data }: DashboardMomentumProps) {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <Heading as="h2" size="h4">
-              Discovery Momentum
-            </Heading>
+            <Eyebrow>Discovery Momentum</Eyebrow>
             <Text size="body-sm" color="secondary" className="mt-0.5">
               Prospects yielded across all search streams over the last 14 days.
             </Text>

@@ -21,6 +21,7 @@ import {
 import { PageHeader } from "@/components/shell";
 import { Card, Input, Button, Badge, Heading, Text } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
+import { BarChart } from "@/components/data/charts";
 import {
   searchStandaloneKeywords,
   savePlannedKeyword,
@@ -266,7 +267,86 @@ export default function KeywordResearchPage() {
       {/* Results View */}
       {searchResponse && (
         <div className="space-y-6">
-          {/* Summary KPI Grid */}
+          {/* LEVEL 1: KEYWORD STRATEGY & TARGETING DECISION (PRIMARY DECISION SURFACE) */}
+          {(() => {
+            const topRecommended =
+              searchResponse.keywords.find((k) => k.isTagCompliant && k.competitionScore <= 60 && k.wordCount >= 2) ||
+              searchResponse.keywords[0];
+
+            return (
+              <Card variant="feature" padding="lg" className="space-y-5 bg-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
+                    Keyword Targeting Intelligence
+                  </span>
+                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
+                </div>
+
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
+                  {/* Left: Decision Statement & Guidance */}
+                  <div className="space-y-2 min-w-0 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
+                        Competition Barrier:
+                      </span>
+                      <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${COMPETITION_COLORS[searchResponse.summary.competitionLevel]}`}>
+                        {searchResponse.summary.competitionLevel.replace("_", " ")} ({searchResponse.summary.competitionScore}/100)
+                      </div>
+                    </div>
+
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
+                      Which search terms should you target for &ldquo;{searchResponse.query}&rdquo;?
+                    </h2>
+
+                    <p className="text-sm text-ink-secondary leading-relaxed pt-1">
+                      {searchResponse.summary.competitionScore >= 70
+                        ? `Broad head terms for "${searchResponse.query}" have high listing density (${searchResponse.summary.totalEtsySupply.toLocaleString()} competing listings). Target 3+ word long-tail phrases below to capture targeted buyer demand with lower ranking friction.`
+                        : `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100) with strong buyer favoriting velocity (~${searchResponse.summary.avgFavorers.toLocaleString()} avg favorites). Prioritize tag-compliant phrases in your title and 13 tags.`}
+                    </p>
+                  </div>
+
+                  {/* Right: Top Recommended Tag Callout */}
+                  {topRecommended && (
+                    <div className="shrink-0 p-4 rounded-xl bg-white border border-line shadow-2xs space-y-2 min-w-[220px]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary block">
+                        Top Recommended Target Tag
+                      </span>
+                      <div className="text-base font-extrabold text-ink truncate">
+                        &ldquo;{topRecommended.term}&rdquo;
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-ink-tertiary">
+                        <span className="text-[#0E8F5D] font-semibold">{topRecommended.percentage}% sample usage</span>
+                        <span>·</span>
+                        <span>{topRecommended.wordCount} words</span>
+                      </div>
+                      <div className="pt-1">
+                        <Button
+                          variant="primary"
+                          size="compact"
+                          loading={savingPlannerTerm === topRecommended.term}
+                          disabled={Boolean(savedPlannerTerms[topRecommended.term])}
+                          onClick={() => handleAddTermToPlanner(topRecommended)}
+                          className="w-full text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                        >
+                          {savedPlannerTerms[topRecommended.term] ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" /> Added to Planner
+                            </>
+                          ) : (
+                            <>
+                              <Bookmark className="h-3 w-3 mr-1" /> Target in Planner
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })()}
+
+          {/* LEVEL 2: SUMMARY KPI GRID */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
@@ -325,6 +405,85 @@ export default function KeywordResearchPage() {
               </div>
             </Card>
           </div>
+
+          {/* Keyword Intelligence Visualizations */}
+          {searchResponse.keywords.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Chart 1: Top Keywords by Catalog Penetration */}
+              <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                      Top Tags by Catalog Penetration (%)
+                    </span>
+                    <p className="text-[11px] text-ink-tertiary">Observed recurrence frequency across analyzed page 1 listings.</p>
+                  </div>
+                  <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                </div>
+                <BarChart
+                  data={[...searchResponse.keywords]
+                    .sort((a, b) => b.percentage - a.percentage)
+                    .slice(0, 5)
+                    .map((k) => ({
+                      term: k.term,
+                      percentage: k.percentage,
+                    }))}
+                  xKey="term"
+                  layout="vertical"
+                  yAxisWidth={140}
+                  series={[{ key: "percentage", label: "% of sampled listings", colorIndex: 0 }]}
+                  valueFormatter={(v) => `${v}%`}
+                  height={150}
+                  accessibleSummary="Bar chart of top keywords ranked by catalog penetration percentage."
+                />
+              </Card>
+
+              {/* Chart 2: Average Demand Signal by Phrase Length */}
+              <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                      Avg. Buyer Demand by Phrase Length
+                    </span>
+                    <p className="text-[11px] text-ink-tertiary">Average buyer favorites proxy across head, mid-tail, and long-tail phrases.</p>
+                  </div>
+                  <DataProvenanceBadge type="ESTIMATED" />
+                </div>
+                <BarChart
+                  data={[
+                    {
+                      type: "Head Term (1w)",
+                      avgDemand: (() => {
+                        const items = searchResponse.keywords.filter((k) => k.tailClassification === "HEAD_TERM");
+                        return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
+                      })(),
+                    },
+                    {
+                      type: "Mid-Tail (2-3w)",
+                      avgDemand: (() => {
+                        const items = searchResponse.keywords.filter((k) => k.tailClassification === "MID_TAIL");
+                        return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
+                      })(),
+                    },
+                    {
+                      type: "Long-Tail (4w+)",
+                      avgDemand: (() => {
+                        const items = searchResponse.keywords.filter((k) => k.tailClassification === "LONG_TAIL");
+                        return items.length > 0 ? Math.round(items.reduce((s, k) => s + k.estimatedDemandSignal, 0) / items.length) : 0;
+                      })(),
+                    },
+                  ]}
+                  xKey="type"
+                  layout="vertical"
+                  yAxisWidth={120}
+                  series={[{ key: "avgDemand", label: "Avg Favorites Proxy", colorIndex: 1 }]}
+                  valueFormatter={(v) => `${Number(v).toLocaleString()} favs`}
+                  height={150}
+                  accessibleSummary="Bar chart comparing average buyer demand across head, mid, and long tail keywords."
+                />
+              </Card>
+            </div>
+          )}
 
           {/* Interactive Filters Bar */}
           <Card padding="md" className="border-line bg-white shadow-xs space-y-3">

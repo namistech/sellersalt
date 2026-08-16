@@ -122,6 +122,9 @@ const config: Config = {
         "label-md": ["13px", { lineHeight: "1.3", letterSpacing: "0.02em", fontWeight: "500" }],
         "label-sm": ["11px", { lineHeight: "1.3", letterSpacing: "0.04em", fontWeight: "500" }],
         meta: ["12px", { lineHeight: "1.4" }],
+        // One primary finding per page/section reaches for this — see
+        // Card's "feature" variant and MetricCard's `featured` prop.
+        "data-xl": ["36px", { lineHeight: "1.1", letterSpacing: "-0.01em", fontWeight: "600" }],
         "data-lg": ["24px", { lineHeight: "1.2", fontWeight: "600" }],
         "data-md": ["16px", { lineHeight: "1.3", fontWeight: "500" }],
         "data-sm": ["13px", { lineHeight: "1.3", fontWeight: "500" }],

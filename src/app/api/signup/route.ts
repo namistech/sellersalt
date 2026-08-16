@@ -3,14 +3,22 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { sendVerificationEmail } from "@/lib/email-verification";
 import { scheduleVerificationReminders } from "@/lib/queue";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 // One signup = one User + one Organization + one OWNER Membership.
 export async function POST(req: Request) {
   const { email, password, name, organizationName } = await req.json();
 
-  if (!email || !password || password.length < 8) {
+  if (!email || !password) {
+    return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+  }
+
+  // Authoritative check — the checkout form's client-side check is for
+  // immediate feedback only, never trusted on its own.
+  const strength = checkPasswordStrength(password);
+  if (!strength.valid) {
     return NextResponse.json(
-      { error: "Email and a password of at least 8 characters are required." },
+      { error: `Password must include: ${strength.errors.join(", ")}.` },
       { status: 400 }
     );
   }

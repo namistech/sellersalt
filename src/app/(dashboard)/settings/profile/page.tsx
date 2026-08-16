@@ -43,6 +43,7 @@ import { Dialog } from "@/components/ui/Dialog";
 interface ProfileData {
   name: string;
   email: string;
+  emailVerified?: boolean;
   avatarUrl: string | null;
   memberSince: string | null;
   organizationName: string;
@@ -561,7 +562,16 @@ export default function ProfilePage() {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-extrabold text-ink">{name || "SellerSalt Member"}</h2>
                 <Badge variant="neutral">{profileData?.role || "OWNER"}</Badge>
-                <Badge variant="success">{profileData?.planName || "Started"}</Badge>
+                <Badge variant="success">{profileData?.planName || "Starter"}</Badge>
+                {profileData?.emailVerified ? (
+                  <Badge variant="success">✓ Email Verified</Badge>
+                ) : (
+                  <Link href="/verify-email">
+                    <Badge variant="warning" className="hover:underline cursor-pointer">
+                      ⚠ Unverified — Confirm Email
+                    </Badge>
+                  </Link>
+                )}
               </div>
               <div className="text-xs text-ink-secondary mt-1 flex flex-wrap items-center gap-3">
                 <span className="flex items-center gap-1">
@@ -650,19 +660,19 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Two-Factor Authentication & Passkeys Security Card */}
+      {/* Sign-In Security & Passkeys */}
       <Card padding="lg" className="border-line shadow-xs bg-white space-y-6">
         <div>
           <Heading as="h2" size="h4">
-            Two-Factor Authentication (2FA) & Passkeys
+            Sign-In Security & Passkeys
           </Heading>
           <Text size="body-sm" color="secondary" className="mt-0.5">
-            Protect your account with RFC 6238 TOTP authenticator apps and WebAuthn hardware passkeys.
+            Protect your workspace account with authenticator apps and device passkeys.
           </Text>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* TOTP */}
+          {/* Authenticator App */}
           <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex flex-col justify-between space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -670,8 +680,8 @@ export default function ProfilePage() {
                   <Smartphone className="h-5 w-5" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-ink">Authenticator App (TOTP)</div>
-                  <div className="text-[11px] text-ink-tertiary">Google Authenticator, Authy, 1Password</div>
+                  <div className="font-bold text-xs text-ink">Authenticator App</div>
+                  <div className="text-[11px] text-ink-tertiary">Google Authenticator, 1Password, Authy</div>
                 </div>
               </div>
               <Badge variant={twoFactorEnabled ? "success" : "neutral"}>
@@ -711,9 +721,9 @@ export default function ProfilePage() {
                   size="compact"
                   onClick={handleStartTotpSetup}
                   loading={totpLoading}
-                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold"
+                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white"
                 >
-                  + Setup Authenticator App
+                  + Set Up Authenticator App
                 </Button>
               )}
             </div>
@@ -728,8 +738,8 @@ export default function ProfilePage() {
                     <Fingerprint className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="font-bold text-xs text-ink">Passkeys (WebAuthn)</div>
-                    <div className="text-[11px] text-ink-tertiary">Touch ID, Face ID, Windows Hello, YubiKey</div>
+                    <div className="font-bold text-xs text-ink">Passkeys</div>
+                    <div className="text-[11px] text-ink-tertiary">Touch ID, Face ID, Windows Hello, or Security Key</div>
                   </div>
                 </div>
                 <Badge variant={passkeys.length > 0 ? "success" : "neutral"}>
@@ -746,7 +756,7 @@ export default function ProfilePage() {
                       className="p-2 rounded-lg bg-white border border-line-subtle flex items-center justify-between text-xs"
                     >
                       <div className="min-w-0">
-                        <div className="font-semibold text-ink truncate">{p.name || "Unnamed passkey"}</div>
+                        <div className="font-semibold text-ink truncate">{p.name || "Device passkey"}</div>
                         <div className="text-[10px] text-ink-tertiary">
                           Added {new Date(p.createdAt).toLocaleDateString()}
                           {p.lastUsedAt ? ` · Last used ${new Date(p.lastUsedAt).toLocaleDateString()}` : ""}
@@ -777,7 +787,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
-              <span className="text-[11px] text-ink-tertiary">{passkeyStatus || "FIDO2 / WebAuthn"}</span>
+              <span className="text-[11px] text-ink-tertiary">{passkeyStatus || "Biometric / Device Security"}</span>
               <Button
                 variant="secondary"
                 size="compact"

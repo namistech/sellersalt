@@ -13,6 +13,7 @@ import { DashboardOpportunities } from "./dashboard-opportunities";
 import { DashboardCompetitorRadar } from "./dashboard-competitor-radar";
 import { DashboardMomentum } from "./dashboard-momentum";
 import { DashboardStreams } from "./dashboard-streams";
+import { DashboardOnboardingGuide } from "./dashboard-onboarding-guide";
 
 interface DashboardClientProps {
   initialData: DashboardData;
@@ -52,6 +53,13 @@ export function DashboardClient({ initialData, connectors, userName }: Dashboard
             </Button>
           </div>
         }
+      />
+
+      {/* Onboarding Guide / Fast-Start Launchpad */}
+      <DashboardOnboardingGuide
+        hasActiveSearches={pulse.activeSearches > 0}
+        hasTrackedShops={data.competitorRadar.length > 0}
+        hasProspects={pulse.totalProspects > 0 || data.topOpportunities.length > 0}
       />
 
       {/* Row 1: Research Pulse */}

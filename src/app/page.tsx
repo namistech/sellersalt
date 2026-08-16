@@ -9,23 +9,23 @@ import { MarketingHomepage } from "./marketing-homepage";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "SellerSalt — Real-Time Etsy Competitor Intelligence & Opportunity Radar",
+  title: "SellerSalt — The Essential of eCommerce Intelligence",
   description:
-    "SellerSalt helps Etsy sellers, brands, and agencies discover winning products, analyze competitor sales velocity, and spot high-demand niches using verified lifetime sales data.",
+    "SellerSalt helps Etsy sellers, brands, and agencies discover winning products, analyze competitor sales velocity, and spot high-demand niches using verified marketplace sales data.",
   keywords:
-    "Etsy product research, Etsy competitor spy tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing",
+    "Etsy product research, Etsy competitor spy tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing, shop intelligence",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "SellerSalt — Real-Time Etsy Competitor Intelligence & Opportunity Radar",
+    title: "SellerSalt — The Essential of eCommerce Intelligence",
     description:
-      "Uncover verified Etsy shop sales velocity, daily listing trends, and low-competition product niches with SellerSalt.",
+      "Turn verified Etsy sales data and competitor velocity into profitable product decisions with the Opportunity Radar.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SellerSalt — Etsy Competitor Intelligence & Sourcing",
-    description: "Verified sales data and Opportunity Radar for Etsy sellers and exporters.",
+    title: "SellerSalt — The Essential of eCommerce Intelligence",
+    description: "Verified sales data, Opportunity Radar, and competitor intelligence for Etsy sellers.",
   },
 };
 

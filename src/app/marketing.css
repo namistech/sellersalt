@@ -578,3 +578,135 @@
   flex-wrap: wrap;
   gap: 24px;
 }
+
+/* Audience Grid */
+.sellersalt-marketing .audience-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-bottom: 96px;
+}
+
+.sellersalt-marketing .audience-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-xs);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.sellersalt-marketing .audience-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.sellersalt-marketing .audience-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+/* Live Showcase */
+.sellersalt-marketing .showcase-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 96px;
+}
+
+.sellersalt-marketing .showcase-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 28px;
+}
+
+.sellersalt-marketing .showcase-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.sellersalt-marketing .showcase-tab-btn:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.sellersalt-marketing .showcase-tab-btn.active {
+  background: var(--text-main);
+  color: #FFFFFF;
+  border-color: var(--text-main);
+  box-shadow: var(--shadow-xs);
+}
+
+.sellersalt-marketing .showcase-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+/* Workflow 5-Stage Pipeline */
+.sellersalt-marketing .workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 96px;
+  position: relative;
+}
+
+.sellersalt-marketing .workflow-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.sellersalt-marketing .workflow-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.sellersalt-marketing .workflow-step-num {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+

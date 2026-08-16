@@ -35,6 +35,11 @@ export async function POST(req: Request) {
       expectedChallenge: payload.challenge,
       expectedOrigin: expectedOrigin(),
       expectedRPID: rpID(),
+      // Matches the "preferred" (not "required") userVerification policy
+      // declared in register/options/route.ts — see the matching
+      // requireUserVerification note in src/lib/auth.ts's passkey
+      // authorize() for why this must stay consistent with login.
+      requireUserVerification: false,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Passkey verification failed." }, { status: 400 });

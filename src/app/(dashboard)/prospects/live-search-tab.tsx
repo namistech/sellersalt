@@ -31,6 +31,7 @@ import {
   Badge,
   Heading,
   Text,
+  Eyebrow,
   Alert,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -232,36 +233,139 @@ export function LiveSearchTab() {
         </Alert>
       )}
 
-      {/* Results Header */}
+      {/* Results Header & Level 1 Decision Banner */}
       {searchResponse && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Heading as="h2" size="h4">
-              Marketplace Results ({searchResponse.results.length})
-            </Heading>
-            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-            <span className="text-xs text-ink-tertiary">
-              in {searchResponse.executionDurationMs}ms (8 req/s queue & Redis cache)
-            </span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Heading as="h2" size="h4">
+                Marketplace Results ({searchResponse.results.length})
+              </Heading>
+              <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+              <span className="text-xs text-ink-tertiary">
+                in {searchResponse.executionDurationMs}ms (8 req/s queue & Redis cache)
+              </span>
+            </div>
+
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-ink-secondary">
+                  {selectedIds.size} product{selectedIds.size > 1 ? "s" : ""} selected
+                </span>
+                <Button
+                  variant="primary"
+                  size="compact"
+                  loading={comparing}
+                  disabled={selectedIds.size < 2}
+                  onClick={handleOpenComparison}
+                  className="bg-[#0E8F5D] text-xs font-semibold"
+                >
+                  <Scale className="h-3.5 w-3.5 mr-1" /> Compare Selected
+                </Button>
+              </div>
+            )}
           </div>
 
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-ink-secondary">
-                {selectedIds.size} product{selectedIds.size > 1 ? "s" : ""} selected
-              </span>
-              <Button
-                variant="primary"
-                size="compact"
-                loading={comparing}
-                disabled={selectedIds.size < 2}
-                onClick={handleOpenComparison}
-                className="bg-[#0E8F5D] text-xs font-semibold"
-              >
-                <Scale className="h-3.5 w-3.5 mr-1" /> Compare Selected
-              </Button>
-            </div>
-          )}
+          {/* LEVEL 1: TOP BREAKOUT OPPORTUNITY (PRIMARY DECISION SURFACE) */}
+          {(() => {
+            if (searchResponse.results.length === 0) return null;
+            const topItem = [...searchResponse.results].sort(
+              (a, b) => b.opportunity.opportunityScore - a.opportunity.opportunityScore
+            )[0];
+            if (!topItem) return null;
+
+            const isSaved = savedPlannerMap[topItem.id] || topItem.isSavedToPlanner;
+
+            return (
+              <Card variant="feature" padding="lg" className="space-y-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" /> Top Ranked Opportunity in Sample
+                  </span>
+                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
+                </div>
+
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 p-4 rounded-2xl bg-[#FAFAF8] border border-line">
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    {topItem.listing.imageUrl ? (
+                      <img
+                        src={topItem.listing.imageUrl}
+                        alt=""
+                        className="h-20 w-20 rounded-xl object-cover border border-line shrink-0 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="h-20 w-20 rounded-xl bg-surface-muted border border-line flex items-center justify-center text-xs font-bold text-ink-tertiary shrink-0">
+                        ETSY
+                      </div>
+                    )}
+
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
+                          #{1} Opportunity
+                        </span>
+                        <span className="text-xs text-ink-tertiary">
+                          Shop: <strong className="text-ink">{topItem.shop.shopName}</strong>
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm sm:text-base font-bold text-ink truncate max-w-xl">
+                        {topItem.listing.title}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
+                        <span>Price: <strong className="font-mono text-ink">${topItem.listing.price.toFixed(2)}</strong></span>
+                        <span>·</span>
+                        <span>Velocity: <strong className="text-[#0E8F5D] font-mono">~{topItem.signals.estDailySales.toFixed(1)} sales/day</strong></span>
+                        <span>·</span>
+                        <span>Moat: <strong className="text-ink">{topItem.shop.reviewCount.toLocaleString()} reviews</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0 self-end md:self-auto">
+                    <div className="text-right">
+                      <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono leading-none">
+                        {topItem.opportunity.opportunityScore}
+                        <span className="text-xs text-ink-tertiary font-sans font-normal">/100</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-ink-tertiary">Opportunity Score</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="compact"
+                        onClick={() => setActiveDrawerProduct(topItem)}
+                        className="text-xs font-medium"
+                      >
+                        Inspect Radar
+                      </Button>
+
+                      <Button
+                        variant={isSaved ? "secondary" : "primary"}
+                        size="compact"
+                        loading={savingPlannerId === topItem.id}
+                        disabled={isSaved}
+                        onClick={() => handleQuickAddToPlanner(topItem)}
+                        className="text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                      >
+                        {isSaved ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 mr-1" /> Added
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark className="h-3.5 w-3.5 mr-1" /> Add to Planner
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
         </div>
       )}
 
@@ -303,15 +407,28 @@ export function LiveSearchTab() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {searchResponse.results.map((item) => {
+          {(() => {
+            // Visual-only: the single highest-scoring result gets the
+            // "feature" treatment regardless of current sort/display
+            // order, so the top finding stays visually distinct even
+            // when sorted by price or recency.
+            const topItemId = searchResponse.results.reduce<string | null>((bestId, r) => {
+              if (!bestId) return r.id;
+              const best = searchResponse.results.find((x) => x.id === bestId);
+              return best && r.opportunity.opportunityScore > best.opportunity.opportunityScore ? r.id : bestId;
+            }, null);
+
+            return searchResponse.results.map((item) => {
             const isSelected = selectedIds.has(item.id);
             const isSaved = savedPlannerMap[item.id] || item.isSavedToPlanner;
+            const isTopFinding = item.id === topItemId;
 
             return (
               <Card
                 key={item.id}
+                variant={isTopFinding ? "feature" : "default"}
                 padding="md"
-                className={`border-line shadow-xs flex flex-col justify-between transition-all bg-white hover:border-[#0E8F5D] ${
+                className={`shadow-xs flex flex-col justify-between transition-all bg-white hover:border-[#0E8F5D] ${
                   isSelected ? "ring-2 ring-[#0E8F5D] border-[#0E8F5D]" : ""
                 }`}
               >
@@ -349,6 +466,12 @@ export function LiveSearchTab() {
                       <span className="text-[10px] text-ink-tertiary">/100</span>
                     </div>
                   </div>
+
+                  {isTopFinding && (
+                    <Eyebrow tone="accent" className="flex items-center gap-1">
+                      <Flame className="h-3 w-3" aria-hidden /> Top Match
+                    </Eyebrow>
+                  )}
 
                   {/* Title & Price */}
                   <div>
@@ -429,7 +552,8 @@ export function LiveSearchTab() {
                 </div>
               </Card>
             );
-          })}
+            });
+          })()}
         </div>
       )}
 

@@ -358,9 +358,44 @@ export function PlannerClient() {
         </div>
       </Card>
 
-      {/* Kanban Board View */}
-      {viewMode === "KANBAN" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 min-h-[600px] items-start">
+      {/* Empty State when no planner items exist at all */}
+      {items.length === 0 && !searchQuery.trim() && selectedStatus === "ALL" && !loading ? (
+        <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16 px-6 max-w-2xl mx-auto space-y-5">
+          <div className="h-14 w-14 rounded-2xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto shadow-2xs">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-ink tracking-tight">Your Workspace Planner is empty</h3>
+            <p className="text-xs sm:text-sm text-ink-secondary max-w-lg mx-auto leading-relaxed">
+              Planner is your strategic pipeline from market discovery to live Etsy execution. Save breakout product concepts, target price models, and keyword clusters here before creating listings.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Button
+              variant="primary"
+              size="compact"
+              onClick={() => setShowCreateModal(true)}
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white shadow-xs"
+            >
+              + Create First Plan Item
+            </Button>
+            <Link href="/radar">
+              <Button variant="secondary" size="compact" className="text-xs font-medium">
+                Hunt Products on Radar
+              </Button>
+            </Link>
+            <Link href="/keyword-research">
+              <Button variant="secondary" size="compact" className="text-xs font-medium">
+                Research Keywords
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* Kanban Board View */}
+          {viewMode === "KANBAN" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 min-h-[600px] items-start">
           {kanbanColumns.map((col) => (
             <div
               key={col.status}
@@ -571,6 +606,8 @@ export function PlannerClient() {
           </div>
         </Card>
       )}
+    </>
+  )}
 
       {/* Planner Item Detail Drawer / Modal */}
       {selectedItemId && detailItem && (

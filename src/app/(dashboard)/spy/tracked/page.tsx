@@ -22,7 +22,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Button, Badge, Alert, Heading, Text, Dialog } from "@/components/ui";
+import { Card, Button, Badge, Alert, Heading, Text, Eyebrow, Dialog } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { SpyTabs } from "../spy-tabs";
 import {
@@ -34,15 +34,7 @@ import {
   fetchTrackingQuota,
   fetchTrackedShopHistory,
 } from "@/services/tracking-client";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { BarChart, LineChart } from "@/components/data/charts";
 import type {
   TrackedShopSummary,
   TrackedListingSummary,
@@ -135,6 +127,31 @@ export default function TrackedCompetitorsPage() {
         </Alert>
       )}
 
+      {/* The finding: surfaced above everything else so a breakout spike
+          is visible without having to dig into the Alerts tab. */}
+      {alerts.length > 0 && (
+        <Card variant="feature" padding="md" className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-warn-subtle text-warn-strong">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <Eyebrow tone="accent">
+                {alerts.length} New Alert{alerts.length === 1 ? "" : "s"}
+              </Eyebrow>
+              <p className="text-sm text-ink-secondary mt-0.5">
+                {alerts.filter((a) => a.severity === "CRITICAL").length > 0
+                  ? "A tracked competitor has a critical sales spike or catalog change."
+                  : "A tracked competitor or listing has a notable change worth reviewing."}
+              </p>
+            </div>
+          </div>
+          <Button variant="secondary" size="compact" onClick={() => setActiveTab("alerts")}>
+            View Alerts →
+          </Button>
+        </Card>
+      )}
+
       {/* Quota & Surveillance Header */}
       <Card padding="md" className="border-line bg-white shadow-xs flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -214,18 +231,119 @@ export default function TrackedCompetitorsPage() {
           {loading ? (
             <div className="text-center py-12 text-xs text-ink-tertiary">Loading tracked competitor shops...</div>
           ) : shops.length === 0 ? (
-            <div className="text-center py-12 space-y-3">
-              <Radar className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
-              <div className="text-xs text-ink-secondary">No competitor shops being tracked yet.</div>
-              <Link href="/spy">
-                <Button variant="secondary" size="compact" className="text-xs">
-                  Discover Shops to Track
-                </Button>
-              </Link>
+            <div className="text-center py-12 px-6 max-w-md mx-auto space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto shadow-2xs">
+                <Radar className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-ink">No competitor shops being tracked yet</h4>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Track competitor shops to automatically record daily snapshots of verified sales, new listing additions, and customer review momentum over time.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <Link href="/spy">
+                  <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white">
+                    Discover Shops to Track
+                  </Button>
+                </Link>
+                <Link href="/radar">
+                  <Button variant="secondary" size="compact" className="text-xs">
+                    Explore Opportunity Radar
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-ink">
+            <div className="space-y-5">
+              {/* LEVEL 1: SURVEILLANCE MOMENTUM LEADER (PRIMARY DECISION SURFACE) */}
+              {(() => {
+                const topGainer = [...shops].sort(
+                  (a, b) => (b.deltas.salesDelta7d ?? 0) - (a.deltas.salesDelta7d ?? 0)
+                )[0];
+
+                if (!topGainer) return null;
+
+                const hasDelta = (topGainer.deltas.salesDelta7d ?? 0) > 0;
+
+                return (
+                  <div className="p-5 rounded-2xl bg-[#FAFAF8] border border-line flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                    <div className="space-y-2 min-w-0 max-w-2xl">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
+                          Momentum Leader:
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
+                          {topGainer.shopName}
+                        </span>
+                        {topGainer.velocity.isSpike && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                            ⚡ Spike Alert
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg sm:text-xl font-extrabold text-ink tracking-tight">
+                        Which competitor is gaining the most momentum?
+                      </h3>
+
+                      <p className="text-sm text-ink-secondary leading-relaxed">
+                        {hasDelta
+                          ? `${topGainer.shopName} leads your monitored competitor portfolio with +${topGainer.deltas.salesDelta7d} verified sales gained over the past 7 days (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day).`
+                          : `${topGainer.shopName} has the highest estimated daily velocity (~${topGainer.velocity.estDailySales.toFixed(1)} sales/day) among your monitored stores.`}
+                      </p>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-4 self-end md:self-auto">
+                      <div className="text-right">
+                        <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono leading-none">
+                          +{topGainer.deltas.salesDelta7d ?? 0}
+                        </div>
+                        <span className="text-[10px] font-semibold text-ink-tertiary">7-Day Sales Delta</span>
+                      </div>
+
+                      <Link href={`/shops/${topGainer.shopExternalId}`}>
+                        <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold">
+                          Inspect Intelligence →
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* LEVEL 2: 7-DAY VELOCITY & MOMENTUM COMPARISON CHART */}
+              {shops.length >= 2 && (
+                <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-[#0E8F5D]" /> 7-Day Velocity & Momentum Comparison
+                      </span>
+                      <p className="text-[11px] text-ink-tertiary">Comparative sales delta captured across monitored competitors over the past 7 days.</p>
+                    </div>
+                    <DataProvenanceBadge type="ESTIMATED" />
+                  </div>
+                  <BarChart
+                    data={shops.map((s) => ({
+                      shop: s.shopName,
+                      delta: s.deltas.salesDelta7d ?? 0,
+                    }))}
+                    xKey="shop"
+                    layout="vertical"
+                    yAxisWidth={120}
+                    series={[
+                      { key: "delta", label: "7-Day Sales Delta (+)", colorIndex: 0 },
+                    ]}
+                    height={Math.max(160, shops.length * 36)}
+                    valueFormatter={(v) => `+${v} sales`}
+                    accessibleSummary="Bar chart comparing 7-day sales delta across tracked competitor shops."
+                  />
+                </div>
+              )}
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-ink">
                 <thead>
                   <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider text-[10px]">
                     <th className="py-2.5 pr-4 font-semibold">Competitor Shop</th>
@@ -336,6 +454,7 @@ export default function TrackedCompetitorsPage() {
                 </tbody>
               </table>
             </div>
+            </div>
           )}
         </Card>
       )}
@@ -354,14 +473,28 @@ export default function TrackedCompetitorsPage() {
           {loading ? (
             <div className="text-center py-12 text-xs text-ink-tertiary">Loading tracked listings...</div>
           ) : listings.length === 0 ? (
-            <div className="text-center py-12 space-y-3">
-              <ShoppingBag className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
-              <div className="text-xs text-ink-secondary">No competitor listings being tracked yet.</div>
-              <Link href="/radar">
-                <Button variant="secondary" size="compact" className="text-xs">
-                  Discover Listings on Radar
-                </Button>
-              </Link>
+            <div className="text-center py-12 px-6 max-w-md mx-auto space-y-4">
+              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
+                <ShoppingBag className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-ink">No competitor listings being tracked yet</h4>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Monitor breakout listings to capture price changes, tag optimizations, and daily sales spikes as they happen.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <Link href="/radar">
+                  <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white">
+                    Discover Breakout Listings
+                  </Button>
+                </Link>
+                <Link href="/spy">
+                  <Button variant="secondary" size="compact" className="text-xs">
+                    Inspect Shop Listings
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -509,21 +642,18 @@ export default function TrackedCompetitorsPage() {
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
               </div>
               {selectedShopHistory.snapshots.length >= 2 ? (
-                <div className="h-48 w-full border border-line rounded-xl p-2 bg-white">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={selectedShopHistory.snapshots.map((s: any) => ({
-                        date: new Date(s.capturedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-                        sales: s.totalSales ?? 0,
-                      }))}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                      <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                      <Line type="monotone" dataKey="sales" stroke="#0E8F5D" strokeWidth={2} dot={{ r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className="border border-line rounded-xl p-3 bg-white">
+                  <LineChart
+                    data={selectedShopHistory.snapshots.map((s: any) => ({
+                      date: new Date(s.capturedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+                      sales: s.totalSales ?? 0,
+                    }))}
+                    xKey="date"
+                    series={[{ key: "sales", label: "Lifetime Sales", colorIndex: 0 }]}
+                    height={200}
+                    valueFormatter={(v) => `${Number(v).toLocaleString()} sales`}
+                    accessibleSummary="Line chart plotting lifetime sales progression over captured daily snapshots."
+                  />
                 </div>
               ) : (
                 <div className="p-8 text-center bg-[#FAFAF8] border border-line rounded-xl text-ink-tertiary">

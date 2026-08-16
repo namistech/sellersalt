@@ -5,6 +5,7 @@ export type AuditEvent =
   | "EMAIL_VERIFICATION_RESENT"
   | "ADMIN_EMAIL_VERIFICATION_SENT"
   | "ADMIN_EMAIL_CHANGED"
+  | "ADMIN_USER_CREATED"
   | "EMAIL_VERIFIED";
 
 interface AuditActor {

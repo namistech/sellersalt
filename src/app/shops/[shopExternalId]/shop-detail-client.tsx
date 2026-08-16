@@ -29,8 +29,9 @@ import {
   Award,
   AlertTriangle,
 } from "lucide-react";
-import { Card, Badge, Button, Heading, Text, IconButton } from "@/components/ui";
+import { Card, Badge, Button, Heading, Text, Eyebrow, IconButton } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
+import { BarChart, type ChartState } from "@/components/data/charts";
 import type { CompleteShopIntelligenceProfile } from "@/types/shop-research";
 import type { Prospect } from "@prisma/client";
 import { addProductToPlanner } from "@/services/product-hunting-client";
@@ -160,6 +161,119 @@ export function ShopDetailClient({
     views: null,
     opportunityScore: 75,
   }));
+
+  // "Should You Compete" section — presentation-only mapping of the
+  // existing verdict engine's badge onto friendlier customer-facing
+  // wording. The classification itself (which tier a shop falls into)
+  // still comes entirely from computeStrategicShopVerdict / verdict.verdictBadge —
+  // never recomputed here.
+  const COMPETE_VERDICT_DISPLAY: Record<
+    typeof verdict.verdictBadge,
+    {
+      label: string;
+      subheadline: string;
+      naturalLanguageExplanation: string;
+      tone: string;
+      badgeVariant: "success" | "warning" | "danger";
+    }
+  > = {
+    "EASY TO START": {
+      label: "Easy to Compete",
+      subheadline: "Low barrier to entry — high opportunity benchmark for new sellers",
+      naturalLanguageExplanation:
+        "This shop appears relatively approachable for a new seller because its competitive barriers (catalog scale and review moat) are lower than the shops SellerSalt typically flags as difficult to enter, while showing healthy transaction momentum.",
+      tone: "text-[#0E8F5D] bg-[#E7FAF1] border-[#16C784]/30",
+      badgeVariant: "success",
+    },
+    "MODERATE TO COMPETE": {
+      label: "Moderate to Compete",
+      subheadline: "Established market presence — entry requires clear product differentiation",
+      naturalLanguageExplanation:
+        "This market is possible to enter, but you'll need a stronger offer, superior visual mockups, or bundle depth to compete effectively against this shop's consistent transaction pace.",
+      tone: "text-[#B37800] bg-[#FFF8E6] border-[#FFB020]/30",
+      badgeVariant: "warning",
+    },
+    "HIGH BARRIER": {
+      label: "High Barrier — Not Recommended",
+      subheadline: "Heavy incumbent moat — direct head-to-head competition carries high barrier",
+      naturalLanguageExplanation:
+        "This shop operates in a difficult competitive position with high review defense and an extensive catalog. Consider studying it for niche long-tail ideas rather than trying to compete directly.",
+      tone: "text-red-700 bg-red-50 border-red-200",
+      badgeVariant: "danger",
+    },
+  };
+  const competeVerdict = COMPETE_VERDICT_DISPLAY[verdict.verdictBadge];
+
+  // Factor breakdown evaluations based entirely on existing shop intelligence fields
+  const factorBreakdown = [
+    {
+      title: "Sales Momentum",
+      icon: <TrendingUp className="h-3.5 w-3.5" />,
+      value: `${estDaily.toFixed(1)} / day`,
+      context: estDaily >= 5 ? "Strong daily velocity" : estDaily >= 1 ? "Steady transaction pace" : "Infrequent sales",
+      impactVariant: estDaily >= 5 ? ("success" as const) : estDaily >= 1 ? ("neutral" as const) : ("warning" as const),
+      impactLabel: estDaily >= 5 ? "Active Demand" : estDaily >= 1 ? "Moderate" : "Low Volume",
+    },
+    {
+      title: "Review Moat",
+      icon: <ShieldCheck className="h-3.5 w-3.5" />,
+      value: `${reviewCount.toLocaleString()} reviews`,
+      context: reviewCount < 500 ? "Low review barrier" : reviewCount < 3000 ? "Moderate review accumulation" : "Heavy incumbent review moat",
+      impactVariant: reviewCount < 500 ? ("success" as const) : reviewCount < 3000 ? ("neutral" as const) : ("danger" as const),
+      impactLabel: reviewCount < 500 ? "Low Barrier" : reviewCount < 3000 ? "Moderate" : "High Barrier",
+    },
+    {
+      title: "Catalog Scale",
+      icon: <Store className="h-3.5 w-3.5" />,
+      value: `${activeListings} listings`,
+      context: activeListings <= 75 ? "Lean, focused catalog" : activeListings <= 300 ? "Moderate catalog depth" : "Large catalog coverage",
+      impactVariant: activeListings <= 75 ? ("success" as const) : activeListings <= 300 ? ("neutral" as const) : ("danger" as const),
+      impactLabel: activeListings <= 75 ? "Achievable" : activeListings <= 300 ? "Moderate" : "Large Scale",
+    },
+    {
+      title: "Catalog Efficiency",
+      icon: <Layers className="h-3.5 w-3.5" />,
+      value: `${sellingRatio.toFixed(1)} sales/listing`,
+      context: catalog.catalogEfficiency === "HIGH_YIELD" ? "High sales per listing" : catalog.catalogEfficiency === "BALANCED" ? "Even listing yield" : "Diluted sales spread",
+      impactVariant: catalog.catalogEfficiency === "HIGH_YIELD" ? ("success" as const) : catalog.catalogEfficiency === "BALANCED" ? ("neutral" as const) : ("warning" as const),
+      impactLabel: catalog.catalogEfficiency === "HIGH_YIELD" ? "High Yield" : catalog.catalogEfficiency === "BALANCED" ? "Balanced" : "Low Yield",
+    },
+    {
+      title: "Pricing Sweet Spot",
+      icon: <DollarSign className="h-3.5 w-3.5" />,
+      value: `$${avgPrice.toFixed(2)}`,
+      context: `$${catalog.minPrice.toFixed(2)} – $${catalog.maxPrice.toFixed(2)} price range`,
+      impactVariant: "neutral" as const,
+      impactLabel: `Median $${catalog.medianPrice.toFixed(2)}`,
+    },
+  ];
+
+  // Evidence chart: top winning listings ranked by the same opportunityScore
+  // already computed per-listing — no new scoring, just a visual ranking.
+  const listingsChartData = [...winningListings]
+    .sort((a, b) => b.opportunityScore - a.opportunityScore)
+    .slice(0, 6)
+    .map((l) => ({
+      title: l.title.length > 28 ? `${l.title.slice(0, 28)}…` : l.title,
+      opportunityScore: l.opportunityScore,
+    }));
+  const listingsChartState: ChartState = listingsChartData.length === 0 ? "empty" : "ready";
+
+  // Evidence chart: catalog category distribution — same topCategories
+  // data already rendered as manual percentage bars elsewhere; charted
+  // here for the comparison view.
+  const categoryChartData = catalog.topCategories.map((c) => ({
+    category: c.category,
+    percentage: c.percentage,
+  }));
+  const categoryChartState: ChartState = categoryChartData.length === 0 ? "empty" : "ready";
+
+  // Pricing range position markers — min/median/max are the only pricing
+  // aggregates the catalog engine returns (no per-listing full-catalog
+  // price array exists to bucket into a true histogram), so this is a
+  // range visual rather than a fabricated distribution.
+  const priceRangeSpan = Math.max(1, catalog.maxPrice - catalog.minPrice);
+  const medianPricePercent = Math.min(100, Math.max(0, ((catalog.medianPrice - catalog.minPrice) / priceRangeSpan) * 100));
 
   async function handleToggleTrack() {
     if (!isAuthenticated) {
@@ -376,7 +490,184 @@ export function ShopDetailClient({
       </Card>
 
       {/* ==================================================================== */}
-      {/* SECTION 2: CORE PERFORMANCE KPI GRID (WITH DATA PROVENANCE BADGES)   */}
+      {/* SECTION 2: STRATEGIC COMPETITION VERDICT (LEVEL 1: PRIMARY DECISION) */}
+      {/* ==================================================================== */}
+      <Card variant="feature" padding="lg" className="space-y-6">
+        {/* Header & Hero Verdict Banner */}
+        <div className="pb-5 border-b border-line space-y-4">
+          <div className="flex items-center justify-between">
+            <Eyebrow tone="gold">Strategic Competition Verdict</Eyebrow>
+            <DataProvenanceBadge type="SELLERSALT_SCORE" />
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
+            {/* Left: Large Verdict, Question & Natural Language Explanation */}
+            <div className="space-y-2 min-w-0 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
+                  Verdict:
+                </span>
+                <Badge variant={competeVerdict.badgeVariant} className="text-sm font-bold px-3 py-1">
+                  {competeVerdict.label}
+                </Badge>
+              </div>
+
+              <h2 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight">
+                Should you compete with {shopName}?
+              </h2>
+
+              <p className="text-xs text-ink-tertiary font-medium">
+                {competeVerdict.subheadline}
+              </p>
+
+              <p className="text-sm text-ink-secondary leading-relaxed pt-1">
+                {competeVerdict.naturalLanguageExplanation}
+              </p>
+            </div>
+
+            {/* Right: Prominent Opportunity Score & 3-Band Spectrum */}
+            <div className="shrink-0 flex flex-col items-center sm:items-end justify-center p-4 rounded-xl bg-white border border-line shadow-2xs space-y-2">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-4xl font-extrabold text-ink font-mono tracking-tight">
+                  {verdict.opportunityScore}
+                </span>
+                <span className="text-sm font-bold text-ink-tertiary font-mono">/ 100</span>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+                Opportunity Score
+              </span>
+
+              {/* 3-Band Score Spectrum */}
+              <div className="w-48 space-y-1 pt-1">
+                <div className="grid grid-cols-3 h-2 w-full rounded-full overflow-hidden bg-surface-muted gap-0.5">
+                  <div
+                    className={`h-full ${verdict.opportunityScore < 45 ? "bg-red-500" : "bg-red-200"}`}
+                    title="High Barrier (< 45)"
+                  />
+                  <div
+                    className={`h-full ${verdict.opportunityScore >= 45 && verdict.opportunityScore < 75 ? "bg-[#FFB020]" : "bg-amber-100"}`}
+                    title="Moderate (45-74)"
+                  />
+                  <div
+                    className={`h-full ${verdict.opportunityScore >= 75 ? "bg-[#0E8F5D]" : "bg-emerald-100"}`}
+                    title="Easy to Compete (≥ 75)"
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] text-ink-tertiary font-medium font-mono">
+                  <span>High Barrier</span>
+                  <span>Moderate</span>
+                  <span>Easy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Engine Summary Text */}
+          <div className="p-3.5 rounded-xl bg-[#F4F3EF]/60 border border-line-subtle text-xs text-ink-secondary leading-relaxed">
+            <strong className="text-ink font-semibold">Intelligence Summary: </strong>
+            {verdict.summary}
+          </div>
+        </div>
+
+        {/* Supporting Factors Breakdown */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-ink uppercase tracking-wide">
+              Competitive Factor Breakdown
+            </span>
+            <span className="text-[11px] text-ink-tertiary">
+              How {shopName}&apos;s metrics impact entry difficulty
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {factorBreakdown.map((f, idx) => (
+              <div
+                key={idx}
+                className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex flex-col justify-between space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                    {f.icon} {f.title}
+                  </span>
+                  <Badge variant={f.impactVariant} className="text-[9px] px-1.5 py-0.2 font-semibold">
+                    {f.impactLabel}
+                  </Badge>
+                </div>
+                <div>
+                  <div className="text-lg font-extrabold text-ink font-mono">{f.value}</div>
+                  <div className="text-[10px] text-ink-tertiary leading-tight mt-0.5">{f.context}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Evidence: Winning Listings Opportunity Score Comparison */}
+        {listingsChartData.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-line-subtle">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                Winning Listings — Opportunity Score Comparison
+              </span>
+              <span className="text-[11px] text-ink-tertiary">
+                Highest opportunity products discovered in {shopName}&apos;s catalog
+              </span>
+            </div>
+            <div className="p-3 rounded-xl border border-line bg-white">
+              <BarChart
+                data={listingsChartData}
+                xKey="title"
+                layout="vertical"
+                yAxisWidth={140}
+                series={[{ key: "opportunityScore", label: "Opportunity Score", colorIndex: 0 }]}
+                state={listingsChartState}
+                height={Math.max(140, listingsChartData.length * 34)}
+                accessibleSummary={`Bar chart ranking ${shopName}'s top winning listings by opportunity score.`}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Strategic Takeaways & Action Playbook */}
+        <div className="space-y-3 pt-2 border-t border-line-subtle">
+          <span className="text-xs font-bold text-ink uppercase tracking-wide">
+            Strategic Reverse-Engineering Playbook
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <span className="font-bold text-ink flex items-center gap-1.5 text-xs">
+                <Target className="h-3.5 w-3.5 text-[#0E8F5D]" /> Why It Matters
+              </span>
+              <p className="text-xs text-ink-secondary leading-relaxed">{verdict.whyInteresting}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <span className="font-bold text-ink flex items-center gap-1.5 text-xs">
+                <BookOpen className="h-3.5 w-3.5 text-purple-600" /> What to Study
+              </span>
+              <p className="text-xs text-ink-secondary leading-relaxed">{verdict.whatToStudy}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <span className="font-bold text-ink flex items-center gap-1.5 text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600" /> What to Avoid
+              </span>
+              <p className="text-xs text-ink-secondary leading-relaxed">{verdict.whatToAvoid}</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <span className="font-bold text-ink flex items-center gap-1.5 text-xs">
+                <Zap className="h-3.5 w-3.5 text-[#0E8F5D]" /> What to Do Next
+              </span>
+              <p className="text-xs text-ink-secondary leading-relaxed">{verdict.whatToDoNext}</p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* ==================================================================== */}
+      {/* SECTION 3: CORE PERFORMANCE KPI GRID (LEVEL 2: INTELLIGENCE METRICS) */}
       {/* ==================================================================== */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -494,59 +785,6 @@ export function ShopDetailClient({
           </Card>
         </div>
       </div>
-
-      {/* ==================================================================== */}
-      {/* SECTION 3: STRATEGIC VERDICT & SCORE                                 */}
-      {/* ==================================================================== */}
-      <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-line-subtle">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-[#141B16] text-[#FFB020] flex items-center justify-center font-extrabold text-2xl shadow-sm">
-              {verdict.opportunityScore}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold text-ink">Shop Opportunity Score</span>
-                <DataProvenanceBadge type="SELLERSALT_SCORE" />
-                <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${verdict.verdictColor}`}>
-                  {verdict.verdictBadge}
-                </div>
-              </div>
-              <p className="text-xs text-ink-secondary mt-1 max-w-2xl leading-relaxed">
-                {verdict.summary}
-              </p>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <span className="text-[11px] text-ink-tertiary uppercase font-bold">Catalog Efficiency</span>
-            <div className="text-sm font-extrabold text-ink">
-              {catalog.catalogEfficiency === "HIGH_YIELD"
-                ? "🚀 High Yield (>30x)"
-                : catalog.catalogEfficiency === "BALANCED"
-                ? "⚖️ Balanced (10-30x)"
-                : "⚠️ Low Yield (<10x)"}
-            </div>
-          </div>
-        </div>
-
-        {/* Explainable strategic pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line-subtle space-y-1">
-            <span className="font-bold text-ink flex items-center gap-1.5">
-              <Target className="h-4 w-4 text-[#0E8F5D]" /> Why This Shop Matters:
-            </span>
-            <p className="text-ink-secondary leading-relaxed">{verdict.whyInteresting}</p>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line-subtle space-y-1">
-            <span className="font-bold text-ink flex items-center gap-1.5">
-              <BookOpen className="h-4 w-4 text-purple-600" /> What to Study:
-            </span>
-            <p className="text-ink-secondary leading-relaxed">{verdict.whatToStudy}</p>
-          </div>
-        </div>
-      </Card>
 
       {/* ==================================================================== */}
       {/* SECTION 4: LONGITUDINAL SALES TRACKING                               */}
@@ -688,26 +926,36 @@ export function ShopDetailClient({
               Price Range: <strong className="font-mono text-ink">${catalog.minPrice.toFixed(2)}</strong> to{" "}
               <strong className="font-mono text-ink">${catalog.maxPrice.toFixed(2)}</strong> (${catalog.priceSpread.toFixed(2)} spread)
             </div>
+            {/* Min → median → max position marker. Aggregate stats only —
+                no per-listing catalog-wide price array is returned, so a
+                true histogram isn't supportable from this data. */}
+            <div className="pt-1">
+              <div className="relative h-1.5 w-full rounded-full bg-surface-muted">
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-[#0E8F5D] border-2 border-white shadow-2xs"
+                  style={{ left: `calc(${medianPricePercent}% - 6px)` }}
+                  title={`Median: $${catalog.medianPrice.toFixed(2)}`}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-ink-tertiary mt-1 font-mono">
+                <span>${catalog.minPrice.toFixed(2)}</span>
+                <span>${catalog.maxPrice.toFixed(2)}</span>
+              </div>
+            </div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-2 md:col-span-2">
             <span className="text-[11px] font-bold text-ink-tertiary uppercase">Observed Category Distribution</span>
-            <div className="space-y-2 pt-1">
-              {catalog.topCategories.map((cat) => (
-                <div key={cat.category} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-ink truncate">{cat.category}</span>
-                    <span className="text-ink-tertiary font-mono">{cat.percentage}% ({cat.count} listings)</span>
-                  </div>
-                  <div className="w-full bg-surface-muted rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-[#0E8F5D] h-full rounded-full"
-                      style={{ width: `${cat.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <BarChart
+              data={categoryChartData}
+              xKey="category"
+              layout="vertical"
+              series={[{ key: "percentage", label: "% of catalog", colorIndex: 0 }]}
+              state={categoryChartState}
+              valueFormatter={(v) => `${v}%`}
+              height={Math.max(120, categoryChartData.length * 32)}
+              accessibleSummary={`Bar chart of ${shopName}'s catalog category distribution.`}
+            />
           </Card>
         </div>
       </div>
@@ -729,6 +977,25 @@ export function ShopDetailClient({
             </Text>
           </div>
         </div>
+
+        {tagItems.length >= 2 && (
+          <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-2">
+            <span className="text-[11px] font-bold text-ink-tertiary uppercase">Top Extracted Tags by Catalog Presence</span>
+            <BarChart
+              data={tagItems.slice(0, 6).map((t) => ({
+                tag: t.tag,
+                percentage: t.percentage,
+              }))}
+              xKey="tag"
+              layout="vertical"
+              yAxisWidth={130}
+              series={[{ key: "percentage", label: "% of listings", colorIndex: 0 }]}
+              valueFormatter={(v) => `${v}%`}
+              height={Math.max(120, Math.min(6, tagItems.length) * 32)}
+              accessibleSummary={`Bar chart of ${shopName}'s top recurring tags by catalog percentage.`}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {tagItems.map((item) => {
@@ -896,40 +1163,6 @@ export function ShopDetailClient({
         </div>
       </Card>
 
-      {/* ==================================================================== */}
-      {/* SECTION 8: STRATEGIC ACTION RECOMMENDATIONS                          */}
-      {/* ==================================================================== */}
-      <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-        <div className="flex items-center gap-2">
-          <Heading as="h2" size="h4">
-            Strategic Reverse-Engineering Recommendations
-          </Heading>
-          <DataProvenanceBadge type="SELLERSALT_SCORE" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-            <div className="font-bold text-ink flex items-center gap-1.5 text-xs">
-              <Sparkles className="h-4 w-4 text-[#FFB020]" /> 1. What to Study & Replicate:
-            </div>
-            <p className="text-ink-secondary leading-relaxed">{verdict.whatToStudy}</p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-            <div className="font-bold text-ink flex items-center gap-1.5 text-xs">
-              <AlertTriangle className="h-4 w-4 text-amber-600" /> 2. What to Avoid:
-            </div>
-            <p className="text-ink-secondary leading-relaxed">{verdict.whatToAvoid}</p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-            <div className="font-bold text-ink flex items-center gap-1.5 text-xs">
-              <Target className="h-4 w-4 text-[#0E8F5D]" /> 3. What to Do Next:
-            </div>
-            <p className="text-ink-secondary leading-relaxed">{verdict.whatToDoNext}</p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

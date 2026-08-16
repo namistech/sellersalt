@@ -1,5 +1,5 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { cn, DataText, Text, Card } from "@/components/ui";
+import { cn, DataText, Text, Eyebrow, Card } from "@/components/ui";
 import { Freshness, type FreshnessProps } from "./Freshness";
 import { Sparkline, type SparklineTone } from "./charts/Sparkline";
 import { deltaTone, formatDelta } from "./format";
@@ -56,14 +56,18 @@ export interface MetricProps {
   freshness?: FreshnessProps;
   unavailable?: boolean;
   estimated?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
+  /** "eyebrow" is for the one featured Metric per section — see
+   * MetricCard's `featured` prop, which sets this automatically. */
+  labelVariant?: "default" | "eyebrow";
   className?: string;
 }
 
-const VALUE_SIZE: Record<NonNullable<MetricProps["size"]>, "data-sm" | "data-md" | "data-lg"> = {
+const VALUE_SIZE: Record<NonNullable<MetricProps["size"]>, "data-sm" | "data-md" | "data-lg" | "data-xl"> = {
   sm: "data-sm",
   md: "data-md",
   lg: "data-lg",
+  xl: "data-xl",
 };
 
 export function Metric({
@@ -79,13 +83,18 @@ export function Metric({
   unavailable,
   estimated,
   size = "md",
+  labelVariant = "default",
   className,
 }: MetricProps) {
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <Text as="span" size="label-md" color="secondary">
-        {label}
-      </Text>
+      {labelVariant === "eyebrow" ? (
+        <Eyebrow tone="accent">{label}</Eyebrow>
+      ) : (
+        <Text as="span" size="label-md" color="secondary">
+          {label}
+        </Text>
+      )}
       <div className="flex items-baseline gap-1">
         {unavailable ? (
           <DataText size={VALUE_SIZE[size]} tone="disabled" aria-label="Unavailable">
@@ -131,12 +140,21 @@ export function Metric({
 
 export interface MetricCardProps extends MetricProps {
   cardClassName?: string;
+  /** The one headline number in a row of MetricCards — Card's "feature"
+   * variant, an eyebrow label, and a bigger value by default. Use on at
+   * most one card per row/section; everything else stays plain so the
+   * featured one actually reads as more important. */
+  featured?: boolean;
 }
 
-export function MetricCard({ cardClassName, ...metricProps }: MetricCardProps) {
+export function MetricCard({ cardClassName, featured, size, labelVariant, ...metricProps }: MetricCardProps) {
   return (
-    <Card padding="md" className={cardClassName}>
-      <Metric {...metricProps} />
+    <Card padding={featured ? "lg" : "md"} variant={featured ? "feature" : "default"} className={cardClassName}>
+      <Metric
+        {...metricProps}
+        size={size ?? (featured ? "xl" : "md")}
+        labelVariant={labelVariant ?? (featured ? "eyebrow" : "default")}
+      />
     </Card>
   );
 }

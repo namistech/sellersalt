@@ -21,6 +21,15 @@ import {
   Lock,
   Tag,
   Zap,
+  Eye,
+  Filter,
+  ArrowRight,
+  UserCheck,
+  UserX,
+  Activity,
+  Fingerprint,
+  Clock,
+  Key,
 } from "lucide-react";
 import {
   Card,
@@ -32,15 +41,39 @@ import {
   Select,
   Alert,
 } from "@/components/ui";
+import { Dialog } from "@/components/ui/Dialog";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 interface AdminMetrics {
   totalUsers: number;
+  verifiedUsers?: number;
+  unverifiedUsers?: number;
+  suspendedUsers?: number;
+  recentSignups7d?: number;
   totalOrgs: number;
   activeSubscriptions: number;
   connectedEtsyShops: number;
   totalProspects: number;
   totalSearchConfigs: number;
   estimatedMrr: number;
+}
+
+interface AuditLogEntry {
+  id: string;
+  event: string;
+  actorEmail: string | null;
+  targetEmail: string | null;
+  createdAt: string;
+  metadata?: Record<string, any> | null;
+}
+
+interface UnverifiedUserSummary {
+  id: string;
+  name: string | null;
+  email: string;
+  createdAt: string;
+  verificationEmailCount: number;
+  lastVerificationEmailAt: string | null;
 }
 
 // Exact credential field names each provider's client reads —
@@ -80,6 +113,7 @@ interface AdminUserRow {
   id: string;
   name: string | null;
   email: string;
+  avatarUrl?: string | null;
   role: string;
   membershipId: string | null;
   organizationId: string | null;
@@ -89,6 +123,8 @@ interface AdminUserRow {
   memberSince: string;
   suspended: boolean;
   emailVerified: boolean;
+  verificationEmailCount?: number;
+  lastVerificationEmailAt?: string | null;
   authMethods: string[];
   lastLoginAt: string | null;
   etsyConnected: boolean;
@@ -118,6 +154,7 @@ interface OrgRow {
   createdAt: string;
   package: Package | null;
   subscription: { status: string; provider: string } | null;
+  membersCount?: number;
   usage: { connectors: number; searchConfigs: number; prospects: number; trackedShops: number };
 }
 
@@ -195,12 +232,23 @@ export function AdminPackagesClient() {
   >("overview");
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [needsAttentionUnverified, setNeedsAttentionUnverified] = useState<UnverifiedUserSummary[]>([]);
+
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [userSearch, setUserSearch] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState<"all" | "verified" | "unverified" | "suspended">("all");
   const [usersLoading, setUsersLoading] = useState(false);
+
+  // User Detail modal state
+  const [selectedUserDetailId, setSelectedUserDetailId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<any | null>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
   const [packages, setPackages] = useState<Package[]>([]);
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const [orgSearch, setOrgSearch] = useState("");
   const [coupons, setCoupons] = useState<CouponRow[]>([]);
   const [paymentProviders, setPaymentProviders] = useState<PaymentProviderRow[]>([]);
   const [aiProviders, setAiProviders] = useState<AiProviderRow[]>([]);
@@ -234,6 +282,18 @@ export function AdminPackagesClient() {
   // User row actions
   const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
   const [userActionError, setUserActionError] = useState<string | null>(null);
+
+  // Admin User Creation modal state
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [createUserName, setCreateUserName] = useState("");
+  const [createUserEmail, setCreateUserEmail] = useState("");
+  const [createUserPassword, setCreateUserPassword] = useState("");
+  const [createUserOrgName, setCreateUserOrgName] = useState("");
+  const [createUserRole, setCreateUserRole] = useState<"OWNER" | "ADMIN" | "MEMBER">("OWNER");
+  const [createUserSendVerification, setCreateUserSendVerification] = useState(true);
+  const [createUserLoading, setCreateUserLoading] = useState(false);
+  const [createUserError, setCreateUserError] = useState<string | null>(null);
+  const [createUserSuccess, setCreateUserSuccess] = useState<string | null>(null);
 
   // Org row actions
   const [orgActionLoading, setOrgActionLoading] = useState<string | null>(null);
@@ -295,6 +355,9 @@ export function AdminPackagesClient() {
       ]);
 
       if (mData.metrics) setMetrics(mData.metrics);
+      if (mData.recentAuditLogs) setRecentAuditLogs(mData.recentAuditLogs);
+      if (mData.needsAttention?.unverifiedUsers) setNeedsAttentionUnverified(mData.needsAttention.unverifiedUsers);
+
       if (pData.packages) setPackages(pData.packages);
       if (oData.organizations) setOrgs(oData.organizations);
       if (cData.coupons) setCoupons(cData.coupons);
@@ -319,14 +382,35 @@ export function AdminPackagesClient() {
     }
   }
 
-  async function searchUsers(q: string) {
+  async function searchUsers(q: string, status?: string) {
     setUsersLoading(true);
+    const filter = status !== undefined ? status : userStatusFilter;
     try {
-      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/admin/users?search=${encodeURIComponent(q)}&status=${encodeURIComponent(filter)}`);
       const data = await res.json();
       setUsers(data.users || []);
     } finally {
       setUsersLoading(false);
+    }
+  }
+
+  async function openUserDetail(userId: string) {
+    setSelectedUserDetailId(userId);
+    setUserDetailLoading(true);
+    setUserDetailError(null);
+    setUserDetail(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setUserDetailError(data.error || "Failed to load user details.");
+        return;
+      }
+      setUserDetail(data.user);
+    } catch {
+      setUserDetailError("Network error loading user details.");
+    } finally {
+      setUserDetailLoading(false);
     }
   }
 
@@ -373,6 +457,56 @@ export function AdminPackagesClient() {
       setUserActionError("Network error.");
     } finally {
       setUserActionLoading(null);
+    }
+  }
+
+  async function handleCreateUser(e: React.FormEvent) {
+    e.preventDefault();
+    setCreateUserError(null);
+    setCreateUserSuccess(null);
+
+    const strength = checkPasswordStrength(createUserPassword);
+    if (!strength.valid) {
+      setCreateUserError(`Password must include: ${strength.errors.join(", ")}.`);
+      return;
+    }
+
+    setCreateUserLoading(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createUserName.trim() || undefined,
+          email: createUserEmail.trim(),
+          password: createUserPassword,
+          organizationName: createUserOrgName.trim() || undefined,
+          role: createUserRole,
+          sendVerificationEmail: createUserSendVerification,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCreateUserError(data.error || "Failed to create user.");
+        return;
+      }
+      setCreateUserSuccess(
+        `User ${data.user.email} created successfully${data.user.verificationSent ? " and verification email sent." : "."}`
+      );
+      setCreateUserName("");
+      setCreateUserEmail("");
+      setCreateUserPassword("");
+      setCreateUserOrgName("");
+      setCreateUserRole("OWNER");
+      searchUsers(userSearch);
+      setTimeout(() => {
+        setShowCreateUserModal(false);
+        setCreateUserSuccess(null);
+      }, 1500);
+    } catch {
+      setCreateUserError("Network error creating user.");
+    } finally {
+      setCreateUserLoading(false);
     }
   }
 
@@ -826,24 +960,48 @@ export function AdminPackagesClient() {
 
   const selectedTemplate = emailTemplates.find((t) => t.key === selectedTemplateKey) || emailTemplates[0];
 
+  const filteredOrgs = orgs.filter((o) => {
+    if (!orgSearch.trim()) return true;
+    const q = orgSearch.toLowerCase();
+    return o.name.toLowerCase().includes(q) || (o.ownerEmail && o.ownerEmail.toLowerCase().includes(q));
+  });
+
   return (
     <div className="space-y-8 pb-16">
       {/* Header */}
-      <div>
-        <Heading as="h1" size="h2">
-          Admin Management Console
-        </Heading>
-        <Text size="body-md" color="secondary" className="mt-1">
-          Executive metrics, multi-tenant user management, subscriptions, official payment connectors, and system branding.
-        </Text>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Heading as="h1" size="h2">
+              Admin Operations Console
+            </Heading>
+            <Badge variant="neutral" className="bg-[#141B16] text-white border-[#2A362D] text-[10px] uppercase font-bold tracking-wider">
+              Internal Surface
+            </Badge>
+          </div>
+          <Text size="body-md" color="secondary" className="mt-1">
+            Real-time platform telemetry, multi-tenant workspace management, user security, and operations command.
+          </Text>
+        </div>
+        <Button
+          variant="secondary"
+          size="compact"
+          onClick={() => {
+            loadAll();
+            searchUsers(userSearch);
+          }}
+          className="self-start sm:self-auto text-xs"
+        >
+          <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh Telemetry
+        </Button>
       </div>
 
-      {/* Tabs */}
+      {/* Navigation Tabs */}
       <div className="flex overflow-x-auto gap-2 border-b border-line pb-2">
         {[
-          { id: "overview", label: "Executive Overview" },
-          { id: "users", label: "Users Directory" },
-          { id: "orgs", label: "Workspaces" },
+          { id: "overview", label: "Operations Overview" },
+          { id: "users", label: `Users (${users.length})` },
+          { id: "orgs", label: `Workspaces (${orgs.length})` },
           { id: "packages", label: "Packages & Plans" },
           { id: "coupons", label: "Coupons" },
           { id: "payments", label: "Payment Gateways" },
@@ -857,7 +1015,7 @@ export function AdminPackagesClient() {
             onClick={() => setActiveTab(t.id as any)}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
               activeTab === t.id
-                ? "bg-[#141B16] text-white"
+                ? "bg-[#141B16] text-white shadow-xs"
                 : "bg-white hover:bg-[#F4F3EF] text-ink border border-line"
             }`}
           >
@@ -866,305 +1024,936 @@ export function AdminPackagesClient() {
         ))}
       </div>
 
-      {/* 1. EXECUTIVE OVERVIEW */}
+      {/* 1. OPERATIONS OVERVIEW */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* Level 1 — Needs Attention / Operations Banner */}
+          <div className="rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 shadow-md">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-[#0E8F5D] animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
+                    Operations Command Center
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold tracking-tight text-white">
+                  {needsAttentionUnverified.length > 0
+                    ? `${needsAttentionUnverified.length} Account${needsAttentionUnverified.length === 1 ? "" : "s"} Require Verification Action`
+                    : "All Platform Accounts Operational"}
+                </h2>
+                <p className="text-xs text-[#9EAA9F] leading-relaxed">
+                  {needsAttentionUnverified.length > 0
+                    ? "New accounts have been created and are awaiting email confirmation to unlock complete workspace features."
+                    : "Zero pending verification alerts. All tenant workspaces and account security checks are healthy."}
+                </p>
+              </div>
+
+              {needsAttentionUnverified.length > 0 ? (
+                <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl p-3.5 space-y-2.5 min-w-[280px]">
+                  <div className="text-[11px] font-semibold text-[#9EAA9F] uppercase tracking-wider">
+                    Pending Unverified Users
+                  </div>
+                  <div className="space-y-2 max-h-36 overflow-y-auto">
+                    {needsAttentionUnverified.slice(0, 3).map((u) => (
+                      <div
+                        key={u.id}
+                        className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#141B16] border border-[#2A362D] text-xs"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-semibold text-white truncate">{u.email}</div>
+                          <div className="text-[10px] text-[#9EAA9F]">
+                            Sent {u.verificationEmailCount}/3 · {new Date(u.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          size="compact"
+                          loading={userActionLoading === u.id}
+                          onClick={() => handleSendVerification(u.id)}
+                          className="text-[10px] !py-1 !px-2 bg-white text-ink hover:bg-[#F4F3EF] shrink-0"
+                        >
+                          Resend
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  {needsAttentionUnverified.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("users");
+                        setUserStatusFilter("unverified");
+                        searchUsers("", "unverified");
+                      }}
+                      className="text-[11px] text-[#0E8F5D] hover:underline font-semibold block text-center w-full pt-1"
+                    >
+                      View all {needsAttentionUnverified.length} unverified users →
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-[#0E8F5D]/20 text-[#0E8F5D] flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Platform Health: 100%</div>
+                    <div className="text-[11px] text-[#9EAA9F]">All accounts verified</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Level 2 — Platform Snapshot */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card padding="md" className="border-line bg-white shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
+            {/* Total Accounts */}
+            <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+                <span>Total Accounts</span>
+                <Users className="h-4 w-4 text-[#0E8F5D]" />
+              </div>
+              <div className="text-2xl font-extrabold text-ink font-mono">
+                {metrics?.totalUsers ?? 0}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#E7FAF1] text-[#0E8F5D]">
+                  {metrics?.verifiedUsers ?? 0} Verified
+                </span>
+                {(metrics?.unverifiedUsers ?? 0) > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#FFF8E6] text-[#B87D00]">
+                    {metrics?.unverifiedUsers ?? 0} Unverified
+                  </span>
+                )}
+                {(metrics?.recentSignups7d ?? 0) > 0 && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#F4F3EF] text-ink-secondary">
+                    +{metrics?.recentSignups7d} 7d
+                  </span>
+                )}
+              </div>
+            </Card>
+
+            {/* Workspaces */}
+            <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+                <span>Tenant Workspaces</span>
+                <Building className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="text-2xl font-extrabold text-ink font-mono">
+                {metrics?.totalOrgs ?? 0}
+              </div>
+              <div className="text-[11px] text-ink-secondary">
+                {metrics?.totalUsers && metrics.totalOrgs
+                  ? `~${(metrics.totalUsers / metrics.totalOrgs).toFixed(1)} users / workspace`
+                  : "Multi-tenant workspace isolation"}
+              </div>
+            </Card>
+
+            {/* Subscriptions & MRR */}
+            <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
                 <span>Estimated MRR</span>
                 <DollarSign className="h-4 w-4 text-[#0E8F5D]" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono">
                 ${metrics?.estimatedMrr?.toLocaleString() ?? 0}
               </div>
-              <div className="text-[11px] text-ink-secondary mt-1">
+              <div className="text-[11px] text-ink-secondary">
                 From {metrics?.activeSubscriptions ?? 0} active subscriptions
               </div>
             </Card>
 
-            <Card padding="md" className="border-line bg-white shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
-                <span>Total Users</span>
-                <Users className="h-4 w-4 text-blue-600" />
+            {/* Connected Etsy Shops */}
+            <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+                <span>Connected Etsy Stores</span>
+                <Store className="h-4 w-4 text-purple-600" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono">
-                {metrics?.totalUsers ?? 0}
-              </div>
-              <div className="text-[11px] text-ink-secondary mt-1">
-                Across {metrics?.totalOrgs ?? 0} workspaces
-              </div>
-            </Card>
-
-            <Card padding="md" className="border-line bg-white shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
-                <span>Connected Etsy Shops</span>
-                <Store className="h-4 w-4 text-[#0E8F5D]" />
-              </div>
-              <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono">
                 {metrics?.connectedEtsyShops ?? 0}
               </div>
-              <div className="text-[11px] text-ink-secondary mt-1">
-                Live OAuth seller authorizations
-              </div>
-            </Card>
-
-            <Card padding="md" className="border-line bg-white shadow-xs">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase mb-1">
-                <span>Scraped Prospects</span>
-                <Flame className="h-4 w-4 text-[#FFB020]" />
-              </div>
-              <div className="text-2xl font-extrabold text-ink font-mono">
-                {metrics?.totalProspects?.toLocaleString() ?? 0}
-              </div>
-              <div className="text-[11px] text-ink-secondary mt-1">
-                Across {metrics?.totalSearchConfigs ?? 0} active streams
+              <div className="text-[11px] text-ink-secondary">
+                Active Etsy OAuth seller authorizations
               </div>
             </Card>
           </div>
+
+          {/* Level 3 — Recent Platform Activity (Audit Log) */}
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Heading as="h2" size="h4" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-[#0E8F5D]" /> Recent Platform Activity & Audit Trail
+                </Heading>
+                <Text size="body-sm" color="secondary" className="mt-0.5">
+                  Chronological log of administrative actions, user creation, and security verifications.
+                </Text>
+              </div>
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={loadAll}
+                className="text-xs"
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+              </Button>
+            </div>
+
+            {recentAuditLogs.length > 0 ? (
+              <div className="overflow-x-auto border border-line rounded-lg">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                    <tr>
+                      <th className="p-3">Event</th>
+                      <th className="p-3">Actor</th>
+                      <th className="p-3">Target</th>
+                      <th className="p-3">Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line-subtle">
+                    {recentAuditLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-[#FAFAF8]">
+                        <td className="p-3 font-semibold text-ink">
+                          <Badge
+                            variant={
+                              log.event.includes("VERIFIED")
+                                ? "success"
+                                : log.event.includes("ADMIN")
+                                ? "neutral"
+                                : "neutral"
+                            }
+                          >
+                            {log.event}
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-ink-secondary">{log.actorEmail || "System / User"}</td>
+                        <td className="p-3 text-ink-secondary">{log.targetEmail || "—"}</td>
+                        <td className="p-3 text-ink-tertiary">{new Date(log.createdAt).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 text-center border border-dashed border-line rounded-lg text-ink-secondary text-xs">
+                No recent administrative activity recorded yet.
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
       {/* 2. USERS DIRECTORY */}
       {activeTab === "users" && (
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <Heading as="h2" size="h4">
                 User Management Directory
               </Heading>
               <Text size="body-sm" color="secondary" className="mt-0.5">
-                Search all registered accounts across all tenant workspaces.
+                Inspect accounts, manage workspace roles, send verification emails, or inspect security credentials.
               </Text>
             </div>
-            <div className="w-full sm:w-64">
-              <Input
-                placeholder="Search name or email..."
-                value={userSearch}
-                onChange={(e) => {
-                  setUserSearch(e.target.value);
-                  searchUsers(e.target.value);
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Status Filter Tabs */}
+              <div className="inline-flex rounded-lg border border-line p-0.5 bg-[#FAFAF8] text-xs">
+                {(["all", "verified", "unverified", "suspended"] as const).map((filterKey) => (
+                  <button
+                    key={filterKey}
+                    type="button"
+                    onClick={() => {
+                      setUserStatusFilter(filterKey);
+                      searchUsers(userSearch, filterKey);
+                    }}
+                    className={`px-2.5 py-1 rounded-md capitalize font-semibold transition-colors ${
+                      userStatusFilter === filterKey
+                        ? "bg-white text-ink shadow-2xs"
+                        : "text-ink-secondary hover:text-ink"
+                    }`}
+                  >
+                    {filterKey}
+                  </button>
+                ))}
+              </div>
+
+              <div className="w-full sm:w-56">
+                <Input
+                  placeholder="Search name or email..."
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    searchUsers(e.target.value);
+                  }}
+                  className="text-xs"
+                />
+              </div>
+
+              <Button
+                variant="primary"
+                size="compact"
+                onClick={() => {
+                  setShowCreateUserModal(true);
+                  setCreateUserError(null);
+                  setCreateUserSuccess(null);
                 }}
-                className="text-xs"
-              />
+                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold shrink-0 text-white"
+              >
+                + Create User
+              </Button>
             </div>
           </div>
 
           {userActionError && <Alert variant="danger">{userActionError}</Alert>}
 
-          <div className="overflow-x-auto border border-line rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
-                <tr>
-                  <th className="p-3">User</th>
-                  <th className="p-3">Role</th>
-                  <th className="p-3">Workspace</th>
-                  <th className="p-3">Plan</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Verification</th>
-                  <th className="p-3">Signed Up</th>
-                  <th className="p-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-subtle">
-                {users.map((u) => (
-                  <tr key={u.id} className={`hover:bg-[#FAFAF8] ${u.suspended ? "opacity-60" : ""}`}>
-                    <td className="p-3">
-                      <div className="font-bold text-ink">{u.name || "—"}</div>
-                      <div className="text-ink-tertiary">{u.email}</div>
-                      {u.suspended && <Badge variant="danger" className="mt-1">Suspended</Badge>}
-                    </td>
-                    <td className="p-3">
-                      <select
-                        value={u.role}
-                        disabled={!u.membershipId || userActionLoading === u.id}
-                        onChange={(e) => handleUserAction(u.id, { role: e.target.value })}
-                        className="font-mono text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50"
-                      >
-                        <option value="OWNER">OWNER</option>
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="MEMBER">MEMBER</option>
-                      </select>
-                    </td>
-                    <td className="p-3 font-medium text-ink">{u.organizationName}</td>
-                    <td className="p-3">
-                      <select
-                        value={packages.find((p) => p.name === u.planName)?.id ?? ""}
-                        disabled={!u.organizationId || userActionLoading === u.id}
-                        onChange={(e) => e.target.value && handleUserAction(u.id, { packageId: e.target.value })}
-                        className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
-                      >
-                        <option value="" disabled>{u.planName}</option>
-                        {packages.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "TRIALING" ? "success" : "warning"}>
-                        {u.subscriptionStatus}
-                      </Badge>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-col gap-1">
-                        {u.emailVerified ? (
+          {users.length > 0 ? (
+            <div className="overflow-x-auto border border-line rounded-lg">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                  <tr>
+                    <th className="p-3">User & Contact</th>
+                    <th className="p-3">Verification</th>
+                    <th className="p-3">Workspace & Role</th>
+                    <th className="p-3">Plan</th>
+                    <th className="p-3">Security & Auth</th>
+                    <th className="p-3">Joined</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-subtle">
+                  {users.map((u) => {
+                    const initials = (u.name || u.email || "U").substring(0, 2).toUpperCase();
+                    return (
+                      <tr key={u.id} className={`hover:bg-[#FAFAF8] ${u.suspended ? "bg-red-50/20" : ""}`}>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2.5">
+                            {u.avatarUrl ? (
+                              <img
+                                src={u.avatarUrl}
+                                alt={u.name || u.email}
+                                className="h-8 w-8 rounded-lg object-cover border border-line shrink-0"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-lg bg-[#141B16] text-[#0E8F5D] flex items-center justify-center font-bold text-xs shrink-0">
+                                {initials}
+                              </div>
+                            )}
+                            <div>
+                              <div className="font-bold text-ink flex items-center gap-1.5">
+                                {u.name || "—"}
+                                {u.suspended && <Badge variant="danger">Suspended</Badge>}
+                              </div>
+                              <div className="text-ink-tertiary text-[11px]">{u.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          {u.emailVerified ? (
+                            <Badge variant="success">✓ Verified</Badge>
+                          ) : (
+                            <div className="flex flex-col gap-0.5">
+                              <Badge variant="warning">⚠ Unverified</Badge>
+                              <span className="text-[10px] text-ink-tertiary">
+                                Sent {u.verificationEmailCount ?? 0}/3
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <div className="font-medium text-ink">{u.organizationName}</div>
+                          <select
+                            value={u.role}
+                            disabled={!u.membershipId || userActionLoading === u.id}
+                            onChange={(e) => handleUserAction(u.id, { role: e.target.value })}
+                            className="font-mono text-[10px] border border-line rounded px-1.5 py-0.5 bg-white disabled:opacity-50 mt-1"
+                          >
+                            <option value="OWNER">OWNER</option>
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="MEMBER">MEMBER</option>
+                          </select>
+                        </td>
+                        <td className="p-3">
+                          <select
+                            value={packages.find((p) => p.name === u.planName)?.id ?? ""}
+                            disabled={!u.organizationId || userActionLoading === u.id}
+                            onChange={(e) => e.target.value && handleUserAction(u.id, { packageId: e.target.value })}
+                            className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
+                          >
+                            <option value="" disabled>{u.planName}</option>
+                            {packages.map((p) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <div className="mt-1">
+                            <Badge variant={u.subscriptionStatus === "ACTIVE" || u.subscriptionStatus === "TRIALING" ? "success" : "warning"}>
+                              {u.subscriptionStatus}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col gap-0.5 text-[11px]">
+                            <span className="text-ink-secondary capitalize">
+                              {u.authMethods.length ? u.authMethods.join(", ") : "Password"}
+                            </span>
+                            <span className="text-[10px] text-ink-tertiary">
+                              Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
+                            </span>
+                            {u.etsyConnected && (
+                              <span className="text-[10px] text-[#0E8F5D] font-semibold">Etsy store connected</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
+                        <td className="p-3 text-right">
+                          <div className="flex flex-wrap items-center justify-end gap-1.5">
+                            <Button
+                              variant="secondary"
+                              size="compact"
+                              onClick={() => openUserDetail(u.id)}
+                              className="text-[11px]"
+                              title="Inspect full user profile and security dossier"
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> Inspect
+                            </Button>
+                            {!u.emailVerified && (
+                              <Button
+                                variant="secondary"
+                                size="compact"
+                                loading={userActionLoading === u.id}
+                                onClick={() => handleSendVerification(u.id)}
+                                className="text-[11px]"
+                              >
+                                Send Verify
+                              </Button>
+                            )}
+                            <Button
+                              variant="secondary"
+                              size="compact"
+                              loading={userActionLoading === u.id}
+                              onClick={() => handleChangeEmail(u.id, u.email)}
+                              className="text-[11px]"
+                            >
+                              Email
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="compact"
+                              loading={userActionLoading === u.id}
+                              onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
+                              className={`text-[11px] ${u.suspended ? "text-[#0E8F5D]" : "text-amber-700"}`}
+                            >
+                              {u.suspended ? "Unsuspend" : "Suspend"}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="compact"
+                              loading={userActionLoading === u.id}
+                              onClick={() => handleDeleteUser(u.id, u.email)}
+                              className="text-[11px]"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-10 text-center border border-dashed border-line rounded-lg space-y-3">
+              <Users className="h-8 w-8 text-ink-tertiary mx-auto" />
+              <div className="text-sm font-semibold text-ink">
+                No users found matching your search or filter
+              </div>
+              <p className="text-xs text-ink-secondary max-w-sm mx-auto">
+                Try resetting your search query or switching from &quot;{userStatusFilter}&quot; to &quot;all&quot;.
+              </p>
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={() => {
+                  setUserSearch("");
+                  setUserStatusFilter("all");
+                  searchUsers("", "all");
+                }}
+                className="text-xs"
+              >
+                Reset Search & Filters
+              </Button>
+            </div>
+          )}
+
+          {/* Manually Create User Dialog */}
+          <Dialog
+            open={showCreateUserModal}
+            onClose={() => setShowCreateUserModal(false)}
+            title="Create New User Account"
+            description="Manually provision a tenant workspace and user account. Follows standard security policies."
+          >
+            <form onSubmit={handleCreateUser} className="space-y-4 pt-1">
+              {createUserSuccess && <Alert variant="success">{createUserSuccess}</Alert>}
+              {createUserError && <Alert variant="danger">{createUserError}</Alert>}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Full Name"
+                  placeholder="e.g. Sarah Connor"
+                  value={createUserName}
+                  onChange={(e) => setCreateUserName(e.target.value)}
+                />
+                <Input
+                  label="Email Address"
+                  type="email"
+                  required
+                  placeholder="sarah@example.com"
+                  value={createUserEmail}
+                  onChange={(e) => setCreateUserEmail(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="Initial Password"
+                  type="password"
+                  required
+                  placeholder="••••••••••••"
+                  value={createUserPassword}
+                  onChange={(e) => setCreateUserPassword(e.target.value)}
+                />
+                <p className="text-[11px] text-ink-tertiary mt-1">
+                  Use at least 8 characters, including an uppercase letter, a number, and a symbol.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Workspace Name"
+                  placeholder="Defaults to Name's Workspace"
+                  value={createUserOrgName}
+                  onChange={(e) => setCreateUserOrgName(e.target.value)}
+                />
+                <div>
+                  <label className="text-xs font-semibold text-ink block mb-1">
+                    Workspace Role
+                  </label>
+                  <select
+                    value={createUserRole}
+                    onChange={(e) => setCreateUserRole(e.target.value as any)}
+                    className="w-full h-9 rounded-lg border border-line bg-white px-3 text-xs text-ink focus:outline-hidden"
+                  >
+                    <option value="OWNER">OWNER (Full control)</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="MEMBER">MEMBER</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="sendVerification"
+                  checked={createUserSendVerification}
+                  onChange={(e) => setCreateUserSendVerification(e.target.checked)}
+                  className="rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D] h-4 w-4"
+                />
+                <label htmlFor="sendVerification" className="text-xs text-ink-secondary">
+                  Send verification email immediately to user
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line-subtle">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="compact"
+                  onClick={() => setShowCreateUserModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="compact"
+                  loading={createUserLoading}
+                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white"
+                >
+                  Create User
+                </Button>
+              </div>
+            </form>
+          </Dialog>
+
+          {/* User Detail & Dossier Modal (Task 4) */}
+          <Dialog
+            open={Boolean(selectedUserDetailId)}
+            onClose={() => {
+              setSelectedUserDetailId(null);
+              setUserDetail(null);
+            }}
+            title="User Account & Security Dossier"
+            description="Complete operational inspection of identity, tenancy, security credentials, and audit logs."
+            size="lg"
+          >
+            {userDetailLoading ? (
+              <div className="p-8 text-center text-xs text-ink-secondary">
+                <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-[#0E8F5D]" />
+                Loading user dossier...
+              </div>
+            ) : userDetailError ? (
+              <Alert variant="danger">{userDetailError}</Alert>
+            ) : userDetail ? (
+              <div className="space-y-6 pt-2 max-h-[75vh] overflow-y-auto pr-1">
+                {/* Header Identity */}
+                <div className="flex items-start justify-between p-4 rounded-xl bg-[#FAFAF8] border border-line">
+                  <div className="flex items-center gap-3.5">
+                    {userDetail.avatarUrl ? (
+                      <img
+                        src={userDetail.avatarUrl}
+                        alt={userDetail.name || userDetail.email}
+                        className="h-14 w-14 rounded-xl object-cover border border-line"
+                      />
+                    ) : (
+                      <div className="h-14 w-14 rounded-xl bg-[#141B16] text-[#0E8F5D] flex items-center justify-center font-bold text-lg">
+                        {(userDetail.name || userDetail.email || "U").substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-base font-bold text-ink flex items-center gap-2">
+                        {userDetail.name || "SellerSalt User"}
+                        {userDetail.suspended && <Badge variant="danger">Suspended</Badge>}
+                        {userDetail.emailVerified ? (
                           <Badge variant="success">✓ Verified</Badge>
                         ) : (
                           <Badge variant="warning">⚠ Unverified</Badge>
                         )}
-                        <span className="text-[10px] text-ink-tertiary">
-                          {u.authMethods.length ? u.authMethods.join(", ") : "credentials"}
-                        </span>
-                        <span className="text-[10px] text-ink-tertiary">
-                          Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
-                        </span>
-                        {u.etsyConnected && (
-                          <span className="text-[10px] text-[#0E8F5D] font-semibold">Etsy connected</span>
-                        )}
                       </div>
-                    </td>
-                    <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
-                    <td className="p-3 text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-1.5">
-                        {!u.emailVerified && (
-                          <Button
-                            variant="secondary"
-                            size="compact"
-                            loading={userActionLoading === u.id}
-                            onClick={() => handleSendVerification(u.id)}
-                            className="text-[11px]"
-                          >
-                            Send verification
-                          </Button>
-                        )}
-                        <Button
-                          variant="secondary"
-                          size="compact"
-                          loading={userActionLoading === u.id}
-                          onClick={() => handleChangeEmail(u.id, u.email)}
-                          className="text-[11px]"
-                        >
-                          Change email
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="compact"
-                          loading={userActionLoading === u.id}
-                          onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
-                          className="text-[11px]"
-                        >
-                          {u.suspended ? "Unsuspend" : "Suspend"}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="compact"
-                          loading={userActionLoading === u.id}
-                          onClick={() => handleDeleteUser(u.id, u.email)}
-                          className="text-[11px]"
-                        >
-                          Delete
-                        </Button>
+                      <div className="text-xs text-ink-secondary">{userDetail.email}</div>
+                      <div className="text-[11px] text-ink-tertiary mt-1">
+                        Member since {new Date(userDetail.createdAt).toLocaleDateString()} · Account ID: {userDetail.id}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workspace Tenancy */}
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Workspace Tenancy ({userDetail.memberships?.length || 0})
+                  </div>
+                  {userDetail.memberships?.map((m: any) => (
+                    <div key={m.id} className="p-3.5 rounded-xl border border-line bg-white space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-ink">{m.organization?.name}</div>
+                        <Badge variant="neutral">{m.role}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-ink-secondary pt-1 border-t border-line-subtle">
+                        <div>
+                          <span className="text-ink-tertiary block">Plan Tier:</span>
+                          <span className="font-semibold text-ink">{m.organization?.package?.name || "Started"}</span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary block">Subscription:</span>
+                          <span className="font-semibold text-ink">{m.organization?.subscription?.status || "INCOMPLETE"}</span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary block">Connected Store:</span>
+                          <span className="font-semibold text-ink">
+                            {m.organization?.sellerChannels?.[0]?.status === "ACTIVE" ? "✓ Etsy Active" : "None"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-ink-tertiary block">Hunting Usage:</span>
+                          <span className="font-semibold text-ink">
+                            {m.organization?.usage?.prospects ?? 0} prospects
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sign-In Security & Passkeys */}
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Sign-In Security & Passkeys
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-line bg-white space-y-3 text-xs">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-ink-secondary">Sign-in methods used:</span>
+                      <span className="font-semibold text-ink capitalize">
+                        {userDetail.authMethods?.length ? userDetail.authMethods.join(", ") : "Password credentials"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-ink-secondary">Last login timestamp:</span>
+                      <span className="font-semibold text-ink">
+                        {userDetail.lastLoginAt ? new Date(userDetail.lastLoginAt).toLocaleString() : "Never recorded"}
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-line-subtle">
+                      <div className="text-[11px] font-semibold text-ink mb-1.5">
+                        Registered Passkey Hardware / Biometrics ({userDetail.passkeys?.length || 0})
+                      </div>
+                      {userDetail.passkeys && userDetail.passkeys.length > 0 ? (
+                        <div className="space-y-1.5">
+                          {userDetail.passkeys.map((pk: any) => (
+                            <div key={pk.id} className="p-2 rounded-lg bg-[#FAFAF8] border border-line text-[11px] flex items-center justify-between">
+                              <span className="font-semibold text-ink">{pk.name || "Device Passkey"}</span>
+                              <span className="text-ink-tertiary">
+                                Added {new Date(pk.createdAt).toLocaleDateString()}
+                                {pk.lastUsedAt ? ` · Last used ${new Date(pk.lastUsedAt).toLocaleDateString()}` : ""}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-ink-tertiary">No passkeys registered on this account.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Verification Lifecycle */}
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Verification History
+                  </div>
+                  <div className="p-3.5 rounded-xl border border-line bg-white grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-ink-tertiary text-[11px] block">Status:</span>
+                      <span className="font-semibold text-ink">
+                        {userDetail.emailVerified ? "✓ Verified" : "⚠ Pending Confirmation"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-ink-tertiary text-[11px] block">Emails Sent:</span>
+                      <span className="font-semibold text-ink">
+                        {userDetail.verificationEmailCount ?? 0} of 3 maximum / 24h
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-ink-tertiary text-[11px] block">Last Email Sent:</span>
+                      <span className="font-semibold text-ink">
+                        {userDetail.lastVerificationEmailAt
+                          ? new Date(userDetail.lastVerificationEmailAt).toLocaleString()
+                          : "Never"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Audit History */}
+                {userDetail.recentAuditLogs && userDetail.recentAuditLogs.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-bold text-ink uppercase tracking-wider">
+                      Audit Trail for User
+                    </div>
+                    <div className="overflow-x-auto border border-line rounded-lg">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary">
+                          <tr>
+                            <th className="p-2">Event</th>
+                            <th className="p-2">Actor</th>
+                            <th className="p-2">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line-subtle text-[11px]">
+                          {userDetail.recentAuditLogs.map((log: any) => (
+                            <tr key={log.id}>
+                              <td className="p-2 font-semibold text-ink">{log.event}</td>
+                              <td className="p-2 text-ink-secondary">{log.actorEmail || "System"}</td>
+                              <td className="p-2 text-ink-tertiary">{new Date(log.createdAt).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions Footer */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line">
+                  <div className="flex items-center gap-2">
+                    {!userDetail.emailVerified && (
+                      <Button
+                        variant="secondary"
+                        size="compact"
+                        loading={userActionLoading === userDetail.id}
+                        onClick={async () => {
+                          await handleSendVerification(userDetail.id);
+                          openUserDetail(userDetail.id);
+                        }}
+                        className="text-xs"
+                      >
+                        Resend Verification Email
+                      </Button>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={userActionLoading === userDetail.id}
+                      onClick={async () => {
+                        await handleUserAction(userDetail.id, { suspended: !userDetail.suspended });
+                        openUserDetail(userDetail.id);
+                      }}
+                      className="text-xs"
+                    >
+                      {userDetail.suspended ? "Unsuspend User" : "Suspend User"}
+                    </Button>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="compact"
+                    onClick={() => {
+                      setSelectedUserDetailId(null);
+                      setUserDetail(null);
+                    }}
+                    className="text-xs"
+                  >
+                    Close Dossier
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </Dialog>
         </Card>
       )}
 
       {/* 3. WORKSPACES */}
       {activeTab === "orgs" && (
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-          <Heading as="h2" size="h4">
-            Tenant Workspaces ({orgs.length})
-          </Heading>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <Heading as="h2" size="h4">
+                Tenant Workspaces ({orgs.length})
+              </Heading>
+              <Text size="body-sm" color="secondary" className="mt-0.5">
+                Overview of all multi-tenant organizations, subscribed plan tiers, and platform load.
+              </Text>
+            </div>
+            <div className="w-full sm:w-64">
+              <Input
+                placeholder="Search workspace or owner..."
+                value={orgSearch}
+                onChange={(e) => setOrgSearch(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+          </div>
+
           {orgActionError && <Alert variant="danger">{orgActionError}</Alert>}
-          <div className="overflow-x-auto border border-line rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
-                <tr>
-                  <th className="p-3">Workspace</th>
-                  <th className="p-3">Owner</th>
-                  <th className="p-3">Plan</th>
-                  <th className="p-3">Subscription</th>
-                  <th className="p-3">Usage</th>
-                  <th className="p-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-subtle">
-                {orgs.map((o) => (
-                  <tr key={o.id} className="hover:bg-[#FAFAF8]">
-                    <td className="p-3 font-bold text-ink">{o.name}</td>
-                    <td className="p-3 text-ink-secondary">{o.ownerEmail || "—"}</td>
-                    <td className="p-3">
-                      <select
-                        value={o.package?.id ?? ""}
-                        disabled={orgActionLoading === o.id}
-                        onChange={(e) => e.target.value && handleOrgAction(o.id, "PATCH", { packageId: e.target.value })}
-                        className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
-                      >
-                        <option value="" disabled>{o.package?.name ?? "Started"}</option>
-                        {packages.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant={o.subscription?.status === "ACTIVE" ? "success" : "neutral"}>
-                        {o.subscription?.status ?? "INCOMPLETE"}
-                      </Badge>
-                    </td>
-                    <td className="p-3 font-mono text-[11px] text-ink-tertiary">
-                      {o.usage?.prospects ?? 0} prospects · {o.usage?.searchConfigs ?? 0} streams
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="secondary"
-                          size="compact"
-                          loading={orgActionLoading === o.id}
-                          onClick={() =>
-                            o.package?.id &&
-                            handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "TRIALING" }, "/subscription")
-                          }
-                          className="text-[11px]"
-                          title="Grant a trialing subscription on the current package"
+
+          {filteredOrgs.length > 0 ? (
+            <div className="overflow-x-auto border border-line rounded-lg">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
+                  <tr>
+                    <th className="p-3">Workspace</th>
+                    <th className="p-3">Owner Contact</th>
+                    <th className="p-3">Members</th>
+                    <th className="p-3">Plan Tier</th>
+                    <th className="p-3">Subscription</th>
+                    <th className="p-3">Hunting & Search Usage</th>
+                    <th className="p-3">Created</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-subtle">
+                  {filteredOrgs.map((o) => (
+                    <tr key={o.id} className="hover:bg-[#FAFAF8]">
+                      <td className="p-3 font-bold text-ink">
+                        <div>{o.name}</div>
+                        <div className="text-[10px] text-ink-tertiary font-mono">{o.id}</div>
+                      </td>
+                      <td className="p-3 text-ink-secondary">{o.ownerEmail || "—"}</td>
+                      <td className="p-3 font-semibold text-ink">{o.membersCount ?? 1}</td>
+                      <td className="p-3">
+                        <select
+                          value={o.package?.id ?? ""}
+                          disabled={orgActionLoading === o.id}
+                          onChange={(e) => e.target.value && handleOrgAction(o.id, "PATCH", { packageId: e.target.value })}
+                          className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
                         >
-                          Extend Trial
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="compact"
-                          loading={orgActionLoading === o.id}
-                          onClick={() =>
-                            o.package?.id &&
-                            handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "ACTIVE" }, "/subscription")
-                          }
-                          className="text-[11px]"
-                          title="Grant an active subscription on the current package, bypassing billing"
-                        >
-                          Grant Access
-                        </Button>
-                        {o.subscription && (
+                          <option value="" disabled>{o.package?.name ?? "Starter"}</option>
+                          {packages.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-3">
+                        <Badge variant={o.subscription?.status === "ACTIVE" ? "success" : "neutral"}>
+                          {o.subscription?.status ?? "INCOMPLETE"}
+                        </Badge>
+                      </td>
+                      <td className="p-3 font-mono text-[11px] text-ink-tertiary">
+                        {o.usage?.prospects ?? 0} prospects · {o.usage?.searchConfigs ?? 0} streams · {o.usage?.trackedShops ?? 0} tracked
+                      </td>
+                      <td className="p-3 text-ink-tertiary">{new Date(o.createdAt).toLocaleDateString()}</td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
-                            variant="destructive"
+                            variant="secondary"
                             size="compact"
                             loading={orgActionLoading === o.id}
-                            onClick={() => handleOrgAction(o.id, "DELETE", undefined, "/subscription")}
+                            onClick={() =>
+                              o.package?.id &&
+                              handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "TRIALING" }, "/subscription")
+                            }
                             className="text-[11px]"
+                            title="Grant a trialing subscription on the current package"
                           >
-                            Cancel Sub
+                            Extend Trial
                           </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                          <Button
+                            variant="secondary"
+                            size="compact"
+                            loading={orgActionLoading === o.id}
+                            onClick={() =>
+                              o.package?.id &&
+                              handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "ACTIVE" }, "/subscription")
+                            }
+                            className="text-[11px]"
+                            title="Grant an active subscription on the current package, bypassing billing"
+                          >
+                            Grant Access
+                          </Button>
+                          {o.subscription && (
+                            <Button
+                              variant="destructive"
+                              size="compact"
+                              loading={orgActionLoading === o.id}
+                              onClick={() => handleOrgAction(o.id, "DELETE", undefined, "/subscription")}
+                              className="text-[11px]"
+                            >
+                              Cancel Sub
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-10 text-center border border-dashed border-line rounded-lg space-y-2">
+              <Building className="h-8 w-8 text-ink-tertiary mx-auto" />
+              <div className="text-sm font-semibold text-ink">No workspaces found matching &quot;{orgSearch}&quot;</div>
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={() => setOrgSearch("")}
+                className="text-xs mt-2"
+              >
+                Clear Search
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 

@@ -169,8 +169,34 @@ export function Caption({ className, children, ...rest }: CaptionProps) {
   );
 }
 
+export interface EyebrowProps extends HTMLAttributes<HTMLSpanElement> {
+  tone?: "accent" | "gold" | "secondary";
+  children: ReactNode;
+}
+
+const EYEBROW_TONE_CLASS: Record<NonNullable<EyebrowProps["tone"]>, string> = {
+  accent: "text-accent",
+  gold: "text-gold-strong",
+  secondary: "text-ink-tertiary",
+};
+
+/** Small tracked uppercase label marking what kind of content follows —
+ * "TOP OPPORTUNITY", "WHY THIS MATTERS", "EVIDENCE". The one place this
+ * kind of section labeling should be reached for, rather than each page
+ * inventing its own ad-hoc "small bold uppercase span." */
+export function Eyebrow({ tone = "secondary", className, children, ...rest }: EyebrowProps) {
+  return (
+    <span
+      className={cn("text-label-sm font-bold uppercase tracking-wide", EYEBROW_TONE_CLASS[tone], className)}
+      {...rest}
+    >
+      {children}
+    </span>
+  );
+}
+
 export interface DataTextProps extends HTMLAttributes<HTMLSpanElement> {
-  size?: "data-lg" | "data-md" | "data-sm";
+  size?: "data-xl" | "data-lg" | "data-md" | "data-sm";
   tone?: "primary" | "secondary" | "positive" | "negative" | "neutral" | "disabled";
   children: ReactNode;
 }
@@ -185,6 +211,7 @@ const DATA_TONE_CLASS: Record<NonNullable<DataTextProps["tone"]>, string> = {
 };
 
 const DATA_SIZE_CLASS: Record<NonNullable<DataTextProps["size"]>, string> = {
+  "data-xl": "text-data-xl",
   "data-lg": "text-data-lg",
   "data-md": "text-data-md",
   "data-sm": "text-data-sm",

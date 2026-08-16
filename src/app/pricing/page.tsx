@@ -22,30 +22,34 @@ export const metadata: Metadata = {
 };
 
 const PLAN_HIGHLIGHTS: Record<string, string[]> = {
-  FREE: [
-    "1 Active Platform Search Stream",
-    "Up to 200 Monthly Prospect Discoveries",
-    "Track 5 Etsy Competitor Shops",
-    "Opportunity Radar Access",
+  STARTED: [
+    "3 Active Keyword Search Streams",
+    "Up to 200 Monthly Product Discoveries",
+    "Track 5 Competitor Shops",
+    "Full Opportunity Radar Access",
+    "Category & Keyword Research",
+    "Workspace Planner Access",
     "CSV Data Export",
   ],
   PRO: [
-    "3 Active Keyword Search Streams",
-    "Up to 1,000 Monthly Prospect Discoveries",
-    "Track 25 Etsy Competitor Shops",
+    "10 Active Keyword Search Streams",
+    "Up to 1,000 Monthly Product Discoveries",
+    "Track 25 Competitor Shops",
     "Daily Automated Opportunity Scans",
-    "Competitor Keyword Extraction",
-    "Etsy Personal Assistant Access",
-    "Priority Email Support",
+    "Strategic Competition Verdicts",
+    "Keyword & Tag Cluster Mining",
+    "Revenue & Profit Intelligence",
+    "Priority Search Queue & Support",
   ],
   AGENCY: [
-    "10 Active Keyword Search Streams",
-    "Up to 5,000 Monthly Prospect Discoveries",
-    "Track 100 Etsy Competitor Shops",
-    "Multi-Seat Team Access",
-    "Hourly Opportunity Tracking",
-    "Dedicated Scraper Queue",
-    "1-on-1 Onboarding Support",
+    "50 Active Keyword Search Streams",
+    "Up to 5,000 Monthly Product Discoveries",
+    "Track 100 Competitor Shops",
+    "Multi-Seat Team Workspace Access",
+    "Hourly Opportunity Tracking Cadence",
+    "Dedicated Scraper Capacity",
+    "Full Revenue & Fee Audit Engine",
+    "1-on-1 Onboarding Strategy Call",
   ],
 };
 

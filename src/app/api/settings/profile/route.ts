@@ -14,7 +14,7 @@ export async function GET() {
   const [user, org, membership, sellerChannel, avatarSetting] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true, createdAt: true },
+      select: { name: true, email: true, emailVerified: true, createdAt: true },
     }),
     organizationId
       ? prisma.organization.findUnique({
@@ -43,6 +43,7 @@ export async function GET() {
   return NextResponse.json({
     name: user?.name ?? "",
     email: user?.email ?? "",
+    emailVerified: Boolean(user?.emailVerified),
     avatarUrl: avatarSetting?.value ?? null,
     memberSince: user?.createdAt,
     organizationName: org?.name ?? "",

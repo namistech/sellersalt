@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Star, ExternalLink, ArrowRight, Sparkles, Check, Flame, Gem, Zap } from "lucide-react";
-import { Card, Button, Badge, Heading, Text, IconButton } from "@/components/ui";
+import { Card, Button, Badge, Text, Eyebrow, IconButton, cn } from "@/components/ui";
 import { EmptyState } from "@/components/data";
 import { scoreEstDailySales, demandMeta } from "@/lib/competition-scoring";
 import { updateProspect, type ProspectStatus } from "@/services/prospects";
@@ -45,16 +45,14 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
   }
 
   return (
-    <Card padding="lg" className="flex flex-col justify-between border-line shadow-xs">
+    <Card variant="feature" padding="lg" className="flex flex-col justify-between">
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="flex h-6 w-6 items-center justify-center rounded bg-brand-primary-subtle text-brand-primary text-xs font-bold">
               <Flame className="h-3.5 w-3.5" />
             </span>
-            <Heading as="h2" size="h4">
-              Top Opportunity Discoveries
-            </Heading>
+            <Eyebrow tone="accent">Top Opportunity Discoveries</Eyebrow>
             <Badge variant="success" className="font-semibold text-brand-primary bg-brand-primary-subtle border border-brand-primary/20">
               High potential
             </Badge>
@@ -82,25 +80,40 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
           </div>
         ) : (
           <div className="divide-y divide-line-subtle">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const velocityLevel = scoreEstDailySales(item.estDailySales ?? 0);
               const meta = demandMeta(velocityLevel);
+              const isTopFinding = index === 0;
 
               // Quick opportunity badge detection
               const isEmerging = item.shopAgeMonths <= 18 && (item.estDailySales ?? 0) >= 3.5;
               const isHiddenGem = (item.avgSellingRatio ?? 0) >= 15;
 
               return (
-                <div key={item.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between",
+                    isTopFinding && "rounded-md -mx-2 px-2 bg-accent-soft/40"
+                  )}
+                >
                   <div className="flex items-start gap-3 min-w-0">
                     {item.listingImageUrl ? (
                       <img
                         src={item.listingImageUrl}
                         alt=""
-                        className="h-12 w-12 shrink-0 rounded-md object-cover border border-line"
+                        className={cn(
+                          "shrink-0 rounded-md object-cover border border-line",
+                          isTopFinding ? "h-16 w-16" : "h-12 w-12"
+                        )}
                       />
                     ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary">
+                      <div
+                        className={cn(
+                          "flex shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary",
+                          isTopFinding ? "h-16 w-16" : "h-12 w-12"
+                        )}
+                      >
                         Shop
                       </div>
                     )}
@@ -108,7 +121,10 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/shops/${item.shopExternalId}`}
-                          className="font-medium text-ink hover:text-brand-primary text-sm truncate"
+                          className={cn(
+                            "text-ink hover:text-brand-primary truncate",
+                            isTopFinding ? "font-bold text-base" : "font-medium text-sm"
+                          )}
                         >
                           {item.listingTitle}
                         </Link>

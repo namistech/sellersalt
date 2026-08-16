@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
@@ -13,8 +14,12 @@ export async function PATCH(req: Request) {
   if (!currentPassword || !newPassword) {
     return NextResponse.json({ error: "Current and new password are required." }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: "New password must be at least 8 characters." }, { status: 400 });
+  const strength = checkPasswordStrength(newPassword);
+  if (!strength.valid) {
+    return NextResponse.json(
+      { error: `New password must include: ${strength.errors.join(", ")}.` },
+      { status: 400 }
+    );
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });

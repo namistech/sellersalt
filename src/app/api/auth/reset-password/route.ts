@@ -2,14 +2,19 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 export async function POST(req: Request) {
   const { token, newPassword } = await req.json();
   if (!token || !newPassword) {
     return NextResponse.json({ error: "Token and new password are required." }, { status: 400 });
   }
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+  const strength = checkPasswordStrength(newPassword);
+  if (!strength.valid) {
+    return NextResponse.json(
+      { error: `Password must include: ${strength.errors.join(", ")}.` },
+      { status: 400 }
+    );
   }
 
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");

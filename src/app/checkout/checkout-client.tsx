@@ -14,6 +14,7 @@ import {
   Text,
   Divider,
 } from "@/components/ui";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 export interface PackageData {
   key: string;
@@ -120,6 +121,15 @@ export function CheckoutClient({
     setAccountSubmitting(true);
 
     if (accountMode === "signup") {
+      // Immediate feedback only — POST /api/signup re-checks this
+      // authoritatively regardless of what's sent here.
+      const strength = checkPasswordStrength(accountForm.password);
+      if (!strength.valid) {
+        setAccountError(`Password must include: ${strength.errors.join(", ")}.`);
+        setAccountSubmitting(false);
+        return;
+      }
+
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -200,7 +210,7 @@ export function CheckoutClient({
 
           <div className="flex items-center gap-2 text-xs font-semibold text-[#525B55]">
             <Lock className="h-3.5 w-3.5 text-[#0E8F5D]" />
-            <span>256-Bit SSL Encrypted Checkout</span>
+            <span>Secure, Encrypted Checkout</span>
           </div>
         </div>
       </header>
@@ -391,6 +401,42 @@ export function CheckoutClient({
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {accountMode === "signup" && (
+                      <div className="mt-2 space-y-1.5">
+                        <div className="text-[11px] text-[#7C847E]">
+                          Use at least 8 characters, including a number and a symbol.
+                        </div>
+                        {accountForm.password.length > 0 && (() => {
+                          const hasLength = accountForm.password.length >= 8;
+                          const hasNumber = /[0-9]/.test(accountForm.password);
+                          const hasSymbol = /[^A-Za-z0-9]/.test(accountForm.password);
+                          const hasUpper = /[A-Z]/.test(accountForm.password);
+                          const isAllGood = hasLength && hasNumber && hasSymbol && hasUpper;
+
+                          if (isAllGood) {
+                            return (
+                              <div className="text-[11px] font-semibold text-[#0E8F5D] flex items-center gap-1">
+                                ✓ Password looks good
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="flex flex-wrap gap-1.5 text-[10px]">
+                              <span className={`px-1.5 py-0.5 rounded ${hasLength ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
+                                {hasLength ? "✓ 8+ chars" : "At least 8 chars"}
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded ${hasNumber ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
+                                {hasNumber ? "✓ Number" : "Add a number"}
+                              </span>
+                              <span className={`px-1.5 py-0.5 rounded ${hasSymbol ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
+                                {hasSymbol ? "✓ Symbol" : "Add a symbol"}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   {accountError && <Alert variant="danger">{accountError}</Alert>}

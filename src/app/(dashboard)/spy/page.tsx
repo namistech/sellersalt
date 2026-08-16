@@ -38,14 +38,14 @@ export default function SpyOnCompetitorPage() {
       <SpyTabs active="find" />
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="w-full max-w-lg text-center">
-          <Heading as="h2" size="h2">
+          <Heading as="h2" size="display-sm">
             Research any competitor shop
           </Heading>
           <Text color="secondary" className="mt-2">
             Paste any Etsy shop URL to pull up its full profile and start tracking its sales over time.
           </Text>
 
-          <Card padding="lg" className="mt-6 text-left">
+          <Card variant="feature" padding="lg" className="mt-6 text-left">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <Input
                 label="Shop URL"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Radar, ArrowRight, TrendingUp } from "lucide-react";
-import { Card, Button, Heading, Text, Badge } from "@/components/ui";
+import { Card, Button, Eyebrow, Text, Badge } from "@/components/ui";
 import { EmptyState, MetricDelta, formatRelativeTime, Freshness } from "@/components/data";
 import type { DashboardCompetitorItem } from "@/services/dashboard";
 
@@ -16,9 +16,7 @@ export function DashboardCompetitorRadar({ competitors }: DashboardCompetitorRad
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heading as="h2" size="h4">
-              Competitor Radar
-            </Heading>
+            <Eyebrow>Competitor Radar</Eyebrow>
             <Badge variant="neutral">Active tracking</Badge>
           </div>
           <Link

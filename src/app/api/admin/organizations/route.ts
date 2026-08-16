@@ -18,7 +18,7 @@ export async function GET() {
       package: true,
       subscription: { select: { status: true, provider: true, packageId: true } },
       memberships: { include: { user: { select: { email: true } } }, take: 1 },
-      _count: { select: { connectors: true, searchConfigs: true, prospects: true, shopWatches: true } },
+      _count: { select: { memberships: true, connectors: true, searchConfigs: true, prospects: true, shopWatches: true } },
     },
   });
 
@@ -30,6 +30,7 @@ export async function GET() {
       createdAt: o.createdAt,
       package: o.package,
       subscription: o.subscription,
+      membersCount: o._count.memberships,
       usage: {
         connectors: o._count.connectors,
         searchConfigs: o._count.searchConfigs,

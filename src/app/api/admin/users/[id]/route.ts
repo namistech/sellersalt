@@ -10,6 +10,94 @@ async function requireAdmin() {
   return session!.user!.email as string;
 }
 
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const adminEmail = await requireAdmin();
+  if (!adminEmail) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const { id } = await params;
+
+  const [target, avatarSetting] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id },
+      include: {
+        memberships: {
+          include: {
+            organization: {
+              include: {
+                package: { select: { id: true, name: true, key: true, priceUsd: true } },
+                subscription: { select: { status: true, provider: true, currentPeriodEnd: true } },
+                sellerChannels: {
+                  where: { platform: "ETSY_SELLER" },
+                  select: { id: true, label: true, storeUrl: true, status: true, lastSyncedAt: true },
+                },
+                _count: { select: { connectors: true, searchConfigs: true, prospects: true, shopWatches: true } },
+              },
+            },
+          },
+        },
+        webAuthnCredentials: {
+          select: { id: true, name: true, createdAt: true, lastUsedAt: true },
+        },
+      },
+    }),
+    prisma.appSetting.findUnique({
+      where: { key: `user_avatar_${id}` },
+      select: { value: true },
+    }),
+  ]);
+
+  if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
+
+  const auditLogs = await prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { targetId: target.id },
+        { targetEmail: target.email },
+        { actorEmail: target.email },
+      ],
+    },
+    take: 10,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({
+    user: {
+      id: target.id,
+      name: target.name,
+      email: target.email,
+      emailVerified: Boolean(target.emailVerified),
+      emailVerifiedAt: target.emailVerified,
+      suspended: Boolean(target.suspendedAt),
+      suspendedAt: target.suspendedAt,
+      authMethods: target.authMethods,
+      lastLoginAt: target.lastLoginAt,
+      createdAt: target.createdAt,
+      verificationEmailCount: target.verificationEmailCount,
+      lastVerificationEmailAt: target.lastVerificationEmailAt,
+      avatarUrl: avatarSetting?.value ?? null,
+      passkeys: target.webAuthnCredentials,
+      memberships: target.memberships.map((m) => ({
+        id: m.id,
+        role: m.role,
+        organization: {
+          id: m.organization.id,
+          name: m.organization.name,
+          plan: m.organization.plan,
+          package: m.organization.package,
+          subscription: m.organization.subscription,
+          sellerChannels: m.organization.sellerChannels,
+          usage: {
+            connectors: m.organization._count.connectors,
+            searchConfigs: m.organization._count.searchConfigs,
+            prospects: m.organization._count.prospects,
+            trackedShops: m.organization._count.shopWatches,
+          },
+        },
+      })),
+      recentAuditLogs: auditLogs,
+    },
+  });
+}
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const adminEmail = await requireAdmin();
   if (!adminEmail) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

@@ -15,7 +15,7 @@ import {
   Store,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Button, Input, Select, Alert, Heading, Text, Badge } from "@/components/ui";
+import { Card, Button, Input, Select, Alert, Heading, Text, Eyebrow, Badge } from "@/components/ui";
 import { Table, EmptyState, MetricDelta, formatShortDate, type Column } from "@/components/data";
 import { fetchTrends, type TrendRow } from "@/services/trends";
 import { fetchProspects, type ProspectRow } from "@/services/prospects";
@@ -348,11 +348,41 @@ export default function TrendsPage() {
 
       {/* 2. COMPETITOR VELOCITY MOVERS TAB */}
       {activeTab === "competitors" && (
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+        <div className="space-y-4">
+          {(() => {
+            const topMover = trends.reduce<typeof trends[number] | null>((best, t) => {
+              if (t.salesGrowth == null) return best;
+              if (!best || (best.salesGrowth ?? -Infinity) < t.salesGrowth) return t;
+              return best;
+            }, null);
+            if (!topMover || (topMover.salesGrowth ?? 0) <= 0) return null;
+            return (
+              <Card variant="feature" padding="md" className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Eyebrow tone="accent">Fastest-Growing Competitor</Eyebrow>
+                  <Link
+                    href={`/shops/${topMover.shopExternalId}`}
+                    className="mt-1 flex items-center gap-1.5 font-bold text-ink text-lg hover:text-brand-primary"
+                  >
+                    <Store className="h-4 w-4 text-brand-primary" />
+                    {topMover.shopName}
+                  </Link>
+                </div>
+                <div className="text-right">
+                  <Eyebrow>Sales Growth</Eyebrow>
+                  <div className="text-2xl font-extrabold text-brand-primary font-mono">
+                    +{topMover.salesGrowth!.toLocaleString()}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
+
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div>
-            <Heading as="h2" size="h4">
+            <Eyebrow>
               Longitudinal Competitor Sales Velocity ({trends.length})
-            </Heading>
+            </Eyebrow>
             <Text size="body-sm" color="secondary" className="mt-0.5">
               Verified sales growth comparing first-seen snapshots to current lifetime sales.
             </Text>
@@ -410,7 +440,8 @@ export default function TrendsPage() {
               </table>
             </div>
           )}
-        </Card>
+          </Card>
+        </div>
       )}
     </div>
   );

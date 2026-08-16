@@ -3,7 +3,8 @@
 // with a real role system once there's a team behind SellerSalt itself.
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
-  const allowlist = (process.env.ADMIN_EMAILS ?? "")
+  const raw = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "";
+  const allowlist = raw
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

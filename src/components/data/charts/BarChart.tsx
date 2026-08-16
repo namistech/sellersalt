@@ -25,6 +25,7 @@ export interface BarChartProps {
   emptyMessage?: string;
   errorMessage?: string;
   onRetry?: () => void;
+  yAxisWidth?: number;
 }
 
 export function BarChart({
@@ -41,6 +42,7 @@ export function BarChart({
   emptyMessage,
   errorMessage,
   onRetry,
+  yAxisWidth,
 }: BarChartProps) {
   return (
     <div>
@@ -51,12 +53,12 @@ export function BarChart({
             {layout === "horizontal" ? (
               <>
                 <XAxis dataKey={xKey} tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={{ stroke: GRID_COLOR }} tickLine={false} />
-                <YAxis tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={false} tickLine={false} width={40} />
+                <YAxis tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={false} tickLine={false} width={yAxisWidth ?? 40} />
               </>
             ) : (
               <>
                 <XAxis type="number" tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey={xKey} tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={false} tickLine={false} width={100} />
+                <YAxis type="category" dataKey={xKey} tick={{ fill: AXIS_TEXT_COLOR, fontSize: 12 }} axisLine={false} tickLine={false} width={yAxisWidth ?? 110} />
               </>
             )}
             <Tooltip content={<ChartTooltip valueFormatter={valueFormatter} />} cursor={{ fill: GRID_COLOR }} />

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star, Store, Sparkles, Bookmark, ExternalLink, Compass, Download, ArrowRight, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Alert, Button, Badge, Tabs, Heading, Text } from "@/components/ui";
+import { Card, Alert, Button, Badge, Tabs, Eyebrow, Text } from "@/components/ui";
 import { Table, EmptyState } from "@/components/data";
 import { fetchProspects, updateProspect, type ProspectRow, type ProspectStatus } from "@/services/prospects";
 import { fetchTrackedResearchShops, type TrackedResearchShop } from "@/services/researchShops";
@@ -281,11 +281,29 @@ export default function FavoritesPage() {
             onSelectRow={toggleSelectRow}
             onSelectAll={toggleSelectAll}
             emptyState={
-              <EmptyState
-                icon={<Star />}
-                title="No favorite listings yet"
-                description="Star listings in Opportunity Radar, Prospects, or Shop Profiles to save them here."
-              />
+              <div className="py-16 px-6 text-center max-w-md mx-auto space-y-4">
+                <div className="h-12 w-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+                  <Star className="h-6 w-6 fill-amber-400 text-amber-500" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-ink">No favorite product listings yet</h4>
+                  <p className="text-xs text-ink-secondary leading-relaxed">
+                    Star high-potential products from Opportunity Radar or Shop Profiles to save them here for quick comparison and planning.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  <Link href="/radar">
+                    <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white">
+                      Hunt on Opportunity Radar
+                    </Button>
+                  </Link>
+                  <Link href="/categories">
+                    <Button variant="secondary" size="compact" className="text-xs">
+                      Explore Categories
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             }
           />
         </Card>
@@ -296,23 +314,36 @@ export default function FavoritesPage() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Heading as="h2" size="h4">
-                Favorite & Monitored Competitor Shops ({trackedShops.length})
-              </Heading>
+              <Eyebrow>Favorite & Monitored Competitor Shops ({trackedShops.length})</Eyebrow>
               <Text size="body-sm" color="secondary" className="mt-0.5">
                 Competitors whose daily sales, velocity, and catalog yield you are tracking.
               </Text>
             </div>
             <Link href="/spy">
-              <Button variant="primary" size="compact" className="bg-[#0E8F5D] text-xs font-semibold">
+              <Button variant="primary" size="compact" className="bg-[#0E8F5D] text-xs font-semibold text-white">
                 + Track New Shop
               </Button>
             </Link>
           </div>
 
           {trackedShops.length === 0 ? (
-            <div className="py-12 text-center text-xs text-ink-tertiary">
-              No shops currently favorited. Visit any Shop Profile and click <strong>+ Favorite Shop</strong>.
+            <div className="py-16 px-6 text-center max-w-md mx-auto space-y-4 border border-dashed border-line rounded-xl">
+              <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-2xs">
+                <Store className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-ink">No favorite shops saved yet</h4>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Search any Etsy shop with Spy on Competitor and star them to keep track of their catalog additions and revenue growth.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <Link href="/spy">
+                  <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white">
+                    Research Competitor Shops
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -359,9 +390,7 @@ export default function FavoritesPage() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <Heading as="h2" size="h4">
-                Your Keyword Planning List ({keywords.length})
-              </Heading>
+              <Eyebrow>Your Keyword Planning List ({keywords.length})</Eyebrow>
               <Text size="body-sm" color="secondary" className="mt-0.5">
                 Keywords you've explicitly added to planning from Shop Intelligence or Keyword Research.
               </Text>
@@ -376,8 +405,23 @@ export default function FavoritesPage() {
           </div>
 
           {keywords.length === 0 ? (
-            <div className="py-12 text-center text-xs text-ink-tertiary">
-              No keywords planned yet. Visit a Shop Intelligence page and click <strong>Add to Keyword Planning</strong> on any discovered keyword.
+            <div className="py-16 px-6 text-center max-w-md mx-auto space-y-4 border border-dashed border-line rounded-xl">
+              <div className="h-12 w-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto shadow-2xs">
+                <Bookmark className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-ink">No planned keywords yet</h4>
+                <p className="text-xs text-ink-secondary leading-relaxed">
+                  Collect high-converting buyer search terms from Keyword Research or competitor tag analyses to use in your listing titles and tags.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <Link href="/keyword-research">
+                  <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold text-white">
+                    Find Profitable Keywords
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto border border-line rounded-lg">

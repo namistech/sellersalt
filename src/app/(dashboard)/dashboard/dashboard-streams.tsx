@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Radar, ArrowRight, Clock, Play } from "lucide-react";
-import { Card, Button, Badge, Heading, Text } from "@/components/ui";
+import { Card, Button, Badge, Eyebrow, Text } from "@/components/ui";
 import { EmptyState, formatRelativeTime } from "@/components/data";
 import { scheduleFrequencyFromCron, SCHEDULE_FREQUENCY_LABELS } from "@/services/searchConfigs";
 import { runSearch } from "@/services/jobs";
@@ -37,9 +37,7 @@ export function DashboardStreams({ streams, recentRuns, onNewSearch }: Dashboard
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heading as="h2" size="h4">
-              Active Search Streams
-            </Heading>
+            <Eyebrow>Active Search Streams</Eyebrow>
             <Badge variant="neutral">{streams.length} active</Badge>
           </div>
           <Link
@@ -120,9 +118,7 @@ export function DashboardStreams({ streams, recentRuns, onNewSearch }: Dashboard
 
         {recentRuns.length > 0 && (
           <div className="mt-5 pt-4 border-t border-line-subtle">
-            <Text as="div" size="label-sm" color="secondary" className="uppercase tracking-wider mb-2">
-              Recent Yield Activity
-            </Text>
+            <Eyebrow className="block mb-2">Recent Yield Activity</Eyebrow>
             <div className="flex flex-col gap-1.5">
               {recentRuns.slice(0, 3).map((run) => (
                 <div key={run.id} className="flex items-center justify-between text-body-sm py-1">

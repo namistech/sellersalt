@@ -153,8 +153,23 @@ export const authOptions: NextAuthOptions = {
               counter: Number(stored.counter),
               transports: stored.transports ? (stored.transports.split(",") as any) : undefined,
             },
+            // Registration options below (register/options/route.ts) and
+            // login options (api/auth/passkey/options/route.ts) both
+            // declare userVerification: "preferred" — the authenticator
+            // is never told UV is mandatory. But @simplewebauthn/server
+            // defaults requireUserVerification to true here, so any
+            // authenticator that omits the UV flag on a given ceremony
+            // (common — differs by browser/authenticator/context, and
+            // isn't guaranteed to match what happened at registration
+            // time) made this throw and login silently fail as "not
+            // recognized," even for a correctly-registered passkey.
+            // Bringing this in line with the "preferred" policy actually
+            // declared is the fix — origin/challenge/signature checks
+            // (the actual phishing-resistant guarantees) are unaffected.
+            requireUserVerification: false,
           });
-        } catch {
+        } catch (err) {
+          console.error("[PASSKEY_LOGIN_VERIFY_ERROR]", err);
           return null;
         }
 
