@@ -2,6 +2,7 @@ import axios from "axios";
 import type { SellerChannelConnector, SellerOrderResult } from "../types";
 import { encrypt } from "@/lib/encryption";
 import { prisma } from "@/lib/db";
+import { executeWithRetry } from "@/connectors/etsy/client";
 
 const ETSY_TOKEN_URL = "https://api.etsy.com/v3/public/oauth/token";
 const ETSY_API_BASE = "https://openapi.etsy.com/v3/application";
@@ -84,7 +85,16 @@ export const etsySellerConnector: SellerChannelConnector = {
       const params: Record<string, any> = { limit, offset, sort_on: "created", sort_order: "desc" };
       if (since) params.min_created = Math.floor(since.getTime() / 1000);
 
-      const { data } = await c.get(`/shops/${creds.shopId}/receipts`, { params });
+      const path = `/shops/${creds.shopId}/receipts`;
+      const { data } = await executeWithRetry(
+        async () => {
+          const res = await c.get(path, { params });
+          return res.data;
+        },
+        path,
+        3
+      );
+
       const receipts = data?.results ?? [];
       if (receipts.length === 0) break;
 

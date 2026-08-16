@@ -1,13 +1,24 @@
+import type { DataProvenanceType } from "@/types/provenance";
+
 export type AssistantIntentType =
+  | "PRODUCT_SEARCH"
+  | "SHOP_RESEARCH"
+  | "CATEGORY_EXPLORATION"
+  | "KEYWORD_RESEARCH"
+  | "SEO_AUDIT"
+  | "AI_LISTING_GENERATION"
+  | "STORE_REVENUE"
+  | "TRACKED_COMPETITORS"
+  | "PLANNER_ACTION"
   | "TOP_OPPORTUNITIES"
   | "FASTEST_GROWING_COMPETITORS"
   | "DAILY_RESEARCH_AGENDA"
   | "LOW_COMPETITION_NICHES"
   | "SAVED_OPPORTUNITIES"
-  | "TRACKED_COMPETITORS"
   | "TRIGGER_SEARCH"
   | "WHAT_CHANGED_SINCE_YESTERDAY"
   | "HELP"
+  | "OUT_OF_SCOPE"
   | "UNKNOWN";
 
 export interface AssistantAction {
@@ -36,11 +47,18 @@ export interface AssistantMessage {
   cards?: AssistantCardItem[];
   actions?: AssistantAction[];
   isDeterministic?: boolean;
+  provenance?: DataProvenanceType;
+  toolCall?: {
+    toolName: string;
+    params?: any;
+    summary?: string;
+  };
 }
 
 export interface AssistantQueryRequest {
   query: string;
   history?: Array<{ sender: "user" | "assistant"; text: string }>;
+  confirmAction?: boolean;
 }
 
 export interface AssistantQueryResponse {

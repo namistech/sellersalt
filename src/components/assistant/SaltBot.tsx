@@ -14,33 +14,26 @@ import {
   Minimize2,
   Trash2,
   ArrowRight,
+  Zap,
+  ExternalLink,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui";
+import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import type { AssistantMessage } from "@/services/assistant/types";
 
-// The ONE SaltBot UI — header trigger, floating bubble, chat window, and
-// fullscreen mode all render through this single component. Previously
-// there were two independent implementations (a Drawer-based one opened
-// from the header, and this floating-bubble one) that could visually and
-// behaviorally drift from each other — see this component's git history.
-// AppShell mounts exactly one instance and controls it via open/onOpenChange
-// so the header button and the floating bubble both operate the same window.
-
 const SUGGESTED_QUERIES = [
-  "What are my best opportunities today?",
-  "What changed since yesterday?",
-  "Show me emerging winners.",
-  "Find low competition opportunities.",
-  "Which competitors are growing fastest?",
-  "What should I research today?",
-  "Show my saved opportunities.",
-  "Show my tracked competitors.",
-  "Run my latest search.",
-  "What should I do next?",
+  "Find high velocity digital products under $20",
+  "Research competitor shop ModRecraft",
+  "Explore top-level Etsy buyer categories",
+  "Find keywords and harvest tags for daily planner",
+  "Audit listing SEO for handmade leather notebook",
+  "Draft an original listing for aesthetic budget tracker",
+  "How did my connected store perform this month?",
+  "What changed in my tracked competitor shops?",
+  "What should I research on Etsy today?",
 ];
 
 export interface SaltBotProps {
-  /** Omit for standalone/uncontrolled use (manages its own open state). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -66,7 +59,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
       id: "initial_1",
       sender: "assistant",
       intent: "HELP",
-      text: "Hi! I am SaltBot, your Etsy Intelligence Copilot. Ask me anything about your niche research, competitor sales velocity, or select a priority research action below.",
+      text: "Hi! I am SaltBot, your Etsy Intelligence Copilot. Ask me to search products, research competitors, explore category benchmarks, harvest keyword tags, audit SEO scores, analyze store profit, or pick a priority action below.",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -75,9 +68,6 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
     fetch("/api/settings/public")
       .then((r) => r.json())
       .then((d) => {
-        // Was reading d.assistantName (wrong key AND wrong nesting) —
-        // the real response shape is { settings: { assistant_name } },
-        // so this admin setting silently never took effect before.
         if (d.settings?.assistant_name) setAssistantName(d.settings.assistant_name);
       })
       .catch(() => {});
@@ -190,9 +180,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
         </button>
       )}
 
-      {/* Floating or Fullscreen Chat Window — light theme throughout, including
-          the header (previously a dark #141B16 bar, which this project's
-          design rules explicitly disallow for SaltBot). */}
+      {/* Floating or Fullscreen Chat Window */}
       {isOpen && (
         <div
           className={`fixed z-50 bg-white shadow-2xl transition-all overflow-hidden flex flex-col ${
@@ -200,7 +188,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
               ? "inset-4 sm:inset-8 rounded-2xl border border-line"
               : isMinimized
               ? "bottom-6 right-6 w-80 h-14 rounded-2xl border border-line"
-              : "bottom-6 right-6 w-[92vw] sm:w-[480px] h-[640px] max-h-[88vh] rounded-2xl border border-line"
+              : "bottom-6 right-6 w-[92vw] sm:w-[500px] h-[660px] max-h-[90vh] rounded-2xl border border-line"
           }`}
         >
           {/* Header */}
@@ -216,7 +204,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                 </div>
                 <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D] inline-block" />
-                  <span>Deterministic Engine + AI Fallback</span>
+                  <span>Domain Tool Orchestrator</span>
                 </div>
               </div>
             </div>
@@ -287,13 +275,28 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                       )}
 
                       <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-2.5 space-y-2.5 leading-relaxed ${
+                        className={`max-w-[88%] rounded-2xl px-4 py-2.5 space-y-2.5 leading-relaxed ${
                           isUser
                             ? "bg-[#141B16] text-white rounded-br-none shadow-2xs"
                             : "bg-white text-ink border border-line rounded-tl-none shadow-2xs"
                         }`}
                       >
+                        {/* Tool Execution Stamp */}
+                        {msg.toolCall && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-ink-tertiary font-mono border-b border-line-subtle pb-1">
+                            <Zap className="h-3 w-3 text-amber-500" />
+                            <span>Executed Tool: {msg.toolCall.toolName}</span>
+                          </div>
+                        )}
+
                         <p className="whitespace-pre-wrap">{msg.text}</p>
+
+                        {/* Provenance Badge */}
+                        {msg.provenance && (
+                          <div className="pt-0.5">
+                            <DataProvenanceBadge type={msg.provenance} />
+                          </div>
+                        )}
 
                         {/* Result Cards if any */}
                         {msg.cards && msg.cards.length > 0 && (
@@ -364,7 +367,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                             {msg.actions.map((act, idx) =>
                               act.href ? (
                                 <Link key={idx} href={act.href} onClick={() => setIsOpen(false)}>
-                                  <Button size="compact" variant="primary" className="text-[11px]">
+                                  <Button size="compact" variant="primary" className="text-[11px] bg-[#0E8F5D] hover:bg-[#0C7A52]">
                                     {act.label}
                                   </Button>
                                 </Link>
@@ -373,7 +376,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                                   key={idx}
                                   type="button"
                                   onClick={() => handleSendQuery(act.actionKey!)}
-                                  className="rounded border border-[#0E8F5D] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E8F5D] hover:bg-[#0E8F5D]/10 transition"
+                                  className="rounded-lg border border-[#0E8F5D] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E8F5D] hover:bg-[#0E8F5D]/10 transition"
                                 >
                                   {act.label}
                                 </button>
@@ -386,7 +389,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                   );
                 })}
 
-                {/* Vertical Prebuilt Queries (one per row, never a horizontal chip row) */}
+                {/* Vertical Prebuilt Queries */}
                 {showSuggestions && (
                   <div className="pt-2 space-y-2">
                     <div className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider px-1">
@@ -415,7 +418,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                 {loading && (
                   <div className="flex items-center gap-2 text-ink-tertiary text-xs py-1.5 px-2">
                     <RefreshCw className="h-3.5 w-3.5 animate-spin text-[#0E8F5D]" />
-                    <span>{assistantName} is querying real Etsy market signals...</span>
+                    <span>{assistantName} is executing domain tools & analyzing market signals...</span>
                   </div>
                 )}
 
@@ -431,7 +434,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                 className="p-3 bg-white border-t border-line flex items-center gap-2"
               >
                 <Input
-                  placeholder={`Ask ${assistantName} a question...`}
+                  placeholder={`Ask ${assistantName} to search, audit, research, or plan...`}
                   value={inputQuery}
                   onChange={(e) => setInputQuery(e.target.value)}
                   disabled={loading}

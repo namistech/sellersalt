@@ -206,4 +206,28 @@ export const etsyConnector: MarketplaceConnector = {
       return [];
     }
   },
+
+  async getBuyerTaxonomyTree(credentials) {
+    try {
+      const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
+      const data = await client.getBuyerTaxonomyNodes();
+      return data?.results ?? [];
+    } catch {
+      return [];
+    }
+  },
+
+  async getTaxonomyProperties(credentials, taxonomyId) {
+    try {
+      const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
+      const data = await client.getPropertiesByBuyerTaxonomyId(taxonomyId);
+      return data?.results ?? [];
+    } catch {
+      return [];
+    }
+  },
 };
+
+export { createEtsyClient } from "./client";
+export { etsyCache, ETSY_CACHE_TTL } from "./cache";
+export * from "./taxonomy";

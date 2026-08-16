@@ -74,4 +74,8 @@ export interface MarketplaceConnector {
     shopExternalId: string,
     limit: number
   ): Promise<TopListing[]>;
+  /** Buyer taxonomy tree navigation for category hunting */
+  getBuyerTaxonomyTree?(credentials: Record<string, string>): Promise<any[]>;
+  /** Properties and allowable attributes for a specific taxonomy category */
+  getTaxonomyProperties?(credentials: Record<string, string>, taxonomyId: number | string): Promise<any[]>;
 }

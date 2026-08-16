@@ -21,6 +21,8 @@ import { ServiceError } from "@/services/http";
 import { PROSPECT_STATUS_OPTIONS, buildProspectColumns } from "../prospect-columns";
 import { NewSearchDrawer } from "../new-search-drawer";
 
+import { LiveSearchTab } from "./live-search-tab";
+
 const CSV_COLUMNS: Array<{ key: keyof ProspectRow; label: string }> = [
   { key: "shopName", label: "Shop" },
   { key: "shopUrl", label: "Shop URL" },
@@ -57,7 +59,7 @@ function downloadCsv(filename: string, rows: ProspectRow[]) {
 type SortKey = "shopAgeMonths" | "reviewCount" | "activeListings" | "totalSales" | "avgSellingRatio" | "estDailySales" | "price";
 
 export default function ProspectsPage() {
-  const [tab, setTab] = useState<"results" | "saved">("results");
+  const [tab, setTab] = useState<"live" | "results" | "saved">("live");
   const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
   const [searchConfigs, setSearchConfigs] = useState<SearchConfigSummary[]>([]);
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
@@ -279,11 +281,16 @@ export default function ProspectsPage() {
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(v) => setTab(v as "results" | "saved")}>
-        <Tabs.List aria-label="Prospects views">
-          <Tabs.Trigger value="results">Results ({filtered.length})</Tabs.Trigger>
-          <Tabs.Trigger value="saved">Saved Searches ({searchConfigs.length})</Tabs.Trigger>
+      <Tabs value={tab} onChange={(v) => setTab(v as "live" | "results" | "saved")}>
+        <Tabs.List aria-label="Product Hunting Views">
+          <Tabs.Trigger value="live">Live Product Hunting</Tabs.Trigger>
+          <Tabs.Trigger value="results">Stream Discoveries ({filtered.length})</Tabs.Trigger>
+          <Tabs.Trigger value="saved">Saved Streams ({searchConfigs.length})</Tabs.Trigger>
         </Tabs.List>
+
+        <Tabs.Panel value="live">
+          <LiveSearchTab />
+        </Tabs.Panel>
 
         <Tabs.Panel value="results">
           {/* Search Streams Filter Chips */}

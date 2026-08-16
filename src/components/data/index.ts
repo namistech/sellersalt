@@ -9,6 +9,9 @@ export type { DeltaTone } from "./format";
 export { Freshness } from "./Freshness";
 export type { FreshnessProps, FreshnessState } from "./Freshness";
 
+export { DataProvenanceBadge } from "./DataProvenanceBadge";
+export type { DataProvenanceBadgeProps } from "./DataProvenanceBadge";
+
 export { EmptyState } from "./EmptyState";
 export type { EmptyStateProps, EmptyStateTone } from "./EmptyState";
 

@@ -34,3 +34,11 @@ export type { ActionProgressProps, ActionState, ActionLogItemProps } from "./Act
 
 export { OutcomeCard } from "./OutcomeCard";
 export type { OutcomeCardProps } from "./OutcomeCard";
+
+export { ProductResearchDrawer } from "./ProductResearchDrawer";
+export type { ProductResearchDrawerProps } from "./ProductResearchDrawer";
+
+export { ProductComparisonModal } from "./ProductComparisonModal";
+export type { ProductComparisonModalProps } from "./ProductComparisonModal";
+
+export { TaxonomyTreeBrowser } from "./TaxonomyTreeBrowser";

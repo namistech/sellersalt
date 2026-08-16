@@ -1,33 +1,13 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  Store,
-  ExternalLink,
-  Flame,
-  Star,
-  Layers,
-  ArrowRight,
-  TrendingUp,
-  ShieldCheck,
-  CheckCircle2,
-  Sparkles,
-  Lock,
-  Target,
-  Zap,
-  BookOpen,
-  Bookmark,
-  Plus,
-} from "lucide-react";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { DashboardShell } from "@/app/(dashboard)/dashboard-shell";
 import { resolveWorkspaceContextForUser } from "@/services/session";
 import { isAdminEmail } from "@/lib/is-admin";
-import { Card, Badge, Button, Heading, Text } from "@/components/ui";
-import { computeShopWinningSignals, computeProductWinningSignals } from "@/services/intelligence/winning-signals";
+import { fetchCompleteShopIntelligence } from "@/services/shop-intelligence";
 import { ShopDetailClient } from "./shop-detail-client";
 
 interface ShopDetailPageProps {
@@ -41,79 +21,67 @@ export async function generateMetadata({ params }: ShopDetailPageProps) {
     select: { shopName: true, keyword: true, totalSales: true },
   });
 
-  if (!prospect) return { title: "Etsy Shop Intelligence — SellerSalt" };
+  const shopName = prospect?.shopName || `Etsy Shop ${shopExternalId}`;
 
   return {
-    title: `${prospect.shopName} Etsy Sales & Competitor Analysis — SellerSalt`,
-    description: `Inspect estimated daily sales, listing yield, and competitor intelligence for Etsy store ${prospect.shopName}.`,
+    title: `${shopName} Etsy Sales & Competitor Analysis — SellerSalt`,
+    description: `Inspect estimated daily sales, listing yield, and competitor intelligence for Etsy store ${shopName}.`,
   };
 }
 
 export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
   const { shopExternalId } = await params;
   const session = await getServerSession(authOptions);
+  const organizationId = (session?.user as any)?.organizationId as string | undefined;
 
-  const prospects = await prisma.prospect.findMany({
-    where: { shopExternalId },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
+  let profile: any = null;
 
-  if (prospects.length === 0) {
+  // 1. Try to fetch live 8-section shop intelligence profile
+  if (organizationId) {
+    try {
+      profile = await fetchCompleteShopIntelligence(organizationId, shopExternalId);
+    } catch {
+      // Fallback to local database records if cold fetch fails
+    }
+  }
+
+  // 2. Query local prospect fallback if live profile not available
+  let prospects: any[] = [];
+  if (!profile) {
+    prospects = await prisma.prospect.findMany({
+      where: { shopExternalId },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+  }
+
+  // 3. If neither exists, 404
+  if (!profile && prospects.length === 0) {
     notFound();
   }
 
-  const primary = prospects[0]!;
+  const primary = prospects[0] ?? null;
   const keywords = Array.from(new Set(prospects.map((p) => p.keyword).filter(Boolean)));
-  const estDaily = primary.estDailySales ?? 0;
-  const totalSales = primary.totalSales ?? 0;
-  const activeListings = primary.activeListings ?? 1;
-  const sellingRatio = primary.avgSellingRatio ?? (totalSales / activeListings);
 
-  const shopSignals = computeShopWinningSignals({
-    totalSales,
-    activeListings,
-    estDailySales: estDaily,
-    shopAgeMonths: primary.shopAgeMonths,
-    reviewCount: primary.reviewCount,
-  });
-
-  // Real tracking state + real historical snapshots — never fabricated.
-  // Only queried for an authenticated org, since tracking is per-org.
-  const organizationId = (session?.user as any)?.organizationId as string | undefined;
-  let shopWatch: { id: string; isActive: boolean } | null = null;
-  let snapshots: Array<{
-    capturedAt: Date;
-    totalSales: number | null;
-    reviewCount: number;
-    reviewAverage: number | null;
-    activeListings: number;
-  }> = [];
-
+  // Tracking state for authenticated orgs
+  let isTracked = false;
   if (organizationId) {
-    shopWatch = await prisma.shopWatch.findUnique({
+    const watch = await prisma.shopWatch.findUnique({
       where: { organizationId_shopExternalId: { organizationId, shopExternalId } },
-      select: { id: true, isActive: true },
+      select: { isActive: true },
     });
-    if (shopWatch?.isActive) {
-      snapshots = await prisma.shopSnapshot.findMany({
-        where: { shopWatchId: shopWatch.id },
-        orderBy: { capturedAt: "asc" },
-        select: { capturedAt: true, totalSales: true, reviewCount: true, reviewAverage: true, activeListings: true },
-      });
-    }
+    isTracked = Boolean(watch?.isActive);
   }
 
   const content = (
     <ShopDetailClient
       shopExternalId={shopExternalId}
+      profile={profile}
       primary={primary}
       prospects={prospects}
       keywords={keywords}
-      shopSignals={shopSignals}
       isAuthenticated={!!session}
-      isTracked={Boolean(shopWatch?.isActive)}
-      snapshots={snapshots.map((s) => ({ ...s, capturedAt: s.capturedAt.toISOString() }))}
+      isTracked={isTracked}
     />
   );
 

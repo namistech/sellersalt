@@ -91,42 +91,23 @@ v3, lucide-react, nodemailer v7 (pinned), Stripe SDK (`stripe` npm
 package), PayPal via direct REST calls (no SDK — see Billing section for
 why).
 
-## Non-negotiable workflow rules
+## Non-negotiable workflow & Etsy API integrity rules
 
-1. **View the real file before editing** — my own sandbox can drift from
-   the actual repo, especially for files changed via Claude Code directly
-   rather than through me. This already caused one real regression
-   (`package.json`'s name field reverted during a later patch). For files
-   I haven't personally touched recently, ask for current content first.
-2. **`npx tsc --noEmit` before every commit.** `npx next build` for
-   nontrivial changes.
-3. **Schema changes**: `npx prisma generate` first, or tsc gives false
-   errors. Real migrations need the temporary-public-port dance against
-   the correct environment's database — **state explicitly which branch
-   the resulting commit must go to**, matching whichever database was
-   migrated.
-4. **Post-deployment command** (`npx prisma@5.22.0 migrate deploy`) runs
-   automatically on every push via Coolify — already configured on both
-   web apps.
-5. **JSX gotcha**: opening `<a` tags occasionally get stripped on
-   paste/patch — check for orphaned `href=` props with no `<a` above them
-   if a build throws a JSX parse error.
-6. **Config/credentials belong in `/admin` → Site settings
-   (`AppSetting` table via `src/lib/app-settings.ts`), never hardcoded.**
-7. **Coolify tool limitations, confirmed real, not worth re-testing**:
-   - `coolify:database` only supports `create`/`delete` — no `update`.
-     Toggling `is_public` off after a migration must be done manually in
-     Coolify's UI every time.
-   - `coolify:application` doesn't expose `post_deployment_command` or
-     HTTP Basic Auth fields — both must be set manually in the UI when
-     creating a new app.
-   - `coolify:application create_dockerfile` doesn't work for git-source
-     apps — use `create_github` with `build_pack: "dockerfile"` instead.
-8. **Next.js standalone builds need `HOSTNAME=0.0.0.0`** as an explicit
-   runtime env var, or the server binds to the container's internal
-   hostname instead of all interfaces and becomes unreachable despite
-   deploying "successfully." Already set on production and staging web
-   apps — remember this if a third environment is ever created.
+1. **Never invent Etsy API capabilities**: Refer strictly to `docs/02-etsy/SELLERSALT_ETSY_API_V3_AUDIT.md`. Never invent or promise keyword volume, search difficulty, trend APIs, or full ads management APIs.
+2. **Preserve data provenance**: Explicitly badge all data in UI and services as `[ACTUAL ETSY DATA]`, `[ESTIMATED]`, `[SELLERSALT SCORE]`, or `[EXTERNAL DATA]`. Never present derived metrics as native Etsy metrics.
+3. **Never expose cross-tenant data**: Always scope database queries with `where: { organizationId }` on every user-facing route.
+4. **Never treat mock data as production data**: Clearly distinguish prototype stubs from real database records.
+5. **Every score needs explainable inputs**: Any composite metric (Opportunity Score, SEO Score, Competition Level) must clearly disclose its mathematical formula and point breakdown.
+6. **Every AI generation feature needs originality protection**: AI output must never duplicate competitor titles, tags, or copy. Enforce N-gram/Jaccard similarity thresholds (<15% overlap).
+7. **Every Etsy write operation requires proper OAuth scope**: Ensure `listings_w`, `shops_w`, `billing_r` scopes are verified before write attempts.
+8. **Every third-party external link opens in a new tab**: Always use `target="_blank" rel="noopener noreferrer"` for external Etsy or partner links.
+9. **Never silently publish AI-generated Etsy content**: Drafts must be created in `draft` state and require explicit human review/approval before publication.
+10. **Do not build around unauthorized Etsy scraping**: Use official SellerSalt backend/API data and legal capabilities only.
+11. **Respect API freshness/rate-limit/compliance constraints**: Enforce 8 req/sec queue ceilings and respect caching TTLs (Search: 6h, Shop: 24h, Taxonomy: 7d).
+12. **Run typecheck/build/tests after implementation phases**: Execute `npx tsc --noEmit` before committing any code changes.
+13. **View the real file before editing** — ask for current content first to prevent sandbox drift.
+14. **Schema changes**: `npx prisma generate` first, or tsc gives false errors.
+15. **Config/credentials belong in `/admin` → Site settings (`AppSetting` table via `src/lib/app-settings.ts`), never hardcoded.**
 
 ## Data architecture — the distinctions that matter
 

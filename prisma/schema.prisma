@@ -33,6 +33,12 @@ model Organization {
   crossListings CrossListing[]
   subscription Subscription?
   plannedKeywords PlannedKeyword[]
+  plannerItems PlannerItem[]
+  listingDrafts ListingDraft[]
+  listingSeoAudits ListingSeoAudit[]
+  etsyExecutionLogs EtsyExecutionLog[]
+  listingWatches ListingWatch[]
+  trackingAlerts TrackingAlert[]
 }
 
 enum Plan {
@@ -76,6 +82,8 @@ model User {
   memberships Membership[]
   passwordResetTokens PasswordResetToken[]
   webAuthnCredentials WebAuthnCredential[]
+  createdPlannerItems PlannerItem[]
+  etsyExecutionLogs   EtsyExecutionLog[]
 }
 
 // One row per registered passkey/security key. credentialId is the
@@ -314,6 +322,66 @@ model ShopSnapshot {
   shopWatch ShopWatch @relation(fields: [shopWatchId], references: [id], onDelete: Cascade)
 
   @@index([shopWatchId])
+  @@index([capturedAt])
+}
+
+// ---------- Listing tracking (Longitudinal Listing Surveillance) ----------
+model ListingWatch {
+  id                String   @id @default(cuid())
+  organizationId    String
+  listingExternalId String
+  shopExternalId    String?
+  shopName          String?
+  title             String
+  url               String?
+  imageUrl          String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  snapshots    ListingSnapshot[]
+
+  @@unique([organizationId, listingExternalId])
+  @@index([organizationId])
+  @@index([listingExternalId])
+}
+
+model ListingSnapshot {
+  id             String   @id @default(cuid())
+  listingWatchId String
+  price          Float?
+  currency       String?
+  quantity       Int?
+  numFavorers    Int?
+  state          String?
+  capturedAt     DateTime @default(now())
+
+  listingWatch ListingWatch @relation(fields: [listingWatchId], references: [id], onDelete: Cascade)
+
+  @@index([listingWatchId])
+  @@index([capturedAt])
+}
+
+// ---------- Tracking Alerts (Spike & Competitor Anomaly Detection) ----------
+model TrackingAlert {
+  id             String   @id @default(cuid())
+  organizationId String
+  targetType     String   // "SHOP" | "LISTING"
+  targetId       String   // shopExternalId or listingExternalId
+  targetTitle    String
+  eventType      String   // "SALES_SPIKE" | "VELOCITY_ACCELERATION" | "PRICE_DROP" | "CATALOG_SURGE"
+  severity       String   // "INFO" | "WARNING" | "CRITICAL"
+  message        String
+  previousValue  Float?
+  currentValue   Float?
+  delta          Float?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([targetId])
+  @@index([createdAt])
 }
 
 // A real, persisted "add to keyword planning" list — not derived from
@@ -672,6 +740,9 @@ model SellerChannel {
   organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   orders       SellerOrder[]
   crossListingEntries CrossListingEntry[]
+  listingDrafts ListingDraft[]
+  listingSeoAudits ListingSeoAudit[]
+  etsyExecutionLogs EtsyExecutionLog[]
 
   @@unique([organizationId, storeUrl])
   @@index([organizationId])
@@ -754,3 +825,250 @@ model CrossListingEntry {
   @@index([crossListingId])
   @@index([sellerChannelId])
 }
+
+// ==========================================
+// ---------- Phase A Foundation ------------
+// ==========================================
+
+// ---------- 1. Unified Planner & Workbench ----------
+// Universal strategic planning unit bridging research discovery into execution.
+// Supports product ideas, shop benchmarks, keyword clusters, SEO optimization tasks,
+// content ideas, and listing concepts while preserving original research provenance.
+
+model PlannerItem {
+  id                   String            @id @default(cuid())
+  organizationId       String
+  userId               String?
+  type                 PlannerItemType
+  title                String
+  status               PlannerItemStatus @default(BACKLOG)
+  priority             Int               @default(3) // 1=Highest, 5=Lowest
+  notes                String?           @db.Text
+  metadata             Json?
+
+  // Provenance & Source Reference (Inspiration, NOT Copying)
+  sourceType           String?           // e.g. "PROSPECT", "SHOP", "KEYWORD", "SEO_AUDIT", "MANUAL"
+  sourceId             String?           // Identifier of source entity
+  sourceShopExternalId String?
+  sourceShopName       String?
+  sourceListingUrl     String?
+  sourceListingTitle   String?
+  researchSnapshot     Json?             // Frozen metrics at time of planning (price, velocity, tags, etc.)
+
+  // Strategic Planning Targets
+  targetCategory       String?
+  targetPrice          Float?
+  estimatedCogs        Float?
+  targetKeywords       String[]          @default([])
+  dueDate              DateTime?
+  completedAt          DateTime?
+
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                 User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  listingDrafts        ListingDraft[]
+  seoAudits            ListingSeoAudit[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, type])
+  @@index([sourceId])
+  @@index([userId])
+}
+
+enum PlannerItemType {
+  PRODUCT_RESEARCH
+  SHOP_RESEARCH
+  KEYWORD_RESEARCH
+  CONTENT_IDEA
+  LISTING_CONCEPT
+  SEO_TASK
+  EXECUTION_TASK
+}
+
+enum PlannerItemStatus {
+  BACKLOG
+  IN_PROGRESS
+  READY_FOR_DRAFT
+  DRAFT_CREATED
+  PUBLISHED_TO_ETSY
+  COMPLETED
+  ARCHIVED
+}
+
+// ---------- 2. Listing Drafts ----------
+// Internal draft representation before Etsy API write-back.
+// Stores optimized titles, 13 tags, structured descriptions, originality score,
+// and execution state.
+
+model ListingDraft {
+  id                           String             @id @default(cuid())
+  organizationId               String
+  plannerItemId                String?
+  sellerChannelId              String?            // Target connected Etsy store
+
+  // Content Fields
+  title                        String             // Etsy limit: 140 chars
+  description                  String             @db.Text
+  tags                         String[]           @default([]) // Exactly <= 13 tags, each <= 20 chars
+  materials                    String[]           @default([])
+  taxonomyId                   Int?               // Etsy taxonomy node ID
+  price                        Float
+  quantity                     Int                @default(999)
+  whoMade                      String             @default("i_did") // i_did, someone_else, collective
+  whenMade                     String             @default("2020_2026")
+  isSupply                     Boolean            @default(false)
+  isCustomizable               Boolean            @default(false)
+  personalizationInstructions  String?            @db.Text
+  state                        String             @default("draft") // "draft" | "active"
+
+  // AI Generation & Originality Metadata
+  generationPrompt             String?            @db.Text
+  aiModelUsed                  String?            // e.g. "openai/gpt-4o-mini"
+  generationMetadata           Json?
+  originalityScore             Float?             // 0-100 (100 = completely unique vs source)
+  originalityStatus            String?            // "PASSED" | "FLAGGED" | "REJECTED"
+  maxCommonSubstring           Int?               // Longest matching phrase count vs source listing
+  seoScore                     Int?               // [SELLERSALT SCORE] 0-100
+
+  // State & Execution
+  status                       ListingDraftStatus @default(DRAFT)
+  etsyListingId                String?            // Set after successful draft creation on Etsy
+  etsyDraftUrl                 String?
+  lastPushedAt                 DateTime?
+  lastPushError                String?
+
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+
+  organization                 Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plannerItem                  PlannerItem?       @relation(fields: [plannerItemId], references: [id], onDelete: SetNull)
+  sellerChannel                SellerChannel?     @relation(fields: [sellerChannelId], references: [id], onDelete: SetNull)
+  seoAudits                    ListingSeoAudit[]
+  executionLogs                EtsyExecutionLog[]
+
+  @@index([organizationId])
+  @@index([plannerItemId])
+  @@index([sellerChannelId])
+  @@index([status])
+  @@index([etsyListingId])
+}
+
+enum ListingDraftStatus {
+  DRAFT
+  GENERATED
+  EDITED_BY_USER
+  APPROVED
+  PUSHED_TO_ETSY
+  REJECTED
+  ARCHIVED
+}
+
+// ---------- 3. Listing SEO Audits ----------
+// Persistent diagnostic SEO audits evaluating titles, 13 tags, synergy,
+// descriptions, taxonomy, and attribute completeness.
+
+model ListingSeoAudit {
+  id                   String        @id @default(cuid())
+  organizationId       String
+  plannerItemId        String?
+  listingDraftId       String?
+  sellerChannelId      String?
+  externalListingId    String?       // For auditing live external/connected listings
+
+  // Rubric Scores (0-100) — [SELLERSALT SCORE]
+  overallScore         Int           // 0-100
+  titleScore           Int           // 0-100
+  tagScore             Int           // 0-100
+  keywordSynergyScore  Int           // 0-100 (synergy between title & tags)
+  descriptionScore     Int           // 0-100
+  taxonomyScore        Int           // 0-100
+  attributeScore       Int           // 0-100
+
+  // Diagnostic Measurements
+  titleCharCount       Int
+  tagCount             Int           // Target: 13
+  tagsOver20Chars      String[]      @default([])
+  duplicateTags        String[]      @default([])
+  singleWordTags       String[]      @default([])
+  missingAttributes    String[]      @default([])
+
+  // Structured Issues & Recommendations
+  diagnostics          Json          // Array of { code, severity, title, message, recommendation, pointsDeducted }
+  recommendations      Json          // Array of actionable fix recommendations
+  beforeAfterState     Json?         // { originalState, proposedState, projectedScore }
+
+  provenance           String        @default("SELLERSALT_SCORE")
+  auditVersion         String        @default("1.0")
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  organization         Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plannerItem          PlannerItem?  @relation(fields: [plannerItemId], references: [id], onDelete: SetNull)
+  listingDraft         ListingDraft? @relation(fields: [listingDraftId], references: [id], onDelete: SetNull)
+  sellerChannel        SellerChannel? @relation(fields: [sellerChannelId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([plannerItemId])
+  @@index([listingDraftId])
+  @@index([externalListingId])
+  @@index([sellerChannelId])
+}
+
+// ---------- 4. Etsy API Execution & Audit Logs ----------
+// Idempotent execution log recording every Etsy write operation (draft creation,
+// updates, image uploads) with request/response payloads, status codes, and actor stamps.
+
+model EtsyExecutionLog {
+  id                   String                  @id @default(cuid())
+  organizationId       String
+  userId               String?
+  sellerChannelId      String?
+  listingDraftId       String?
+  operationType        EtsyExecutionOperation
+  entityType           String                  // "LISTING", "IMAGE", "INVENTORY", "RECEIPT"
+  entityId             String?                 // Internal ID (e.g. listingDraftId)
+  etsyResourceId       String?                 // External Etsy ID (e.g. listing_id)
+  idempotencyKey       String                  @unique
+  requestPayload       Json
+  responseStatusCode   Int?
+  responsePayload      Json?
+  status               EtsyExecutionStatus     @default(PENDING)
+  errorMessage         String?
+
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                 User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sellerChannel        SellerChannel?          @relation(fields: [sellerChannelId], references: [id], onDelete: SetNull)
+  listingDraft         ListingDraft?           @relation(fields: [listingDraftId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([sellerChannelId])
+  @@index([listingDraftId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum EtsyExecutionOperation {
+  CREATE_DRAFT_LISTING
+  UPDATE_LISTING
+  UPLOAD_LISTING_IMAGE
+  DELETE_LISTING_IMAGE
+  UPDATE_INVENTORY
+  PUBLISH_LISTING
+  SYNC_RECEIPTS
+}
+
+enum EtsyExecutionStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+  RETRYING
+}
+

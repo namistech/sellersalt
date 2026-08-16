@@ -1,48 +1,50 @@
 import axios from "axios";
 import { prisma } from "@/lib/db";
 import { decryptProviderKey } from "@/lib/ai-providers";
+import { TOOL_REGISTRY, type SaltBotContext, type ToolExecutionResult } from "./tool-registry";
 import type { AssistantMessage } from "./types";
 import type { AiProviderType } from "@prisma/client";
 
-export interface LLMCallContext {
-  organizationId: string;
-  userRole: string;
+export interface LLMCallContext extends SaltBotContext {
   connectedShopName?: string | null;
   savedProspectCount?: number;
   trackedShopCount?: number;
-}
-
-export interface LLMProvider {
-  name: string;
-  generateResponse(
-    prompt: string,
-    context: LLMCallContext,
-    conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>
-  ): Promise<AssistantMessage | null>;
+  pendingPlannerItemCount?: number;
 }
 
 function buildSystemPrompt(context: LLMCallContext): string {
-  return `You are SellerSalt's AI E-Commerce Copilot — an expert Etsy intelligence assistant.
-Your goal is to help Etsy sellers uncover high-demand, low-competition product opportunities, analyze competitor velocity, and optimize listing yield.
+  const toolsSummary = Object.values(TOOL_REGISTRY)
+    .map((t) => `- ${t.name}: ${t.description} Parameters: ${JSON.stringify(t.parameters.properties)}`)
+    .join("\n");
 
-Current Workspace Context:
+  return `You are SaltBot, SellerSalt's canonical AI E-Commerce Copilot for Etsy market intelligence.
+Your role is to orchestrate domain tools, analyze marketplace opportunities, evaluate competitor velocity, audit SEO, and assist Etsy sellers.
+
+CURRENT WORKSPACE CONTEXT:
 - Organization ID: ${context.organizationId}
-- User Role: ${context.userRole}
-- Connected Etsy Shop: ${context.connectedShopName || "None (disconnected)"}
+- User Role: ${context.userRole || "OWNER"}
+- Connected Shop: ${context.connectedShopName || "None (disconnected)"}
 - Tracked Competitor Shops: ${context.trackedShopCount || 0}
 - Saved Opportunities: ${context.savedProspectCount || 0}
+- Pending Planner Items: ${context.pendingPlannerItemCount || 0}
 
-Guidelines:
-1. Provide concise, data-driven, actionable recommendations for Etsy sellers.
-2. Focus on metrics: Sales Velocity (est. daily sales), Listing Yield (sales/listing), and Competition Ratio (<100 reviews).
-3. If the user asks to run searches or inspect opportunities, guide them directly to the Opportunity Radar (/radar), Prospects Hub (/prospects), or Competitor Spy (/spy).
-4. Never invent fake Etsy API policies or fake guarantee of revenue.
-5. Stay strictly within SellerSalt's domain — Etsy research, products, shops, keywords, competitors, planning, and listing optimization. If asked something outside that scope, say so plainly rather than answering anyway.`;
+AVAILABLE DOMAIN TOOLS:
+${toolsSummary}
+
+STRICT OPERATIONAL RULES:
+1. Tool Invocation Format:
+   If the user asks to search products, research a shop, check categories, search keywords, audit SEO, draft a listing, inspect tracked competitors, or add to planner, respond ONLY with a JSON object:
+   {"tool": "<tool_name>", "params": { ... }}
+2. Domain Grounding:
+   Never invent fake metrics, per-listing sales, or imaginary Etsy API capabilities.
+   Always respect data provenance: [ACTUAL ETSY DATA], [ESTIMATED], [SELLERSALT SCORE], [EXTERNAL DATA].
+3. Out of Scope:
+   If the user asks general world history, non-Etsy coding, medical/tax advice, say:
+   "I am SellerSalt's AI Copilot, specialized exclusively in Etsy market intelligence, product research, SEO optimization, and listing creation. Your question is outside my domain. How can I help you discover or optimize an Etsy product today?"
+4. No Silent Publishing:
+   Etsy listing generation always creates a DRAFT requiring human review. Never promise immediate live activation.`;
 }
 
-// Every one of these providers exposes an OpenAI-compatible chat completions
-// endpoint, so one function handles all four rather than four near-duplicate
-// blocks — the only per-provider differences are the base URL and headers.
 const PROVIDER_CHAT_ENDPOINT: Record<AiProviderType, string> = {
   OPENROUTER: "https://openrouter.ai/api/v1/chat/completions",
   NVIDIA: "https://integrate.api.nvidia.com/v1/chat/completions",
@@ -66,7 +68,7 @@ async function callProvider(
 ): Promise<string | null> {
   const res = await axios.post(
     PROVIDER_CHAT_ENDPOINT[provider],
-    { model: modelId, messages, temperature: 0.7, max_tokens: 600 },
+    { model: modelId, messages, temperature: 0.2, max_tokens: 800 },
     { headers: chatHeaders(provider, apiKey), timeout: 15000 }
   );
   return res.data?.choices?.[0]?.message?.content ?? null;
@@ -78,16 +80,15 @@ export class MultiProviderLLMService {
     context: LLMCallContext,
     conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
   ): Promise<AssistantMessage | null> {
-    // Real, admin-configured routing — priority-ordered, active providers
-    // only, each using whichever model was actually selected (auto-picked
-    // on the last "Refresh Models", or explicitly chosen by an admin) —
-    // never a model ID hardcoded in this file. A provider with no model
-    // selected yet (never successfully refreshed) is skipped rather than
-    // guessed at.
-    const providers = await prisma.aiProvider.findMany({
-      where: { isActive: true, encryptedApiKey: { not: null }, defaultModelId: { not: null } },
-      orderBy: { priority: "asc" },
-    });
+    let providers: any[] = [];
+    try {
+      providers = await prisma.aiProvider.findMany({
+        where: { isActive: true, encryptedApiKey: { not: null }, defaultModelId: { not: null } },
+        orderBy: { priority: "asc" },
+      });
+    } catch {
+      providers = [];
+    }
 
     if (providers.length === 0) return null;
 
@@ -103,19 +104,48 @@ export class MultiProviderLLMService {
       if (!apiKey || !provider.defaultModelId) continue;
 
       try {
-        const text = await callProvider(provider.provider, apiKey, provider.defaultModelId, messages);
-        if (text) {
-          return {
-            id: `ai_${Date.now()}`,
-            sender: "assistant",
-            text,
-            intent: "HELP",
-            timestamp: new Date().toISOString(),
-          };
+        const rawOutput = await callProvider(provider.provider, apiKey, provider.defaultModelId, messages);
+        if (!rawOutput) continue;
+
+        // Check if model returned a structured tool call
+        const trimmed = rawOutput.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed.tool && TOOL_REGISTRY[parsed.tool]) {
+              const tool = TOOL_REGISTRY[parsed.tool];
+              const result: ToolExecutionResult = await tool.handler(parsed.params || {}, context);
+
+              return {
+                id: `asst_${Date.now()}`,
+                sender: "assistant",
+                text: result.summary,
+                intent: "HELP",
+                timestamp: new Date().toISOString(),
+                provenance: result.provenance,
+                cards: result.cards,
+                actions: result.actions,
+                toolCall: {
+                  toolName: tool.name,
+                  params: parsed.params,
+                  summary: result.summary,
+                },
+              };
+            }
+          } catch {}
         }
+
+        // Direct text response
+        return {
+          id: `asst_${Date.now()}`,
+          sender: "assistant",
+          text: rawOutput,
+          intent: "HELP",
+          timestamp: new Date().toISOString(),
+        };
       } catch (err: any) {
         console.warn(
-          `${provider.provider} (model ${provider.defaultModelId}) call failed, trying next provider...`,
+          `Provider ${provider.provider} (${provider.defaultModelId}) call failed, trying next provider...`,
           err?.response?.data?.error?.message || err?.message
         );
       }

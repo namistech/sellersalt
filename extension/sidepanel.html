@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SellerSalt</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 16px;
+        color: #1a1a1a;
+        background: #ffffff;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 12px;
+      }
+      .state {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e2e2;
+        margin-bottom: 12px;
+        font-size: 13px;
+      }
+      .state.connected {
+        border-color: #0e8f5d;
+        background: #f0faf5;
+      }
+      .muted {
+        color: #6b7280;
+      }
+      button {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: none;
+        background: #0e8f5d;
+        color: white;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: transparent;
+        color: #6b7280;
+        border: 1px solid #e2e2e2;
+        margin-top: 8px;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #seo-panel {
+        margin-top: 16px;
+      }
+      .seo-state {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e2e2;
+        font-size: 13px;
+      }
+      .score-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .score-value {
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .breakdown {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 4px 8px;
+        font-size: 12px;
+        margin: 8px 0;
+      }
+      .breakdown .muted {
+        text-align: right;
+      }
+      .diagnostic {
+        border-left: 3px solid #d1d5db;
+        padding: 4px 8px;
+        margin-bottom: 6px;
+        font-size: 12px;
+      }
+      .diagnostic.CRITICAL {
+        border-left-color: #dc2626;
+      }
+      .diagnostic.HIGH {
+        border-left-color: #f59e0b;
+      }
+      .diagnostic.MEDIUM,
+      .diagnostic.LOW {
+        border-left-color: #9ca3af;
+      }
+      .section-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6b7280;
+        margin: 10px 0 4px;
+      }
+      #suggestions-panel {
+        margin-top: 16px;
+      }
+      .suggestion-card {
+        border: 1px solid #e2e2e2;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        font-size: 12px;
+      }
+      .diff-before {
+        color: #9ca3af;
+        text-decoration: line-through;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .diff-after {
+        color: #1a1a1a;
+        font-weight: 500;
+        display: block;
+      }
+      .apply-btn {
+        margin-top: 8px;
+        width: auto;
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid #e2e2e2;
+        border-radius: 6px;
+        padding: 3px 8px;
+        margin: 3px 4px 3px 0;
+        font-size: 12px;
+      }
+      .tag-chip.noncompliant {
+        border-color: #dc2626;
+        color: #dc2626;
+      }
+      .provenance-tag {
+        font-size: 10px;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SellerSalt</h1>
+    <div id="state" class="state">
+      <span class="muted">Checking connection…</span>
+    </div>
+    <button id="connect-btn">Connect to SellerSalt</button>
+    <button id="disconnect-btn" class="secondary" style="display: none">Disconnect</button>
+
+    <div id="seo-panel" style="display: none">
+      <div class="section-title">Etsy Listing SEO</div>
+      <div id="seo-state" class="seo-state">
+        <span class="muted">—</span>
+      </div>
+    </div>
+
+    <div id="suggestions-panel" style="display: none">
+      <div class="section-title">Title Suggestion</div>
+      <div id="title-suggestion" class="suggestion-card">
+        <span class="muted">—</span>
+      </div>
+      <div class="section-title">Tag Suggestions</div>
+      <div id="tag-suggestions" class="suggestion-card">
+        <span class="muted">—</span>
+      </div>
+    </div>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>

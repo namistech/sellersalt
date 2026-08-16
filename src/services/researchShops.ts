@@ -25,7 +25,10 @@ export interface ResearchShopSnapshot {
   activeListings: number;
 }
 
+import type { CompleteShopIntelligenceProfile } from "@/types/shop-research";
+
 export interface ResearchShopDetail {
+  profile?: CompleteShopIntelligenceProfile;
   shop: {
     shopExternalId: string;
     shopName: string;

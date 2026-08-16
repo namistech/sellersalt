@@ -1,0 +1,332 @@
+/**
+ * SellerSalt Standalone Keyword Research & Tag Harvesting Engine
+ * 
+ * Extracts marketplace supply metrics, harvests 13-tag patterns and title n-grams,
+ * performs multi-tier tail classifications, calculates deterministic competition ratings,
+ * and structures explainable keyword intelligence.
+ */
+
+import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
+import { createEtsyClient } from "@/connectors/etsy";
+import type {
+  KeywordSearchRequest,
+  KeywordSearchResponse,
+  KeywordSearchSummary,
+  HarvestedKeyword,
+  ObservedListingEvidence,
+  KeywordCompetitionRating,
+  KeywordTailClassification,
+  KeywordIntentClassification,
+} from "@/types/keyword-research";
+
+// --------------------------------------------------------------------------
+// Term Normalization & NLP Analysis
+// --------------------------------------------------------------------------
+
+export function normalizeTerm(term: string): string {
+  return term
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function calculateTokenOverlap(query: string, candidate: string): number {
+  const qNorm = normalizeTerm(query);
+  const cNorm = normalizeTerm(candidate);
+
+  if (!qNorm || !cNorm) return 0;
+  if (qNorm === cNorm) return 100;
+  if (cNorm.includes(qNorm) || qNorm.includes(cNorm)) return 85;
+
+  const qTokens = new Set(qNorm.split(" ").filter(Boolean));
+  const cTokens = new Set(cNorm.split(" ").filter(Boolean));
+
+  let overlap = 0;
+  for (const t of qTokens) {
+    if (cTokens.has(t)) overlap++;
+  }
+
+  const unionSize = new Set([...qTokens, ...cTokens]).size;
+  if (unionSize === 0) return 0;
+
+  return Math.round((overlap / unionSize) * 100);
+}
+
+export function classifyIntent(term: string): KeywordIntentClassification {
+  const lower = term.toLowerCase();
+
+  const recipientOccasionPatterns = [
+    "gift", "for him", "for her", "for men", "for women", "mom", "dad", "baby",
+    "wedding", "birthday", "anniversary", "christmas", "holiday", "groomsmen",
+    "bridesmaid", "teacher", "father", "mother", "valentine", "halloween"
+  ];
+  for (const p of recipientOccasionPatterns) {
+    if (lower.includes(p)) return "RECIPIENT_OCCASION";
+  }
+
+  const materialStylePatterns = [
+    "leather", "wood", "wooden", "gold", "silver", "linen", "cotton", "ceramic",
+    "minimalist", "vintage", "boho", "rustic", "modern", "handmade", "aesthetic",
+    "custom", "personalized", "engraved", "brass", "canvas", "crochet", "knitted"
+  ];
+  for (const p of materialStylePatterns) {
+    if (lower.includes(p)) return "MATERIAL_STYLE";
+  }
+
+  const productTypePatterns = [
+    "planner", "organizer", "bag", "wallet", "case", "holder", "box", "jewelry",
+    "ring", "necklace", "earring", "shirt", "tshirt", "sweatshirt", "hoodie",
+    "decor", "card", "sticker", "print", "poster", "template", "mug", "cup",
+    "candle", "pillow", "blanket", "dress", "hat", "journal", "notebook"
+  ];
+  for (const p of productTypePatterns) {
+    if (lower.includes(p)) return "PRODUCT_TYPE";
+  }
+
+  return "GENERAL";
+}
+
+export function computeKeywordCompetition(
+  frequency: number,
+  totalListings: number,
+  avgFavorers: number
+): { level: KeywordCompetitionRating; score: number } {
+  const penetration = totalListings > 0 ? frequency / totalListings : 0;
+  const favorerFactor = Math.min(1, avgFavorers / 120);
+
+  // Score from 0 to 100 based on catalog penetration and engagement proxy
+  const rawScore = Math.round(penetration * 65 + favorerFactor * 35);
+  const score = Math.min(100, Math.max(5, rawScore));
+
+  let level: KeywordCompetitionRating = "MODERATE";
+  if (score >= 75) level = "VERY_HIGH";
+  else if (score >= 55) level = "HIGH";
+  else if (score >= 35) level = "MODERATE";
+  else if (score >= 18) level = "LOW";
+  else level = "VERY_LOW";
+
+  return { level, score };
+}
+
+// --------------------------------------------------------------------------
+// Tag & Title N-Gram Harvesting Pipeline
+// --------------------------------------------------------------------------
+
+export function harvestTagsAndNgrams(
+  listings: any[],
+  query: string
+): HarvestedKeyword[] {
+  if (!listings || listings.length === 0) return [];
+
+  const totalListings = listings.length;
+  const termStats = new Map<
+    string,
+    {
+      term: string;
+      count: number;
+      favorersSum: number;
+      provenance: "ETSY_EXTRACTED_TAG" | "TITLE_NGRAM";
+    }
+  >();
+
+  for (const l of listings) {
+    const favorers = l.num_favorers ?? 0;
+    const seenInListing = new Set<string>();
+
+    // 1. Harvest official 13 tags
+    if (Array.isArray(l.tags)) {
+      for (const rawTag of l.tags) {
+        const clean = normalizeTerm(String(rawTag));
+        if (clean && clean.length >= 2 && !seenInListing.has(clean)) {
+          seenInListing.add(clean);
+          const current = termStats.get(clean) || {
+            term: clean,
+            count: 0,
+            favorersSum: 0,
+            provenance: "ETSY_EXTRACTED_TAG",
+          };
+          current.count += 1;
+          current.favorersSum += favorers;
+          termStats.set(clean, current);
+        }
+      }
+    }
+
+    // 2. Extract 2-word, 3-word, and 4-word title N-Grams
+    if (typeof l.title === "string") {
+      const words = normalizeTerm(l.title).split(" ").filter(Boolean);
+      for (let n = 2; n <= 4; n++) {
+        for (let i = 0; i <= words.length - n; i++) {
+          const ngram = words.slice(i, i + n).join(" ");
+          if (ngram.length >= 4 && !seenInListing.has(ngram)) {
+            seenInListing.add(ngram);
+            const current = termStats.get(ngram) || {
+              term: ngram,
+              count: 0,
+              favorersSum: 0,
+              provenance: "TITLE_NGRAM",
+            };
+            current.count += 1;
+            current.favorersSum += favorers;
+            termStats.set(ngram, current);
+          }
+        }
+      }
+    }
+  }
+
+  const results: HarvestedKeyword[] = [];
+
+  for (const entry of termStats.values()) {
+    const words = entry.term.split(" ").filter(Boolean);
+    const wordCount = words.length;
+    const charCount = entry.term.length;
+    const isTagCompliant = charCount <= 20;
+    const percentage = Math.round((entry.count / totalListings) * 100);
+    const estimatedDemandSignal = Math.round(entry.favorersSum / entry.count);
+    const relevanceScore = calculateTokenOverlap(query, entry.term);
+    const { level: competitionLevel, score: competitionScore } = computeKeywordCompetition(
+      entry.count,
+      totalListings,
+      estimatedDemandSignal
+    );
+
+    let tailClassification: KeywordTailClassification = "LONG_TAIL";
+    if (wordCount === 1) tailClassification = "HEAD_TERM";
+    else if (wordCount === 2) tailClassification = "MID_TAIL";
+
+    const intentClassification = classifyIntent(entry.term);
+
+    results.push({
+      term: entry.term,
+      wordCount,
+      charCount,
+      isTagCompliant,
+      frequency: entry.count,
+      percentage,
+      relevanceScore,
+      estimatedDemandSignal,
+      competitionLevel,
+      competitionScore,
+      tailClassification,
+      intentClassification,
+      provenance: entry.provenance,
+    });
+  }
+
+  // Rank by frequency (catalog penetration) then relevance score
+  return results.sort((a, b) => {
+    if (b.frequency !== a.frequency) return b.frequency - a.frequency;
+    return b.relevanceScore - a.relevanceScore;
+  });
+}
+
+// --------------------------------------------------------------------------
+// Core Standalone Keyword Research Orchestrator
+// --------------------------------------------------------------------------
+
+export async function fetchStandaloneKeywordResearch(
+  organizationId: string,
+  request: KeywordSearchRequest
+): Promise<KeywordSearchResponse> {
+  const query = (request.query || "").trim();
+  if (!query) {
+    throw new Error("Search query keyword is required.");
+  }
+
+  const active = await getActiveConnectorWithCredentials(organizationId, "ETSY");
+  const apiKey = active?.credentials?.apiKey || process.env.ETSY_API_KEY || "";
+  const sharedSecret = active?.credentials?.sharedSecret || process.env.ETSY_SHARED_SECRET || "";
+
+  if (!apiKey) {
+    throw new Error("No active Etsy API credentials configured. Please configure an Etsy connector in Settings.");
+  }
+
+  const client = createEtsyClient(apiKey, sharedSecret);
+
+  const limit = Math.min(100, Math.max(10, request.limit || 50));
+  const searchParams: any = {
+    keywords: query,
+    limit,
+    sort_on: "score",
+    sort_order: "desc",
+  };
+
+  if (request.categoryTaxonomyId) {
+    searchParams.taxonomy_id = request.categoryTaxonomyId;
+  }
+  if (request.minPrice !== undefined && request.minPrice > 0) {
+    searchParams.min_price = request.minPrice;
+  }
+  if (request.maxPrice !== undefined && request.maxPrice > 0) {
+    searchParams.max_price = request.maxPrice;
+  }
+
+  const rawSearch = await client.searchListings(searchParams);
+  const listings = rawSearch?.results ?? [];
+  const totalEtsySupply = rawSearch?.count ?? listings.length;
+
+  // Calculate pricing & engagement aggregates across sample
+  let priceSum = 0;
+  let favorerSum = 0;
+  const topListings: ObservedListingEvidence[] = [];
+
+  for (const l of listings) {
+    const price = (l.price?.amount ?? 0) / (l.price?.divisor ?? 100);
+    const favorers = l.num_favorers ?? 0;
+    priceSum += price;
+    favorerSum += favorers;
+
+    const images: string[] = [];
+    if (l.images && Array.isArray(l.images)) {
+      for (const img of l.images) {
+        const url = img.url_570xN || img.url_fullxfull || img.url_75x75;
+        if (url) images.push(url);
+      }
+    }
+
+    topListings.push({
+      listingId: String(l.listing_id),
+      title: l.title ?? "Untitled Listing",
+      price,
+      imageUrl: images[0] || l.image_url || null,
+      listingUrl: l.url ?? `https://www.etsy.com/listing/${l.listing_id}`,
+      shopName: l.shop_name || `Shop ${l.shop_id}`,
+      numFavorers: favorers,
+      tags: Array.isArray(l.tags) ? l.tags : [],
+    });
+  }
+
+  const sampledCount = Math.max(1, listings.length);
+  const avgPrice = Math.round((priceSum / sampledCount) * 100) / 100;
+  const avgFavorers = Math.round(favorerSum / sampledCount);
+
+  // Overall marketplace competition rating for this head query
+  const { level: compLevel, score: compScore } = computeKeywordCompetition(
+    sampledCount,
+    totalEtsySupply,
+    avgFavorers
+  );
+
+  const summary: KeywordSearchSummary = {
+    query,
+    totalEtsySupply,
+    sampledListingCount: listings.length,
+    avgPrice,
+    avgFavorers,
+    competitionLevel: compLevel,
+    competitionScore: compScore,
+  };
+
+  // Harvest all tags & title n-grams
+  const keywords = harvestTagsAndNgrams(listings, query);
+
+  return {
+    query,
+    summary,
+    keywords,
+    topListings: topListings.slice(0, 12),
+    capturedAt: new Date().toISOString(),
+  };
+}

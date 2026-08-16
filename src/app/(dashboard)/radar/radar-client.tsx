@@ -15,8 +15,11 @@ import {
   Target,
   TrendingUp,
   Zap,
+  Bookmark,
+  Check,
 } from "lucide-react";
 import type { OpportunityRadarData, OpportunityItem, OpportunityType } from "@/services/opportunities";
+import type { ProductHuntingResult } from "@/types/product-hunting";
 import {
   Badge,
   Button,
@@ -32,6 +35,8 @@ import { EmptyState, Table, type Column } from "@/components/data";
 import { fetchConnectors, type ConnectorSummary } from "@/services/connectors";
 import { createSearchConfig, type CreateSearchConfigInput } from "@/services/searchConfigs";
 import { updateProspect } from "@/services/prospects";
+import { addProductToPlanner } from "@/services/product-hunting-client";
+import { ProductResearchDrawer } from "@/components/intelligence/ProductResearchDrawer";
 import { NewSearchDrawer } from "../new-search-drawer";
 
 interface RadarClientProps {
@@ -64,9 +69,88 @@ export function RadarClient({
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialData.allOpportunities);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // Planner & Research Drawer states
+  const [activeDrawerProduct, setActiveDrawerProduct] = useState<ProductHuntingResult | null>(null);
+  const [savedPlannerMap, setSavedPlannerMap] = useState<Record<string, boolean>>({});
+  const [savingPlannerId, setSavingPlannerId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchConnectors().then(setConnectors).catch(() => {});
   }, []);
+
+  function toProductHuntingResult(opp: OpportunityItem): ProductHuntingResult {
+    return {
+      id: opp.prospectId,
+      listing: {
+        listingId: opp.prospectId,
+        title: opp.listingTitle,
+        price: opp.price,
+        currency: "USD",
+        images: opp.listingImageUrl ? [opp.listingImageUrl] : [],
+        imageUrl: opp.listingImageUrl,
+        tags: [opp.keyword],
+        materials: [],
+        taxonomyId: null,
+        createdTimestamp: Math.floor(new Date(opp.discoveredAt).getTime() / 1000),
+        updatedTimestamp: Math.floor(new Date(opp.discoveredAt).getTime() / 1000),
+        listingAgeDays: Math.max(1, Math.round((Date.now() - new Date(opp.discoveredAt).getTime()) / (24 * 3600 * 1000))),
+        listingAgeMonths: opp.shopAgeMonths,
+        listingUrl: opp.listingUrl,
+        shopId: opp.shopExternalId,
+        shopName: opp.shopName,
+        numFavorers: opp.numFavorers,
+        views: null,
+      },
+      shop: {
+        shopId: opp.shopExternalId,
+        shopName: opp.shopName,
+        shopUrl: opp.shopUrl,
+        shopIconUrl: opp.shopIconUrl,
+        createdTimestamp: Math.floor((Date.now() - opp.shopAgeMonths * 30.44 * 24 * 3600 * 1000) / 1000),
+        shopAgeMonths: opp.shopAgeMonths,
+        totalSales: opp.totalSales,
+        activeListings: opp.activeListings,
+        reviewCount: opp.reviewCount,
+        reviewAverage: opp.reviewAverage,
+      },
+      signals: {
+        estDailySales: opp.estDailySales,
+        avgSellingRatio: opp.avgSellingRatio,
+        salesVelocityProxy: opp.estDailySales >= 8 ? "HIGH" : opp.estDailySales >= 3 ? "MODERATE" : "EMERGING",
+        reviewConversionRate: opp.totalSales > 0 ? opp.reviewCount / opp.totalSales : 0,
+      },
+      opportunity: {
+        opportunityScore: opp.score,
+        classification: opp.type,
+        classificationLabel: opp.typeLabel,
+        classificationEmoji: opp.typeEmoji,
+        reason: opp.reason,
+        signals: opp.signals,
+        evidence: [
+          `Estimated velocity: ${opp.estDailySales.toFixed(1)} sales/day.`,
+          `Catalog density: ${opp.avgSellingRatio.toFixed(1)} sales/listing.`,
+          `Competition barrier: ${opp.reviewCount} reviews.`,
+        ],
+        strengths: ["Strong market momentum observed on Etsy"],
+        weaknesses: [],
+        recommendedAction: opp.score >= 80 ? "SHORTLIST" : "STUDY_PRICING",
+        strategicTakeaway: opp.reason,
+      },
+    };
+  }
+
+  async function handleQuickAddToPlanner(opp: OpportunityItem) {
+    setSavingPlannerId(opp.id);
+    const prod = toProductHuntingResult(opp);
+    try {
+      await addProductToPlanner(prod);
+      setSavedPlannerMap((prev) => ({ ...prev, [opp.id]: true }));
+    } catch (err: any) {
+      alert(err.message || "Failed to add to Planner");
+    } finally {
+      setSavingPlannerId(null);
+    }
+  }
 
   async function handleCreateSearch(input: CreateSearchConfigInput) {
     await createSearchConfig(input);
@@ -309,34 +393,49 @@ export function RadarClient({
       key: "actions",
       header: "Actions",
       align: "right",
-      render: (row) => (
-        <div className="flex items-center gap-1.5 justify-end">
-          <IconButton
-            icon={<Star className={`h-4 w-4 ${row.isFavorite ? "fill-amber-400 text-amber-400" : "text-ink-tertiary"}`} />}
-            aria-label={row.isFavorite ? "Unfavorite" : "Favorite"}
-            variant="tertiary"
-            size="compact"
-            onClick={() => handleToggleFavorite(row)}
-            disabled={actionLoadingId === row.id}
-          />
+      render: (row) => {
+        const isSaved = savedPlannerMap[row.id] || row.status === "SHORTLISTED";
+        return (
+          <div className="flex items-center gap-1.5 justify-end">
+            <IconButton
+              icon={<Star className={`h-4 w-4 ${row.isFavorite ? "fill-amber-400 text-amber-400" : "text-ink-tertiary"}`} />}
+              aria-label={row.isFavorite ? "Unfavorite" : "Favorite"}
+              variant="tertiary"
+              size="compact"
+              onClick={() => handleToggleFavorite(row)}
+              disabled={actionLoadingId === row.id}
+            />
 
-          <Button
-            variant={row.isShortlisted ? "primary" : "secondary"}
-            size="compact"
-            onClick={() => handleToggleShortlist(row)}
-            disabled={actionLoadingId === row.id}
-            className="text-xs h-7 px-2.5"
-          >
-            {row.isShortlisted ? "Shortlisted" : "Shortlist"}
-          </Button>
-
-          <Link href={`/shops/${row.shopExternalId}`}>
-            <Button variant="secondary" size="compact" className="text-xs h-7 px-2.5">
-              Investigate
+            <Button
+              variant={isSaved ? "secondary" : "primary"}
+              size="compact"
+              loading={savingPlannerId === row.id}
+              disabled={isSaved}
+              onClick={() => handleQuickAddToPlanner(row)}
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs h-7 px-2.5 text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+            >
+              {isSaved ? (
+                <>
+                  <Check className="h-3 w-3 mr-1" /> Saved
+                </>
+              ) : (
+                <>
+                  <Bookmark className="h-3 w-3 mr-1" /> Planner
+                </>
+              )}
             </Button>
-          </Link>
-        </div>
-      ),
+
+            <Button
+              variant="secondary"
+              size="compact"
+              onClick={() => setActiveDrawerProduct(toProductHuntingResult(row))}
+              className="text-xs h-7 px-2.5"
+            >
+              Inspect Radar →
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -591,11 +690,33 @@ export function RadarClient({
 
                 {/* 5. WHAT NEXT: Action triggers */}
                 <div className="mt-5 flex items-center gap-2 border-t border-line-subtle pt-3.5">
-                  <Link href={`/shops/${opp.shopExternalId}`} className="flex-1">
-                    <Button variant="primary" size="compact" className="w-full text-xs font-semibold shadow-xs">
-                      Investigate Shop →
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    size="compact"
+                    onClick={() => setActiveDrawerProduct(toProductHuntingResult(opp))}
+                    className="flex-1 text-xs font-semibold shadow-xs bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+                  >
+                    Inspect Radar →
+                  </Button>
+
+                  <Button
+                    variant={savedPlannerMap[opp.id] || opp.isShortlisted ? "secondary" : "primary"}
+                    size="compact"
+                    loading={savingPlannerId === opp.id}
+                    disabled={savedPlannerMap[opp.id] || opp.isShortlisted}
+                    onClick={() => handleQuickAddToPlanner(opp)}
+                    className="text-xs px-2.5 bg-[#0E8F5D] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                  >
+                    {savedPlannerMap[opp.id] || opp.isShortlisted ? (
+                      <>
+                        <Check className="h-3 w-3 mr-1" /> Saved
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-3 w-3 mr-1" /> Planner
+                      </>
+                    )}
+                  </Button>
 
                   <IconButton
                     icon={<Star className={`h-4 w-4 ${opp.isFavorite ? "fill-amber-400 text-amber-400" : "text-ink-tertiary"}`} />}
@@ -605,16 +726,6 @@ export function RadarClient({
                     onClick={() => handleToggleFavorite(opp)}
                     disabled={actionLoadingId === opp.id}
                   />
-
-                  <Button
-                    variant={opp.isShortlisted ? "primary" : "secondary"}
-                    size="compact"
-                    onClick={() => handleToggleShortlist(opp)}
-                    disabled={actionLoadingId === opp.id}
-                    className="text-xs px-2.5"
-                  >
-                    {opp.isShortlisted ? "Shortlisted" : "Shortlist"}
-                  </Button>
                 </div>
               </Card>
             ))}
@@ -791,6 +902,16 @@ export function RadarClient({
         onClose={() => setDrawerOpen(false)}
         connectors={connectors}
         onSubmit={handleCreateSearch}
+      />
+
+      {/* Product Research Drawer */}
+      <ProductResearchDrawer
+        product={activeDrawerProduct}
+        open={!!activeDrawerProduct}
+        onClose={() => setActiveDrawerProduct(null)}
+        onPlannerAdded={(prod) => {
+          setSavedPlannerMap((prev) => ({ ...prev, [prod.id]: true }));
+        }}
       />
     </div>
   );
