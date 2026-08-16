@@ -1,10 +1,10 @@
-"use client";
-
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { X, AlertCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/components/ui";
 import { buildNavigation } from "@/services/navigation";
 import type { NotificationItem, SearchResultItem, WorkspaceContext } from "@/services/types";
+import type { AnnouncementItem } from "@/services/announcements";
 import { GlobalSearch } from "./GlobalSearch";
 import { MobileNav } from "./MobileNav";
 import { NotificationCenter } from "./NotificationCenter";
@@ -28,7 +28,7 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-export function AppShell({ context, notifications, searchResults, onSignOut, children }: AppShellProps) {
+export function AppShell({ context, notifications: initialNotifications, searchResults, onSignOut, children }: AppShellProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -38,6 +38,54 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
   const [activeConnectedShopId, setActiveConnectedShopId] = useState(context.activeConnectedShopId);
   const [activeScopeId, setActiveScopeId] = useState(context.scope?.current.id);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(context.organization.id);
+  const [urgentBanner, setUrgentBanner] = useState<AnnouncementItem | null>(null);
+  const [allNotifications, setAllNotifications] = useState<NotificationItem[]>(initialNotifications);
+
+  // Load announcements & notifications
+  useEffect(() => {
+    async function fetchAnnouncements() {
+      try {
+        const res = await fetch("/api/announcements");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.banner) {
+          setUrgentBanner(data.banner);
+        }
+        if (Array.isArray(data.notifications) && data.notifications.length > 0) {
+          const mapped: NotificationItem[] = data.notifications.map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            description: n.message,
+            category: "system" as const,
+            timestamp: n.createdAt,
+            read: Boolean(n.isDismissed),
+            important: n.priority === "URGENT",
+          }));
+          setAllNotifications((prev) => {
+            const existingIds = new Set(prev.map((i) => i.id));
+            const fresh = mapped.filter((m) => !existingIds.has(m.id));
+            return [...fresh, ...prev];
+          });
+        }
+      } catch {
+        // Non-blocking
+      }
+    }
+    fetchAnnouncements();
+  }, []);
+
+  async function handleDismissBanner(bannerId: string) {
+    setUrgentBanner(null);
+    try {
+      await fetch("/api/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dismiss", announcementId: bannerId }),
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
 
   // SSR-safe: default to expanded on first render (matches server markup),
   // then read the persisted preference once mounted.
@@ -62,7 +110,7 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
   }, []);
 
   const groups = buildNavigation(context);
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = allNotifications.filter((n) => !n.read).length;
   const resolvedScope = context.scope
     ? { ...context.scope, current: context.scope.options.find((o) => o.id === activeScopeId) ?? context.scope.current }
     : undefined;
@@ -92,6 +140,32 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
       <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} groups={groups} organizationName={context.organization.name} />
 
       <div className={cn("flex flex-1 flex-col overflow-hidden")}>
+        {urgentBanner && (
+          <div className="bg-[#141B16] text-white border-b border-[#2A362D] px-4 py-2 flex items-center justify-between gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="h-2 w-2 rounded-full bg-danger animate-pulse shrink-0" />
+              <strong className="font-bold text-[#FFB020] shrink-0">{urgentBanner.title}:</strong>
+              <span className="truncate text-ink-inverted-secondary">{urgentBanner.message}</span>
+              {urgentBanner.linkUrl && (
+                <a
+                  href={urgentBanner.linkUrl}
+                  className="font-bold text-[#16C784] hover:underline inline-flex items-center gap-1 shrink-0 ml-1"
+                >
+                  {urgentBanner.linkText || "Learn more"} <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleDismissBanner(urgentBanner.id)}
+              className="text-ink-tertiary hover:text-white p-1 rounded transition"
+              aria-label="Dismiss banner"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         <Topbar
           context={shellContext}
           onOpenMobileNav={() => setMobileNavOpen(true)}
@@ -110,7 +184,7 @@ export function AppShell({ context, notifications, searchResults, onSignOut, chi
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} results={searchResults} />
-      <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={notifications} />
+      <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={allNotifications} />
       <SaltBot open={assistantOpen} onOpenChange={setAssistantOpen} />
     </div>
   );

@@ -57,6 +57,7 @@ const DISCOVER_ITEMS: NavigationItem[] = [
   { id: "trends", label: "Trends", href: "/trends", icon: TrendingUp },
   { id: "dropped-shops", label: "Dropped Shops", href: "/inactive", icon: XCircle },
   { id: "favorites", label: "Favorites", href: "/favorites", icon: Star },
+  { id: "university", label: "SellerSalt University", href: "/university", icon: GraduationCap, requiredCapability: "view:university" },
 ];
 
 const OPERATE_ITEMS: NavigationItem[] = [
@@ -123,11 +124,11 @@ export function buildNavigation(context: WorkspaceContext): NavigationGroup[] {
   const groups: NavigationGroup[] = [];
 
   if (has(context, "discover:view")) {
-    groups.push({ id: "discover", label: "Discover", items: DISCOVER_ITEMS });
+    groups.push({ id: "discover", label: "Discover", items: filterItems(DISCOVER_ITEMS, context) });
   }
 
   if (has(context, "operate:view")) {
-    groups.push({ id: "operate", label: "Operate", items: OPERATE_ITEMS });
+    groups.push({ id: "operate", label: "Operate", items: filterItems(OPERATE_ITEMS, context) });
   }
 
   const manageItems = [

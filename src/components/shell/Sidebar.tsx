@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn, FOCUS_RING, IconButton, Text } from "@/components/ui";
+import { AccountBrand } from "./AccountBrand";
 import type { NavigationGroup, NavigationItem } from "@/services/navigation";
 
 // design-system-v1.md §15 — restrained active-state (soft fill, not a
@@ -114,22 +115,12 @@ export function Sidebar({ groups, organizationName, workspaceSwitcher, collapsed
         className
       )}
     >
-      <div className={cn("flex items-center gap-2 px-3 py-5", collapsed && "justify-center px-0")}>
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-ink text-sm font-bold text-white">S</div>
-        {!collapsed && (
-          <div className="min-w-0 flex-1">
-            <Text as="span" size="body-md" weight="semibold" className="block truncate text-ink">
-              SellerSalt
-            </Text>
-            {workspaceSwitcher ?? (
-              organizationName && (
-                <Text as="span" size="meta" color="tertiary" className="block truncate">
-                  {organizationName}
-                </Text>
-              )
-            )}
-          </div>
-        )}
+      <div className={cn("flex items-center gap-2 px-3 py-4 border-b border-line-subtle mb-2", collapsed && "justify-center px-0")}>
+        <AccountBrand
+          organizationName={organizationName}
+          collapsed={collapsed}
+          className="w-full"
+        />
       </div>
 
       <nav aria-label="Primary" className="flex-1 space-y-6 overflow-y-auto px-3 pb-4">

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Star, ExternalLink, ArrowRight, Sparkles, Check, Flame, Gem, Zap } from "lucide-react";
-import { Card, Button, Badge, Text, Eyebrow, IconButton, cn } from "@/components/ui";
+import { Card, Button, Badge, Text, Eyebrow, IconButton, SafeImage, cn } from "@/components/ui";
 import { EmptyState } from "@/components/data";
 import { scoreEstDailySales, demandMeta } from "@/lib/competition-scoring";
 import { updateProspect, type ProspectStatus } from "@/services/prospects";
@@ -98,25 +98,15 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                   )}
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    {item.listingImageUrl ? (
-                      <img
-                        src={item.listingImageUrl}
-                        alt=""
-                        className={cn(
-                          "shrink-0 rounded-md object-cover border border-line",
-                          isTopFinding ? "h-16 w-16" : "h-12 w-12"
-                        )}
-                      />
-                    ) : (
-                      <div
-                        className={cn(
-                          "flex shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary",
-                          isTopFinding ? "h-16 w-16" : "h-12 w-12"
-                        )}
-                      >
-                        Shop
-                      </div>
-                    )}
+                    <SafeImage
+                      src={item.listingImageUrl}
+                      alt={item.listingTitle || item.shopName}
+                      fallbackType="product"
+                      className={cn(
+                        "shrink-0 rounded-md object-cover border border-line",
+                        isTopFinding ? "h-16 w-16" : "h-12 w-12"
+                      )}
+                    />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <Link

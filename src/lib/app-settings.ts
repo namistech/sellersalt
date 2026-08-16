@@ -22,6 +22,15 @@ export const SETTING_DEFINITIONS = [
   { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
   { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
 
+  // SellerSalt University & Education Portal
+  { key: "university_enabled", label: "Show SellerSalt University in Navigation (true/false)", isSecret: false },
+  { key: "university_url", label: "SellerSalt University Destination URL", isSecret: false },
+
+  // System Announcements & Alerts
+  { key: "announcement_urgent_active", label: "Urgent Top Announcement Banner Active (true/false)", isSecret: false },
+  { key: "announcement_urgent_text", label: "Urgent Top Announcement Banner Text", isSecret: false },
+  { key: "announcement_urgent_link", label: "Urgent Top Announcement Link (URL)", isSecret: false },
+
   // Etsy Integration Credentials
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },

@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/shell";
 import { Card, Input, Button, Heading, Text } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { auditListing, addSeoAuditToPlanner } from "@/services/seo-engine-client";
+import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 import type { CompleteListingSeoAudit, SeoIssueSeverity, SeoGrade } from "@/types/seo";
 
 type AuditTab = "LIVE_LISTING" | "DRAFT_PLAYGROUND";
@@ -57,26 +58,20 @@ function SeoAuditContent() {
   const [auditResult, setAuditResult] = useState<CompleteListingSeoAudit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shopRedirectHint, setShopRedirectHint] = useState<string | null>(null);
 
   // Planner state
   const [savingPlanner, setSavingPlanner] = useState(false);
   const [savedPlanner, setSavedPlanner] = useState(false);
 
-  function parseListingId(input: string): string {
-    const trimmed = input.trim();
-    const match = trimmed.match(/\/listing\/(\d+)/);
-    if (match && match[1]) return match[1];
-    return trimmed;
-  }
-
-  async function runAuditById(id: string) {
-    if (!id) return;
+  async function runAuditById(id: number | string) {
     setLoading(true);
     setError(null);
+    setShopRedirectHint(null);
     setSavedPlanner(false);
 
     try {
-      const res = await auditListing({ listingId: id });
+      const res = await auditListing({ listingId: String(id) });
       setAuditResult(res.audit);
     } catch (err: any) {
       setError(err.message || "Failed to audit Etsy listing.");
@@ -88,15 +83,33 @@ function SeoAuditContent() {
 
   useEffect(() => {
     if (initialListingId) {
-      runAuditById(initialListingId);
+      const parsed = parseEtsyListingInput(initialListingId);
+      if (parsed.listingId) {
+        runAuditById(parsed.listingId);
+      }
     }
   }, [initialListingId]);
 
   async function handleAuditLiveListing(e: React.FormEvent) {
     e.preventDefault();
-    const id = parseListingId(listingQuery);
-    if (!id) return;
-    runAuditById(id);
+    if (!listingQuery.trim()) return;
+
+    const parsed = parseEtsyListingInput(listingQuery);
+    if (parsed.isShopUrl && parsed.shopName) {
+      setError(parsed.error || null);
+      setShopRedirectHint(parsed.shopName);
+      setAuditResult(null);
+      return;
+    }
+
+    if (!parsed.listingId) {
+      setError(parsed.error || "Please enter a valid Etsy listing URL or numeric listing ID.");
+      setShopRedirectHint(null);
+      setAuditResult(null);
+      return;
+    }
+
+    runAuditById(parsed.listingId);
   }
 
   async function handleAuditDraft(e: React.FormEvent) {
@@ -282,11 +295,20 @@ function SeoAuditContent() {
 
       {/* Error View */}
       {error && (
-        <Card padding="md" className="border-red-200 bg-red-50 text-red-800 space-y-1">
+        <Card padding="md" className="border-red-200 bg-red-50 text-red-800 space-y-2">
           <div className="flex items-center gap-2 font-bold text-sm">
-            <AlertTriangle className="h-4 w-4 text-red-600" /> SEO Audit Error
+            <AlertTriangle className="h-4 w-4 text-red-600" /> SEO Audit Notice
           </div>
           <p className="text-xs">{error}</p>
+          {shopRedirectHint && (
+            <div className="pt-2">
+              <Link href={`/shops/${encodeURIComponent(shopRedirectHint)}`}>
+                <Button variant="secondary" size="compact" className="text-xs bg-white text-ink font-semibold">
+                  Open Shop Research for &quot;{shopRedirectHint}&quot; →
+                </Button>
+              </Link>
+            </div>
+          )}
         </Card>
       )}
 

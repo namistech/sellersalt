@@ -32,6 +32,7 @@ import {
   IconButton,
   IntelligenceCard,
   ViewSwitch,
+  SafeImage,
   type ViewMode,
 } from "@/components/ui";
 import { EmptyState, Table, type Column } from "@/components/data";
@@ -280,17 +281,12 @@ export function RadarClient({
       header: "Opportunity / Product",
       render: (row) => (
         <div className="flex items-start gap-3 max-w-sm">
-          {row.listingImageUrl ? (
-            <img
-              src={row.listingImageUrl}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-md border border-line object-cover"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface-muted text-xs text-ink-tertiary">
-              Shop
-            </div>
-          )}
+          <SafeImage
+            src={row.listingImageUrl}
+            alt={row.listingTitle || row.shopName}
+            fallbackType="product"
+            className="h-10 w-10 shrink-0 rounded-md border border-line object-cover"
+          />
           <div className="min-w-0">
             <Link
               href={`/shops/${row.shopExternalId}`}
@@ -690,17 +686,12 @@ export function RadarClient({
 
                     {/* 1. WHAT: Opportunity details */}
                     <div className="flex items-start gap-3">
-                      {opp.listingImageUrl ? (
-                        <img
-                          src={opp.listingImageUrl}
-                          alt=""
-                          className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
-                          Etsy
-                        </div>
-                      )}
+                      <SafeImage
+                        src={opp.listingImageUrl}
+                        alt={opp.listingTitle || opp.shopName}
+                        fallbackType="product"
+                        className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                      />
                       <div className="min-w-0">
                         <Link
                           href={`/products/${opp.prospectId}`}
@@ -979,17 +970,12 @@ export function RadarClient({
                   </div>
 
                   <div className="flex items-start gap-3">
-                    {opp.listingImageUrl ? (
-                      <img
-                        src={opp.listingImageUrl}
-                        alt=""
-                        className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-xs text-ink-tertiary">
-                        Etsy
-                      </div>
-                    )}
+                    <SafeImage
+                      src={opp.listingImageUrl}
+                      alt={opp.listingTitle || opp.shopName}
+                      fallbackType="product"
+                      className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                    />
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/products/${opp.prospectId}`}

@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard, ViewSwitch, type ViewMode } from "@/components/ui";
+import { Card, Input, Button, Badge, Heading, Text, IntelligenceCard, ViewSwitch, CountrySelector, type ViewMode } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart, HorizontalBarChart } from "@/components/data/charts";
 import {
@@ -242,6 +242,10 @@ export default function KeywordResearchPage() {
                 placeholder="Max $"
                 className="w-24 h-11 text-xs"
               />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <CountrySelector size="md" />
             </div>
 
             <Button

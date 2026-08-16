@@ -24,7 +24,7 @@ import {
   Plus,
   Zap,
 } from "lucide-react";
-import { Card, Heading, Text, Button, Badge, IntelligenceCard, Input, ViewSwitch, HowItWorksGuide, type ViewMode } from "@/components/ui";
+import { Card, Heading, Text, Button, Badge, IntelligenceCard, Input, ViewSwitch, HowItWorksGuide, SafeImage, CountrySelector, type ViewMode } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import {
   BarChart,
@@ -213,23 +213,7 @@ export function CategoryHuntingClient({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Market Region Selector */}
-            <div className="flex items-center gap-1.5 text-xs text-ink-secondary">
-              <span className="text-ink-tertiary font-bold uppercase text-[10px]">Market:</span>
-              <select
-                value={selectedMarket}
-                onChange={(e) => setSelectedMarket(e.target.value)}
-                className="py-1 px-2.5 rounded-lg border border-line bg-surface font-semibold text-ink text-xs focus:outline-none focus:border-[#0E8F5D]"
-              >
-                <option value="US">🇺🇸 United States</option>
-                <option value="UK">🇬🇧 United Kingdom</option>
-                <option value="CA">🇨🇦 Canada</option>
-                <option value="AU">🇦🇺 Australia</option>
-                <option value="DE">🇩🇪 Germany</option>
-                <option value="FR">🇫🇷 France</option>
-              </select>
-            </div>
-
+            <CountrySelector size="sm" />
             <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
           </div>
         </div>
@@ -644,21 +628,30 @@ export function CategoryHuntingClient({
                     className="p-3 rounded-xl border border-line bg-[#FAFAF8] flex flex-col justify-between space-y-2 hover:border-[#0E8F5D]/30 transition"
                   >
                     <div className="space-y-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`/products/${product.id}`}
-                          className="font-bold text-xs text-ink hover:text-[#0E8F5D] transition-colors line-clamp-2"
-                        >
-                          {product.listing.title}
-                        </Link>
-                        <Badge variant="success" className="text-[10px] shrink-0">
-                          🔥 {product.opportunity.opportunityScore}/100
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-ink-secondary">
-                        <span className="font-bold text-ink tabular-nums">${product.listing.price.toFixed(2)}</span>
-                        <span className="text-[#0E8F5D] font-bold tabular-nums">~{product.signals.estDailySales.toFixed(1)} / day</span>
+                      <div className="flex items-start gap-2.5">
+                        <SafeImage
+                          src={product.listing.imageUrl}
+                          alt={product.listing.title}
+                          fallbackType="product"
+                          className="h-12 w-12 shrink-0 rounded-lg border border-line object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-1.5">
+                            <Link
+                              href={`/products/${product.id}`}
+                              className="font-bold text-xs text-ink hover:text-[#0E8F5D] transition-colors line-clamp-2"
+                            >
+                              {product.listing.title}
+                            </Link>
+                            <Badge variant="success" className="text-[10px] shrink-0">
+                              🔥 {product.opportunity.opportunityScore}/100
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-ink-secondary mt-1">
+                            <span className="font-bold text-ink tabular-nums">${product.listing.price.toFixed(2)}</span>
+                            <span className="text-[#0E8F5D] font-bold tabular-nums">~{product.signals.estDailySales.toFixed(1)} / day</span>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="text-[10px] text-ink-tertiary flex items-center justify-between pt-1 border-t border-line-subtle">

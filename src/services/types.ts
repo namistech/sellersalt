@@ -25,6 +25,7 @@ export type Capability =
   | "manage:cohorts" // institute only
   | "manage:staff" // institute only
   | "manage:reports"
+  | "view:university" // hidden by default for customers, enabled via admin config
   | "admin:preview"; // gates the same admin-only preview surfaces isAdminEmail() gates today
 
 export interface WorkspaceUser {

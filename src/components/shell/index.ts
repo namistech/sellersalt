@@ -33,3 +33,6 @@ export type { NotificationCenterProps } from "./NotificationCenter";
 
 export { AccountMenu } from "./AccountMenu";
 export type { AccountMenuProps } from "./AccountMenu";
+
+export { AccountBrand } from "./AccountBrand";
+export type { AccountBrandProps } from "./AccountBrand";

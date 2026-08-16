@@ -6,6 +6,7 @@ import {
   fetchAndAuditEtsyListing,
   saveListingSeoAuditRecord,
 } from "@/services/seo-engine";
+import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -17,9 +18,17 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
 
-    // Mode A: Audit an existing live Etsy listing by ID
+    // Mode A: Audit an existing live Etsy listing by ID or URL
     if (body.listingId) {
-      const audit = await fetchAndAuditEtsyListing(organizationId, body.listingId);
+      const parsed = parseEtsyListingInput(body.listingId);
+      if (!parsed.listingId) {
+        return NextResponse.json(
+          { error: parsed.error || "Invalid listing ID provided." },
+          { status: 400 }
+        );
+      }
+
+      const audit = await fetchAndAuditEtsyListing(organizationId, parsed.listingId);
       if (body.save) {
         await saveListingSeoAuditRecord(organizationId, {
           organizationId,
@@ -28,7 +37,7 @@ export async function POST(req: Request) {
           description: audit.description,
           materials: audit.materials,
           taxonomyId: audit.taxonomyId,
-          externalListingId: String(body.listingId),
+          externalListingId: String(parsed.listingId),
           imageUrl: audit.imageUrl || undefined,
           listingUrl: audit.listingUrl,
           shopName: audit.shopName,

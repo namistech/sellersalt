@@ -810,12 +810,20 @@ export function ShopDetailClient({
                   return (
                     <tr key={listing.listingId} className="hover:bg-surface-muted transition">
                       <td className="p-3.5 font-bold text-ink">
-                        <Link
-                          href={`/products/${listing.listingId}`}
-                          className="hover:text-[#0E8F5D] transition-colors line-clamp-1 block max-w-md"
-                        >
-                          {listing.title}
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <SafeImage
+                            src={listing.imageUrl}
+                            alt={listing.title}
+                            fallbackType="product"
+                            className="h-10 w-10 shrink-0 rounded-lg border border-line object-cover"
+                          />
+                          <Link
+                            href={`/products/${listing.listingId}`}
+                            className="hover:text-[#0E8F5D] transition-colors line-clamp-1 block max-w-md"
+                          >
+                            {listing.title}
+                          </Link>
+                        </div>
                       </td>
                       <td className="p-3.5 text-right font-bold text-ink tabular-nums">
                         ${listing.price.toFixed(2)}
@@ -871,7 +879,13 @@ export function ShopDetailClient({
                   key={listing.listingId}
                   className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5 flex flex-col justify-between"
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
+                    <SafeImage
+                      src={listing.imageUrl}
+                      alt={listing.title}
+                      fallbackType="product"
+                      className="h-36 w-full rounded-lg border border-line object-cover"
+                    />
                     <div className="flex items-start justify-between gap-2">
                       <Link
                         href={`/products/${listing.listingId}`}

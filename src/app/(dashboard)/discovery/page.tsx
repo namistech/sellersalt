@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { Card, Heading, Text, Badge, Button } from "@/components/ui";
+import { Card, Heading, Text, Badge, Button, SafeImage } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -208,17 +208,12 @@ export default async function DiscoveryPage() {
                 <Card key={item.id} padding="md" className="border-line shadow-xs bg-white flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-start gap-3">
-                      {item.listingImageUrl ? (
-                        <img
-                          src={item.listingImageUrl}
-                          alt=""
-                          className="h-12 w-12 rounded-lg border border-line object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-surface-muted border border-line flex items-center justify-center text-xs font-bold text-ink-tertiary shrink-0">
-                          ETSY
-                        </div>
-                      )}
+                      <SafeImage
+                        src={item.listingImageUrl}
+                        alt={item.listingTitle || item.shopName}
+                        fallbackType="product"
+                        className="h-12 w-12 rounded-lg border border-line object-cover shrink-0"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="font-bold text-xs text-ink truncate" title={item.listingTitle}>
                           {item.listingTitle}
