@@ -40,6 +40,7 @@ import {
   ViewSwitch,
   Dialog,
   Avatar,
+  HowItWorksGuide,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -240,101 +241,191 @@ export default function SpyOnCompetitorPage() {
         </Alert>
       )}
 
+      {/* Contextual Guide */}
+      <HowItWorksGuide
+        title="How Competitor Surveillance Works"
+        description="SellerSalt captures historical marketplace records for any Etsy shop to reveal real daily transaction deltas, catalog additions, and review velocity."
+        steps={[
+          {
+            title: "1. Paste Shop Link",
+            description: "Enter any Etsy store URL (e.g. etsy.com/shop/ShopName) or the bare shop name to begin.",
+            badge: "Instant Setup",
+          },
+          {
+            title: "2. Initial Snapshot Capture",
+            description: "SellerSalt immediately captures the current verified sales count, active listing inventory, and review total.",
+            badge: "Immediate",
+          },
+          {
+            title: "3. 6-Hour Surveillance",
+            description: "Our background engine monitors the shop every 6 hours to detect breakouts, sales spikes, and inventory drops.",
+            badge: "Every 6h",
+          },
+        ]}
+      />
+
       {/* ==================================================================== */}
       {/* SECTION 1: TOP DARK INTELLIGENCE DECISION SURFACE */}
       {/* ==================================================================== */}
-      <IntelligenceCard
-        badgeText="COMPETITOR SURVEILLANCE INTELLIGENCE"
-        badgeIcon={<Radar className="h-3.5 w-3.5 text-[#FBBF24]" />}
-        title={
-          topGainer && (topGainer.deltas.salesDelta7d ?? 0) > 0
-            ? `Which competitor is accelerating fastest? (${topGainer.shopName} +${topGainer.deltas.salesDelta7d} orders/7d)`
-            : "Competitor Portfolio Surveillance Overview"
-        }
-        score={fastestVelocity ? Math.round(fastestVelocity.velocity.estDailySales * 12) : 82}
-        scoreMax={100}
-        verdictLabel={
-          topGainer?.velocity.isSpike
-            ? `⚡ ${topGainer.shopName} — Breakout Spike`
-            : topGainer
-            ? `${topGainer.shopName} — Momentum Leader`
-            : "Surveillance Ready"
-        }
-        verdictVariant={topGainer?.velocity.isSpike ? "warning" : "success"}
-        provenance="ACTUAL_ETSY_DATA"
-        description={
-          totalTracked > 0
-            ? `Currently monitoring ${totalTracked} competitor store${totalTracked === 1 ? "" : "s"}. Average 7-day sales growth across your portfolio is +${avg7dSales} orders. Snapshots are recorded automatically every 6 hours.`
-            : "No competitor shops currently tracked. Add any Etsy store URL below to start capturing real-time sales deltas and catalog expansions every 6 hours."
-        }
-        sidePanel={
-          <div className="space-y-3">
-            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
-              Surveillance Benchmarks
-            </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-[#9EAA9F]">Active Monitored Stores:</span>
-                <span className="font-bold text-white tabular-nums">{totalTracked}</span>
+      {totalTracked > 0 ? (
+        <IntelligenceCard
+          badgeText="COMPETITOR SURVEILLANCE INTELLIGENCE"
+          badgeIcon={<Radar className="h-3.5 w-3.5 text-[#FBBF24]" />}
+          title={
+            topGainer && (topGainer.deltas.salesDelta7d ?? 0) > 0
+              ? `Which competitor is accelerating fastest? (${topGainer.shopName} +${topGainer.deltas.salesDelta7d} orders/7d)`
+              : "Competitor Portfolio Surveillance Overview"
+          }
+          score={fastestVelocity ? Math.min(99, Math.max(50, Math.round(fastestVelocity.velocity.estDailySales * 12))) : 82}
+          scoreMax={100}
+          verdictLabel={
+            topGainer?.velocity.isSpike
+              ? `⚡ ${topGainer.shopName} — Breakout Spike`
+              : topGainer
+              ? `${topGainer.shopName} — Momentum Leader`
+              : "Surveillance Active"
+          }
+          verdictVariant={topGainer?.velocity.isSpike ? "warning" : "success"}
+          provenance="ACTUAL_ETSY_DATA"
+          description={`Currently monitoring ${totalTracked} competitor store${totalTracked === 1 ? "" : "s"}. Average 7-day sales growth across your portfolio is +${avg7dSales} orders. Snapshots are recorded automatically every 6 hours.`}
+          sidePanel={
+            <div className="space-y-3">
+              <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                Surveillance Benchmarks
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#9EAA9F]">Fastest Growing Competitor:</span>
-                <span className="font-bold text-[#16C784] truncate max-w-[140px]">
-                  {topGainer?.shopName ?? "—"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#9EAA9F]">Avg. 7-Day Growth:</span>
-                <span className="font-bold text-white tabular-nums">+{avg7dSales} orders</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#9EAA9F]">Tracking Cadence:</span>
-                <span className="font-bold text-[#16C784]">Every 6 Hours</span>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#9EAA9F]">Active Monitored Stores:</span>
+                  <span className="font-bold text-white tabular-nums">{totalTracked}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#9EAA9F]">Fastest Growing Competitor:</span>
+                  <span className="font-bold text-[#16C784] truncate max-w-[140px]">
+                    {topGainer?.shopName ?? "—"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#9EAA9F]">Avg. 7-Day Growth:</span>
+                  <span className="font-bold text-white tabular-nums">+{avg7dSales} orders</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#9EAA9F]">Tracking Cadence:</span>
+                  <span className="font-bold text-[#16C784]">Every 6 Hours</span>
+                </div>
               </div>
             </div>
+          }
+        >
+          {/* Shops Worth Watching Sub-Panel on Dark Attention Surface */}
+          <div className="pt-2 space-y-2.5">
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[#FBBF24]" /> High-Opportunity Shops Worth Watching:
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SHOPS_WORTH_WATCHING.map((s) => (
+                <div
+                  key={s.shopExternalId}
+                  className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1.5 text-xs hover:border-[#16C784]/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/shops/${s.shopExternalId}`}
+                      className="font-bold text-white hover:text-[#16C784] transition-colors truncate"
+                    >
+                      {s.shopName}
+                    </Link>
+                    <Badge variant={s.badgeVariant} tone="dark" className="text-[10px] px-1.5 py-0">
+                      {s.verdict}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-[#9EAA9F]">{s.category}</div>
+                  <div className="text-[11px] text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
+                    {s.reason}
+                  </div>
+                  <div className="pt-1 flex items-center justify-between">
+                    <span className="text-[10px] text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
+                    <Link
+                      href={`/shops/${s.shopExternalId}`}
+                      className="text-[10px] text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
+                    >
+                      Research <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        }
-      >
-        {/* Shops Worth Watching Sub-Panel on Dark Attention Surface */}
-        <div className="pt-2 space-y-2.5">
-          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#FBBF24]" /> High-Opportunity Shops Worth Watching:
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {SHOPS_WORTH_WATCHING.map((s) => (
-              <div
-                key={s.shopExternalId}
-                className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1.5 text-xs hover:border-[#16C784]/40 transition-colors"
+        </IntelligenceCard>
+      ) : (
+        /* Empty State on Dark Attention Surface (Contextual & Actionable) */
+        <div className="p-6 sm:p-8 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white shadow-md space-y-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C261F] border border-[#2A362D] text-xs font-bold text-[#FBBF24]">
+                <Radar className="h-3.5 w-3.5" /> Start Competitor Surveillance
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Start spying on a competitor shop
+              </h2>
+              <p className="text-xs sm:text-sm text-[#9EAA9F] leading-relaxed">
+                Paste an Etsy shop link below and SellerSalt will capture the latest verified shop data immediately, then continue monitoring sales, inventory, and review changes every 6 hours.
+              </p>
+              <div className="text-xs text-[#16C784] font-semibold pt-1 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> We&apos;ll capture your first snapshot immediately.
+              </div>
+            </div>
+
+            <div className="w-full lg:w-auto shrink-0">
+              <a
+                href="#add-competitor-form"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] font-bold text-sm shadow-md transition-all w-full sm:w-auto"
               >
-                <div className="flex items-center justify-between">
-                  <Link
-                    href={`/shops/${s.shopExternalId}`}
-                    className="font-bold text-white hover:text-[#16C784] transition-colors truncate"
-                  >
-                    {s.shopName}
-                  </Link>
-                  <Badge variant={s.badgeVariant} tone="dark" className="text-[10px] px-1.5 py-0">
-                    {s.verdict}
-                  </Badge>
+                <Plus className="h-4 w-4" /> Start Spying on a Competitor
+              </a>
+            </div>
+          </div>
+
+          {/* Suggested Starter Shops */}
+          <div className="pt-4 border-t border-[#2A362D] space-y-3">
+            <div className="text-xs font-bold text-[#9EAA9F] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[#FBBF24]" /> Or explore high-opportunity stores worth watching:
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SHOPS_WORTH_WATCHING.map((s) => (
+                <div
+                  key={s.shopExternalId}
+                  className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1.5 text-xs hover:border-[#16C784]/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <Link
+                      href={`/shops/${s.shopExternalId}`}
+                      className="font-bold text-white hover:text-[#16C784] transition-colors truncate"
+                    >
+                      {s.shopName}
+                    </Link>
+                    <Badge variant={s.badgeVariant} tone="dark" className="text-[10px] px-1.5 py-0">
+                      {s.verdict}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-[#9EAA9F]">{s.category}</div>
+                  <div className="text-[11px] text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
+                    {s.reason}
+                  </div>
+                  <div className="pt-1 flex items-center justify-between">
+                    <span className="text-[10px] text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
+                    <Link
+                      href={`/shops/${s.shopExternalId}`}
+                      className="text-[10px] text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
+                    >
+                      Research <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  </div>
                 </div>
-                <div className="text-[11px] text-[#9EAA9F]">{s.category}</div>
-                <div className="text-[11px] text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
-                  {s.reason}
-                </div>
-                <div className="pt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
-                  <Link
-                    href={`/shops/${s.shopExternalId}`}
-                    className="text-[10px] text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
-                  >
-                    Research <ChevronRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </IntelligenceCard>
+      )}
 
       {/* ==================================================================== */}
       {/* SECTION 2: TRACK COMPETITOR FORM */}

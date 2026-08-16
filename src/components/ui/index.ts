@@ -82,3 +82,9 @@ export type { IntelligenceCardProps } from "./IntelligenceCard";
 
 export { ViewSwitch } from "./ViewSwitch";
 export type { ViewSwitchProps, ViewMode } from "./ViewSwitch";
+
+export { HowItWorksGuide } from "./HowItWorksGuide";
+export type { HowItWorksGuideProps, GuideStep } from "./HowItWorksGuide";
+
+export { SafeImage } from "./SafeImage";
+export type { SafeImageProps } from "./SafeImage";

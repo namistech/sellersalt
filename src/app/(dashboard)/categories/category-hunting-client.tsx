@@ -24,7 +24,7 @@ import {
   Plus,
   Zap,
 } from "lucide-react";
-import { Card, Heading, Text, Button, Badge, IntelligenceCard, Input, ViewSwitch, type ViewMode } from "@/components/ui";
+import { Card, Heading, Text, Button, Badge, IntelligenceCard, Input, ViewSwitch, HowItWorksGuide, type ViewMode } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import {
   BarChart,
@@ -150,6 +150,8 @@ export function CategoryHuntingClient({
     }
   }
 
+  const [selectedMarket, setSelectedMarket] = useResearchState<string>("cat_selected_market", "US");
+
   // Simulated Seasonality Pattern for the Category
   const categorySeasonality = [
     { month: "Jan", index: 92 },
@@ -168,6 +170,29 @@ export function CategoryHuntingClient({
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-16">
+      {/* Contextual Guide */}
+      <HowItWorksGuide
+        title="How Category Hunting Works"
+        description="Explore Etsy's official buyer taxonomy hierarchy to uncover sub-niches with high transaction velocity and low incumbent competition."
+        steps={[
+          {
+            title: "1. Select Category or Sub-Niche",
+            description: "Search or navigate child branches from top-level taxonomy roots down to specific leaf sub-niches.",
+            badge: "Taxonomy Tree",
+          },
+          {
+            title: "2. Market Entry Feasibility",
+            description: "Review saturation indices, median pricing brackets, and average store review barriers.",
+            badge: "Entry Verdict",
+          },
+          {
+            title: "3. Breakout Listings & Tags",
+            description: "Inspect winning products, dominant competitor stores, and extracted keyword patterns.",
+            badge: "Product Intelligence",
+          },
+        ]}
+      />
+
       {/* ==================================================================== */}
       {/* 1. SEARCH / FILTER CONTROLS (AT TOP OF PAGE) */}
       {/* ==================================================================== */}
@@ -187,7 +212,24 @@ export function CategoryHuntingClient({
             </Text>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Market Region Selector */}
+            <div className="flex items-center gap-1.5 text-xs text-ink-secondary">
+              <span className="text-ink-tertiary font-bold uppercase text-[10px]">Market:</span>
+              <select
+                value={selectedMarket}
+                onChange={(e) => setSelectedMarket(e.target.value)}
+                className="py-1 px-2.5 rounded-lg border border-line bg-surface font-semibold text-ink text-xs focus:outline-none focus:border-[#0E8F5D]"
+              >
+                <option value="US">🇺🇸 United States</option>
+                <option value="UK">🇬🇧 United Kingdom</option>
+                <option value="CA">🇨🇦 Canada</option>
+                <option value="AU">🇦🇺 Australia</option>
+                <option value="DE">🇩🇪 Germany</option>
+                <option value="FR">🇫🇷 France</option>
+              </select>
+            </div>
+
             <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
           </div>
         </div>

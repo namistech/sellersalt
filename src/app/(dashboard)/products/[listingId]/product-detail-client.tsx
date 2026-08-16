@@ -37,6 +37,8 @@ import {
   IconButton,
   IntelligenceCard,
   ViewSwitch,
+  HowItWorksGuide,
+  SafeImage,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -248,6 +250,29 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
+      {/* Contextual Guide */}
+      <HowItWorksGuide
+        title="How Product Opportunity Intelligence Works"
+        description="SellerSalt audits listing tags, calculates unit economics after transaction fees, and benchmarks sales velocity against category medians."
+        steps={[
+          {
+            title: "1. Demand & Velocity",
+            description: "Daily and monthly order velocity is modeled from seller transaction records and review pace.",
+            badge: "Demand Signals",
+          },
+          {
+            title: "2. Unit Economics",
+            description: "Net profit and margins are calculated after standard Etsy transaction fees (6.5% + 3% + $0.20).",
+            badge: "Economics",
+          },
+          {
+            title: "3. Keyword & Tag Audit",
+            description: "Listing tags and titles are analyzed for search relevance, long-tail feasibility, and slot coverage.",
+            badge: "SEO Diagnostics",
+          },
+        ]}
+      />
+
       {/* Breadcrumb Navigation */}
       <div className="flex items-center gap-2 text-xs text-ink-tertiary">
         <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
@@ -266,21 +291,15 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
       {/* ==================================================================== */}
       <Card padding="lg" className="border-line bg-white shadow-xs">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Image Gallery */}
+          {/* Image Gallery with SafeImage */}
           <div className="lg:w-96 shrink-0 space-y-3">
             <div className="aspect-square w-full rounded-xl overflow-hidden border border-line bg-[#FAFAF8] relative shadow-inner-xs">
-              {selectedImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={selectedImage}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-ink-tertiary text-sm">
-                  No image available
-                </div>
-              )}
+              <SafeImage
+                src={selectedImage}
+                alt={product.title}
+                fallbackType="product"
+                className="w-full h-full object-cover"
+              />
               <div className="absolute top-3 left-3">
                 <Badge variant={evaluatedScore.score >= 70 ? "success" : "warning"} className="font-bold shadow-xs">
                   🔥 Score {evaluatedScore.score}/100
@@ -300,8 +319,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                       selectedImage === img ? "border-[#0E8F5D] ring-2 ring-[#0E8F5D]/20" : "border-line opacity-70 hover:opacity-100"
                     }`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                    <SafeImage src={img} alt={`Thumb ${idx}`} fallbackType="product" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

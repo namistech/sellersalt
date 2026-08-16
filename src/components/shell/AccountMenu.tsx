@@ -60,7 +60,9 @@ export function AccountMenu({ name, email, avatarUrl, roleLabel, isAdmin, onNavi
           <MenuLink icon={<UserIcon />} label="Profile" onClick={() => go("/settings/profile")} />
           <MenuLink icon={<SettingsIcon />} label="Settings" onClick={() => go("/settings")} />
           <MenuLink icon={<CreditCard />} label="Billing" onClick={() => go("/settings/billing")} />
-          <MenuLink icon={<HelpCircle />} label="Help & support" onClick={() => go("/contact")} />
+          <MenuLink icon={<HelpCircle />} label="Customer Support" onClick={() => go("/support")} />
+          <MenuLink icon={<HelpCircle />} label="Public Roadmap" onClick={() => go("/roadmap")} />
+          <MenuLink icon={<HelpCircle />} label="What's New" onClick={() => go("/whats-new")} />
           {isAdmin && (
             <>
               <div className="my-1 border-t border-line-subtle" />

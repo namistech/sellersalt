@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Users,
   XCircle,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 import type { Capability, WorkspaceContext } from "./types";
@@ -58,14 +59,6 @@ const DISCOVER_ITEMS: NavigationItem[] = [
   { id: "favorites", label: "Favorites", href: "/favorites", icon: Star },
 ];
 
-// "Connected Shops" (Operate) vs "Connectors" (Manage, below) are
-// deliberately distinct nav items, not a naming accident — Connected
-// Shops are OAuth-linked SellerChannel records (the user's own store,
-// admin-gated today at /settings/channels); Connectors are the
-// Discover-side research API key (the Connector model, at
-// /connectors). Never label either bare "Shops" —
-// docs/design/information-architecture-v1.md "Critical Shop
-// Distinction."
 const OPERATE_ITEMS: NavigationItem[] = [
   { id: "connected-shops", label: "Connected Shops", href: "/settings/channels", icon: Store },
   { id: "operate-analytics", label: "Analytics", href: "/analytics", icon: BarChart3 },
@@ -74,6 +67,9 @@ const OPERATE_ITEMS: NavigationItem[] = [
 const MANAGE_ITEMS_BASE: NavigationItem[] = [
   { id: "connectors", label: "Search Streams", href: "/connectors", icon: Plug },
   { id: "jobs", label: "Scraper Jobs", href: "/jobs", icon: Briefcase },
+  { id: "roadmap", label: "Public Roadmap", href: "/roadmap", icon: Compass },
+  { id: "whats-new", label: "What's New", href: "/whats-new", icon: Sparkles },
+  { id: "support", label: "Support & Help", href: "/support", icon: LifeBuoy },
   { id: "settings", label: "Settings", href: "/settings", icon: Settings },
 ];
 
