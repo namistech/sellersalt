@@ -60,6 +60,27 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
     update: { isActive: true },
   });
 
+  // Capture immediate initial snapshot so user has instant data
+  if (active.connector.getShopStats) {
+    try {
+      const stats = await active.connector.getShopStats(active.credentials, shopExternalId);
+      if (stats) {
+        await prisma.shopSnapshot.create({
+          data: {
+            shopWatchId: watch.id,
+            totalSales: stats.totalSales,
+            reviewCount: stats.reviewCount,
+            reviewAverage: stats.reviewAverage,
+            activeListings: stats.activeListings,
+            numFavorers: stats.numFavorers,
+          },
+        });
+      }
+    } catch (snapErr) {
+      console.error("[INITIAL_SNAPSHOT_CAPTURE_ERROR]", snapErr);
+    }
+  }
+
   // Scheduling the recurring snapshot job is best-effort: a transient
   // Redis/BullMQ hiccup here must not fail the user-facing "track this
   // shop" action after the ShopWatch row is already correctly created —

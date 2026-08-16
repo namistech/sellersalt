@@ -16,10 +16,10 @@ const LIGHT_VARIANT_CLASS: Record<BadgeVariant, string> = {
 const DARK_VARIANT_CLASS: Record<BadgeVariant, string> = {
   neutral: "bg-[#1C261F] text-[#9EAA9F] border border-[#2A362D]",
   success: "bg-[#0D281E] text-[#16C784] border border-[#1B4D39]",
-  warning: "bg-[#2E1E09] text-[#FFB020] border border-[#593A11]",
+  warning: "bg-[#2A1E0B] text-[#FBBF24] border border-[#78480F]",
   danger: "bg-[#2D1214] text-[#F87171] border border-[#591C20]",
   info: "bg-[#0E2038] text-[#60A5FA] border border-[#1E3A5F]",
-  gold: "bg-[#2E1E09] text-[#FFB020] border border-[#593A11]",
+  gold: "bg-[#2A1E0B] text-[#FBBF24] border border-[#78480F]",
 };
 
 export interface BadgeProps {

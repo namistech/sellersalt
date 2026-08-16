@@ -61,7 +61,7 @@ export function IntelligenceCard({
       case "success":
         return "bg-[#0D281E] text-[#16C784] border-[#1B4D39]";
       case "warning":
-        return "bg-[#2E1E09] text-[#FFB020] border-[#593A11]";
+        return "bg-[#2A1E0B] text-[#FBBF24] border-[#78480F]";
       case "danger":
         return "bg-[#2D1214] text-[#F87171] border-[#591C20]";
       case "info":
@@ -74,7 +74,7 @@ export function IntelligenceCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 sm:p-7 shadow-sm",
+        "relative overflow-hidden rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-5 sm:p-6 lg:p-7 shadow-sm",
         className
       )}
     >
@@ -86,7 +86,7 @@ export function IntelligenceCard({
             {badgeText && (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1C261F] border border-[#2A362D] text-[11px] font-bold tracking-wider text-[#16C784] uppercase">
                 <span className="flex h-2 w-2 rounded-full bg-[#16C784] animate-pulse" />
-                {badgeIcon || <Sparkles className="h-3 w-3 text-[#FFB020]" />}
+                {badgeIcon || <Sparkles className="h-3 w-3 text-[#FBBF24]" />}
                 {badgeText}
               </div>
             )}
@@ -95,7 +95,7 @@ export function IntelligenceCard({
 
           {/* Title & Verdict */}
           <div>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white leading-snug">
+            <h2 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight text-white leading-snug">
               {title}
             </h2>
             {verdictLabel && (
@@ -110,8 +110,8 @@ export function IntelligenceCard({
                 </span>
                 {score !== undefined && (
                   <span className="text-xs font-medium text-[#9EAA9F]">
-                    Score: <span className="font-mono text-white font-bold tabular-nums">{score}</span>
-                    {typeof score === "number" && <span className="text-[#6D7870] font-mono">/{scoreMax}</span>}
+                    Score: <span className="text-white font-bold tabular-nums">{score}</span>
+                    {typeof score === "number" && <span className="text-[#6D7870] font-sans">/{scoreMax}</span>}
                   </span>
                 )}
               </div>
@@ -126,7 +126,7 @@ export function IntelligenceCard({
           )}
 
           {/* Children: Supporting Factors, Badges, or Lists */}
-          {children && <div className="pt-2">{children}</div>}
+          {children && <div className="pt-2 min-w-0">{children}</div>}
 
           {/* Actions */}
           {(actionLabel || secondaryAction) && (
@@ -149,7 +149,7 @@ export function IntelligenceCard({
 
         {/* Supporting Side Panel (Score Meter, Key Metrics Box, or Chart - Golden Ratio Secondary ~1.0) */}
         {sidePanel && (
-          <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 bg-[#1A231C] border border-[#2D3A30] rounded-xl p-5 sm:p-6 space-y-4 shadow-inner-xs">
+          <div className="w-full lg:w-[320px] xl:w-[360px] shrink-0 bg-[#1A231C] border border-[#2D3A30] rounded-xl p-5 sm:p-6 space-y-4 shadow-inner-xs min-w-0">
             {sidePanel}
           </div>
         )}

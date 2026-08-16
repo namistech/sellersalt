@@ -748,29 +748,29 @@ export function ShopDetailClient({
       </div>
 
       {/* ==================================================================== */}
-      {/* SECTION 4: LONGITUDINAL SALES TRACKING                               */}
+      {/* SECTION 4: 6-HOUR LONGITUDINAL SALES SURVEILLANCE                    */}
       {/* ==================================================================== */}
       {!tracked ? (
         <div className="relative overflow-hidden p-8 rounded-2xl bg-[#0E8F5D] text-white shadow-lg">
           <div className="relative flex flex-col items-center text-center gap-4 py-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold">
               <TrendingUp className="h-3.5 w-3.5" />
-              Automated Longitudinal Tracking
+              Automated 6-Hour Surveillance
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight max-w-lg">
-              Track {shopName}&apos;s daily sales movements over time
+            <h2 className="text-2xl font-bold tracking-tight max-w-lg">
+              Track {shopName}&apos;s sales &amp; catalog deltas every 6 hours
             </h2>
             <p className="text-xs text-white/90 leading-relaxed max-w-md">
-              SellerSalt captures automated daily snapshots of this shop&apos;s transactions, review pace, and active listings to reveal real market velocity.
+              SellerSalt will immediately capture the latest snapshot and continue monitoring sales velocity, catalog additions, and review growth every 6 hours.
             </p>
             <Button
               variant="secondary"
               size="compact"
               loading={tracking}
               onClick={handleToggleTrack}
-              className="bg-white hover:bg-[#F4F3EF] text-[#0E8F5D] font-extrabold text-sm px-6 py-3 shadow-md border-0"
+              className="bg-white hover:bg-[#F4F3EF] text-[#0E8F5D] font-bold text-sm px-6 py-3 shadow-md border-0"
             >
-              + Start Tracking This Shop
+              ⚡ Spy on This Competitor
             </Button>
             {trackError && (
               <p className="text-xs bg-black/20 rounded-lg px-3 py-2 text-white">{trackError}</p>
@@ -1048,16 +1048,19 @@ export function ShopDetailClient({
                   )}
 
                   <div className="min-w-0 flex-1 space-y-1">
-                    <div className="font-bold text-xs text-ink line-clamp-1">
+                    <Link
+                      href={`/products/${listing.listingId}`}
+                      className="font-bold text-xs text-ink hover:text-[#0E8F5D] transition-colors line-clamp-1 block"
+                    >
                       {listing.title}
-                    </div>
+                    </Link>
 
                     <div className="text-[11px] text-ink-tertiary flex flex-wrap items-center gap-2">
-                      <span>Price: <strong className="text-ink font-mono">${listing.price.toFixed(2)}</strong></span>
+                      <span>Price: <strong className="text-ink tabular-nums">${listing.price.toFixed(2)}</strong></span>
                       <span>·</span>
-                      <span>Est. Daily Sales: <strong className="text-[#0E8F5D] font-mono">{listing.estDailySales.toFixed(1)}/day</strong></span>
+                      <span>Est. Daily Sales: <strong className="text-[#0E8F5D] tabular-nums">{listing.estDailySales.toFixed(1)}/day</strong></span>
                       <span>·</span>
-                      <span className="text-[#0E8F5D] font-semibold">
+                      <span className="text-[#0E8F5D] font-bold">
                         Opp. Score: {listing.opportunityScore}/100
                       </span>
                     </div>
@@ -1069,7 +1072,7 @@ export function ShopDetailClient({
                             key={t}
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#F4F3EF] text-[10px] font-medium text-ink border border-line"
                           >
-                            <Sparkles className="h-2.5 w-2.5 text-[#FFB020]" />
+                            <Sparkles className="h-2.5 w-2.5 text-[#FBBF24]" />
                             {t}
                           </span>
                         ))}
@@ -1080,12 +1083,11 @@ export function ShopDetailClient({
 
                 <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0">
                   <Link
-                    href={`/seo?listingId=${listing.listingId}`}
-                    className="p-2 rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink-secondary hover:text-ink text-xs font-medium inline-flex items-center gap-1 shadow-2xs"
-                    title="Audit SEO for this listing"
+                    href={`/products/${listing.listingId}`}
+                    className="p-2 rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink-secondary hover:text-ink text-xs font-semibold inline-flex items-center gap-1 shadow-2xs transition-colors"
+                    title="Open Product Research Dossier"
                   >
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#0E8F5D]" />
-                    <span>SEO</span>
+                    <span>Research</span>
                   </Link>
 
                   <a
@@ -1093,9 +1095,9 @@ export function ShopDetailClient({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2 rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink-secondary hover:text-ink text-xs font-medium inline-flex items-center gap-1 shadow-2xs"
-                    title="Open on Etsy in new tab"
+                    title="See on Etsy (external link)"
                   >
-                    <span>Etsy</span>
+                    <span>See on Etsy</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
 
@@ -1109,7 +1111,7 @@ export function ShopDetailClient({
                   >
                     {isSaved ? (
                       <>
-                        <Check className="h-3.5 w-3.5 mr-1" /> Added to Planner
+                        <Check className="h-3.5 w-3.5 mr-1" /> Added
                       </>
                     ) : (
                       <>

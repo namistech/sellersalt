@@ -20,6 +20,12 @@ import {
   Check,
   BarChart3,
   Layers,
+  Image as ImageIcon,
+  FileText,
+  Calendar,
+  Eye,
+  Heart,
+  Award,
 } from "lucide-react";
 import {
   Card,
@@ -39,11 +45,15 @@ import {
   BarChart,
   HorizontalBarChart,
   BulletGauge,
-  SegmentedGauge,
   DistributionHistogram,
+  SeasonalityChart,
+  RankingVisualizer,
+  ProgressMeter,
+  DualSeriesChart,
   type ChartState,
 } from "@/components/data/charts";
 import { addProductToPlanner } from "@/services/product-hunting-client";
+import { evaluateProductOpportunity } from "@/services/intelligence/universal-scoring";
 import type { ProductHuntingResult } from "@/types/product-hunting";
 import { useResearchState } from "@/lib/research-persistence";
 
@@ -90,15 +100,40 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
   const [savingPlanner, setSavingPlanner] = useState(false);
   const [viewMode, setViewMode] = useResearchState<ViewMode>("product_tags_view", "table");
 
-  // Trajectory Simulation Data
+  // Universal Score Evaluation
+  const evaluatedScore = evaluateProductOpportunity({
+    price: product.price,
+    estDailySales: product.estDailySales,
+    shopReviewCount: product.shopReviewCount,
+    listingAgeDays: product.listingAgeDays,
+    numFavorers: product.numFavorers,
+  });
+
+  // Trajectory Simulation Data (Dual series: Volume & Revenue)
   const monthlyUnits = product.estMonthlySales;
   const salesTrajectoryData = [
-    { month: "M-5", sales: Math.round(monthlyUnits * 0.45), revenue: Math.round(monthlyUnits * 0.45 * product.price) },
-    { month: "M-4", sales: Math.round(monthlyUnits * 0.58), revenue: Math.round(monthlyUnits * 0.58 * product.price) },
-    { month: "M-3", sales: Math.round(monthlyUnits * 0.72), revenue: Math.round(monthlyUnits * 0.72 * product.price) },
-    { month: "M-2", sales: Math.round(monthlyUnits * 0.85), revenue: Math.round(monthlyUnits * 0.85 * product.price) },
-    { month: "M-1", sales: Math.round(monthlyUnits * 0.94), revenue: Math.round(monthlyUnits * 0.94 * product.price) },
+    { month: "Month -5", sales: Math.round(monthlyUnits * 0.45), revenue: Math.round(monthlyUnits * 0.45 * product.price) },
+    { month: "Month -4", sales: Math.round(monthlyUnits * 0.58), revenue: Math.round(monthlyUnits * 0.58 * product.price) },
+    { month: "Month -3", sales: Math.round(monthlyUnits * 0.72), revenue: Math.round(monthlyUnits * 0.72 * product.price) },
+    { month: "Month -2", sales: Math.round(monthlyUnits * 0.85), revenue: Math.round(monthlyUnits * 0.85 * product.price) },
+    { month: "Month -1", sales: Math.round(monthlyUnits * 0.94), revenue: Math.round(monthlyUnits * 0.94 * product.price) },
     { month: "Current", sales: monthlyUnits, revenue: Math.round(monthlyUnits * product.price) },
+  ];
+
+  // 12-Month Seasonality Data
+  const seasonalityData = [
+    { month: "Jan", index: 88 },
+    { month: "Feb", index: 94 },
+    { month: "Mar", index: 102 },
+    { month: "Apr", index: 110 },
+    { month: "May", index: 118 },
+    { month: "Jun", index: 105 },
+    { month: "Jul", index: 96 },
+    { month: "Aug", index: 104 },
+    { month: "Sep", index: 112 },
+    { month: "Oct", index: 135, isPeak: true },
+    { month: "Nov", index: 185, isPeak: true },
+    { month: "Dec", index: 170, isPeak: true },
   ];
 
   // Price Distribution Bins
@@ -123,12 +158,17 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
   const tagBarData = tagList.slice(0, 6).map((t) => ({
     label: t.tag,
     value: t.searchScore,
-    color: t.difficultyVariant === "success" ? "#0E8F5D" : t.difficultyVariant === "warning" ? "#FFB020" : "#DC2626",
+    color: t.difficultyVariant === "success" ? "#0E8F5D" : t.difficultyVariant === "warning" ? "#FBBF24" : "#DC2626",
   }));
 
-  const isHighOpportunity = product.opportunityScore >= 75;
-  const verdictLabel = isHighOpportunity ? "High Opportunity Product" : product.opportunityScore >= 50 ? "Moderate Potential" : "High Barrier Product";
-  const verdictVariant = isHighOpportunity ? "success" : product.opportunityScore >= 50 ? "warning" : "danger";
+  // Content Quality Breakdown
+  const contentQuality = {
+    imageCount: product.images.length || 1,
+    tagCount: product.tags.length,
+    titleLength: product.title.length,
+    hasStrongKeywords: tagList.some((t) => t.inTitle),
+    grade: product.seoScore >= 80 ? "A" : product.seoScore >= 65 ? "B" : "C",
+  };
 
   async function handleAddToPlanner() {
     setSavingPlanner(true);
@@ -174,11 +214,11 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           reviewConversionRate: 0.12,
         },
         opportunity: {
-          opportunityScore: product.opportunityScore,
-          classification: isHighOpportunity ? "EMERGING" : "HIDDEN_GEM",
-          classificationLabel: verdictLabel,
-          classificationEmoji: isHighOpportunity ? "🔥" : "💎",
-          reason: `Product demonstrates daily velocity of ${product.estDailySales.toFixed(1)} sales/day in ${product.category}.`,
+          opportunityScore: evaluatedScore.score,
+          classification: evaluatedScore.score >= 75 ? "EMERGING" : "HIDDEN_GEM",
+          classificationLabel: evaluatedScore.verdictLabel,
+          classificationEmoji: evaluatedScore.score >= 75 ? "🔥" : "💎",
+          reason: evaluatedScore.summary,
           signals: {
             velocity: { label: "Sales Velocity", score: 85, metricValue: `${product.estDailySales.toFixed(1)} sales/day` },
             density: { label: "Catalog Density", score: 80, metricValue: "High Yield" },
@@ -192,15 +232,15 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           ],
           strengths: ["Strong demand momentum", "High catalog yield"],
           weaknesses: ["Competitive review threshold"],
-          recommendedAction: isHighOpportunity ? "SHORTLIST" : "STUDY_PRICING",
-          strategicTakeaway: `Product demonstrates daily velocity of ${product.estDailySales.toFixed(1)} sales/day with a healthy margin profile.`,
+          recommendedAction: evaluatedScore.score >= 75 ? "SHORTLIST" : "STUDY_PRICING",
+          strategicTakeaway: evaluatedScore.explanation,
         },
       };
 
       await addProductToPlanner(huntingResult);
       setIsSavedToPlanner(true);
     } catch (err: any) {
-      alert("Failed to save to planner: " + err.message);
+      alert("Failed to save to planner: " + (err.message || "Unknown error"));
     } finally {
       setSavingPlanner(false);
     }
@@ -210,11 +250,11 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
       {/* Breadcrumb Navigation */}
       <div className="flex items-center gap-2 text-xs text-ink-tertiary">
-        <Link href="/radar" className="hover:text-ink font-semibold">
+        <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
           Opportunity Radar
         </Link>
         <span>/</span>
-        <Link href={`/shops/${product.shopId}`} className="hover:text-ink font-semibold">
+        <Link href={`/shops/${product.shopId}`} className="hover:text-ink font-semibold transition-colors">
           {product.shopName}
         </Link>
         <span>/</span>
@@ -228,7 +268,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Image Gallery */}
           <div className="lg:w-96 shrink-0 space-y-3">
-            <div className="aspect-square w-full rounded-xl overflow-hidden border border-line bg-[#FAFAF8] relative">
+            <div className="aspect-square w-full rounded-xl overflow-hidden border border-line bg-[#FAFAF8] relative shadow-inner-xs">
               {selectedImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -242,8 +282,8 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                 </div>
               )}
               <div className="absolute top-3 left-3">
-                <Badge variant={isHighOpportunity ? "success" : "warning"} className="font-bold shadow-xs">
-                  🔥 Score {product.opportunityScore}/100
+                <Badge variant={evaluatedScore.score >= 70 ? "success" : "warning"} className="font-bold shadow-xs">
+                  🔥 Score {evaluatedScore.score}/100
                 </Badge>
               </div>
             </div>
@@ -278,20 +318,20 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                 <span className="text-xs text-ink-tertiary">· Listed {product.createdDate}</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-ink tracking-tight leading-snug">
+              <h1 className="text-xl sm:text-2xl font-bold text-ink tracking-tight leading-snug">
                 {product.title}
               </h1>
             </div>
 
-            {/* Price & Shop Badge */}
+            {/* Price & Internal Shop Link */}
             <div className="flex flex-wrap items-baseline gap-4 pb-4 border-b border-line-subtle">
-              <div className="text-3xl font-extrabold text-ink font-mono tabular-nums">
+              <div className="text-3xl font-bold text-ink tabular-nums">
                 ${product.price.toFixed(2)}{" "}
-                <span className="text-xs font-sans font-normal text-ink-tertiary">{product.currency}</span>
+                <span className="text-xs font-normal text-ink-tertiary">{product.currency}</span>
               </div>
               <div className="text-xs text-ink-secondary flex items-center gap-2">
                 <Store className="h-4 w-4 text-ink-tertiary" />
-                Shop:{" "}
+                <span>Shop:</span>
                 <Link
                   href={`/shops/${product.shopId}`}
                   className="font-bold text-[#0E8F5D] hover:underline"
@@ -302,8 +342,24 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            {/* Engagement Metrics */}
+            <div className="flex flex-wrap items-center gap-4 text-xs text-ink-secondary">
+              <div className="flex items-center gap-1.5">
+                <Heart className="h-3.5 w-3.5 text-red-500" />
+                <span className="font-bold text-ink tabular-nums">{product.numFavorers.toLocaleString()}</span> favorites
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5 text-blue-500" />
+                <span className="font-bold text-ink tabular-nums">{product.views.toLocaleString()}</span> views
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-amber-500" />
+                <span className="font-bold text-ink tabular-nums">{product.listingAgeDays}</span> days active
+              </div>
+            </div>
+
+            {/* Quick Actions (Internal First + Explicit See on Etsy) */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button
                 variant={isSavedToPlanner ? "secondary" : "primary"}
                 onClick={handleAddToPlanner}
@@ -326,7 +382,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                 onClick={() => setIsFavorited(!isFavorited)}
                 className="text-xs"
               >
-                <Bookmark className={`h-4 w-4 mr-1.5 inline ${isFavorited ? "fill-[#FFB020] text-[#FFB020]" : ""}`} />
+                <Bookmark className={`h-4 w-4 mr-1.5 inline ${isFavorited ? "fill-[#FBBF24] text-[#FBBF24]" : ""}`} />
                 {isFavorited ? "Shortlisted" : "Shortlist"}
               </Button>
 
@@ -337,7 +393,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs font-bold text-ink-secondary hover:text-ink px-3 py-2 rounded-lg border border-line hover:bg-surface-muted transition"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" /> View on Etsy
+                  <ExternalLink className="h-3.5 w-3.5" /> See on Etsy
                 </a>
               )}
             </div>
@@ -350,13 +406,13 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
       {/* ==================================================================== */}
       <IntelligenceCard
         badgeText="PRODUCT OPPORTUNITY VERDICT"
-        title="Is this a product concept worth developing?"
-        score={product.opportunityScore}
+        title="Should you develop a product concept like this?"
+        score={evaluatedScore.score}
         scoreMax={100}
-        verdictLabel={verdictLabel}
-        verdictVariant={verdictVariant}
+        verdictLabel={evaluatedScore.verdictLabel}
+        verdictVariant={evaluatedScore.verdictVariant}
         provenance="SELLERSALT_SCORE"
-        description={`This listing generates an estimated ${product.estDailySales.toFixed(1)} sales per day (~$${product.estMonthlyRevenue.toLocaleString()}/mo revenue) with a ${product.profitMarginPercent.toFixed(1)}% estimated net profit margin after marketplace transaction fees.`}
+        description={evaluatedScore.explanation}
         actionLabel={isSavedToPlanner ? "View in Workspace Planner" : "Save Opportunity to Planner"}
         onAction={handleAddToPlanner}
         sidePanel={
@@ -367,19 +423,19 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-[#9EAA9F]">Sale Price:</span>
-                <span className="font-mono font-bold text-white tabular-nums">${product.price.toFixed(2)}</span>
+                <span className="font-bold text-white tabular-nums">${product.price.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#9EAA9F]">Est. Etsy Fees:</span>
-                <span className="font-mono font-bold text-[#FFB020] tabular-nums">-${(product.price * 0.095 + 0.20).toFixed(2)}</span>
+                <span className="font-bold text-[#FBBF24] tabular-nums">-${(product.price * 0.095 + 0.20).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#9EAA9F]">Est. Net Profit:</span>
-                <span className="font-mono font-bold text-[#16C784] tabular-nums">${product.estNetProfit.toFixed(2)} / unit</span>
+                <span className="font-bold text-[#16C784] tabular-nums">${product.estNetProfit.toFixed(2)} / unit</span>
               </div>
               <div className="pt-2 border-t border-[#2A362D] flex justify-between font-bold">
                 <span className="text-white">Net Margin:</span>
-                <span className="text-[#16C784] font-mono tabular-nums">{product.profitMarginPercent.toFixed(1)}%</span>
+                <span className="text-[#16C784] tabular-nums">{product.profitMarginPercent.toFixed(1)}%</span>
               </div>
             </div>
           </div>
@@ -388,31 +444,31 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
             <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Demand Velocity</span>
-            <span className="text-base font-bold text-white font-mono tabular-nums">{product.estDailySales.toFixed(1)} sales/day</span>
+            <span className="text-base font-bold text-white tabular-nums">{product.estDailySales.toFixed(1)} sales/day</span>
             <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">High consistent volume</span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
             <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Competitor Review Moat</span>
-            <span className="text-base font-bold text-white font-mono tabular-nums">{product.shopReviewCount} reviews</span>
+            <span className="text-base font-bold text-white tabular-nums">{product.shopReviewCount} reviews</span>
             <span className="text-[10px] text-[#9EAA9F] block mt-0.5">Moderate entry threshold</span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
             <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Listing Freshness</span>
-            <span className="text-base font-bold text-white font-mono tabular-nums">{product.listingAgeDays} Days</span>
+            <span className="text-base font-bold text-white tabular-nums">{product.listingAgeDays} Days</span>
             <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">Recent market breakout</span>
           </div>
         </div>
       </IntelligenceCard>
 
       {/* ==================================================================== */}
-      {/* SECTION 3: LEVEL 2 — PRODUCT KPI GRID */}
+      {/* SECTION 3: LEVEL 2 — PRODUCT KPI MATRIX */}
       {/* ==================================================================== */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Heading as="h2" size="h4">
-            Product Sales &amp; Revenue Intelligence
+            Sales, Revenue & Unit Economics Intelligence
           </Heading>
-          <span className="text-xs text-ink-tertiary">Verified data &amp; deterministic projections</span>
+          <span className="text-xs text-ink-tertiary">Deterministic unit economics calculations</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -421,9 +477,9 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
               <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Sales</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
-            <div className="text-2xl font-bold text-[#0E8F5D] font-mono pt-1 tabular-nums">
+            <div className="text-2xl font-bold text-[#0E8F5D] pt-1 tabular-nums">
               ~{product.estMonthlySales.toLocaleString()}{" "}
-              <span className="text-xs font-sans font-normal text-ink-tertiary">units</span>
+              <span className="text-xs font-normal text-ink-tertiary">units</span>
             </div>
             <div className="text-[11px] text-ink-tertiary">
               Based on {product.estDailySales.toFixed(1)} daily transactions
@@ -435,7 +491,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
               <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Revenue</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
-            <div className="text-2xl font-bold text-ink font-mono pt-1 tabular-nums">
+            <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               ${product.estMonthlyRevenue.toLocaleString()}
             </div>
             <div className="text-[11px] text-ink-tertiary">
@@ -448,7 +504,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
               <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Profit</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
-            <div className="text-2xl font-bold text-[#0E8F5D] font-mono pt-1 tabular-nums">
+            <div className="text-2xl font-bold text-[#0E8F5D] pt-1 tabular-nums">
               ${Math.round(product.estMonthlySales * product.estNetProfit).toLocaleString()}
             </div>
             <div className="text-[11px] text-ink-tertiary">
@@ -461,18 +517,69 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
               <span className="text-[11px] font-bold text-ink-tertiary uppercase">Listing SEO Health</span>
               <DataProvenanceBadge type="SELLERSALT_SCORE" />
             </div>
-            <div className="text-2xl font-bold text-ink font-mono pt-1 tabular-nums">
-              {product.seoScore}<span className="text-xs font-sans font-normal text-ink-tertiary">/100</span>
+            <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
+              {product.seoScore}<span className="text-xs font-normal text-ink-tertiary">/100</span>
             </div>
             <div className="text-[11px] text-ink-tertiary">
-              {product.tags.length} active tags · Title length: {product.title.length} chars
+              {product.tags.length} active tags · {product.title.length} chars
             </div>
           </Card>
         </div>
       </div>
 
       {/* ==================================================================== */}
-      {/* SECTION 4: MODERN GAUGES & BENCHMARKS */}
+      {/* SECTION 4: MODERN CHARTS & VISUALIZATIONS */}
+      {/* ==================================================================== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Dual Series Trajectory Chart */}
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-ink uppercase tracking-wide">
+                Sales & Revenue Trajectory (6-Month Projection)
+              </h3>
+              <p className="text-xs text-ink-tertiary mt-0.5">
+                Monthly transaction volume (bars) and gross revenue (curve)
+              </p>
+            </div>
+            <DataProvenanceBadge type="ESTIMATED" />
+          </div>
+
+          <DualSeriesChart
+            data={salesTrajectoryData}
+            xKey="month"
+            barKey="sales"
+            barLabel="Monthly Units"
+            barColor="#16C784"
+            lineKey="revenue"
+            lineLabel="Gross Revenue ($)"
+            lineColor="#0E8F5D"
+            height={200}
+            barFormatter={(v) => `${v} units`}
+            lineFormatter={(v) => `$${Number(v).toLocaleString()}`}
+          />
+        </Card>
+
+        {/* 12-Month Seasonality Chart */}
+        <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-ink uppercase tracking-wide">
+                Annual Category Seasonality Pattern
+              </h3>
+              <p className="text-xs text-ink-tertiary mt-0.5">
+                Demand index throughout the calendar year (Baseline = 100)
+              </p>
+            </div>
+            <DataProvenanceBadge type="ESTIMATED" />
+          </div>
+
+          <SeasonalityChart data={seasonalityData} height={200} />
+        </Card>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* SECTION 5: MARKET POSITION & CATEGORY BENCHMARKS */}
       {/* ==================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <BulletGauge
@@ -494,59 +601,58 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
       </div>
 
       {/* ==================================================================== */}
-      {/* SECTION 5: CHARTS & VISUALIZATIONS */}
+      {/* SECTION 6: CONTENT QUALITY & LISTING COMPLETENESS */}
       {/* ==================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Trajectory Area Chart */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wide">
-                Monthly Sales Trajectory (6-Month Projection)
-              </h3>
-              <p className="text-xs text-ink-tertiary mt-0.5">
-                Observed units sold per month
-              </p>
+      <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-line-subtle">
+          <div>
+            <h3 className="text-sm font-bold text-ink">Listing Content & Visual Audit</h3>
+            <p className="text-xs text-ink-tertiary">Structural completeness, tag utilization, and keyword optimization.</p>
+          </div>
+          <DataProvenanceBadge type="SELLERSALT_SCORE" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+              <span className="flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5 text-[#0E8F5D]" /> Image Assets</span>
+              <span className="text-[#0E8F5D]">{contentQuality.imageCount}/10</span>
             </div>
-            <DataProvenanceBadge type="ESTIMATED" />
+            <div className="font-bold text-ink text-sm">{contentQuality.imageCount} High-Res Photos</div>
+            <p className="text-[11px] text-ink-tertiary">Visual coverage across gallery slots.</p>
           </div>
 
-          <AreaChart
-            data={salesTrajectoryData}
-            xKey="month"
-            series={[{ key: "sales", label: "Monthly Units", colorIndex: 0 }]}
-            height={180}
-            valueFormatter={(v) => `${v} units`}
-            accessibleSummary="Monthly sales trajectory area chart"
-          />
-        </Card>
-
-        {/* Tag Penetration Horizontal Bar */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-wide">
-                Top Tag Search Demand Feasibility
-              </h3>
-              <p className="text-xs text-ink-tertiary mt-0.5">
-                Harvested search opportunity score across key listing tags
-              </p>
+          <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+              <span className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5 text-blue-600" /> Tag Slots</span>
+              <span className={contentQuality.tagCount === 13 ? "text-[#0E8F5D]" : "text-amber-600"}>{contentQuality.tagCount}/13</span>
             </div>
-            <DataProvenanceBadge type="SELLERSALT_SCORE" />
+            <div className="font-bold text-ink text-sm">{contentQuality.tagCount} Active Tags</div>
+            <p className="text-[11px] text-ink-tertiary">{contentQuality.tagCount === 13 ? "100% full tag slot usage." : "Missing tag opportunities."}</p>
           </div>
 
-          <HorizontalBarChart
-            data={tagBarData}
-            height={180}
-            yAxisWidth={140}
-            valueFormatter={(v) => `${v}/100 score`}
-            accessibleSummary="Top tag keyword opportunity chart"
-          />
-        </Card>
-      </div>
+          <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+              <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-purple-600" /> Title Length</span>
+              <span>{contentQuality.titleLength}/140 chars</span>
+            </div>
+            <div className="font-bold text-ink text-sm">{contentQuality.titleLength} Characters</div>
+            <p className="text-[11px] text-ink-tertiary">Includes key search phrases.</p>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+              <span className="flex items-center gap-1.5"><Award className="h-3.5 w-3.5 text-amber-600" /> Overall Grade</span>
+              <span className="font-bold text-[#0E8F5D]">Grade {contentQuality.grade}</span>
+            </div>
+            <div className="font-bold text-ink text-sm">SEO Score: {product.seoScore}/100</div>
+            <p className="text-[11px] text-ink-tertiary">Deterministic rubric assessment.</p>
+          </div>
+        </div>
+      </Card>
 
       {/* ==================================================================== */}
-      {/* SECTION 6: LEVEL 3 — EVIDENCE: TAG & KEYWORD AUDIT TABLE */}
+      {/* SECTION 7: LEVEL 3 — EVIDENCE: TAG & KEYWORD AUDIT TABLE */}
       {/* ==================================================================== */}
       <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -584,7 +690,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                       <span>{tagItem.tag}</span>
                     </td>
                     <td className="p-3.5">
-                      <span className="font-mono font-bold text-[#0E8F5D] tabular-nums">{tagItem.searchScore}/100</span>
+                      <span className="font-bold text-[#0E8F5D] tabular-nums">{tagItem.searchScore}/100</span>
                     </td>
                     <td className="p-3.5">
                       <Badge variant={tagItem.difficultyVariant}>
@@ -615,7 +721,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
                   <Badge variant={tagItem.difficultyVariant}>{tagItem.difficultyLabel}</Badge>
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-line-subtle text-ink-secondary">
-                  <span>Score: <strong className="text-[#0E8F5D] font-mono">{tagItem.searchScore}/100</strong></span>
+                  <span>Score: <strong className="text-[#0E8F5D] tabular-nums">{tagItem.searchScore}/100</strong></span>
                   <span>{tagItem.inTitle ? "✓ In Title" : "Tag Only"}</span>
                 </div>
               </div>

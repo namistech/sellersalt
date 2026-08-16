@@ -15,6 +15,8 @@ export interface ShopSnapshotData {
 }
 
 export interface ShopDeltas {
+  salesDelta6h?: number | null;
+  salesDelta24h?: number | null;
   salesDeltaToday: number | null;
   salesDelta7d: number | null;
   salesDelta30d: number | null;

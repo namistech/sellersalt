@@ -37,6 +37,21 @@ export type { ComparisonChartProps, ComparisonSeries } from "./ComparisonChart";
 export { Sparkline } from "./Sparkline";
 export type { SparklineProps, SparklineTone } from "./Sparkline";
 
+export { SeasonalityChart } from "./SeasonalityChart";
+export type { SeasonalityChartProps, SeasonalityMonthData } from "./SeasonalityChart";
+
+export { RankingVisualizer } from "./RankingVisualizer";
+export type { RankingVisualizerProps } from "./RankingVisualizer";
+
+export { ProgressMeter } from "./ProgressMeter";
+export type { ProgressMeterProps, ProgressSegment } from "./ProgressMeter";
+
+export { MiniTrend } from "./MiniTrend";
+export type { MiniTrendProps } from "./MiniTrend";
+
+export { DualSeriesChart } from "./DualSeriesChart";
+export type { DualSeriesChartProps } from "./DualSeriesChart";
+
 export {
   seriesColor,
   SERIES_COLORS,
@@ -45,6 +60,9 @@ export {
   NEUTRAL_COLOR,
   BRAND_COLOR,
   COMPARISON_SECONDARY_COLOR,
+  WARNING_COLOR,
+  FINANCIAL_COLOR,
+  INFO_COLOR,
   GRID_COLOR,
   AXIS_TEXT_COLOR,
 } from "./chart-colors";

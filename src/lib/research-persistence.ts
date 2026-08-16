@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 /**
  * SellerSalt Workspace Memory & Research Persistence Helper
@@ -60,10 +60,96 @@ export function getSavedResearchQuery(surface: string): string | null {
  * Saves a research query to workspace session memory
  */
 export function saveResearchQuery(surface: string, query: string): void {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !query.trim()) return;
   try {
-    window.sessionStorage.setItem(`sellersalt_research_${surface}_query`, JSON.stringify(query));
+    window.sessionStorage.setItem(`sellersalt_research_${surface}_query`, JSON.stringify(query.trim()));
+    addSearchHistory(surface, query.trim());
   } catch {
     // Ignore storage quota errors
   }
+}
+
+export interface SearchHistoryItem {
+  id: string;
+  query: string;
+  timestamp: number;
+}
+
+const MAX_HISTORY_ITEMS = 15;
+
+export function getSearchHistory(surface: string): SearchHistoryItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(`sellersalt_history_${surface}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addSearchHistory(surface: string, query: string): SearchHistoryItem[] {
+  if (typeof window === "undefined" || !query.trim()) return [];
+  const normalized = query.trim();
+  const current = getSearchHistory(surface);
+  // De-duplicate case-insensitively
+  const filtered = current.filter((item) => item.query.toLowerCase() !== normalized.toLowerCase());
+  const updated: SearchHistoryItem[] = [
+    { id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, query: normalized, timestamp: Date.now() },
+    ...filtered,
+  ].slice(0, MAX_HISTORY_ITEMS);
+
+  try {
+    window.localStorage.setItem(`sellersalt_history_${surface}`, JSON.stringify(updated));
+  } catch {
+    // Ignore quota errors
+  }
+  return updated;
+}
+
+export function deleteSearchHistoryItem(surface: string, idOrQuery: string): SearchHistoryItem[] {
+  if (typeof window === "undefined") return [];
+  const current = getSearchHistory(surface);
+  const updated = current.filter(
+    (item) => item.id !== idOrQuery && item.query.toLowerCase() !== idOrQuery.toLowerCase()
+  );
+  try {
+    window.localStorage.setItem(`sellersalt_history_${surface}`, JSON.stringify(updated));
+  } catch {
+    // Ignore quota errors
+  }
+  return updated;
+}
+
+export function clearSearchHistory(surface: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(`sellersalt_history_${surface}`);
+  } catch {
+    // Ignore quota errors
+  }
+}
+
+export function useSearchHistory(surface: string) {
+  const [history, setHistory] = useState<SearchHistoryItem[]>(() => getSearchHistory(surface));
+
+  useEffect(() => {
+    setHistory(getSearchHistory(surface));
+  }, [surface]);
+
+  const add = useCallback((query: string) => {
+    const next = addSearchHistory(surface, query);
+    setHistory(next);
+  }, [surface]);
+
+  const remove = useCallback((idOrQuery: string) => {
+    const next = deleteSearchHistoryItem(surface, idOrQuery);
+    setHistory(next);
+  }, [surface]);
+
+  const clear = useCallback(() => {
+    clearSearchHistory(surface);
+    setHistory([]);
+  }, [surface]);
+
+  return { history, add, remove, clear };
 }

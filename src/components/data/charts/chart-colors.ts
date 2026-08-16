@@ -20,6 +20,9 @@ export const NEGATIVE_COLOR = "rgb(var(--color-data-negative))";
 export const NEUTRAL_COLOR = "rgb(var(--color-data-neutral))";
 export const BRAND_COLOR = "rgb(var(--color-brand-primary))";
 export const COMPARISON_SECONDARY_COLOR = "rgb(var(--color-data-comparison-secondary))";
+export const WARNING_COLOR = "rgb(var(--color-status-warning))";
+export const FINANCIAL_COLOR = "rgb(var(--color-brand-primary))";
+export const INFO_COLOR = "rgb(var(--color-status-info))";
 export const GRID_COLOR = "rgb(var(--color-border-subtle))";
 export const AXIS_TEXT_COLOR = "rgb(var(--color-text-tertiary))";
 

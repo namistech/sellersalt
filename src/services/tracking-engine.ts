@@ -57,6 +57,22 @@ export function calculateShopDeltas(snapshots: SnapshotLike[]): ShopDeltas {
   const listingDelta = latest.activeListings - previous.activeListings;
   const reviewDelta = latest.reviewCount - previous.reviewCount;
 
+  // 6-hour delta
+  const sixHoursAgo = new Date(new Date(latest.capturedAt).getTime() - 6 * 60 * 60 * 1000);
+  const snap6h = sorted.find((s) => new Date(s.capturedAt) >= sixHoursAgo) || previous;
+  const salesDelta6h =
+    latest.totalSales !== null && snap6h.totalSales !== null
+      ? Math.max(0, latest.totalSales - snap6h.totalSales)
+      : salesDeltaToday;
+
+  // 24-hour delta
+  const twentyFourHoursAgo = new Date(new Date(latest.capturedAt).getTime() - 24 * 60 * 60 * 1000);
+  const snap24h = sorted.find((s) => new Date(s.capturedAt) >= twentyFourHoursAgo) || sorted[0];
+  const salesDelta24h =
+    latest.totalSales !== null && snap24h.totalSales !== null
+      ? Math.max(0, latest.totalSales - snap24h.totalSales)
+      : salesDeltaToday;
+
   // 7-day delta
   const sevenDaysAgo = new Date(new Date(latest.capturedAt).getTime() - 7 * 24 * 60 * 60 * 1000);
   const snap7d = sorted.find((s) => new Date(s.capturedAt) >= sevenDaysAgo) || sorted[0];
@@ -74,6 +90,8 @@ export function calculateShopDeltas(snapshots: SnapshotLike[]): ShopDeltas {
       : null;
 
   return {
+    salesDelta6h,
+    salesDelta24h,
     salesDeltaToday,
     salesDelta7d,
     salesDelta30d,

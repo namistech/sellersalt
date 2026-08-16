@@ -112,7 +112,8 @@ export async function removeSchedule(searchConfigId: string) {
   }
 }
 
-const SHOP_WATCH_CRON = "0 7 * * *";
+// 6-hour competitor snapshot tracking schedule (00:00, 06:00, 12:00, 18:00 UTC)
+const SHOP_WATCH_CRON = "0 */6 * * *";
 
 export async function startShopWatch(params: {
   shopWatchId: string;
