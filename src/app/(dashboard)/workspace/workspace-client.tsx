@@ -36,6 +36,7 @@ import {
   MarketplaceSelector,
   HowItWorksGuide,
   HowItWorksToggle,
+  PlanUsageCard,
   type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
@@ -315,6 +316,15 @@ export function WorkspaceClient() {
           <span>{healthReport.biggestOpportunity.headline} ({healthReport.biggestOpportunity.potentialYield})</span>
         </div>
       </IntelligenceCard>
+
+      {/* Plan Quotas & Account Capacity */}
+      <PlanUsageCard
+        planName="Starter Tier"
+        keywordUsage={{ current: 42, limit: 250 }}
+        productUsage={{ current: 18, limit: 150 }}
+        seoUsage={{ current: 6, limit: 25 }}
+        competitorUsage={{ current: 4, limit: 10 }}
+      />
 
       {/* LEVEL 3: 10-STAGE OPERATING PIPELINE & CONVERSION FUNNEL */}
       <Card padding="md" className="border-line bg-white shadow-xs space-y-3">

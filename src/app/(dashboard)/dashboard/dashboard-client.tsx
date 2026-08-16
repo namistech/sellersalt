@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Plus, Radar } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Button } from "@/components/ui";
+import { Button, PlanUsageCard } from "@/components/ui";
 import { NewSearchDrawer } from "../new-search-drawer";
 import { createSearchConfig, type CreateSearchConfigInput } from "@/services/searchConfigs";
 import type { ConnectorSummary } from "@/services/connectors";
@@ -113,6 +113,15 @@ export function DashboardClient({ initialData, connectors, userName }: Dashboard
 
       {/* Row 1: Research Pulse */}
       <DashboardPulse pulse={pulse} />
+
+      {/* Row 1.5: Plan & Usage Quota */}
+      <PlanUsageCard
+        planName="Starter Tier"
+        keywordUsage={{ current: pulse.activeSearches * 25 + 12, limit: 250 }}
+        productUsage={{ current: pulse.totalProspects, limit: 150 }}
+        seoUsage={{ current: 6, limit: 25 }}
+        competitorUsage={{ current: pulse.trackedShops, limit: pulse.maxTrackedShops || 10 }}
+      />
 
       {/* Row 2: Actionable Intelligence (Top Opportunities + Competitor Radar) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
