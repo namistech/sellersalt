@@ -140,3 +140,10 @@ export function getFeatureAccess(currentTier: PlanTierKey = "STARTED") {
     canAccessAgencyTools: isTierSufficient(currentTier, "AGENCY"),
   };
 }
+
+export function canAccessFeature(
+  currentTier: PlanTierKey,
+  feature: keyof ReturnType<typeof getFeatureAccess>
+): boolean {
+  return Boolean(getFeatureAccess(currentTier)[feature]);
+}
