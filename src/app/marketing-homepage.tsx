@@ -76,6 +76,40 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
   const [reviewCount, setReviewCount] = useState(450);
   const [shopAge, setShopAge] = useState(14);
   const [demandLevel, setDemandLevel] = useState<"high" | "medium" | "low">("high");
+  // Interactive Free Tools Playground State (Public Acquisition Engine)
+  const [freeToolTab, setFreeToolTab] = useState<"KEYWORD_GENERATOR" | "PRODUCT_PREVIEW" | "SHOP_PREVIEW" | "SEO_PREVIEW">("KEYWORD_GENERATOR");
+  const [freeToolInput, setFreeToolInput] = useState("leather wallet");
+  const [freeToolLoading, setFreeToolLoading] = useState(false);
+  const [freeToolResult, setFreeToolResult] = useState<any>(null);
+  const [freeToolError, setFreeToolError] = useState<string | null>(null);
+
+  async function runFreeToolPreview(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    setFreeToolLoading(true);
+    setFreeToolError(null);
+    try {
+      const res = await fetch("/api/public/free-tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tool: freeToolTab,
+          query: freeToolInput,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFreeToolError(data.error || "Failed to analyze.");
+        setFreeToolResult(null);
+      } else {
+        setFreeToolResult(data.data);
+      }
+    } catch {
+      setFreeToolError("Network error. Please try again.");
+      setFreeToolResult(null);
+    } finally {
+      setFreeToolLoading(false);
+    }
+  }
 
   function handleHeroSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -226,6 +260,358 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               Track competitor shop momentum with automated daily snapshots and build synchronized keyword roadmaps in Planner.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Public Free Tools Playground & Acquisition Engine */}
+      <section id="free-tools" className="container" style={{ margin: "40px auto" }}>
+        <div className="section-header">
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "#0E8F5D", textTransform: "uppercase", letterSpacing: "0.05em", backgroundColor: "#E7FAF1", padding: "4px 10px", borderRadius: "999px" }}>
+            Free Seller Intelligence Tools
+          </span>
+          <h2 style={{ marginTop: "12px" }}>Instant Marketplace Insights — No Sign-in Required</h2>
+          <p>
+            Experience SellerSalt&apos;s real decision intelligence live. Test product opportunities, mine high-intent keywords, or audit any Etsy listing.
+          </p>
+        </div>
+
+        <div style={{ background: "#FFFFFF", borderRadius: "16px", border: "1px solid #E3E6E0", padding: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+          {/* Tool Switcher Tabs */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", borderBottom: "1px solid #E3E6E0", paddingBottom: "16px", marginBottom: "20px" }}>
+            {[
+              { id: "KEYWORD_GENERATOR", label: "Free Keyword Opportunity Generator", placeholder: "leather wallet" },
+              { id: "PRODUCT_PREVIEW", label: "Product Opportunity Radar Preview", placeholder: "Pour Over Coffee Dripper" },
+              { id: "SHOP_PREVIEW", label: "Shop Intelligence Preview", placeholder: "ArtisanStudio" },
+              { id: "SEO_PREVIEW", label: "Listing SEO Audit Preview", placeholder: "148920194" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setFreeToolTab(tab.id as any);
+                  setFreeToolInput(tab.placeholder);
+                  setFreeToolResult(null);
+                  setFreeToolError(null);
+                }}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  border: freeToolTab === tab.id ? "1px solid #0E8F5D" : "1px solid #E3E6E0",
+                  backgroundColor: freeToolTab === tab.id ? "#E7FAF1" : "#FAFAF8",
+                  color: freeToolTab === tab.id ? "#0E8F5D" : "#525B55",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Input Bar */}
+          <form onSubmit={runFreeToolPreview} style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+            <input
+              type="text"
+              value={freeToolInput}
+              onChange={(e) => setFreeToolInput(e.target.value)}
+              placeholder="Enter search phrase, Etsy listing URL, or shop name..."
+              style={{
+                flex: 1,
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid #C7CCC4",
+                fontSize: "13px",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={freeToolLoading}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                backgroundColor: "#0E8F5D",
+                color: "#FFFFFF",
+                fontWeight: 700,
+                fontSize: "13px",
+                border: "none",
+                cursor: freeToolLoading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              {freeToolLoading ? "Analyzing..." : "Analyze Free"}
+            </button>
+          </form>
+
+          {freeToolError && (
+            <div style={{ padding: "12px", borderRadius: "8px", backgroundColor: "#FCEAE9", color: "#DC2626", fontSize: "12px", marginBottom: "16px" }}>
+              {freeToolError}
+            </div>
+          )}
+
+          {/* Results Render Area */}
+          {freeToolResult ? (
+            <div style={{ marginTop: "16px" }}>
+              {/* Product Preview Result */}
+              {freeToolTab === "PRODUCT_PREVIEW" && (
+                <div style={{ background: "#FAFAF8", borderRadius: "12px", padding: "16px", border: "1px solid #E3E6E0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <span style={{ fontSize: "10px", fontWeight: 700, color: "#0E8F5D", backgroundColor: "#E7FAF1", padding: "2px 6px", borderRadius: "4px" }}>
+                        [SELLERSALT SCORE]
+                      </span>
+                      <h4 style={{ fontSize: "15px", fontWeight: 800, margin: "4px 0 0 0" }}>{freeToolResult.title}</h4>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontSize: "24px", fontWeight: 900, color: "#0E8F5D", fontFamily: "monospace" }}>
+                        {freeToolResult.opportunityScore}/100
+                      </span>
+                      <span style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#0E8F5D" }}>
+                        {freeToolResult.typeEmoji} {freeToolResult.typeLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+                    <div style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0" }}>
+                      <span style={{ fontSize: "10px", color: "#7C847E", display: "block" }}>Daily Velocity:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: "#141B16" }}>{freeToolResult.dailyVelocity} sales/day</span>
+                    </div>
+                    <div style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0" }}>
+                      <span style={{ fontSize: "10px", color: "#7C847E", display: "block" }}>Category Benchmark:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: "#141B16" }}>{freeToolResult.categoryBenchmark} sales/day</span>
+                    </div>
+                    <div style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0" }}>
+                      <span style={{ fontSize: "10px", color: "#7C847E", display: "block" }}>Est. Unit Margin:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: "#0E8F5D" }}>{freeToolResult.unitMarginEstimate}</span>
+                    </div>
+                  </div>
+
+                  {/* Progressive Upgrade Gate */}
+                  <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "10px", border: "1px dashed #C7CCC4" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
+                          🔒 Unlock Complete Opportunity Dossier &amp; Competitor Harvest
+                        </div>
+                        <p style={{ fontSize: "11px", color: "#525B55", margin: "2px 0 0 0" }}>
+                          Starter &amp; Pro tiers unlock all 38 harvested keywords, fee simulations, and 1-click Opportunity Planner.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/pricing")}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "6px",
+                          backgroundColor: "#141B16",
+                          color: "#FFFFFF",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Explore Plans ($19/mo)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Keyword Generator Result */}
+              {freeToolTab === "KEYWORD_GENERATOR" && (
+                <div style={{ background: "#FAFAF8", borderRadius: "12px", padding: "16px", border: "1px solid #E3E6E0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#141B16" }}>
+                      Top 10 High-Intent Keyword Opportunities for &quot;{freeToolResult.seedKeyword}&quot;
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#7C847E" }}>
+                      Showing {freeToolResult.visibleCount} of {freeToolResult.totalDiscoveredCount} opportunities
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "8px", marginBottom: "16px" }}>
+                    {freeToolResult.keywords?.map((kw: any, idx: number) => (
+                      <div key={idx} style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <span style={{ fontSize: "12px", fontWeight: 700, color: "#141B16", display: "block" }}>{kw.keyword}</span>
+                          <span style={{ fontSize: "10px", color: kw.isTagCompliant ? "#0E8F5D" : "#D97706" }}>
+                            {kw.tagLength} chars {kw.isTagCompliant ? "(Etsy Tag OK)" : "(Exceeds 20 chars)"}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", backgroundColor: kw.opportunityTier === "HIGH" ? "#E7FAF1" : "#FAFAF8", color: kw.opportunityTier === "HIGH" ? "#0E8F5D" : "#525B55" }}>
+                          {kw.opportunityTier}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progressive Upgrade Gate */}
+                  <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "10px", border: "1px dashed #C7CCC4" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
+                          🔒 38 Additional Long-Tail Keywords &amp; Exact Opportunity Scores Locked
+                        </div>
+                        <p style={{ fontSize: "11px", color: "#525B55", margin: "2px 0 0 0" }}>
+                          Unlock full long-tail clusters, competition barriers, and 13-tag optimizer in Starter &amp; Pro plans.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/pricing")}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "6px",
+                          backgroundColor: "#141B16",
+                          color: "#FFFFFF",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Unlock All Keywords
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Shop Preview Result */}
+              {freeToolTab === "SHOP_PREVIEW" && (
+                <div style={{ background: "#FAFAF8", borderRadius: "12px", padding: "16px", border: "1px solid #E3E6E0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <span style={{ fontSize: "10px", fontWeight: 700, color: "#0E8F5D", backgroundColor: "#E7FAF1", padding: "2px 6px", borderRadius: "4px" }}>
+                        [ESTIMATED]
+                      </span>
+                      <h4 style={{ fontSize: "15px", fontWeight: 800, margin: "4px 0 0 0" }}>{freeToolResult.shopName}</h4>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontSize: "20px", fontWeight: 900, color: "#0E8F5D", fontFamily: "monospace" }}>
+                        Score: {freeToolResult.shopScore}/100
+                      </span>
+                      <span style={{ display: "block", fontSize: "11px", color: "#525B55" }}>
+                        Est. Velocity: {freeToolResult.estimatedDailySales} sales/day
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ background: "#FFFFFF", padding: "12px", borderRadius: "8px", border: "1px solid #E3E6E0", marginBottom: "16px" }}>
+                    <div style={{ fontSize: "11px", fontWeight: 700, color: "#7C847E", marginBottom: "8px" }}>
+                      SAMPLE WINNING LISTINGS:
+                    </div>
+                    {freeToolResult.topListingPreview?.map((l: any, idx: number) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", padding: "4px 0", borderBottom: idx === 0 ? "1px solid #F3F4F6" : "none" }}>
+                        <span style={{ fontWeight: 600, color: "#141B16" }}>{l.title}</span>
+                        <span style={{ color: "#0E8F5D", fontWeight: 700 }}>${l.price} · {l.estVelocity}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Progressive Upgrade Gate */}
+                  <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "10px", border: "1px dashed #C7CCC4" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
+                          🔒 Full {freeToolResult.catalogSize}-Listing Catalog Surveillance Locked
+                        </div>
+                        <p style={{ fontSize: "11px", color: "#525B55", margin: "2px 0 0 0" }}>
+                          Track 24h &amp; 7d sales deltas, competitor tag clusters, and automated trajectory alerts.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/pricing")}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "6px",
+                          backgroundColor: "#141B16",
+                          color: "#FFFFFF",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Track Shop
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SEO Audit Preview Result */}
+              {freeToolTab === "SEO_PREVIEW" && (
+                <div style={{ background: "#FAFAF8", borderRadius: "12px", padding: "16px", border: "1px solid #E3E6E0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <div>
+                      <span style={{ fontSize: "10px", fontWeight: 700, color: "#0E8F5D", backgroundColor: "#E7FAF1", padding: "2px 6px", borderRadius: "4px" }}>
+                        [SELLERSALT SCORE]
+                      </span>
+                      <h4 style={{ fontSize: "15px", fontWeight: 800, margin: "4px 0 0 0" }}>Listing SEO Diagnostic Audit</h4>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span style={{ fontSize: "22px", fontWeight: 900, color: "#0E8F5D", fontFamily: "monospace" }}>
+                        {freeToolResult.overallScore}/100 ({freeToolResult.grade})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+                    <div style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0" }}>
+                      <span style={{ fontSize: "10px", color: "#7C847E", display: "block" }}>Title Optimization:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#141B16" }}>{freeToolResult.titleLength}</span>
+                    </div>
+                    <div style={{ background: "#FFFFFF", padding: "10px", borderRadius: "8px", border: "1px solid #E3E6E0" }}>
+                      <span style={{ fontSize: "10px", color: "#7C847E", display: "block" }}>13-Tag Utilization:</span>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#DC2626" }}>{freeToolResult.tagCompliance}</span>
+                    </div>
+                  </div>
+
+                  {/* Progressive Upgrade Gate */}
+                  <div style={{ background: "#FFFFFF", padding: "16px", borderRadius: "10px", border: "1px dashed #C7CCC4" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
+                          🔒 13 High-Intent Tag Optimizer &amp; Front-Loaded Title Rewriter Locked
+                        </div>
+                        <p style={{ fontSize: "11px", color: "#525B55", margin: "2px 0 0 0" }}>
+                          Fill all 13 tag slots and generate human-approved listing copy in Listing Content Studio.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/pricing")}
+                        style={{
+                          padding: "8px 16px",
+                          borderRadius: "6px",
+                          backgroundColor: "#141B16",
+                          color: "#FFFFFF",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Optimize Listing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "24px 0", color: "#7C847E", fontSize: "13px" }}>
+              Click <strong>&quot;Analyze Free&quot;</strong> above to generate an instant, anonymous marketplace intelligence preview.
+            </div>
+          )}
         </div>
       </section>
 

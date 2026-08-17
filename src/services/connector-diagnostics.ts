@@ -189,3 +189,152 @@ export function mapConnectorError(err: any): ConnectorErrorResolution {
     canReconnect: false,
   };
 }
+
+export type EtsyConnectionLifecycleState =
+  | "NOT_CONNECTED"
+  | "AUTH_REQUIRED"
+  | "AUTHENTICATING"
+  | "AUTHENTICATED"
+  | "CONNECTED_READ_ONLY"
+  | "CONNECTED_WRITE_CAPABLE"
+  | "AUTH_EXPIRED"
+  | "CONNECTION_REVOKED"
+  | "SCOPE_MISSING"
+  | "RATE_LIMITED"
+  | "TEMPORARY_FAILURE"
+  | "RESOURCE_NOT_FOUND"
+  | "UNKNOWN_ERROR";
+
+export function resolveConnectorLifecycleState(params: {
+  isConnected: boolean;
+  isAuthenticating?: boolean;
+  grantedScopes?: string[];
+  isTokenExpired?: boolean;
+  isRevoked?: boolean;
+  error?: any;
+}): {
+  state: EtsyConnectionLifecycleState;
+  label: string;
+  isOperable: boolean;
+  canWriteDrafts: boolean;
+  description: string;
+} {
+  if (params.error) {
+    const mapped = mapConnectorError(params.error);
+    if (mapped.code === "AUTH_EXPIRED") {
+      return {
+        state: "AUTH_EXPIRED",
+        label: "Authorization Expired",
+        isOperable: false,
+        canWriteDrafts: false,
+        description: mapped.explanation,
+      };
+    }
+    if (mapped.code === "SCOPE_MISSING") {
+      return {
+        state: "SCOPE_MISSING",
+        label: "Missing Required Scope",
+        isOperable: false,
+        canWriteDrafts: false,
+        description: mapped.explanation,
+      };
+    }
+    if (mapped.code === "RATE_LIMITED") {
+      return {
+        state: "RATE_LIMITED",
+        label: "Rate Limited (8 req/s)",
+        isOperable: false,
+        canWriteDrafts: false,
+        description: mapped.explanation,
+      };
+    }
+    if (mapped.code === "RESOURCE_NOT_FOUND") {
+      return {
+        state: "RESOURCE_NOT_FOUND",
+        label: "Resource Not Found",
+        isOperable: false,
+        canWriteDrafts: false,
+        description: mapped.explanation,
+      };
+    }
+    return {
+      state: "TEMPORARY_FAILURE",
+      label: "Temporary Connection Notice",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: mapped.explanation,
+    };
+  }
+
+  if (params.isAuthenticating) {
+    return {
+      state: "AUTHENTICATING",
+      label: "Authenticating with Etsy...",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: "Awaiting OAuth authorization callback from Etsy.",
+    };
+  }
+
+  if (!params.isConnected) {
+    return {
+      state: "NOT_CONNECTED",
+      label: "Not Connected",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: "Connect your Etsy shop in Settings → Channels to enable store intelligence.",
+    };
+  }
+
+  if (params.isRevoked) {
+    return {
+      state: "CONNECTION_REVOKED",
+      label: "Connection Revoked",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: "The connection to this Etsy storefront was revoked. Reconnect to restore access.",
+    };
+  }
+
+  if (params.isTokenExpired) {
+    return {
+      state: "AUTH_EXPIRED",
+      label: "OAuth Token Expired",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: "Your session token has expired. Reconnect your store to refresh tokens.",
+    };
+  }
+
+  const scopes = new Set(params.grantedScopes || []);
+  const hasBasicRead = scopes.has("listings_r") && scopes.has("shops_r");
+  const hasWrite = scopes.has("listings_w");
+
+  if (!hasBasicRead) {
+    return {
+      state: "SCOPE_MISSING",
+      label: "Read Scopes Missing",
+      isOperable: false,
+      canWriteDrafts: false,
+      description: "Standard read permissions (listings_r, shops_r) are required to inspect listings and shops.",
+    };
+  }
+
+  if (hasWrite) {
+    return {
+      state: "CONNECTED_WRITE_CAPABLE",
+      label: "Connected — Commercial Write Capable",
+      isOperable: true,
+      canWriteDrafts: true,
+      description: "Connected with full read and remote Etsy draft creation capabilities.",
+    };
+  }
+
+  return {
+    state: "CONNECTED_READ_ONLY",
+    label: "Connected — Standard Read Mode",
+    isOperable: true,
+    canWriteDrafts: false,
+    description: "Connected with read access for shop intelligence and SEO audits. Remote draft creation requires listings_w commercial approval.",
+  };
+}

@@ -7,6 +7,7 @@ import {
   saveListingSeoAuditRecord,
 } from "@/services/seo-engine";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
+import { mapConnectorError } from "@/services/connector-diagnostics";
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -104,9 +105,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ audit });
   } catch (err: any) {
     console.error("SEO audit failed:", err);
+    const diagnostic = mapConnectorError(err);
     return NextResponse.json(
-      { error: err.message || "Failed to execute SEO diagnostic audit." },
-      { status: 500 }
+      {
+        error: diagnostic.explanation || err.message || "Failed to execute SEO diagnostic audit.",
+        diagnostic,
+      },
+      { status: diagnostic.code === "RESOURCE_NOT_FOUND" ? 404 : diagnostic.code === "RATE_LIMITED" ? 429 : 500 }
     );
   }
 }
