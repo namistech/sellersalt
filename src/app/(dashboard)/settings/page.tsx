@@ -1,9 +1,11 @@
 import { getServerSession } from "next-auth";
 import Link from "next/link";
-import { CreditCard, Shield, User, Users, Store, Bell, ArrowRight } from "lucide-react";
+import { CreditCard, Shield, User, Users, Store, Bell, ArrowRight, Puzzle, Sparkles, Activity } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Card, Heading, Text, Badge, Button } from "@/components/ui";
+import { resolveSubscriptionState, resolveEffectiveTier } from "@/services/billing/subscription-lifecycle";
+import { PLAN_DEFINITIONS, PlanTierKey } from "@/services/plans/plan-capabilities";
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
@@ -14,8 +16,8 @@ export default async function SettingsPage() {
       ? prisma.organization.findUnique({
           where: { id: organizationId },
           include: {
-            package: { select: { name: true, priceUsd: true } },
-            subscription: { select: { status: true } },
+            package: { select: { key: true, name: true, priceUsd: true } },
+            subscription: { select: { status: true, currentPeriodEnd: true, provider: true } },
             _count: { select: { memberships: true } },
           },
         })
@@ -28,14 +30,22 @@ export default async function SettingsPage() {
       : null,
   ]);
 
+  const rawSubStatus = org?.subscription?.status;
+  const subState = resolveSubscriptionState(rawSubStatus, {
+    currentPeriodEnd: org?.subscription?.currentPeriodEnd,
+  });
+
+  const planKey = (org?.package?.key as PlanTierKey) || "FREE";
+  const planDef = PLAN_DEFINITIONS[planKey] || PLAN_DEFINITIONS.FREE;
+
   return (
     <div className="max-w-4xl space-y-8 pb-12">
       <div>
         <Heading as="h1" size="h2">
-          Workspace Settings
+          Account &amp; Workspace Settings
         </Heading>
         <Text size="body-md" color="secondary" className="mt-1">
-          Manage your account profile, store channels, team access, and subscription plan.
+          Manage your account profile, store channels, browser extension pairing, team access, and subscription plan.
         </Text>
       </div>
 
@@ -49,7 +59,7 @@ export default async function SettingsPage() {
               </span>
               <div>
                 <Heading as="h2" size="h4">
-                  Profile & Security
+                  Profile &amp; Security
                 </Heading>
               </div>
             </div>
@@ -105,7 +115,7 @@ export default async function SettingsPage() {
           </div>
         </Card>
 
-        {/* Billing Card */}
+        {/* Billing & Subscription Card */}
         <Card padding="md" className="border-line shadow-xs flex flex-col justify-between bg-white">
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -114,25 +124,61 @@ export default async function SettingsPage() {
                   <CreditCard className="h-4 w-4" />
                 </span>
                 <Heading as="h2" size="h4">
-                  Billing & Plan
+                  Plan &amp; Subscription
                 </Heading>
               </div>
-              <Badge variant="success" className="font-semibold text-[#0E8F5D] bg-[#E7FAF1] border border-[#0E8F5D]/20">
-                {org?.package?.name ?? "Starter"} Plan
+              <Badge
+                variant={subState === "ACTIVE" || subState === "TRIALING" ? "success" : "neutral"}
+                className="font-semibold text-xs"
+              >
+                {planDef.name} ({subState})
               </Badge>
             </div>
             <Text size="body-sm" color="secondary" className="mb-4">
-              Manage your subscription, view search quota limits, and update payment methods.
+              Manage your subscription, view search quota limits, inspect upgrade benefits, and update payment methods.
             </Text>
           </div>
 
           <div className="border-t border-line-subtle pt-3 flex items-center justify-between">
             <Text size="meta" color="tertiary">
-              ${org?.package?.priceUsd ?? 19}/mo
+              ${planDef.priceMonthlyUsd}/mo
             </Text>
             <Link href="/settings/billing">
               <Button variant="secondary" size="compact" className="text-xs">
-                View Billing →
+                View Billing &amp; Usage →
+              </Button>
+            </Link>
+          </div>
+        </Card>
+
+        {/* Extension Pairing Card */}
+        <Card padding="md" className="border-line shadow-xs flex flex-col justify-between bg-white">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-muted text-ink">
+                  <Puzzle className="h-4 w-4" />
+                </span>
+                <Heading as="h2" size="h4">
+                  Browser Extension
+                </Heading>
+              </div>
+              <Badge variant="neutral" className="text-xs">
+                Manifest V3
+              </Badge>
+            </div>
+            <Text size="body-sm" color="secondary" className="mb-4">
+              Pair the SellerSalt Manifest V3 Chrome Extension to audit listing SEO and tags live inside Etsy.
+            </Text>
+          </div>
+
+          <div className="border-t border-line-subtle pt-3 flex items-center justify-between">
+            <Text size="meta" color="tertiary">
+              Manifest V3 Extension
+            </Text>
+            <Link href="/settings/extension">
+              <Button variant="secondary" size="compact" className="text-xs">
+                Pair Extension →
               </Button>
             </Link>
           </div>

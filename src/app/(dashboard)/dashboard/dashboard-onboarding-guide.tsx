@@ -13,8 +13,11 @@ import {
   ArrowRight,
   X,
   CheckCircle2,
+  Circle,
+  FileText,
+  Zap,
 } from "lucide-react";
-import { Button, Card, Badge, Heading, Text } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 
 interface DashboardOnboardingGuideProps {
   hasActiveSearches: boolean;
@@ -27,13 +30,16 @@ export function DashboardOnboardingGuide({
   hasTrackedShops,
   hasProspects,
 }: DashboardOnboardingGuideProps) {
-  const [dismissed, setDismissed] = useState<boolean>(true); // start closed until check
+  const [dismissed, setDismissed] = useState<boolean>(true);
   const [mounted, setMounted] = useState(false);
+  const [userCategory, setUserCategory] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem("sellersalt_onboarding_dismissed");
-    // Show if not explicitly dismissed AND user has low activity
+    const category = localStorage.getItem("sellersalt_user_category");
+    setUserCategory(category);
+
     if (!saved && (!hasActiveSearches || !hasTrackedShops || !hasProspects)) {
       setDismissed(false);
     }
@@ -64,6 +70,19 @@ export function DashboardOnboardingGuide({
       </div>
     );
   }
+
+  // 6-step Activation Checklist
+  const activationSteps = [
+    { title: "Account created", completed: true },
+    { title: "Niche & market selected", completed: Boolean(userCategory) },
+    { title: "Goal defined", completed: Boolean(userCategory) },
+    { title: "Run first research", completed: hasActiveSearches || hasProspects, href: "/radar" },
+    { title: "Save first opportunity", completed: hasProspects, href: "/prospects" },
+    { title: "Build listing strategy", completed: false, href: "/studio" },
+  ];
+
+  const completedCount = activationSteps.filter((s) => s.completed).length;
+  const progressPct = Math.round((completedCount / activationSteps.length) * 100);
 
   const steps = [
     {
@@ -113,7 +132,7 @@ export function DashboardOnboardingGuide({
   ];
 
   return (
-    <div className="rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 shadow-md relative overflow-hidden">
+    <div className="rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 shadow-md relative overflow-hidden space-y-6">
       {/* Background ambient glow */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-[#0E8F5D]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -123,14 +142,14 @@ export function DashboardOnboardingGuide({
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-[#0E8F5D] animate-pulse" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#0E8F5D]">
-              First-Value Research Guide
+              Seller Activation Guide {userCategory ? `· Focus: ${userCategory}` : ""}
             </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white">
             Let&apos;s find your first high-potential eCommerce opportunity
           </h2>
           <p className="text-xs text-[#9EAA9F]">
-            SellerSalt turns raw marketplace signals into clear decisions. Choose where you&apos;d like to start your research:
+            Complete the activation steps below to move from market discovery to your first listing strategy:
           </p>
         </div>
 
@@ -144,8 +163,47 @@ export function DashboardOnboardingGuide({
         </button>
       </div>
 
-      {/* 4 Launchpad Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-5 relative z-10">
+      {/* Activation Checklist Strip */}
+      <div className="p-4 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-3 relative z-10">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-bold text-white flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-[#0E8F5D]" /> Your Seller Setup &amp; Activation
+          </span>
+          <span className="text-[11px] font-mono text-[#0E8F5D] font-bold">
+            {completedCount} / {activationSteps.length} Completed ({progressPct}%)
+          </span>
+        </div>
+
+        <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full bg-[#0E8F5D] transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 text-[11px]">
+          {activationSteps.map((step, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center gap-1.5 p-2 rounded-lg border ${
+                step.completed
+                  ? "bg-[#0E8F5D]/10 border-[#0E8F5D]/30 text-[#0E8F5D]"
+                  : "bg-white/5 border-white/10 text-[#9EAA9F]"
+              }`}
+            >
+              {step.completed ? (
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#0E8F5D]" />
+              ) : (
+                <Circle className="h-3.5 w-3.5 shrink-0 text-[#9EAA9F]" />
+              )}
+              <span className="truncate">{step.title}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4 Launchpad Action Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         {steps.map((step) => {
           const Icon = step.icon;
           return (
@@ -160,7 +218,7 @@ export function DashboardOnboardingGuide({
                   </div>
                   {step.completed ? (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-[#0E8F5D] bg-[#0E8F5D]/20 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="h-3 w-3" /> Started
+                      <CheckCircle2 className="h-3 w-3" /> Done
                     </span>
                   ) : (
                     <span className="text-[10px] font-medium text-[#9EAA9F] uppercase tracking-wider">
