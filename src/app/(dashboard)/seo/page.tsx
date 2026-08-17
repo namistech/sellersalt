@@ -12,15 +12,25 @@ import {
   AlertTriangle,
   SlidersHorizontal,
   Compass,
+  Store,
+  FileText,
+  Layers,
+  Sparkles,
+  Tag,
+  Image as ImageIcon,
+  CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
-import { Card, Input, Button, Heading, Text } from "@/components/ui";
+import { Card, Input, Button, Heading, Text, Badge } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
-import { auditListing, addSeoAuditToPlanner } from "@/services/seo-engine-client";
+import { auditListing, auditShopSeo, addSeoAuditToPlanner } from "@/services/seo-engine-client";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
+import { parseEtsyShopInput } from "@/lib/etsy-url-parser";
 import type { CompleteListingSeoAudit, SeoIssueSeverity, SeoGrade } from "@/types/seo";
+import type { CompleteShopSeoAudit } from "@/types/shop-seo-audit";
 
-type AuditTab = "LIVE_LISTING" | "DRAFT_PLAYGROUND";
+type AuditTab = "LIVE_LISTING" | "DRAFT_PLAYGROUND" | "SHOP_SEO";
 
 const SEVERITY_COLORS: Record<SeoIssueSeverity, string> = {
   CRITICAL: "text-[#E02424] bg-[#FDF2F2] border-[#F98080]/30",
@@ -41,11 +51,16 @@ const GRADE_COLORS: Record<SeoGrade, string> = {
 function SeoAuditContent() {
   const searchParams = useSearchParams();
   const initialListingId = searchParams.get("listingId") || "";
+  const initialShopQuery = searchParams.get("shop") || "";
+  const initialTab = (searchParams.get("tab") as AuditTab) || (initialShopQuery ? "SHOP_SEO" : "LIVE_LISTING");
 
-  const [activeTab, setActiveTab] = useState<AuditTab>("LIVE_LISTING");
+  const [activeTab, setActiveTab] = useState<AuditTab>(initialTab);
 
   // Live listing input
   const [listingQuery, setListingQuery] = useState(initialListingId);
+
+  // Shop SEO input
+  const [shopQuery, setShopQuery] = useState(initialShopQuery);
 
   // Draft playground inputs
   const [draftTitle, setDraftTitle] = useState("");
@@ -54,8 +69,9 @@ function SeoAuditContent() {
   const [draftMaterialsString, setDraftMaterialsString] = useState("");
   const [draftTaxonomyId, setDraftTaxonomyId] = useState("");
 
-  // State
+  // Audit States
   const [auditResult, setAuditResult] = useState<CompleteListingSeoAudit | null>(null);
+  const [shopAuditResult, setShopAuditResult] = useState<CompleteShopSeoAudit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shopRedirectHint, setShopRedirectHint] = useState<string | null>(null);
@@ -73,9 +89,28 @@ function SeoAuditContent() {
     try {
       const res = await auditListing({ listingId: String(id) });
       setAuditResult(res.audit);
+      setShopAuditResult(null);
     } catch (err: any) {
       setError(err.message || "Failed to audit Etsy listing.");
       setAuditResult(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runShopAudit(query: string) {
+    if (!query.trim()) return;
+    setLoading(true);
+    setError(null);
+    setSavedPlanner(false);
+
+    try {
+      const res = await auditShopSeo({ shopQuery: query.trim() });
+      setShopAuditResult(res.audit);
+      setAuditResult(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to audit Etsy shop.");
+      setShopAuditResult(null);
     } finally {
       setLoading(false);
     }
@@ -87,8 +122,10 @@ function SeoAuditContent() {
       if (parsed.listingId) {
         runAuditById(parsed.listingId);
       }
+    } else if (initialShopQuery) {
+      runShopAudit(initialShopQuery);
     }
-  }, [initialListingId]);
+  }, [initialListingId, initialShopQuery]);
 
   async function handleAuditLiveListing(e: React.FormEvent) {
     e.preventDefault();
@@ -96,9 +133,10 @@ function SeoAuditContent() {
 
     const parsed = parseEtsyListingInput(listingQuery);
     if (parsed.isShopUrl && parsed.shopName) {
-      setError(parsed.error || null);
-      setShopRedirectHint(parsed.shopName);
-      setAuditResult(null);
+      // Direct user into Shop SEO audit tab smoothly
+      setActiveTab("SHOP_SEO");
+      setShopQuery(parsed.shopName);
+      runShopAudit(parsed.shopName);
       return;
     }
 
@@ -110,6 +148,12 @@ function SeoAuditContent() {
     }
 
     runAuditById(parsed.listingId);
+  }
+
+  async function handleAuditShop(e: React.FormEvent) {
+    e.preventDefault();
+    if (!shopQuery.trim()) return;
+    runShopAudit(shopQuery);
   }
 
   async function handleAuditDraft(e: React.FormEvent) {
@@ -139,6 +183,7 @@ function SeoAuditContent() {
         taxonomyId: draftTaxonomyId ? Number(draftTaxonomyId) : undefined,
       });
       setAuditResult(res.audit);
+      setShopAuditResult(null);
     } catch (err: any) {
       setError(err.message || "Failed to audit draft.");
       setAuditResult(null);
@@ -164,33 +209,94 @@ function SeoAuditContent() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
         title="SEO Research & Audit Engine"
-        description="Run deterministic 0–100 algorithmic audits on any Etsy listing or listing draft based on Etsy's ranking factors."
+        description="Run deterministic 0–100 algorithmic audits on active Etsy listings, drafts, or whole shops based on Etsy search ranking factors."
       />
+
+      {/* Bespoke Dark Surface Composition for SEO Audit Section (Part 22) */}
+      <div className="rounded-2xl bg-[#141B16] border border-[#2A362D] p-6 text-white shadow-md relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded bg-[#0E8F5D] text-white text-xs font-bold">
+                <ShieldCheck className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#16C784]">
+                Etsy Algorithmic Ranking Rubric
+              </span>
+              <DataProvenanceBadge type="SELLERSALT_SCORE" />
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Deterministic 6-Pillar SEO Quality Breakdown
+            </h2>
+            <p className="text-xs text-[#D1DCD2] leading-relaxed">
+              Audits title character utilization (140 max), 13-tag completeness, tag-to-title synergy, keyword density, and shop-level merchandising.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
+              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Tag Target</div>
+              <div className="text-lg font-mono font-extrabold text-[#16C784]">13/13</div>
+            </div>
+            <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
+              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Title Target</div>
+              <div className="text-lg font-mono font-extrabold text-white">120–140c</div>
+            </div>
+            <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
+              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Synergy</div>
+              <div className="text-lg font-mono font-extrabold text-[#FBBF24]">Exact Match</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Input / Workbench Card */}
       <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
         {/* Tab Selector */}
-        <div className="flex items-center gap-2 border-b border-line pb-3">
+        <div className="flex items-center gap-2 border-b border-line pb-3 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab("LIVE_LISTING")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+            onClick={() => {
+              setActiveTab("LIVE_LISTING");
+              setError(null);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 ${
               activeTab === "LIVE_LISTING"
-                ? "bg-[#0E8F5D] text-white"
+                ? "bg-[#0E8F5D] text-white shadow-xs"
                 : "text-ink-secondary hover:text-ink hover:bg-surface-muted"
             }`}
           >
+            <FileText className="h-3.5 w-3.5" />
             Audit Live Etsy Listing
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("DRAFT_PLAYGROUND")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-              activeTab === "DRAFT_PLAYGROUND"
-                ? "bg-[#0E8F5D] text-white"
+            onClick={() => {
+              setActiveTab("SHOP_SEO");
+              setError(null);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 ${
+              activeTab === "SHOP_SEO"
+                ? "bg-[#0E8F5D] text-white shadow-xs"
                 : "text-ink-secondary hover:text-ink hover:bg-surface-muted"
             }`}
           >
+            <Store className="h-3.5 w-3.5" />
+            Shop SEO Audit
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("DRAFT_PLAYGROUND");
+              setError(null);
+            }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5 ${
+              activeTab === "DRAFT_PLAYGROUND"
+                ? "bg-[#0E8F5D] text-white shadow-xs"
+                : "text-ink-secondary hover:text-ink hover:bg-surface-muted"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
             Audit Listing Draft / Playground
           </button>
         </div>
@@ -214,12 +320,36 @@ function SeoAuditContent() {
               loading={loading}
               className="h-11 px-6 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shrink-0"
             >
-              <ShieldCheck className="h-4 w-4 mr-1.5" /> Run SEO Audit
+              <ShieldCheck className="h-4 w-4 mr-1.5" /> Run Listing Audit
             </Button>
           </form>
         )}
 
-        {/* Tab 2: Draft Playground */}
+        {/* Tab 2: Shop SEO Audit (Part 16) */}
+        {activeTab === "SHOP_SEO" && (
+          <form onSubmit={handleAuditShop} className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Input
+                value={shopQuery}
+                onChange={(e) => setShopQuery(e.target.value)}
+                placeholder="Enter Etsy Shop URL or Shop Name (e.g. PlannerStudioCo or https://www.etsy.com/shop/...)..."
+                className="pl-10 h-11 text-sm font-medium"
+              />
+              <Store className="h-4 w-4 text-ink-tertiary absolute left-3.5 top-3.5 pointer-events-none" />
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              loading={loading}
+              className="h-11 px-6 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shrink-0"
+            >
+              <ShieldCheck className="h-4 w-4 mr-1.5" /> Run Shop SEO Audit
+            </Button>
+          </form>
+        )}
+
+        {/* Tab 3: Draft Playground */}
         {activeTab === "DRAFT_PLAYGROUND" && (
           <form onSubmit={handleAuditDraft} className="space-y-4">
             <div className="space-y-1.5">
@@ -263,20 +393,20 @@ function SeoAuditContent() {
                   <Input
                     value={draftTaxonomyId}
                     onChange={(e) => setDraftTaxonomyId(e.target.value)}
-                    placeholder="Taxonomy Category ID (e.g. 100)"
-                    className="h-9 text-xs font-mono"
+                    placeholder="Taxonomy ID (e.g. 6889)..."
+                    className="h-9 text-xs"
                   />
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-xs text-ink">Listing Description</label>
+              <label className="font-bold text-xs text-ink">Listing Description (First 160 chars evaluated as search snippet)</label>
               <textarea
-                rows={3}
+                rows={4}
                 value={draftDescription}
                 onChange={(e) => setDraftDescription(e.target.value)}
-                placeholder="Enter product description..."
+                placeholder="Detailed listing description including product specs, sizing, care instructions, and customer FAQ..."
                 className="w-full rounded-lg border border-line p-2.5 text-xs text-ink focus:border-[#0E8F5D] focus:ring-1 focus:ring-[#0E8F5D]"
               />
             </div>
@@ -285,139 +415,357 @@ function SeoAuditContent() {
               type="submit"
               variant="primary"
               loading={loading}
-              className="h-10 px-6 text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-semibold"
             >
               <ShieldCheck className="h-4 w-4 mr-1.5" /> Evaluate Draft SEO Score
             </Button>
           </form>
         )}
+
+        {/* Error / Redirect Prompt */}
+        {error && (
+          <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-800 text-xs flex items-start gap-3">
+            <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold">{error}</p>
+              {shopRedirectHint && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("SHOP_SEO");
+                    setShopQuery(shopRedirectHint);
+                    runShopAudit(shopRedirectHint);
+                  }}
+                  className="font-bold underline hover:text-red-900"
+                >
+                  Audit "{shopRedirectHint}" in Shop SEO Audit →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </Card>
 
-      {/* Error View */}
-      {error && (
-        <Card padding="md" className="border-red-200 bg-red-50 text-red-800 space-y-2">
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <AlertTriangle className="h-4 w-4 text-red-600" /> SEO Audit Notice
-          </div>
-          <p className="text-xs">{error}</p>
-          {shopRedirectHint && (
-            <div className="pt-2">
-              <Link href={`/shops/${encodeURIComponent(shopRedirectHint)}`}>
-                <Button variant="secondary" size="compact" className="text-xs bg-white text-ink font-semibold">
-                  Open Shop Research for &quot;{shopRedirectHint}&quot; →
-                </Button>
-              </Link>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Audit Report View */}
-      {auditResult && (
+      {/* ================================================================ */}
+      {/* SHOP SEO AUDIT RESULTS VIEW (Part 16)                            */}
+      {/* ================================================================ */}
+      {shopAuditResult && (
         <div className="space-y-6">
-          {/* Header Score Banner */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-line-subtle">
-              <div className="flex items-start sm:items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-[#141B16] text-[#FFB020] flex items-center justify-center font-extrabold text-2xl shadow-sm shrink-0">
-                  {auditResult.overallScore}
-                </div>
+          {/* Shop Header Banner */}
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line pb-6">
+              <div className="flex items-start gap-4">
+                {shopAuditResult.iconUrl ? (
+                  <img
+                    src={shopAuditResult.iconUrl}
+                    alt={shopAuditResult.shopName}
+                    className="w-14 h-14 rounded-xl object-cover border border-line shadow-xs"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-xl bg-surface-muted border border-line flex items-center justify-center text-ink-tertiary">
+                    <Store className="h-6 w-6" />
+                  </div>
+                )}
 
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-extrabold text-ink">SellerSalt SEO Score</span>
-                    <DataProvenanceBadge type="SELLERSALT_SCORE" />
-                    <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${GRADE_COLORS[auditResult.grade]}`}>
-                      Grade {auditResult.grade} ({auditResult.overallScore}/100)
-                    </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Heading as="h1" size="h3" className="text-xl font-bold text-ink">
+                      {shopAuditResult.shopName}
+                    </Heading>
+                    <a
+                      href={shopAuditResult.shopUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-ink-secondary hover:text-[#0E8F5D] flex items-center gap-1"
+                    >
+                      View on Etsy <ExternalLink className="h-3 w-3" />
+                    </a>
                   </div>
-                  <div className="font-bold text-xs text-ink line-clamp-1">
-                    {auditResult.title || "Listing Draft"}
-                  </div>
-                  {auditResult.listingId && (
-                    <div className="text-[11px] text-ink-tertiary">
-                      Etsy Listing ID: <strong className="font-mono text-ink">{auditResult.listingId}</strong>
-                      {auditResult.shopName && ` · Shop: ${auditResult.shopName}`}
-                    </div>
+                  {shopAuditResult.title && (
+                    <p className="text-xs text-ink-secondary font-medium line-clamp-1">
+                      {shopAuditResult.title}
+                    </p>
                   )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                    <span className="text-[11px] text-ink-tertiary">
+                      {shopAuditResult.actualData.sampleListingsAudited} listings analyzed
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Overall Score Badge */}
+              <div className="flex items-center gap-4 bg-[#FAFAF8] border border-line p-4 rounded-xl shrink-0">
+                <div className="text-right">
+                  <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                    Shop SEO Health
+                  </div>
+                  <div className="text-xs font-semibold text-ink-secondary">
+                    {shopAuditResult.overallShopSeoScore >= 80 ? "Optimized" : "Needs Attention"}
+                  </div>
+                </div>
+                <div className="text-3xl font-extrabold font-mono text-[#0E8F5D] bg-[#E7FAF1] border border-[#16C784]/30 px-3.5 py-1.5 rounded-xl">
+                  {shopAuditResult.overallShopSeoScore}<span className="text-xs font-normal text-ink-tertiary">/100</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4 Score Breakdown Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                  <Store className="h-3.5 w-3.5 text-[#0E8F5D]" /> Branding & Icon
+                </div>
+                <div className="text-xl font-bold font-mono text-ink">
+                  {shopAuditResult.brandingScore}%
+                </div>
+                <div className="text-[11px] text-ink-secondary">
+                  {shopAuditResult.actualData.hasIcon ? "✓ Icon" : "✗ Missing Icon"} · {shopAuditResult.actualData.hasBanner ? "✓ Banner" : "✗ Missing Banner"}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-[#0E8F5D]" /> 13-Tag Utilization
+                </div>
+                <div className="text-xl font-bold font-mono text-ink">
+                  {shopAuditResult.catalogMetrics.perfect13TagListingPercent}%
+                </div>
+                <div className="text-[11px] text-ink-secondary">
+                  {shopAuditResult.catalogMetrics.avgTagsPerListing}/13 average tags per listing
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-[#0E8F5D]" /> Title Quality
+                </div>
+                <div className="text-xl font-bold font-mono text-ink">
+                  {shopAuditResult.titleQualityScore}%
+                </div>
+                <div className="text-[11px] text-ink-secondary">
+                  {shopAuditResult.catalogMetrics.avgTitleLength} average character length
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                  <ImageIcon className="h-3.5 w-3.5 text-[#0E8F5D]" /> Image Completeness
+                </div>
+                <div className="text-xl font-bold font-mono text-ink">
+                  {shopAuditResult.imageCompletenessScore}%
+                </div>
+                <div className="text-[11px] text-ink-secondary">
+                  {shopAuditResult.catalogMetrics.listingsWithImageGapsCount} listings with &lt; 5 images
+                </div>
+              </div>
+            </div>
+
+            {/* Keyword Density & Opportunities */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
+                <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                  <TrendingUp className="h-4 w-4 text-[#0E8F5D]" /> Top Catalog Keyword Density
+                </div>
+                <p className="text-[11px] text-ink-secondary">
+                  Most recurring search phrases across this shop's listing tags.
+                </p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {shopAuditResult.catalogMetrics.topRepeatedKeywords.map((kw) => (
+                    <span
+                      key={kw.keyword}
+                      className="px-2 py-0.5 rounded bg-white text-[11px] font-medium text-ink border border-line"
+                    >
+                      {kw.keyword} <strong className="text-[#0E8F5D]">({kw.frequencyPercent}%)</strong>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
+                <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-[#B37800]" /> Missing Keyword Opportunities
+                </div>
+                <p className="text-[11px] text-ink-secondary">
+                  High-intent buyer search tags not yet targeted in this shop's active catalog.
+                </p>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {shopAuditResult.catalogMetrics.missingKeywordOpportunities.map((m) => (
+                    <span
+                      key={m}
+                      className="px-2 py-0.5 rounded bg-amber-50 text-[11px] font-medium text-amber-900 border border-amber-200"
+                    >
+                      + {m}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Explainable Recommendations (Part 16) */}
+          {shopAuditResult.recommendations.length > 0 && (
+            <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Heading as="h2" size="h4">
+                    Shop SEO Action Recommendations
+                  </Heading>
+                  <p className="text-xs text-ink-secondary">
+                    Algorithmic improvement actions prioritized by search ranking impact.
+                  </p>
+                </div>
+                <DataProvenanceBadge type="SELLERSALT_SCORE" />
+              </div>
+
+              <div className="space-y-3">
+                {shopAuditResult.recommendations.map((rec) => (
+                  <div
+                    key={rec.id}
+                    className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="font-bold text-sm text-ink flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-[#0E8F5D] shrink-0" />
+                          {rec.title}
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#0E8F5D] bg-[#E7FAF1] px-2 py-0.5 rounded border border-[#16C784]/20 shrink-0">
+                        +{rec.impactScore} pts
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1 border-t border-line-subtle">
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                          Observed Signal
+                        </div>
+                        <div className="text-ink-secondary mt-0.5">{rec.observedSignal}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                          Why It Matters
+                        </div>
+                        <div className="text-ink-secondary mt-0.5">{rec.whyItMatters}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                          Recommended Action
+                        </div>
+                        <div className="text-ink font-medium mt-0.5">{rec.recommendedAction}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* LISTING SEO AUDIT RESULTS VIEW                                   */}
+      {/* ================================================================ */}
+      {auditResult && (
+        <div className="space-y-6">
+          {/* Top Score Banner */}
+          <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line pb-6">
+              <div className="space-y-1 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${GRADE_COLORS[auditResult.grade]}`}>
+                    Grade {auditResult.grade}
+                  </span>
+                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
+                  {auditResult.listingId && (
+                    <span className="text-xs text-ink-tertiary font-mono">
+                      Listing #{auditResult.listingId}
+                    </span>
+                  )}
+                </div>
+
+                <Heading as="h1" size="h3" className="text-xl font-bold text-ink line-clamp-2">
+                  {auditResult.title}
+                </Heading>
+
                 {auditResult.listingUrl && (
                   <a
                     href={auditResult.listingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink text-xs font-medium inline-flex items-center gap-1 shadow-2xs transition-colors"
+                    className="text-xs text-ink-secondary hover:text-[#0E8F5D] inline-flex items-center gap-1 font-medium"
                   >
-                    <span>View on Etsy</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    View on Etsy <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
+              </div>
 
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 shrink-0">
                 <Button
-                  variant={savedPlanner ? "secondary" : "primary"}
-                  size="default"
-                  loading={savingPlanner}
-                  disabled={savedPlanner}
+                  variant="secondary"
+                  size="compact"
                   onClick={handleAddToPlanner}
-                  className="text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                  disabled={savingPlanner || savedPlanner}
+                  className="text-xs shadow-2xs"
                 >
                   {savedPlanner ? (
                     <>
-                      <Check className="h-3.5 w-3.5 mr-1" /> Added to Planner
+                      <Check className="h-3.5 w-3.5 text-[#0E8F5D] mr-1" /> Added to Planner
                     </>
                   ) : (
                     <>
-                      <Bookmark className="h-3.5 w-3.5 mr-1" /> Add SEO Task to Planner
+                      <Bookmark className="h-3.5 w-3.5 mr-1" /> Save to Planner
                     </>
                   )}
                 </Button>
+
+                <div className="text-right">
+                  <div className="text-3xl font-extrabold font-mono text-[#0E8F5D]">
+                    {auditResult.overallScore}<span className="text-sm font-normal text-ink-tertiary">/100</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 5-Dimension Metric Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
-              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Title Audit</div>
-                <div className="text-lg font-mono font-extrabold text-ink">
-                  {auditResult.breakdown.titleScore}<span className="text-xs text-ink-tertiary font-normal">/30 pts</span>
-                </div>
-                <div className="text-[10px] text-ink-tertiary">{auditResult.titleAnalysis.characterCount} characters</div>
+            {/* Rubric Breakdown Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
+                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Title</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.titleScore}/30</div>
+                <div className="text-[11px] text-ink-secondary">{auditResult.titleAnalysis.characterCount} chars</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">13-Tag Audit</div>
-                <div className="text-lg font-mono font-extrabold text-ink">
-                  {auditResult.breakdown.tagScore}<span className="text-xs text-ink-tertiary font-normal">/35 pts</span>
-                </div>
-                <div className="text-[10px] text-ink-tertiary">{auditResult.tagAnalysis.tagCount}/13 tags used</div>
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
+                <div className="text-[10px] font-bold text-ink-tertiary uppercase">13 Tags</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.tagScore}/30</div>
+                <div className="text-[11px] text-ink-secondary">{auditResult.tagAnalysis.tagCount}/13 used</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Keyword Synergy</div>
-                <div className="text-lg font-mono font-extrabold text-ink">
-                  {auditResult.breakdown.keywordSynergyScore}<span className="text-xs text-ink-tertiary font-normal">/15 pts</span>
-                </div>
-                <div className="text-[10px] text-ink-tertiary">{auditResult.synergyAnalysis.exactMatchesCount} title matches</div>
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
+                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Synergy</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.keywordSynergyScore}/15</div>
+                <div className="text-[11px] text-ink-secondary">{auditResult.synergyAnalysis.matchingPhrases.length} in title</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
                 <div className="text-[10px] font-bold text-ink-tertiary uppercase">Description</div>
-                <div className="text-lg font-mono font-extrabold text-ink">
-                  {auditResult.breakdown.descriptionScore}<span className="text-xs text-ink-tertiary font-normal">/10 pts</span>
-                </div>
-                <div className="text-[10px] text-ink-tertiary">{auditResult.descriptionAnalysis.wordCount} words</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.descriptionScore}/15</div>
+                <div className="text-[11px] text-ink-secondary">{auditResult.descriptionAnalysis.hasFirst160Keyword ? "Hook ✓" : "No Hook"}</div>
               </div>
 
-              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1 col-span-2 sm:col-span-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Taxonomy & Attr</div>
-                <div className="text-lg font-mono font-extrabold text-ink">
-                  {auditResult.breakdown.taxonomyScore + auditResult.breakdown.attributeScore}
-                  <span className="text-xs text-ink-tertiary font-normal">/10 pts</span>
-                </div>
-                <div className="text-[10px] text-ink-tertiary">{auditResult.taxonomyAnalysis.materialsCount} materials</div>
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
+                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Taxonomy</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.taxonomyScore}/5</div>
+                <div className="text-[11px] text-ink-secondary">{auditResult.taxonomyAnalysis.isDeepTaxonomy ? "Mapped ✓" : "Generic"}</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
+                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Attributes</div>
+                <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.attributeScore}/5</div>
+                <div className="text-[11px] text-ink-secondary">Complete</div>
               </div>
             </div>
           </Card>
@@ -425,29 +773,30 @@ function SeoAuditContent() {
           {/* Diagnostic Issues List */}
           {auditResult.diagnostics.length > 0 && (
             <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Heading as="h2" size="h4">
-                    Diagnostic Issues Detected ({auditResult.diagnostics.length})
-                  </Heading>
-                  <DataProvenanceBadge type="SELLERSALT_SCORE" />
-                </div>
+              <div className="flex items-center gap-2">
+                <Heading as="h2" size="h4">
+                  Diagnostic Issues ({auditResult.diagnostics.length})
+                </Heading>
+                <DataProvenanceBadge type="SELLERSALT_SCORE" />
               </div>
 
-              <div className="divide-y divide-line-subtle border-t border-line-subtle">
-                {auditResult.diagnostics.map((diag, idx) => (
-                  <div key={idx} className="py-3.5 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="space-y-3">
+                {auditResult.diagnostics.map((diag, i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex items-start justify-between gap-3"
+                  >
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold border ${SEVERITY_COLORS[diag.severity]}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${SEVERITY_COLORS[diag.severity]}`}>
                           {diag.severity}
                         </span>
                         <span className="font-bold text-xs text-ink">{diag.title}</span>
                       </div>
-                      <p className="text-xs text-ink-secondary leading-relaxed">{diag.message}</p>
-                      <div className="text-[11px] text-[#0E8F5D] font-medium pt-0.5">
-                        Fix: {diag.recommendation}
-                      </div>
+                      <p className="text-xs text-ink-secondary">{diag.message}</p>
+                      <p className="text-xs text-[#0E8F5D] font-medium pt-1">
+                        ↳ Recommendation: {diag.recommendation}
+                      </p>
                     </div>
 
                     <div className="text-right shrink-0">
@@ -461,142 +810,27 @@ function SeoAuditContent() {
             </Card>
           )}
 
-          {/* Title Detailed Audit Panel */}
+          {/* Tag Synergy Inspection */}
           <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Heading as="h2" size="h4">
-                  Title Analysis & Keyword Coverage
-                </Heading>
-                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-              </div>
-              <span className="text-xs font-mono font-bold text-ink">
-                {auditResult.titleAnalysis.score}/30 points
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-              <div className="text-xs font-bold text-ink leading-relaxed">
-                &quot;{auditResult.title}&quot;
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
-                <span>Length: <strong className="text-ink font-mono">{auditResult.titleAnalysis.characterCount} / 140 chars</strong></span>
-                <span>·</span>
-                <span className={auditResult.titleAnalysis.isOptimalLength ? "text-[#0E8F5D] font-bold" : "text-amber-700"}>
-                  {auditResult.titleAnalysis.isOptimalLength ? "✓ Optimal Length (120-140)" : "Needs Length Optimization"}
-                </span>
-                <span>·</span>
-                <span className={auditResult.titleAnalysis.hasHighIntentStart ? "text-[#0E8F5D] font-bold" : "text-ink-secondary"}>
-                  {auditResult.titleAnalysis.hasHighIntentStart ? "✓ High-Intent Opening" : "Weak Opening Phrase"}
-                </span>
-              </div>
-            </div>
-
-            {auditResult.titleAnalysis.detectedKeywords.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Extracted Primary Title Keywords:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {auditResult.titleAnalysis.detectedKeywords.map((k) => (
-                    <span
-                      key={k}
-                      className="px-2 py-0.5 rounded-md bg-surface-muted text-[10px] font-medium text-ink border border-line"
-                    >
-                      {k}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* 13-Tag Utilization Panel */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Heading as="h2" size="h4">
-                  13-Tag Utilization & Structure ({auditResult.tagAnalysis.tagCount}/13)
-                </Heading>
-                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-              </div>
-              <span className="text-xs font-mono font-bold text-ink">
-                {auditResult.tagAnalysis.score}/35 points
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-              {Array.from({ length: 13 }).map((_, idx) => {
-                const item = auditResult.tagAnalysis.tags[idx];
-                return (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-xl border transition-all ${
-                      item
-                        ? item.isCompliant
-                          ? "bg-[#FAFAF8] border-line"
-                          : "bg-red-50 border-red-200"
-                        : "bg-surface-muted/40 border-dashed border-line text-ink-tertiary"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-ink-tertiary">
-                      <span>Tag #{idx + 1}</span>
-                      {item && (
-                        <span className={item.isCompliant ? "text-[#0E8F5D]" : "text-red-600"}>
-                          {item.charCount}/20 chars
-                        </span>
-                      )}
-                    </div>
-
-                    {item ? (
-                      <div className="mt-1 space-y-1">
-                        <div className="font-bold text-xs text-ink truncate">{item.tag}</div>
-                        <div className="flex items-center gap-1.5 text-[10px]">
-                          <span className="text-ink-tertiary">{item.wordCount} words</span>
-                          {item.isInTitle && (
-                            <span className="text-[#0E8F5D] font-bold">· In Title</span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mt-1 text-xs italic text-ink-tertiary">
-                        Unused Tag Slot
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Title ↔ Tag Keyword Synergy Panel */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Heading as="h2" size="h4">
-                  Title & Tag Keyword Synergy
-                </Heading>
-                <DataProvenanceBadge type="SELLERSALT_SCORE" />
-              </div>
-              <span className="text-xs font-mono font-bold text-ink">
-                {auditResult.synergyAnalysis.score}/15 points
-              </span>
-            </div>
+            <Heading as="h2" size="h4">
+              Tag & Keyword Synergy Breakdown
+            </Heading>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3.5 rounded-xl bg-[#E7FAF1] border border-[#16C784]/30 space-y-2">
-                <div className="text-xs font-bold text-[#0E8F5D] flex items-center gap-1.5">
-                  <Check className="h-4 w-4" /> Matching Phrases ({auditResult.synergyAnalysis.exactMatchesCount})
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
+                <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                  <Check className="h-4 w-4 text-[#0E8F5D]" /> Matching Phrases in Title & Tags ({auditResult.synergyAnalysis.matchingPhrases.length})
                 </div>
-                <p className="text-[11px] text-[#0C7A52]">
-                  These tags appear in your title, giving your listing exact-match query boost in Etsy search.
+                <p className="text-[11px] text-ink-secondary">
+                  Exact keywords appearing in both title and tags maximize Etsy ranking power.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {auditResult.synergyAnalysis.matchingPhrases.length > 0 ? (
-                    auditResult.synergyAnalysis.matchingPhrases.map((p) => (
-                      <span key={p} className="px-2 py-0.5 rounded bg-white text-xs font-semibold text-[#0E8F5D] border border-[#16C784]/30">
-                        {p}
-                      </span>
-                    ))
-                  ) : (
+                  {auditResult.synergyAnalysis.matchingPhrases.map((p) => (
+                    <span key={p} className="px-2 py-0.5 rounded bg-[#E7FAF1] text-[11px] font-semibold text-[#0E8F5D] border border-[#16C784]/30">
+                      {p}
+                    </span>
+                  ))}
+                  {auditResult.synergyAnalysis.matchingPhrases.length === 0 && (
                     <span className="text-xs italic text-amber-800">No matching tag phrases found in title.</span>
                   )}
                 </div>
@@ -655,14 +889,14 @@ function SeoAuditContent() {
       )}
 
       {/* Initial Empty State */}
-      {!auditResult && !loading && !error && (
+      {!auditResult && !shopAuditResult && !loading && !error && (
         <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16 space-y-3">
           <ShieldCheck className="h-10 w-10 text-ink-tertiary mx-auto" />
           <Heading as="h3" size="h4">
-            Audit Any Etsy Listing or Draft
+            Audit Any Etsy Listing, Draft, or Entire Shop
           </Heading>
           <Text size="body-sm" color="secondary" className="max-w-md mx-auto">
-            Paste any active Etsy Listing ID or URL above to audit title character utilization, 13-tag slots, keyword synergy, and description hooks.
+            Paste any active Etsy Listing ID, URL, or Shop Name above to evaluate character utilization, 13-tag slots, keyword density, and visual merchandising.
           </Text>
         </Card>
       )}

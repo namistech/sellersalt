@@ -2025,7 +2025,7 @@ export function AdminPackagesClient() {
                   <input type="number" min="0" value={newPackage.priceUsd} onChange={(e) => setNewPackage((p) => ({ ...p, priceUsd: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Search Streams</label>
+                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Saved Searches</label>
                   <input type="number" min="0" value={newPackage.maxSearchConfigs} onChange={(e) => setNewPackage((p) => ({ ...p, maxSearchConfigs: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
                 </div>
                 <div>
@@ -2075,7 +2075,7 @@ export function AdminPackagesClient() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[11px] text-ink-secondary">
                       <label className="flex flex-col gap-0.5">
-                        Search Streams
+                        Saved Searches
                         <input type="number" min="0" value={draft.maxSearchConfigs ?? pkg.maxSearchConfigs} onChange={(e) => updatePackageDraft(pkg.id, "maxSearchConfigs", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
                       </label>
                       <label className="flex flex-col gap-0.5">

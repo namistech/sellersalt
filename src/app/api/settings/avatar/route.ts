@@ -3,15 +3,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getStorageProvider } from "@/lib/storage/factory";
+import { validateAndSanitizeImage } from "@/lib/file-validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id as string | undefined;
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const rateCheck = checkRateLimit(`avatar:${userId}`, "DEFAULT");
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Too many upload attempts. Please wait a moment." },
+      { status: 429, headers: rateCheck.headers }
+    );
   }
 
   try {
@@ -21,17 +30,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No image file provided." }, { status: 400 });
     }
 
-    if (file.size > MAX_SIZE_BYTES) {
-      return NextResponse.json({ error: "Image file exceeds 2MB limit." }, { status: 400 });
+    const rawBuffer = Buffer.from(await file.arrayBuffer());
+
+    const validation = validateAndSanitizeImage(rawBuffer, file.type, MAX_SIZE_BYTES);
+    if (!validation.valid || !validation.sanitizedBuffer) {
+      return NextResponse.json(
+        { error: validation.error || "Invalid image format." },
+        { status: 400 }
+      );
     }
 
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid image format. Supported formats: JPEG, PNG, WebP." }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(await file.arrayBuffer());
     const storage = await getStorageProvider();
-    const result = await storage.upload(buffer, file.name, file.type);
+    const result = await storage.upload(validation.sanitizedBuffer, file.name, validation.detectedMime || file.type);
 
     const settingKey = `user_avatar_${userId}`;
     await prisma.appSetting.upsert({

@@ -65,6 +65,11 @@ export const SETTING_DEFINITIONS = [
   { key: "s3_secret_access_key", label: "S3/R2 Secret Access Key", isSecret: true },
   { key: "s3_endpoint", label: "S3-compatible Endpoint URL (blank for real AWS S3; required for R2/Spaces/MinIO)", isSecret: false },
   { key: "s3_public_base_url", label: "Public Base URL for uploaded files (e.g. CDN domain; blank to use the bucket's default URL)", isSecret: false },
+
+  // Abuse Prevention & Risk Configuration
+  { key: "disposable_email_domains_custom", label: "Custom Disposable Email Domains List", isSecret: false },
+  { key: "free_plan_allowed_domains_custom", label: "Custom Allowed Multi-Free Domains", isSecret: false },
+  { key: "max_free_accounts_per_business_domain", label: "Max Free Accounts Per Business Domain", isSecret: false },
 ] as const;
 
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];

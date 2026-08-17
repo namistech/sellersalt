@@ -41,28 +41,32 @@ interface PackageData {
 
 const FAQS = [
   {
-    q: "What makes SellerSalt different from generic Etsy keyword tools?",
-    a: "Generic keyword tools estimate speculative search volume from third-party sources. SellerSalt tracks verified marketplace shop sales, daily velocity snapshots, and evaluates competition feasibility so you can make a concrete product decision (Research → Score → Decide → Plan).",
+    q: "What is SellerSalt?",
+    a: "SellerSalt is an e-commerce intelligence and execution platform for Etsy sellers. It combines algorithmic Opportunity Radar scoring, competitor sales velocity tracking, 13-tag SEO audits, and a unified product planner to help sellers discover, evaluate, and launch winning product concepts.",
   },
   {
-    q: "Do I need my own Etsy API key or developer account?",
-    a: "No. SellerSalt works completely out-of-the-box using our platform research connector. You don't need technical setup or Etsy approval.",
+    q: "Who is SellerSalt for?",
+    a: "SellerSalt is built for active Etsy handmade crafters, vintage curators, digital product creators, and POD entrepreneurs who want verified market signals rather than speculative keyword guesses.",
   },
   {
-    q: "Is the sales data on SellerSalt real or estimated?",
-    a: "SellerSalt extracts verified lifetime transaction numbers directly from marketplace shop data and tracks point-in-time snapshots daily, providing accurate velocity metrics without speculative estimators.",
+    q: "What can SellerSalt analyze?",
+    a: "SellerSalt analyzes live Etsy shops, active listing catalogs, tag utilization, title optimization, daily sales velocity, price distributions, and keyword synergies across hundreds of product categories.",
   },
   {
-    q: "What is the Opportunity Radar?",
-    a: "Opportunity Radar is SellerSalt's decision layer. It evaluates sales velocity, catalog density, competition review barriers, and price sweet spots to highlight emerging breakout products before they become crowded.",
+    q: "How does Etsy integration work?",
+    a: "SellerSalt works out-of-the-box using official marketplace research connectors. You can optionally connect your own Etsy store via OAuth 2.0 with PKCE for secure, read-only analytics, tag health diagnostics, and draft preparation.",
   },
   {
-    q: "Can I track competitor shops over time?",
-    a: "Yes. Spy on Competitor monitors any Etsy shop with daily snapshots of sales, listing changes, and review growth so you see real trajectories.",
+    q: "What does SellerSalt estimate versus directly observe?",
+    a: "SellerSalt directly observes actual marketplace shop sales, listing titles, 13 tags, review counts, and daily velocity deltas. Estimated metrics (such as monthly revenue projections and opportunity scores) are clearly labeled with provenance badges.",
   },
   {
-    q: "Can I cancel anytime?",
-    a: "Yes. You can cancel your subscription anytime directly inside your workspace settings without penalty.",
+    q: "How much does SellerSalt cost?",
+    a: "SellerSalt offers a permanent Free Explorer plan for market discovery, Starter at $19/mo, Pro at $49/mo, and Agency at $199/mo with full unit economics and multi-store support. All paid plans include a risk-free trial.",
+  },
+  {
+    q: "Is SellerSalt affiliated with or certified by Etsy?",
+    a: "No. The term 'Etsy' is a trademark of Etsy, Inc. SellerSalt is an independent software application that uses the official Etsy API but is not endorsed or certified by Etsy, Inc.",
   },
 ];
 
@@ -1297,7 +1301,11 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <Link href="/login">Sign In</Link>
           </div>
 
-          <div style={{ fontSize: "13px" }}>
+          <div style={{ fontSize: "11px", color: "var(--muted)", maxWidth: "800px", lineHeight: "1.5", margin: "16px auto 0", textAlign: "center" }}>
+            <strong>Etsy Trademark Disclosure:</strong> The term &lsquo;Etsy&rsquo; is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc.
+          </div>
+
+          <div style={{ fontSize: "13px", marginTop: "12px" }}>
             &copy; {new Date().getFullYear()} SellerSalt. All rights reserved.
           </div>
         </div>

@@ -42,7 +42,7 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/#pricing" className="hover:text-[#141B16] transition-colors">
+                <Link href="/pricing" className="hover:text-[#141B16] transition-colors">
                   Subscription Plans
                 </Link>
               </li>
@@ -98,8 +98,15 @@ export function PublicFooter() {
           </div>
         </div>
 
+        {/* Prominent Legal Etsy API Disclosure (Part 18 & Rule 1 & Rule 2) */}
+        <div className="border-t border-[#E3E6E0] pt-6 pb-4 text-[11px] text-[#7C847E] leading-relaxed">
+          <p>
+            <strong>Etsy Trademark & API Disclosure:</strong> The term &lsquo;Etsy&rsquo; is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc. SellerSalt is an independent software application providing market intelligence, research tools, and strategic analytics for e-commerce entrepreneurs.
+          </p>
+        </div>
+
         {/* Bottom copyright line */}
-        <div className="border-t border-[#E3E6E0] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#7C847E]">
+        <div className="border-t border-[#E3E6E0] pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#7C847E]">
           <div>
             &copy; {new Date().getFullYear()} SellerSalt. All rights reserved.
           </div>

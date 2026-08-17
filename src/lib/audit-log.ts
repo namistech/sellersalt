@@ -7,6 +7,8 @@ export type AuditEvent =
   | "ADMIN_VERIFICATION_EMAIL_SENT"
   | "ADMIN_EMAIL_CHANGED"
   | "ADMIN_USER_CREATED"
+  | "ADMIN_PACKAGE_UPDATED"
+  | "ADMIN_PACKAGE_DELETED"
   | "EMAIL_VERIFIED";
 
 interface AuditActor {

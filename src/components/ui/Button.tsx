@@ -5,7 +5,7 @@ import { Spinner } from "./Spinner";
 
 // design-system-v1.md §9 — Button system.
 
-export type ButtonVariant = "primary" | "secondary" | "tertiary" | "destructive" | "success" | "link";
+export type ButtonVariant = "primary" | "secondary" | "tertiary" | "destructive" | "success" | "link" | "ghost" | "darkSurface";
 export type ButtonSize = "compact" | "default" | "large";
 
 const BASE = "inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed";
@@ -20,6 +20,8 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   success: "bg-[#0E8F5D] text-white hover:bg-[#0C7A52] active:bg-[#0A6342] font-semibold shadow-xs",
   secondary: "border border-line bg-white text-ink hover:bg-surface-muted active:bg-surface-muted font-medium shadow-2xs",
   tertiary: "bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted font-medium",
+  ghost: "bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted font-medium",
+  darkSurface: "bg-[#1C261F] text-[#D1DCD2] hover:bg-[#25332A] hover:text-white border border-[#2A362D] font-semibold shadow-2xs",
   destructive: "bg-danger text-white hover:brightness-90 active:brightness-75 font-semibold shadow-xs",
   link: "bg-transparent p-0 h-auto text-[#0E8F5D] font-medium underline-offset-4 hover:underline",
 };

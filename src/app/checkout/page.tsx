@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { isStagingVerificationAccount } from "@/lib/staging-verification";
 import { prisma } from "@/lib/db";
+import { ensureDefaultPackages } from "@/lib/plan-limits";
 import { CheckoutClient } from "./checkout-client";
 
 export default async function CheckoutPage({
@@ -34,8 +35,10 @@ export default async function CheckoutPage({
     }
   }
 
+  await ensureDefaultPackages();
+
   const packages = await prisma.package.findMany({
-    where: { key: { in: ["STARTED", "PRO", "AGENCY"] }, isActive: true },
+    where: { key: { in: ["FREE", "STARTED", "PRO", "AGENCY"] }, isActive: true },
     select: {
       key: true,
       name: true,
@@ -49,8 +52,8 @@ export default async function CheckoutPage({
     },
   });
 
-  const order = ["STARTED", "PRO", "AGENCY"];
-  packages.sort((a: (typeof packages)[number], b: (typeof packages)[number]) => order.indexOf(a.key) - order.indexOf(b.key));
+  const order = ["FREE", "STARTED", "PRO", "AGENCY"];
+  packages.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 
   const providers = await prisma.paymentProvider.findMany({
     where: { isActive: true },
@@ -58,10 +61,22 @@ export default async function CheckoutPage({
     orderBy: { priority: "asc" },
   });
   const availableProviders = providers
-    .map((p: (typeof providers)[number]) => p.provider)
+    .map((p) => p.provider)
     .filter((p: string) => p === "STRIPE" || p === "PAYPAL" || p === "SAFEPAY" || p === "PAYFAST");
 
-  const preselectedKey = plan?.toUpperCase() && order.includes(plan.toUpperCase()) ? plan.toUpperCase() : "STARTED";
+  // Plan normalization (e.g. ?plan=starter -> STARTED, ?plan=pro -> PRO)
+  const normalizedQueryPlan = (plan || "").trim().toUpperCase();
+  let preselectedKey = "STARTED";
+
+  if (normalizedQueryPlan === "STARTER" || normalizedQueryPlan === "STARTED") {
+    preselectedKey = "STARTED";
+  } else if (normalizedQueryPlan === "PRO" || normalizedQueryPlan === "GROWTH") {
+    preselectedKey = "PRO";
+  } else if (normalizedQueryPlan === "AGENCY") {
+    preselectedKey = "AGENCY";
+  } else if (normalizedQueryPlan === "FREE" || normalizedQueryPlan === "EXPLORER") {
+    preselectedKey = "FREE";
+  }
 
   return <CheckoutClient packages={packages} preselectedKey={preselectedKey} availableProviders={availableProviders} />;
 }

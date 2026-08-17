@@ -34,3 +34,12 @@ export function extractEtsyShopName(input: string): string | null {
 
   return null;
 }
+
+export function parseEtsyShopInput(input: string): { shopName?: string; shopId?: string } {
+  const extracted = extractEtsyShopName(input);
+  if (!extracted) return {};
+  if (/^\d+$/.test(extracted)) {
+    return { shopId: extracted };
+  }
+  return { shopName: extracted };
+}

@@ -14,10 +14,12 @@ const BASE = "inline-flex items-center justify-center rounded-md transition disa
 // Reuses the same variant palette as Button (excluding "link", which
 // has no icon-only equivalent) so the two never visually diverge.
 const VARIANT_CLASS: Record<Exclude<ButtonVariant, "link">, string> = {
-  primary: "bg-accent text-white hover:bg-accent-dark active:bg-accent-active",
-  success: "bg-accent text-white hover:bg-accent-dark active:bg-accent-active",
+  primary: "bg-[#0E8F5D] text-white hover:bg-[#0C7A52] active:bg-[#0A6342]",
+  success: "bg-[#0E8F5D] text-white hover:bg-[#0C7A52] active:bg-[#0A6342]",
   secondary: "border border-line bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted",
   tertiary: "bg-transparent text-ink-secondary hover:bg-surface-muted hover:text-ink active:bg-surface-muted",
+  ghost: "bg-transparent text-ink hover:bg-surface-muted active:bg-surface-muted",
+  darkSurface: "bg-[#1C261F] text-[#D1DCD2] hover:bg-[#25332A] hover:text-white border border-[#2A362D]",
   destructive: "bg-danger text-white hover:brightness-90 active:brightness-75",
 };
 

@@ -1,6 +1,18 @@
 import { prisma } from "./db";
 
-const DEFAULT_PACKAGES = [
+export const DEFAULT_PACKAGES = [
+  {
+    key: "FREE",
+    name: "Free Explorer",
+    priceUsd: 0,
+    maxConnectors: 0,
+    maxSearchConfigs: 1,
+    maxScheduledSearches: 0,
+    maxTrackedShops: 1,
+    maxProspectsPerMonth: 15,
+    maxSellerChannels: 0,
+    maxTrackingDays: 1,
+  },
   {
     key: "STARTED",
     name: "Started",
@@ -39,9 +51,7 @@ const DEFAULT_PACKAGES = [
   },
 ];
 
-/** Idempotent — creates the three standard tiers only if they don't already exist.
- * Called lazily rather than via a separate seed script, so there's nothing extra
- * to remember to run after a fresh deploy or migration. */
+/** Idempotent — creates standard tiers (including Free Explorer) if missing. */
 export async function ensureDefaultPackages() {
   const existing = await prisma.package.findMany({ where: { key: { in: DEFAULT_PACKAGES.map((p) => p.key) } } });
   const existingKeys = new Set(existing.map((p: (typeof existing)[number]) => p.key));
@@ -58,12 +68,12 @@ export async function getOrgPackage(organizationId: string) {
   });
   if (org.package) return org.package;
 
-  // No package assigned yet (e.g. an org created before this system existed) —
-  // fall back to Started and assign it so future lookups don't repeat this.
   await ensureDefaultPackages();
-  const started = await prisma.package.findUniqueOrThrow({ where: { key: "STARTED" } });
-  await prisma.organization.update({ where: { id: organizationId }, data: { packageId: started.id } });
-  return started;
+
+  const fallbackKey = org.plan === "FREE" ? "FREE" : org.plan === "PRO" ? "PRO" : org.plan === "AGENCY" ? "AGENCY" : "STARTED";
+  const pkg = await prisma.package.findUniqueOrThrow({ where: { key: fallbackKey } });
+  await prisma.organization.update({ where: { id: organizationId }, data: { packageId: pkg.id } });
+  return pkg;
 }
 
 export type LimitResource =

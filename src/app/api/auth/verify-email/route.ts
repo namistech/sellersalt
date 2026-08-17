@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { sendLifecycleEmail } from "@/services/email/template-registry";
 import { sendVerificationEmail, markEmailVerified } from "@/lib/email-verification";
 import { logAuditEvent } from "@/lib/audit-log";
+import { checkRateLimit, extractClientIp } from "@/lib/rate-limit";
 
 function appUrl(): string {
   const url = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
@@ -59,6 +60,15 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const clientIp = extractClientIp(req);
+  const rateCheck = checkRateLimit(clientIp, "VERIFY_EMAIL");
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: `Too many verification requests. Please try again in ${rateCheck.resetSeconds} seconds.` },
+      { status: 429, headers: rateCheck.headers }
+    );
+  }
+
   const { email } = await req.json().catch(() => ({}));
   if (!email) return NextResponse.json({ error: "Email is required." }, { status: 400 });
 

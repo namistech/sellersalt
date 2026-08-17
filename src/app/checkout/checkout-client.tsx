@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, ShieldCheck, Zap, Lock, Eye, EyeOff, Sparkles, ArrowRight, HelpCircle } from "lucide-react";
 import {
   Card,
@@ -44,6 +45,7 @@ export function CheckoutClient({
   preselectedKey: string;
   availableProviders: string[];
 }) {
+  const router = useRouter();
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const isAuthenticated = sessionStatus === "authenticated";
 
@@ -75,7 +77,7 @@ export function CheckoutClient({
   const [accountSubmitting, setAccountSubmitting] = useState(false);
 
   const selected = packages.find((p) => p.key === selectedKey) ?? packages[0];
-  const others = packages.filter((p) => p.key !== selected.key);
+  const isFreePlan = selected.key === "FREE" || selected.priceUsd === 0;
 
   function selectPlan(key: string) {
     setSelectedKey(key);
@@ -113,7 +115,11 @@ export function CheckoutClient({
 
   const displayTrialPriceUsd = appliedCoupon ? appliedCoupon.trialPriceUsd : selected.trialPriceUsd;
   const displayPriceUsd = appliedCoupon ? appliedCoupon.priceUsd : selected.priceUsd;
-  const dueToday = displayTrialPriceUsd !== null && displayTrialPriceUsd !== undefined ? displayTrialPriceUsd : displayPriceUsd;
+  const dueToday = isFreePlan
+    ? 0
+    : displayTrialPriceUsd !== null && displayTrialPriceUsd !== undefined
+    ? displayTrialPriceUsd
+    : displayPriceUsd;
 
   async function handleAccountSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,8 +127,6 @@ export function CheckoutClient({
     setAccountSubmitting(true);
 
     if (accountMode === "signup") {
-      // Immediate feedback only — POST /api/signup re-checks this
-      // authoritatively regardless of what's sent here.
       const strength = checkPasswordStrength(accountForm.password);
       if (!strength.valid) {
         setAccountError(`Password must include: ${strength.errors.join(", ")}.`);
@@ -133,7 +137,10 @@ export function CheckoutClient({
       const res = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(accountForm),
+        body: JSON.stringify({
+          ...accountForm,
+          targetPlan: selected.key,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -159,9 +166,18 @@ export function CheckoutClient({
       return;
     }
     await updateSession();
+
+    if (isFreePlan) {
+      router.push("/dashboard");
+    }
   }
 
   async function handleCheckout(provider: string) {
+    if (isFreePlan) {
+      router.push("/dashboard");
+      return;
+    }
+
     setError(null);
     setLoadingProvider(provider);
     try {
@@ -182,7 +198,7 @@ export function CheckoutClient({
       }
       const win = window.open(data.url, "_blank", "noopener,noreferrer");
       if (!win) {
-        // Popup blocked — fall back to same-tab navigation so checkout still completes.
+        // Popup blocked — fall back to same-tab navigation
         window.location.href = data.url;
         return;
       }
@@ -374,8 +390,16 @@ export function CheckoutClient({
                       <label htmlFor="password" className="text-xs font-semibold text-[#141B16]">
                         Password
                       </label>
-                      {accountMode === "signup" && (
+                      {/* Forgot password link on checkout login form (Part 25) */}
+                      {accountMode === "signup" ? (
                         <span className="text-[11px] text-[#7C847E]">Min 8 characters</span>
+                      ) : (
+                        <Link
+                          href="/forgot-password"
+                          className="text-[11px] font-semibold text-[#0E8F5D] hover:underline"
+                        >
+                          Forgot password?
+                        </Link>
                       )}
                     </div>
                     <div className="relative">
@@ -406,35 +430,6 @@ export function CheckoutClient({
                         <div className="text-[11px] text-[#7C847E]">
                           Use at least 8 characters, including a number and a symbol.
                         </div>
-                        {accountForm.password.length > 0 && (() => {
-                          const hasLength = accountForm.password.length >= 8;
-                          const hasNumber = /[0-9]/.test(accountForm.password);
-                          const hasSymbol = /[^A-Za-z0-9]/.test(accountForm.password);
-                          const hasUpper = /[A-Z]/.test(accountForm.password);
-                          const isAllGood = hasLength && hasNumber && hasSymbol && hasUpper;
-
-                          if (isAllGood) {
-                            return (
-                              <div className="text-[11px] font-semibold text-[#0E8F5D] flex items-center gap-1">
-                                ✓ Password looks good
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <div className="flex flex-wrap gap-1.5 text-[10px]">
-                              <span className={`px-1.5 py-0.5 rounded ${hasLength ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
-                                {hasLength ? "✓ 8+ chars" : "At least 8 chars"}
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded ${hasNumber ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
-                                {hasNumber ? "✓ Number" : "Add a number"}
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded ${hasSymbol ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"}`}>
-                                {hasSymbol ? "✓ Symbol" : "Add a symbol"}
-                              </span>
-                            </div>
-                          );
-                        })()}
                       </div>
                     )}
                   </div>
@@ -444,14 +439,17 @@ export function CheckoutClient({
                   <Button
                     type="submit"
                     variant="primary"
-                    loading={accountSubmitting}
+                    size="default"
                     fullWidth
-                    className="!py-3 text-sm font-semibold bg-[#141B16] hover:bg-[#2A362D] text-white"
+                    loading={accountSubmitting}
+                    className="!py-3 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs"
                   >
                     {accountSubmitting
                       ? "Verifying Account…"
                       : accountMode === "signup"
-                      ? "Save Account & Continue to Payment →"
+                      ? isFreePlan
+                        ? "Create Account & Activate Free Explorer →"
+                        : "Save Account & Continue to Payment →"
                       : "Sign In & Continue →"}
                   </Button>
                 </form>
@@ -504,30 +502,33 @@ export function CheckoutClient({
           {/* RIGHT COLUMN: Plan Summary, Pricing Breakdown & Gateway CTA */}
           {/* ============================================================ */}
           <div className="lg:col-span-5 space-y-6">
-            {/* Plan Card */}
-            <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-md space-y-5">
-              {/* Plan Switcher Header */}
+            {/* Plan Card with Visually Dominant Selection (Part 24) */}
+            <Card padding="lg" className="border-2 border-[#0E8F5D] bg-white shadow-md space-y-5 relative">
+              {/* Selected Tier Banner */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
-                    Selected Tier
-                  </span>
-                  <Badge variant="success" className="text-[11px] font-semibold text-[#0E8F5D] bg-[#E7FAF1]">
-                    {selected.trialDays ? `${selected.trialDays}-Day Trial` : "Monthly Subscription"}
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#0E8F5D]" />
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#0E8F5D]">
+                      Selected Plan
+                    </span>
+                  </div>
+                  <Badge variant="success" className="text-[11px] font-semibold text-[#0E8F5D] bg-[#E7FAF1] border border-[#16C784]/30">
+                    {isFreePlan ? "Free Explorer" : selected.trialDays ? `${selected.trialDays}-Day Trial` : "Monthly Subscription"}
                   </Badge>
                 </div>
 
-                {/* Plan Option Pills */}
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-[#FAFAF8] border border-[#E3E6E0]">
+                {/* Plan Option Switcher */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0]">
                   {packages.map((pkg) => (
                     <button
                       key={pkg.key}
                       type="button"
                       onClick={() => selectPlan(pkg.key)}
-                      className={`py-2 px-3 rounded-md text-xs font-semibold transition-all ${
+                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all text-center ${
                         selected.key === pkg.key
-                          ? "bg-white text-[#141B16] shadow-xs border border-[#E3E6E0]"
-                          : "text-[#7C847E] hover:text-[#141B16]"
+                          ? "bg-[#0E8F5D] text-white shadow-xs"
+                          : "text-[#525B55] hover:text-[#141B16] hover:bg-white"
                       }`}
                     >
                       {pkg.name}
@@ -539,11 +540,11 @@ export function CheckoutClient({
               {/* Price Breakdown */}
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-3">
                 <div className="flex items-center justify-between text-xs text-[#525B55]">
-                  <span>Plan</span>
-                  <span className="font-semibold text-[#141B16]">{selected.name}</span>
+                  <span>Tier</span>
+                  <span className="font-bold text-[#141B16]">{selected.name}</span>
                 </div>
 
-                {selected.trialDays && (
+                {selected.trialDays && !isFreePlan && (
                   <div className="flex items-center justify-between text-xs text-[#525B55]">
                     <span>{selected.trialDays}-Day Full Access Trial</span>
                     <span className="font-mono font-bold text-[#0E8F5D]">
@@ -555,7 +556,7 @@ export function CheckoutClient({
                 <div className="flex items-center justify-between text-xs text-[#525B55]">
                   <span>Recurring monthly billing</span>
                   <span className="font-mono font-semibold text-[#141B16]">
-                    ${displayPriceUsd.toFixed(2)} / mo
+                    {isFreePlan ? "$0.00 / mo" : `$${displayPriceUsd.toFixed(2)} / mo`}
                   </span>
                 </div>
 
@@ -577,45 +578,47 @@ export function CheckoutClient({
               </div>
 
               {/* Coupon Code Input */}
-              <div>
-                {appliedCoupon ? (
-                  <div className="flex items-center justify-between rounded-lg bg-[#E7FAF1] px-3.5 py-2 text-xs text-[#0E8F5D] font-medium border border-[#0E8F5D]/30">
-                    <span>Coupon "{appliedCoupon.code}" active</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAppliedCoupon(null);
-                        setCouponInput("");
-                      }}
-                      className="font-bold underline hover:text-[#0C7A52]"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Promo or Coupon Code"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
-                      className="text-xs"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="compact"
-                      onClick={handleApplyCoupon}
-                      loading={couponApplying}
-                      disabled={!couponInput.trim()}
-                      className="shrink-0 text-xs font-semibold px-4"
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                )}
-                {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
-              </div>
+              {!isFreePlan && (
+                <div>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between rounded-lg bg-[#E7FAF1] px-3.5 py-2 text-xs text-[#0E8F5D] font-medium border border-[#0E8F5D]/30">
+                      <span>Coupon "{appliedCoupon.code}" active</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedCoupon(null);
+                          setCouponInput("");
+                        }}
+                        className="font-bold underline hover:text-[#0C7A52]"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Promo or Coupon Code"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
+                        className="text-xs"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="compact"
+                        onClick={handleApplyCoupon}
+                        loading={couponApplying}
+                        disabled={!couponInput.trim()}
+                        className="shrink-0 text-xs font-semibold px-4"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  )}
+                  {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
+                </div>
+              )}
 
               {/* Features Included List */}
               <div className="space-y-2 pt-2 border-t border-[#E3E6E0]">
@@ -650,9 +653,22 @@ export function CheckoutClient({
                       Create or sign in to your account on the left
                     </p>
                     <p className="text-[11px] text-[#7C847E]">
-                      Payment methods will activate automatically once verified.
+                      {isFreePlan
+                        ? "Free workspace activates instantly upon authentication."
+                        : "Payment methods will activate automatically once authenticated."}
                     </p>
                   </div>
+                ) : isFreePlan ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="default"
+                    fullWidth
+                    onClick={() => router.push("/dashboard")}
+                    className="!py-3.5 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-sm"
+                  >
+                    Go to Your Free Workspace →
+                  </Button>
                 ) : availableProviders.length > 0 ? (
                   <div className="space-y-2.5">
                     <div className="text-xs font-semibold text-[#141B16]">

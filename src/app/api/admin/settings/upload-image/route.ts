@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { isAdminEmail } from "@/lib/is-admin";
 import { setSetting, type SettingKey } from "@/lib/app-settings";
 import { getStorageProvider } from "@/lib/storage/factory";
+import { validateAndSanitizeImage } from "@/lib/file-validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Only these AppSetting keys represent an actual image asset — an admin
 // can't point this upload endpoint at an arbitrary setting key (e.g. a
@@ -18,17 +20,28 @@ const IMAGE_SETTING_KEYS: SettingKey[] = [
   "auth_page_image_url",
 ];
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB — branding/marketing images can be larger than an avatar
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB — branding/marketing images
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
-  return isAdminEmail(session?.user?.email);
+  return {
+    isAdmin: isAdminEmail(session?.user?.email),
+    email: session?.user?.email,
+  };
 }
 
 export async function POST(req: Request) {
-  if (!(await requireAdmin())) {
+  const admin = await requireAdmin();
+  if (!admin.isAdmin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const rateCheck = checkRateLimit(admin.email || "admin", "ADMIN");
+  if (!rateCheck.success) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please wait before uploading again." },
+      { status: 429, headers: rateCheck.headers }
+    );
   }
 
   try {
@@ -42,24 +55,26 @@ export async function POST(req: Request) {
     if (!file) {
       return NextResponse.json({ error: "No image file provided." }, { status: 400 });
     }
-    if (file.size > MAX_SIZE_BYTES) {
-      return NextResponse.json({ error: "Image file exceeds 5MB limit." }, { status: 400 });
-    }
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+
+    const rawBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Comprehensive Magic-Bytes, MIME & SVG sanitization check
+    const validation = validateAndSanitizeImage(rawBuffer, file.type, MAX_SIZE_BYTES);
+    if (!validation.valid || !validation.sanitizedBuffer) {
       return NextResponse.json(
-        { error: "Invalid image format. Supported formats: JPEG, PNG, WebP, GIF, SVG." },
+        { error: validation.error || "Image failed security validation." },
         { status: 400 }
       );
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     const storage = await getStorageProvider();
-    const result = await storage.upload(buffer, file.name, file.type);
+    const result = await storage.upload(validation.sanitizedBuffer, file.name, validation.detectedMime || file.type);
 
     await setSetting(key as SettingKey, result.url);
 
     return NextResponse.json({ success: true, url: result.url });
   } catch (err: any) {
+    console.error("Admin image upload failed:", err);
     return NextResponse.json({ error: err.message || "Failed to upload image." }, { status: 500 });
   }
 }

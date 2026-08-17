@@ -1,5 +1,6 @@
 import { fetchJson } from "./http";
 import type { CompleteListingSeoAudit } from "@/types/seo";
+import type { CompleteShopSeoAudit, ShopSeoAuditInput } from "@/types/shop-seo-audit";
 
 export async function auditListing(params: {
   listingId?: string | number;
@@ -12,6 +13,16 @@ export async function auditListing(params: {
   save?: boolean;
 }): Promise<{ audit: CompleteListingSeoAudit }> {
   return fetchJson<{ audit: CompleteListingSeoAudit }>("/api/seo/audit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+}
+
+export async function auditShopSeo(
+  params: ShopSeoAuditInput
+): Promise<{ audit: CompleteShopSeoAudit }> {
+  return fetchJson<{ audit: CompleteShopSeoAudit }>("/api/seo/shop-audit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
