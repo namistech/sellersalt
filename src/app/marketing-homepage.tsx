@@ -624,6 +624,113 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         </div>
       </section>
 
+      {/* The 4-Pillar Seller Operating System Architecture */}
+      <section className="container" style={{ margin: "48px auto" }}>
+        <div className="section-header">
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "#0E8F5D", textTransform: "uppercase", letterSpacing: "0.05em", backgroundColor: "#E7FAF1", padding: "4px 10px", borderRadius: "999px" }}>
+            The Full Operating System Loop
+          </span>
+          <h2 style={{ marginTop: "12px" }}>Complete Seller Workflow Architecture</h2>
+          <p>
+            SellerSalt connects every stage of your business — from initial niche discovery to live Etsy listing drafts and post-publish optimization.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginTop: "24px" }}>
+          {/* Pillar 1: DISCOVER */}
+          <div style={{ background: "#FFFFFF", padding: "20px", borderRadius: "14px", border: "1px solid #E3E6E0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#0E8F5D", backgroundColor: "#E7FAF1", padding: "3px 8px", borderRadius: "6px" }}>
+                PILLAR 1
+              </span>
+              <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>DISCOVER</h3>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "#525B55" }}>
+              <li style={{ padding: "4px 0" }}>• Product Research &amp; Breakouts</li>
+              <li style={{ padding: "4px 0" }}>• High-Intent Keyword Mining</li>
+              <li style={{ padding: "4px 0" }}>• Category Taxonomy Hunting</li>
+              <li style={{ padding: "4px 0" }}>• Competitor Shop Intelligence</li>
+              <li style={{ padding: "4px 0" }}>• 24h &amp; 7d Velocity Tracking</li>
+            </ul>
+          </div>
+
+          {/* Pillar 2: DECIDE */}
+          <div style={{ background: "#FFFFFF", padding: "20px", borderRadius: "14px", border: "1px solid #E3E6E0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#2563EB", backgroundColor: "#EFF6FF", padding: "3px 8px", borderRadius: "6px" }}>
+                PILLAR 2
+              </span>
+              <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>DECIDE</h3>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "#525B55" }}>
+              <li style={{ padding: "4px 0" }}>• Opportunity Radar (0–100 Score)</li>
+              <li style={{ padding: "4px 0" }}>• Canonical Opportunity Inbox</li>
+              <li style={{ padding: "4px 0" }}>• Unit Margin &amp; Profit Modeling</li>
+              <li style={{ padding: "4px 0" }}>• Next Best Action Reasoning</li>
+              <li style={{ padding: "4px 0" }}>• Long-Tail Keyword Clusters</li>
+            </ul>
+          </div>
+
+          {/* Pillar 3: EXECUTE */}
+          <div style={{ background: "#FFFFFF", padding: "20px", borderRadius: "14px", border: "1px solid #E3E6E0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#9333EA", backgroundColor: "#FAF5FF", padding: "3px 8px", borderRadius: "6px" }}>
+                PILLAR 3
+              </span>
+              <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>EXECUTE</h3>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "#525B55" }}>
+              <li style={{ padding: "4px 0" }}>• Workspace Opportunity Planner</li>
+              <li style={{ padding: "4px 0" }}>• 6-Pillar Listing Strategy Plan</li>
+              <li style={{ padding: "4px 0" }}>• Listing Content Studio (Versioning)</li>
+              <li style={{ padding: "4px 0" }}>• Pre-Flight 13-Tag Validator</li>
+              <li style={{ padding: "4px 0" }}>• Human Review Gate (Rule 9)</li>
+            </ul>
+          </div>
+
+          {/* Pillar 4: OPERATE */}
+          <div style={{ background: "#FFFFFF", padding: "20px", borderRadius: "14px", border: "1px solid #E3E6E0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#D97706", backgroundColor: "#FFFBEB", padding: "3px 8px", borderRadius: "6px" }}>
+                PILLAR 4
+              </span>
+              <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>OPERATE</h3>
+            </div>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: "12px", color: "#525B55" }}>
+              <li style={{ padding: "4px 0" }}>• Own Shop Operations Center</li>
+              <li style={{ padding: "4px 0" }}>• Store Health Index &amp; Tag Audit</li>
+              <li style={{ padding: "4px 0" }}>• Post-Publish Trajectory Watch</li>
+              <li style={{ padding: "4px 0" }}>• Closed-Loop Optimization Tasks</li>
+              <li style={{ padding: "4px 0" }}>• Browser Assistant Extension</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Marketplace Ecosystem Strip */}
+        <div style={{ marginTop: "24px", background: "#FAFAF8", padding: "16px 20px", borderRadius: "12px", border: "1px solid #E3E6E0", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+          <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
+            Marketplace Channels:
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", borderRadius: "6px", backgroundColor: "#E7FAF1", color: "#0E8F5D", border: "1px solid #0E8F5D/30" }}>
+              🟢 Etsy (Active)
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "6px", backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+              ⏳ Amazon (Coming Soon)
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "6px", backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+              ⏳ eBay (Coming Soon)
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "6px", backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+              ⏳ TikTok Shop (Coming Soon)
+            </span>
+            <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 8px", borderRadius: "6px", backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+              ⏳ Walmart (Coming Soon)
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section (Tasks 4 & 5) */}
       <section id="pricing" className="container">
         <div className="section-header">

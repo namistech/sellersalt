@@ -97,3 +97,95 @@ export function diagnoseEtsyConnector(grantedScopes: string[] = ["listings_r", "
     },
   };
 }
+
+export type ConnectorErrorCode =
+  | "AUTH_REQUIRED"
+  | "AUTH_EXPIRED"
+  | "SCOPE_MISSING"
+  | "RATE_LIMITED"
+  | "ETSY_API_ERROR"
+  | "RESOURCE_NOT_FOUND"
+  | "WRITE_NOT_AVAILABLE"
+  | "CONNECTION_REVOKED"
+  | "TEMPORARY_FAILURE"
+  | "UNKNOWN";
+
+export interface ConnectorErrorResolution {
+  code: ConnectorErrorCode;
+  title: string;
+  explanation: string;
+  recommendedAction: string;
+  canRetry: boolean;
+  canReconnect: boolean;
+  fallbackWorkflow?: string;
+}
+
+export function mapConnectorError(err: any): ConnectorErrorResolution {
+  const message = String(err?.message || err || "").toLowerCase();
+  const status = Number(err?.status || err?.statusCode || 0);
+
+  if (status === 401 || message.includes("invalid token") || message.includes("token expired")) {
+    return {
+      code: "AUTH_EXPIRED",
+      title: "Etsy Authorization Expired",
+      explanation: "Your Etsy connection token has expired or was revoked in your Etsy account security settings.",
+      recommendedAction: "Reconnect your Etsy shop in Settings → Channels to refresh your OAuth session.",
+      canRetry: false,
+      canReconnect: true,
+    };
+  }
+
+  if (message.includes("write") || message.includes("listings_w") || message.includes("commercial approval")) {
+    return {
+      code: "WRITE_NOT_AVAILABLE",
+      title: "Direct Remote Draft Write Not Enabled",
+      explanation: "Etsy Developer Portal write permissions (listings_w) have not been enabled for this connection.",
+      recommendedAction: "SellerSalt has saved your draft locally. You can copy the generated title and 13 tags directly into Etsy.",
+      canRetry: false,
+      canReconnect: false,
+      fallbackWorkflow: "Copy generated copy directly from Content Studio into Etsy Shop Manager.",
+    };
+  }
+
+  if (message.includes("missing scope") || message.includes("insufficient_scope") || message.includes("scope required")) {
+    return {
+      code: "SCOPE_MISSING",
+      title: "Missing Required Etsy OAuth Permissions",
+      explanation: "This action requires an OAuth scope that was not granted during the initial authorization.",
+      recommendedAction: "Reconnect your store and ensure all requested read/write permissions are approved.",
+      canRetry: false,
+      canReconnect: true,
+    };
+  }
+
+  if (status === 429 || message.includes("rate limit") || message.includes("too many requests")) {
+    return {
+      code: "RATE_LIMITED",
+      title: "Etsy API Rate Limit Reached",
+      explanation: "Etsy enforces an 8 requests/second ceiling. SellerSalt automatically pauses and retries requests.",
+      recommendedAction: "Please wait a few moments before re-running your search or audit.",
+      canRetry: true,
+      canReconnect: false,
+    };
+  }
+
+  if (status === 404 || message.includes("not found") || message.includes("resource_not_found")) {
+    return {
+      code: "RESOURCE_NOT_FOUND",
+      title: "Etsy Listing or Shop Not Found",
+      explanation: "The requested listing or shop ID could not be found on Etsy. It may have been deactivated or removed.",
+      recommendedAction: "Verify the Etsy listing URL or numeric ID and try again.",
+      canRetry: false,
+      canReconnect: false,
+    };
+  }
+
+  return {
+    code: "UNKNOWN",
+    title: "Etsy Connection Notice",
+    explanation: err?.message || "An unexpected response was received from the Etsy marketplace connector.",
+    recommendedAction: "Please try again, or check your channel settings if the issue persists.",
+    canRetry: true,
+    canReconnect: false,
+  };
+}

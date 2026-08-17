@@ -138,6 +138,9 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-lg font-bold text-ink">{plan.name}</h3>
+                  <div className="text-[11px] font-semibold text-[#0E8F5D] mt-0.5">
+                    &ldquo;{plan.outcome}&rdquo;
+                  </div>
                   <p className="text-xs text-ink-tertiary mt-1 min-h-[32px]">{plan.description}</p>
                 </div>
 

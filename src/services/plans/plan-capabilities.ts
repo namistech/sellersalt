@@ -23,6 +23,7 @@ export interface PlanDefinition {
   priceAnnualMonthlyUsd: number;
   description: string;
   badge?: string;
+  outcome: string;
   limits: {
     monthlyKeywordSearches: number;
     monthlyProductResearches: number;
@@ -43,6 +44,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierKey, PlanDefinition> = {
     priceMonthlyUsd: 0,
     priceAnnualMonthlyUsd: 0,
     description: "Sample SellerSalt market intelligence and evaluate product opportunities.",
+    outcome: "Understand the market.",
     limits: {
       monthlyKeywordSearches: 15,
       monthlyProductResearches: 10,
@@ -61,6 +63,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierKey, PlanDefinition> = {
     priceMonthlyUsd: 19,
     priceAnnualMonthlyUsd: 15,
     description: "For active sellers launching new listings and tracking competitors.",
+    outcome: "Find and plan opportunities.",
     limits: {
       monthlyKeywordSearches: 250,
       monthlyProductResearches: 150,
@@ -80,6 +83,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierKey, PlanDefinition> = {
     priceAnnualMonthlyUsd: 39,
     badge: "Most Popular",
     description: "For scaling multi-product storefronts seeking automated surveillance & strategy.",
+    outcome: "Operate your seller business with intelligence.",
     limits: {
       monthlyKeywordSearches: 2500,
       monthlyProductResearches: 1000,
@@ -99,6 +103,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierKey, PlanDefinition> = {
     priceAnnualMonthlyUsd: 159,
     badge: "Enterprise",
     description: "For multi-brand agencies managing client catalogs and market intelligence.",
+    outcome: "Run intelligence across clients and stores.",
     limits: {
       monthlyKeywordSearches: 25000,
       monthlyProductResearches: 10000,
