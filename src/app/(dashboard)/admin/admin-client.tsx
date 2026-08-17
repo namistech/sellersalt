@@ -51,6 +51,8 @@ import { StorageMediaView } from "./views/StorageMediaView";
 import { UserProvisioningView } from "./views/UserProvisioningView";
 import { SecurityAbuseView } from "./views/SecurityAbuseView";
 import { SystemHealthView } from "./views/SystemHealthView";
+import { AnnouncementsView } from "./views/AnnouncementsView";
+import { FreePlanConfigView } from "./views/FreePlanConfigView";
 
 interface AdminMetrics {
   totalUsers: number;
@@ -629,6 +631,23 @@ export function AdminPackagesClient() {
       }
     } finally {
       setPackageSaving(null);
+    }
+  }
+
+  async function handleSavePackageLimitsDirect(pkgId: string, limits: any): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/admin/packages/${pkgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(limits),
+      });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
   }
 
@@ -1384,24 +1403,81 @@ export function AdminPackagesClient() {
                     return (
                       <tr key={u.id} className={`hover:bg-[#FAFAF8] ${u.suspended ? "bg-red-50/20" : ""}`}>
                         <td className="p-3">
-                          <div className="flex items-center gap-2.5">
-                            {u.avatarUrl ? (
-                              <img
-                                src={u.avatarUrl}
-                                alt={u.name || u.email}
-                                className="h-8 w-8 rounded-lg object-cover border border-line shrink-0"
-                              />
-                            ) : (
-                              <div className="h-8 w-8 rounded-lg bg-[#141B16] text-[#0E8F5D] flex items-center justify-center font-bold text-xs shrink-0">
-                                {initials}
+                          <div className="flex flex-col gap-1.5 min-w-0">
+                            <div className="flex items-center gap-2.5">
+                              {u.avatarUrl ? (
+                                <img
+                                  src={u.avatarUrl}
+                                  alt={u.name || u.email}
+                                  className="h-8 w-8 rounded-lg object-cover border border-line shrink-0"
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded-lg bg-[#141B16] text-[#0E8F5D] flex items-center justify-center font-bold text-xs shrink-0">
+                                  {initials}
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-bold text-ink flex items-center gap-1.5">
+                                  {u.name || "—"}
+                                  {u.suspended && <Badge variant="danger">Suspended</Badge>}
+                                </div>
+                                <div className="text-ink-tertiary text-[11px] font-mono">{u.email}</div>
                               </div>
-                            )}
-                            <div>
-                              <div className="font-bold text-ink flex items-center gap-1.5">
-                                {u.name || "—"}
-                                {u.suspended && <Badge variant="danger">Suspended</Badge>}
-                              </div>
-                              <div className="text-ink-tertiary text-[11px]">{u.email}</div>
+                            </div>
+
+                            {/* Inline Second-Row Action Buttons */}
+                            <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => openUserDetail(u.id)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-[10px] font-bold text-ink transition"
+                                title="Inspect user dossier"
+                              >
+                                <Eye className="h-2.5 w-2.5 text-ink-tertiary" /> Inspect
+                              </button>
+
+                              {!u.emailVerified && (
+                                <button
+                                  type="button"
+                                  disabled={userActionLoading !== null}
+                                  onClick={() => handleSendVerification(u.id)}
+                                  className="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[10px] font-bold text-amber-800 transition"
+                                  title="Send verification email link"
+                                >
+                                  Send Verify
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleChangeEmail(u.id, u.email)}
+                                className="px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-[10px] font-bold text-ink transition"
+                                title="Change email address"
+                              >
+                                Edit Email
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
+                                className={`px-2 py-0.5 rounded border text-[10px] font-bold transition ${
+                                  u.suspended
+                                    ? "bg-[#E7FAF1] border-[#0E8F5D]/30 text-[#0E8F5D]"
+                                    : "bg-white hover:bg-amber-50 border-line text-amber-700"
+                                }`}
+                                title={u.suspended ? "Unsuspend account" : "Suspend account"}
+                              >
+                                {u.suspended ? "Unsuspend" : "Suspend"}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                className="px-2 py-0.5 rounded bg-white hover:bg-red-50 border border-line text-[10px] font-bold text-red-600 transition"
+                                title="Delete user"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
                         </td>
@@ -2857,6 +2933,26 @@ export function AdminPackagesClient() {
           s3EndpointVal={settingDrafts["s3_endpoint"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_endpoint")?.value || ""}
           s3PublicBaseVal={settingDrafts["s3_public_base_url"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_public_base_url")?.value || ""}
           hasS3Secret={Boolean(siteSettings.find((s: SiteSettingRow) => s.key === "s3_secret_access_key")?.hasValue)}
+          onSaveSetting={handleSaveSettingDirect}
+        />
+      )}
+
+      {/* 9. ANNOUNCEMENTS & ALERTS */}
+      {activeTab === "notifications" && (
+        <AnnouncementsView
+          urgentBannerActive={settingDrafts["announcement_urgent_active"] === "true" || siteSettings.find((s: SiteSettingRow) => s.key === "announcement_urgent_active")?.value === "true"}
+          urgentBannerText={settingDrafts["announcement_urgent_text"] || siteSettings.find((s: SiteSettingRow) => s.key === "announcement_urgent_text")?.value || ""}
+          urgentBannerLink={settingDrafts["announcement_urgent_link"] || siteSettings.find((s: SiteSettingRow) => s.key === "announcement_urgent_link")?.value || ""}
+          onSaveSetting={handleSaveSettingDirect}
+        />
+      )}
+
+      {/* 10. DEDICATED FREE EXPLORER PLAN */}
+      {activeTab === "free-plan" && (
+        <FreePlanConfigView
+          freePackage={packages.find((p) => p.key === "FREE" || p.priceUsd === 0)}
+          onSavePackageLimits={handleSavePackageLimitsDirect}
+          freePlanEnabled={settingDrafts["free_plan_enabled"] !== "false" && siteSettings.find((s: SiteSettingRow) => s.key === "free_plan_enabled")?.value !== "false"}
           onSaveSetting={handleSaveSettingDirect}
         />
       )}

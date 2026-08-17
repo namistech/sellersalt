@@ -42,6 +42,7 @@ export type AdminTabId =
   | "user-provisioning"
   // Billing & Plans
   | "packages"
+  | "free-plan"
   | "coupons"
   | "payments"
   // Integrations
@@ -118,6 +119,7 @@ export function AdminSidebar({
       label: "Billing & Plans",
       items: [
         { id: "packages", label: "Plans & Quotas", icon: Layers },
+        { id: "free-plan", label: "Free Explorer Plan", icon: Sliders },
         { id: "coupons", label: "Coupons", icon: Tag },
         { id: "payments", label: "Payment Gateways", icon: CreditCard },
       ],

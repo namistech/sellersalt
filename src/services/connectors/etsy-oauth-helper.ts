@@ -82,9 +82,9 @@ export function resolveEtsyOAuthRedirectUri(options?: {
 
   // Determine environment
   let environment: "development" | "staging" | "production" = "development";
-  if (normalizedBase.includes("sellersalt.com") || (process.env.NODE_ENV === "production" && !normalizedBase.includes("staging") && !normalizedBase.includes("anadash.namis.tech"))) {
+  if (normalizedBase.includes("sellersalt.com") && !normalizedBase.includes("staging")) {
     environment = "production";
-  } else if (normalizedBase.includes("staging") || normalizedBase.includes("anadash.namis.tech") || normalizedBase.includes("netdrix.com")) {
+  } else if (normalizedBase.includes("staging.sellersalt.com") || normalizedBase.includes("staging")) {
     environment = "staging";
   }
 

@@ -14,14 +14,14 @@ import { createConnectToken, verifyConnectToken } from "@/lib/store-connect-toke
 test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t) => {
   await t.test("resolves exact staging redirect URI with dynamic reqHost and overrideClientId", () => {
     const config = resolveEtsyOAuthRedirectUri({
-      reqHost: "anadash.namis.tech",
+      reqHost: "staging.sellersalt.com",
       reqProto: "https",
       overrideClientId: "etsy_test_client_key_123",
     });
 
     assert.equal(config.isValid, true);
-    assert.equal(config.baseUrl, "https://anadash.namis.tech");
-    assert.equal(config.redirectUri, "https://anadash.namis.tech/api/seller-channels/etsy/callback");
+    assert.equal(config.baseUrl, "https://staging.sellersalt.com");
+    assert.equal(config.redirectUri, "https://staging.sellersalt.com/api/seller-channels/etsy/callback");
     assert.equal(config.clientId, "etsy_test_client_key_123");
     assert.equal(config.environment, "staging");
     assert.ok(!config.redirectUri.endsWith("/"), "Redirect URI must NOT have a trailing slash");
@@ -42,7 +42,7 @@ test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t
 
   await t.test("strictly prevents staging requests from generating production callbacks and vice versa", () => {
     const stagingConfig = resolveEtsyOAuthRedirectUri({
-      reqHost: "anadash.namis.tech",
+      reqHost: "staging.sellersalt.com",
       overrideClientId: "test_key",
     });
     const prodConfig = resolveEtsyOAuthRedirectUri({
@@ -51,13 +51,13 @@ test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t
     });
 
     assert.notEqual(stagingConfig.redirectUri, prodConfig.redirectUri);
-    assert.ok(stagingConfig.redirectUri.includes("anadash.namis.tech"));
+    assert.ok(stagingConfig.redirectUri.includes("staging.sellersalt.com"));
     assert.ok(prodConfig.redirectUri.includes("sellersalt.com"));
   });
 
   await t.test("enforces HTTPS on non-localhost origins", () => {
     const config = resolveEtsyOAuthRedirectUri({
-      reqHost: "anadash.namis.tech",
+      reqHost: "staging.sellersalt.com",
       reqProto: "http", // reverse proxy might forward http
       overrideClientId: "test_key",
     });
@@ -68,7 +68,7 @@ test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t
 
   await t.test("supports AppSetting redirect URI override", () => {
     const config = resolveEtsyOAuthRedirectUri({
-      reqHost: "anadash.namis.tech",
+      reqHost: "staging.sellersalt.com",
       overrideRedirectUri: "https://custom.sellersalt.com/api/seller-channels/etsy/callback",
       overrideClientId: "test_key",
     });
@@ -103,7 +103,7 @@ test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t
 
   await t.test("safe OAuth diagnostic produces non-sensitive inspection data", () => {
     const diag = resolveEtsyOAuthConfiguration({
-      reqHost: "anadash.namis.tech",
+      reqHost: "staging.sellersalt.com",
       overrideClientId: "efxloiz6kn6jhkzzbto4oz3v",
       credentialSource: "APP_SETTING",
     });

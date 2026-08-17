@@ -141,18 +141,18 @@ test("Batch 26 Remediation: Etsy OAuth Environment & Redirect Resolution", async
     assert.equal(cfg.environment, "production");
   });
 
-  await t.test("resolves staging redirect URI matching namis.tech", () => {
+  await t.test("resolves staging redirect URI matching staging.sellersalt.com", () => {
     const cfg = resolveEtsyOAuthRedirectUri({
-      overrideBaseUrl: "https://anadash.namis.tech",
+      overrideBaseUrl: "https://staging.sellersalt.com",
     });
-    assert.equal(cfg.baseUrl, "https://anadash.namis.tech");
-    assert.equal(cfg.redirectUri, "https://anadash.namis.tech/api/seller-channels/etsy/callback");
+    assert.equal(cfg.baseUrl, "https://staging.sellersalt.com");
+    assert.equal(cfg.redirectUri, "https://staging.sellersalt.com/api/seller-channels/etsy/callback");
     assert.equal(cfg.environment, "staging");
   });
 
   await t.test("respects explicit ETSY_REDIRECT_URI environment override", () => {
     const cfg = resolveEtsyOAuthRedirectUri({
-      overrideBaseUrl: "https://anadash.namis.tech",
+      overrideBaseUrl: "https://staging.sellersalt.com",
       overrideRedirectUri: "https://custom.sellersalt.com/api/seller-channels/etsy/callback",
     });
     assert.equal(cfg.redirectUri, "https://custom.sellersalt.com/api/seller-channels/etsy/callback");
