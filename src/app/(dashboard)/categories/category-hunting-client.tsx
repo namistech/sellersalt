@@ -376,6 +376,7 @@ export function CategoryHuntingClient({
           {/* 2. MARKET ENTRY DECISION (PRIMARY LEVEL-1 ATTENTION SURFACE) */}
           {/* ==================================================================== */}
           <IntelligenceCard
+            contextTheme="radar"
             badgeText="MARKET ENTRY INTELLIGENCE"
             badgeIcon={<Layers className="h-3.5 w-3.5 text-[#FBBF24]" />}
             title={`Should you enter the "${profile.name}" category?`}

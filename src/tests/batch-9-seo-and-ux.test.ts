@@ -64,7 +64,9 @@ describe("Batch 9: SEO Listing Parser & Type Boundary (Item 10)", () => {
   });
 });
 
-describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", () => {
+const describeDb = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeDb("Batch 9: System Announcements & Notification Center (Items 14 & 15)", () => {
   // Announcement read/dismiss state is persisted per-user against a real
   // `AnnouncementRead.userId` foreign key, so these tests need real `User`
   // rows rather than arbitrary ID strings.
@@ -72,6 +74,7 @@ describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", 
   let userB: { id: string };
 
   before(async () => {
+    if (!process.env.DATABASE_URL) return;
     const suffix = Date.now();
     userA = await prisma.user.create({
       data: { email: `test-announcements-a-${suffix}@sellersalt.test`, passwordHash: "test-hash" },
@@ -82,6 +85,7 @@ describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", 
   });
 
   after(async () => {
+    if (!process.env.DATABASE_URL || !userA?.id || !userB?.id) return;
     // Cascades to each user's AnnouncementRead rows.
     await prisma.user.deleteMany({ where: { id: { in: [userA.id, userB.id] } } });
   });

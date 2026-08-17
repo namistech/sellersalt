@@ -613,6 +613,7 @@ export function RadarClient({
             const isTopSaved = savedPlannerMap[top.id] || top.status === "SHORTLISTED";
             return (
               <IntelligenceCard
+                contextTheme="radar"
                 badgeText="TOP BREAKOUT OPPORTUNITY"
                 badgeIcon={<Flame className="h-3.5 w-3.5 text-[#FFB020]" />}
                 title={top.listingTitle || top.shopName}

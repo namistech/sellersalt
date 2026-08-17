@@ -35,6 +35,8 @@ export interface IntelligenceCardProps {
   onAction?: () => void;
   /** Secondary Action Button */
   secondaryAction?: ReactNode;
+  /** Contextual feature-section theme ('radar' | 'keywords' | 'shop' | 'seo' | 'economics' | 'planner' | 'default') */
+  contextTheme?: "radar" | "keywords" | "shop" | "seo" | "economics" | "planner" | "default";
   /** Additional custom class names */
   className?: string;
 }
@@ -49,6 +51,7 @@ export function IntelligenceCard({
   verdictLabel,
   verdictVariant = "success",
   provenance = "SELLERSALT_SCORE",
+  contextTheme = "default",
   sidePanel,
   children,
   actionLabel,
@@ -56,6 +59,25 @@ export function IntelligenceCard({
   secondaryAction,
   className,
 }: IntelligenceCardProps) {
+  const getContextThemeStyle = () => {
+    switch (contextTheme) {
+      case "radar":
+        return "bg-gradient-to-br from-[#0F2016] via-[#142A1D] to-[#0D1C13] border-[#244831]";
+      case "keywords":
+        return "bg-gradient-to-br from-[#0F1E24] via-[#132830] to-[#0D1B20] border-[#1E3E4C]";
+      case "shop":
+        return "bg-gradient-to-br from-[#16221A] via-[#1C2C21] to-[#141E17] border-[#2E4233]";
+      case "seo":
+        return "bg-gradient-to-br from-[#161C20] via-[#1C242A] to-[#13191D] border-[#2D3A44]";
+      case "economics":
+        return "bg-gradient-to-br from-[#0D2218] via-[#132C1F] to-[#0A1A12] border-[#1E4832]";
+      case "planner":
+        return "bg-gradient-to-br from-[#141B1E] via-[#1A2328] to-[#12181B] border-[#2A3740]";
+      default:
+        return "bg-gradient-to-br from-[#141F18] via-[#1A281F] to-[#121B15] border-[#2A3B2F]";
+    }
+  };
+
   const getVerdictStyle = () => {
     switch (verdictVariant) {
       case "success":
@@ -74,7 +96,8 @@ export function IntelligenceCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-5 sm:p-6 lg:p-7 shadow-sm",
+        "relative overflow-hidden rounded-2xl border text-white p-5 sm:p-6 lg:p-7 shadow-sm",
+        getContextThemeStyle(),
         className
       )}
     >

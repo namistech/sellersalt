@@ -631,18 +631,17 @@ export function ShopDetailClient({
       {/* SECTION 1: SHOP RESEARCH DOSSIER HEADER */}
       {/* ==================================================================== */}
       <div className="rounded-2xl border border-line bg-white shadow-xs overflow-hidden">
-        {/* Visual Cover / Banner Pattern */}
-        <div className="h-32 sm:h-44 w-full bg-gradient-to-r from-[#141B16] via-[#1C261F] to-[#141B16] relative overflow-hidden">
+        {/* Visual Cover / Banner Area */}
+        <div className="h-44 sm:h-56 md:h-64 w-full bg-[#141B16] relative overflow-hidden">
           {shopBannerUrl ? (
-            <SafeImage
+            <img
               src={shopBannerUrl}
               alt={shopName}
-              fallbackType="shop"
-              className="w-full h-full object-cover opacity-60"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center opacity-10">
-              <Store className="h-28 w-28 text-[#16C784]" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-[#14261C] via-[#1C2D22] to-[#14261C]">
+              <Store className="h-20 w-20 text-[#16C784]/20" />
             </div>
           )}
           <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -650,11 +649,11 @@ export function ShopDetailClient({
           </div>
         </div>
 
-        {/* Header Profile Body */}
-        <div className="p-6 sm:p-8 pt-0 relative space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14">
-            <div className="flex items-end gap-4">
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden shrink-0 flex items-center justify-center">
+        {/* Header Profile Identity & Action Bar */}
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-start sm:items-center gap-4 min-w-0">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl border-2 border-line bg-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
                 {shopIconUrl ? (
                   <SafeImage
                     src={shopIconUrl}
@@ -663,13 +662,13 @@ export function ShopDetailClient({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Avatar name={shopName} size="lg" className="w-full h-full text-xl" />
+                  <Avatar name={shopName} size="lg" className="w-full h-full text-xl font-extrabold" />
                 )}
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-bold text-ink tracking-tight">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight truncate">
                     {shopName}
                   </h1>
                   <Badge variant={evaluatedScore.score >= 70 ? "success" : "warning"} className="font-bold">
@@ -677,11 +676,11 @@ export function ShopDetailClient({
                   </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-ink-secondary">
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 font-medium">
                     <MapPin className="h-3.5 w-3.5 text-ink-tertiary" /> {location}
                   </span>
                   <span>·</span>
-                  <span className="flex items-center gap-1">
+                  <span className="flex items-center gap-1 font-medium">
                     <Clock className="h-3.5 w-3.5 text-ink-tertiary" /> Established {createdDate}
                   </span>
                   <span>·</span>
@@ -692,8 +691,8 @@ export function ShopDetailClient({
               </div>
             </div>
 
-            {/* Top Quick Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Action Area: Dedicated Spacing & Responsive Wrap */}
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
               <Button
                 variant={tracked ? "secondary" : "primary"}
                 onClick={handleToggleTrack}
@@ -760,6 +759,7 @@ export function ShopDetailClient({
       {/* SECTION 2: LEVEL 1 — COMPETITION VERDICT (DARK ATTENTION CARD) */}
       {/* ==================================================================== */}
       <IntelligenceCard
+        contextTheme="shop"
         badgeText="STRATEGIC COMPETITION VERDICT"
         badgeIcon={<ShieldCheck className="h-3.5 w-3.5 text-[#FBBF24]" />}
         title={`Should you compete with ${shopName}?`}

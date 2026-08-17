@@ -56,7 +56,7 @@ export interface OwnShopIntelligenceReport {
   
   // Store Health [SELLERSALT SCORE]
   healthScore: number;
-  healthTier: "EXCELLENT" | "GOOD" | "ATTENTION_NEEDED" | "CRITICAL";
+  healthTier: "EXCELLENT" | "GOOD" | "ATTENTION_NEEDED" | "CRITICAL" | "EMPTY";
   healthTierLabel: string;
   
   // Metrics with provenance distinction
@@ -161,109 +161,69 @@ export async function getOwnShopIntelligence(
   };
 
   const isConnected = Boolean(sellerChannel);
-  const shopName = sellerChannel?.label || "My Etsy Store";
-  const shopId = sellerChannel?.id || "own_shop_default";
+  const shopName = sellerChannel?.label || "No Shop Connected";
+  const shopId = sellerChannel?.id || "";
+
+  if (!isConnected) {
+    return {
+      shopId: "",
+      shopName: "",
+      isConnected: false,
+      platform: "ETSY_SELLER",
+      healthScore: 0,
+      healthTier: "EMPTY",
+      healthTierLabel: "No Store Connected",
+      actualData: {
+        activeListingsCount: 0,
+        totalSalesLifetime: 0,
+        reviewCount: 0,
+        reviewAverage: 0,
+        provenance: "ACTUAL_ETSY_DATA",
+      },
+      estimatedMetrics: {
+        estMonthlyRevenue: 0,
+        estDailySales: 0,
+        avgOrderValue: 0,
+        provenance: "ESTIMATED",
+      },
+      seoSummary: {
+        avgSeoScore: 0,
+        perfect13TagListingsCount: 0,
+        listingsWithTagGapsCount: 0,
+        missingKeywordsDetectedCount: 0,
+      },
+      competitorBenchmark: {
+        yourSalesVelocity: 0,
+        competitorAvgSalesVelocity: 0,
+        velocityDeltaPercent: 0,
+        yourAvgPrice: 0,
+        competitorAvgPrice: 0,
+      },
+      underperformingListings: [],
+      optimizationQueue: [],
+      capabilities,
+      primaryNextAction: {
+        id: "connect-etsy-store",
+        context: "OWN_SHOP",
+        headline: "Connect your Etsy shop to see your real store performance",
+        signal: "No active Etsy seller channel connected to this workspace.",
+        interpretation: "Connecting your store enables automated catalog diagnostics and SEO audits.",
+        whyYouShouldCare: "We'll analyze your listings, tags, catalog quality and opportunities for improvement.",
+        rationale: "Requires connected seller channel to read private listing performance.",
+        actionLabel: "Connect Etsy Shop",
+        actionHref: "/settings/channels",
+        actionType: "NAVIGATE",
+        urgency: "HIGH",
+        scoreImpactEstimated: "Unlock Store Diagnostics",
+        icon: "🔌",
+        provenance: "SELLERSALT_SCORE",
+        confidence: 100,
+      },
+    };
+  }
 
   // Catalog items with explainable SEO health
-  const sampleListings: OwnListingHealthItem[] = [
-    {
-      id: "own_item_1",
-      listingId: "189230491",
-      title: "Handmade Ceramic Espresso Cup Set of 2",
-      price: 28.0,
-      tagsCount: 9,
-      tagSlotsRemaining: 4,
-      titleCharCount: 42,
-      seoScore: 68,
-      actualSales: 45,
-      estDailySales: 1.2,
-      isUnderperforming: true,
-      underperformanceReason: "Only 9 of 13 tags utilized; title leaves 98 characters unused.",
-      topMissingKeyword: "pottery mug handcrafted",
-      status: "NEEDS_OPTIMIZATION",
-      nextAction: {
-        id: "fill-tags-own-item-1",
-        context: "OWN_SHOP",
-        headline: "Add 4 Missing High-Intent Tags",
-        signal: "Listing utilizes only 9 of 13 possible Etsy tag slots.",
-        interpretation: "Unused tag slots directly limit multi-query organic search matching.",
-        whyYouShouldCare: "Adding 4 relevant long-tail tags increases keyword coverage by +44%.",
-        rationale: "Unused tag slots (9/13) reduce discoverability across search terms.",
-        actionLabel: "Optimize 4 Tags",
-        actionHref: "/seo",
-        actionType: "NAVIGATE",
-        urgency: "HIGH",
-        scoreImpactEstimated: "+18 SEO Score",
-        icon: "⚡",
-        provenance: "SELLERSALT_SCORE",
-        confidence: 94,
-      },
-    },
-    {
-      id: "own_item_2",
-      listingId: "189230492",
-      title: "Minimalist Leather Card Holder Wallet Slim",
-      price: 34.0,
-      tagsCount: 13,
-      tagSlotsRemaining: 0,
-      titleCharCount: 43,
-      seoScore: 84,
-      actualSales: 120,
-      estDailySales: 3.8,
-      isUnderperforming: false,
-      status: "ACTIVE",
-      nextAction: {
-        id: "monitor-own-item-2",
-        context: "OWN_SHOP",
-        headline: "High Performing Listing — Monitor Velocity",
-        signal: "Listing generates 3.8 sales/day with complete 13/13 tag compliance.",
-        interpretation: "Organic keyword indexing is strong in Leather Goods category.",
-        whyYouShouldCare: "Maintaining active surveillance ensures quick alerts if competitors adjust pricing.",
-        rationale: "Healthy velocity and tag compliance.",
-        actionLabel: "View Performance",
-        actionHref: "/analytics",
-        actionType: "NAVIGATE",
-        urgency: "LOW",
-        scoreImpactEstimated: "Velocity Maintained",
-        icon: "📈",
-        provenance: "SELLERSALT_SCORE",
-        confidence: 90,
-      },
-    },
-    {
-      id: "own_item_3",
-      listingId: "189230493",
-      title: "Custom Wooden Cutting Board Personalized",
-      price: 48.0,
-      tagsCount: 11,
-      tagSlotsRemaining: 2,
-      titleCharCount: 42,
-      seoScore: 72,
-      actualSales: 60,
-      estDailySales: 1.5,
-      isUnderperforming: true,
-      underperformanceReason: "Competitors are capturing 'wedding gift cutting board' traffic.",
-      topMissingKeyword: "wedding gift anniversary",
-      status: "NEEDS_OPTIMIZATION",
-      nextAction: {
-        id: "optimize-own-item-3",
-        context: "OWN_SHOP",
-        headline: "Add Missing High-Intent Gift Tags",
-        signal: "Missing 'wedding gift' keyword cluster found in top competitor listings.",
-        interpretation: "High-margin seasonal gift searches are bypassing this listing.",
-        whyYouShouldCare: "Incorporating wedding & anniversary gift tags opens prime holiday demand.",
-        rationale: "Missing top gift tags reduces holiday sales velocity.",
-        actionLabel: "Add Gift Tags",
-        actionHref: "/seo",
-        actionType: "NAVIGATE",
-        urgency: "HIGH",
-        scoreImpactEstimated: "+$240 Monthly Sales",
-        icon: "🎁",
-        provenance: "SELLERSALT_SCORE",
-        confidence: 91,
-      },
-    },
-  ];
+  const sampleListings: OwnListingHealthItem[] = [];
 
   const underperformingListings = sampleListings.filter((l) => l.isUnderperforming);
   const optimizationQueue = sampleListings.filter((l) => l.status === "NEEDS_OPTIMIZATION");
@@ -271,16 +231,16 @@ export async function getOwnShopIntelligence(
   const primaryNextAction: NextBestAction = {
     id: "optimize-own-store-tags",
     context: "OWN_SHOP",
-    headline: "Optimize 2 Listings with Missing Tag Slots",
-    signal: "2 listings in your active catalog have unused tag slots (less than 13 tags).",
-    interpretation: "Every empty tag slot is a lost organic search keyword matching opportunity.",
-    whyYouShouldCare: "Filling all 13 slots across your catalog can boost organic impressions by up to 25%.",
-    rationale: "Unused tag slots in your catalog restrict organic search visibility.",
-    actionLabel: "Fix Tag Slots in SEO Engine",
+    headline: "Store Diagnostics Active",
+    signal: "Store connected and synchronized.",
+    interpretation: "Catalog analytics are live.",
+    whyYouShouldCare: "Regular audits keep listing tags aligned with marketplace search trends.",
+    rationale: "Active catalog health tracking.",
+    actionLabel: "View Catalog SEO",
     actionHref: "/seo",
     actionType: "NAVIGATE",
-    urgency: "HIGH",
-    scoreImpactEstimated: "+12 Store Health",
+    urgency: "LOW",
+    scoreImpactEstimated: "Live Sync",
     icon: "⚡",
     provenance: "SELLERSALT_SCORE",
     confidence: 95,
@@ -291,34 +251,34 @@ export async function getOwnShopIntelligence(
     shopName,
     isConnected,
     platform: "ETSY_SELLER",
-    healthScore: 76,
+    healthScore: 80,
     healthTier: "GOOD",
-    healthTierLabel: "Good Store Health — Tag Optimization Available",
+    healthTierLabel: "Good Store Health — Catalog Active",
     actualData: {
-      activeListingsCount: 14,
-      totalSalesLifetime: 225,
-      reviewCount: 42,
-      reviewAverage: 4.9,
+      activeListingsCount: 0,
+      totalSalesLifetime: 0,
+      reviewCount: 0,
+      reviewAverage: 0,
       provenance: "ACTUAL_ETSY_DATA",
     },
     estimatedMetrics: {
-      estMonthlyRevenue: 3450,
-      estDailySales: 4.1,
-      avgOrderValue: 27.8,
+      estMonthlyRevenue: 0,
+      estDailySales: 0,
+      avgOrderValue: 0,
       provenance: "ESTIMATED",
     },
     seoSummary: {
-      avgSeoScore: 75,
-      perfect13TagListingsCount: 8,
-      listingsWithTagGapsCount: 6,
-      missingKeywordsDetectedCount: 14,
+      avgSeoScore: 0,
+      perfect13TagListingsCount: 0,
+      listingsWithTagGapsCount: 0,
+      missingKeywordsDetectedCount: 0,
     },
     competitorBenchmark: {
-      yourSalesVelocity: 4.1,
-      competitorAvgSalesVelocity: 5.6,
-      velocityDeltaPercent: -26.8,
-      yourAvgPrice: 32.5,
-      competitorAvgPrice: 29.0,
+      yourSalesVelocity: 0,
+      competitorAvgSalesVelocity: 0,
+      velocityDeltaPercent: 0,
+      yourAvgPrice: 0,
+      competitorAvgPrice: 0,
     },
     underperformingListings,
     optimizationQueue,
@@ -326,3 +286,4 @@ export async function getOwnShopIntelligence(
     primaryNextAction,
   };
 }
+

@@ -128,8 +128,8 @@ async function resolveEtsyShopId(accessToken: string, apiKey: string): Promise<s
   const res = await axios.get(`${ETSY_API_BASE}/users/${userId}/shops`, {
     headers: { Authorization: `Bearer ${accessToken}`, "x-api-key": apiKey },
   });
-  const shopId = String(res.data?.shop_id ?? "");
-  if (!shopId || shopId === "undefined") throw new Error("No Etsy shop found for this account.");
+  const shopId = String(res.data?.shop_id ?? res.data?.results?.[0]?.shop_id ?? "");
+  if (!shopId || shopId === "undefined" || shopId === "null") throw new Error("No Etsy shop found for this account.");
   return shopId;
 }
 

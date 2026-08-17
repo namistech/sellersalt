@@ -214,8 +214,36 @@ export function OpportunityInbox({
 
       {/* Opportunity List */}
       {filtered.length === 0 ? (
-        <div className="p-8 text-center rounded-2xl bg-white border border-line text-ink-tertiary text-xs">
-          No opportunities found in this view. Try adjusting search filters or discover new opportunities in Radar.
+        <div className="p-12 text-center rounded-2xl bg-white border border-line space-y-4 max-w-xl mx-auto shadow-xs">
+          <div className="h-12 w-12 rounded-2xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto text-xl">
+            📥
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-base font-bold text-ink">No opportunities in your queue yet</h4>
+            <p className="text-xs text-ink-secondary leading-relaxed">
+              When you find high-potential products in Opportunity Radar, Keyword Hunter, or Shop Surveillance, save them to your workspace to track them here.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <Link
+              href="/radar"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white transition shadow-2xs"
+            >
+              Opportunity Radar →
+            </Link>
+            <Link
+              href="/keywords"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-line bg-surface-secondary hover:bg-surface text-ink transition"
+            >
+              Keyword Hunter
+            </Link>
+            <Link
+              href="/spy"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-line bg-surface-secondary hover:bg-surface text-ink transition"
+            >
+              Shop Surveillance
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3.5">

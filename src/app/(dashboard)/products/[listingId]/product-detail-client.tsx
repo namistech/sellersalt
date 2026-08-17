@@ -431,6 +431,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
       {/* SECTION 2: LEVEL 1 — PRIMARY PRODUCT OPPORTUNITY VERDICT (DARK CARD) */}
       {/* ==================================================================== */}
       <IntelligenceCard
+        contextTheme="economics"
         badgeText="PRODUCT OPPORTUNITY VERDICT"
         title="Should you develop a product concept like this?"
         score={evaluatedScore.score}

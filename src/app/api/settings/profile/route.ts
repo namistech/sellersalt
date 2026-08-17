@@ -11,7 +11,7 @@ export async function GET() {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [user, org, membership, sellerChannel, avatarSetting] = await Promise.all([
+  const [user, org, membership, sellerChannel, avatarSetting, notifSetting] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { name: true, email: true, emailVerified: true, createdAt: true },
@@ -38,7 +38,24 @@ export async function GET() {
       where: { key: `user_avatar_${userId}` },
       select: { value: true },
     }),
+    prisma.appSetting.findUnique({
+      where: { key: `user_notifications_${userId}` },
+      select: { value: true },
+    }),
   ]);
+
+  let notifications = {
+    productAlerts: true,
+    competitorSpikeAlerts: true,
+    catalogSeoAlerts: true,
+    securityAlerts: true,
+  };
+
+  if (notifSetting?.value) {
+    try {
+      notifications = { ...notifications, ...JSON.parse(notifSetting.value) };
+    } catch {}
+  }
 
   return NextResponse.json({
     name: user?.name ?? "",
@@ -49,8 +66,9 @@ export async function GET() {
     organizationName: org?.name ?? "",
     planName: org?.package?.name ?? org?.plan ?? "Starter",
     planKey: org?.package?.key ?? org?.plan ?? "FREE",
-    role: membership?.role ?? "MEMBER",
+    role: membership?.role ?? "OWNER",
     connectedEtsyShop: sellerChannel,
+    notifications,
   });
 }
 
@@ -61,7 +79,8 @@ export async function PATCH(req: Request) {
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { name, organizationName, email, currentPassword } = body;
+  const { name, organizationName, email, currentPassword, currentPasswordForEmail, notifications } = body;
+  const effectivePassword = currentPassword || currentPasswordForEmail;
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
 
@@ -73,14 +92,14 @@ export async function PATCH(req: Request) {
     }
 
     if (normalizedEmail !== user.email.toLowerCase()) {
-      if (!currentPassword) {
+      if (!effectivePassword) {
         return NextResponse.json(
           { error: "Your current password is required to update your login email." },
           { status: 400 }
         );
       }
 
-      const validPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+      const validPassword = await bcrypt.compare(effectivePassword, user.passwordHash);
       if (!validPassword) {
         return NextResponse.json({ error: "Current password is incorrect." }, { status: 400 });
       }
@@ -116,9 +135,22 @@ export async function PATCH(req: Request) {
     );
   }
 
+  // 3. Handle Notification Preferences
+  if (notifications && typeof notifications === "object") {
+    const notifKey = `user_notifications_${userId}`;
+    updates.push(
+      prisma.appSetting.upsert({
+        where: { key: notifKey },
+        create: { key: notifKey, value: JSON.stringify(notifications), isSecret: false },
+        update: { value: JSON.stringify(notifications) },
+      })
+    );
+  }
+
   await Promise.all(updates);
 
   return NextResponse.json({ ok: true });
 }
 
 export const PUT = PATCH;
+

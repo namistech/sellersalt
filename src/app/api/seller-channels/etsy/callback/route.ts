@@ -8,13 +8,25 @@ import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { startSellerChannelSync } from "@/lib/queue";
 import { ETSY_TOKEN_URL, resolveEtsyShopId } from "@/seller-channels/etsy-seller";
 
+import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { resolveEtsyOAuthRedirectUri } from "@/services/connectors/etsy-oauth-helper";
 
 export async function GET(req: Request) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
   const proto = req.headers.get("x-forwarded-proto") || "https";
 
-  const configuredClientId = await getSetting("etsy_seller_client_id");
+  let configuredClientId = await getSetting("etsy_seller_client_id");
+
+  const url = new URL(req.url);
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const oauthError = url.searchParams.get("error");
+
+  const payload = state ? verifyConnectToken(state) : null;
+  if (!configuredClientId && payload?.organizationId) {
+    const active = await getActiveConnectorWithCredentials(payload.organizationId, "ETSY");
+    configuredClientId = active?.credentials?.apiKey || null;
+  }
 
   const oauthConfig = resolveEtsyOAuthRedirectUri({
     reqHost: host,
@@ -22,11 +34,8 @@ export async function GET(req: Request) {
     overrideClientId: configuredClientId || undefined,
   });
 
+
   const baseUrl = oauthConfig.baseUrl;
-  const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const state = url.searchParams.get("state");
-  const oauthError = url.searchParams.get("error");
 
   if (oauthError) {
     const errorCode = oauthError === "access_denied" ? "etsy_access_denied" : "etsy_authorization_failed";
@@ -37,7 +46,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_callback_incomplete", baseUrl));
   }
 
-  const payload = verifyConnectToken(state);
   if (!payload || !payload.codeVerifier) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_invalid_state", baseUrl));
   }

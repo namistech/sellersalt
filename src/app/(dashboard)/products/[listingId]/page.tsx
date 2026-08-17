@@ -52,6 +52,7 @@ export default async function ProductDetailPage({
 
   let liveListing: any = null;
   let liveShop: any = null;
+  let rawListingImages: any[] = [];
   if (isNumericListingId && organizationId) {
     try {
       const active = await getActiveConnectorWithCredentials(organizationId, "ETSY");
@@ -60,7 +61,17 @@ export default async function ProductDetailPage({
 
       if (apiKey) {
         const client = createEtsyClient(apiKey, sharedSecret);
-        liveListing = await client.getListing(externalListingId, { organizationId });
+        const [listingResult, imagesResult] = await Promise.allSettled([
+          client.getListing(externalListingId, { organizationId }),
+          client.getListingImages(externalListingId, { organizationId }),
+        ]);
+
+        if (listingResult.status === "fulfilled") {
+          liveListing = listingResult.value;
+        }
+        if (imagesResult.status === "fulfilled" && imagesResult.value?.results) {
+          rawListingImages = imagesResult.value.results;
+        }
 
         if (liveListing?.shop_id) {
           try {
@@ -74,6 +85,7 @@ export default async function ProductDetailPage({
     } catch {
       liveListing = null;
       liveShop = null;
+      rawListingImages = [];
     }
   }
 
@@ -83,9 +95,15 @@ export default async function ProductDetailPage({
     notFound();
   }
 
-  const liveImages = extractEtsyImageUrls(liveListing?.images);
+  const liveImages = [
+    ...extractEtsyImageUrls(rawListingImages),
+    ...extractEtsyImageUrls(liveListing?.images),
+    ...extractEtsyImageUrls(liveListing?.Images),
+  ].filter((url, idx, arr) => arr.indexOf(url) === idx);
+
   const images = liveImages.length > 0 ? liveImages : prospect?.listingImageUrl ? [prospect.listingImageUrl] : [];
   const imageUrl = images[0] ?? "";
+
 
   const title = prospect?.listingTitle ?? liveListing?.title ?? "Untitled Listing";
   const price =

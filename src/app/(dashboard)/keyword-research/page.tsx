@@ -381,6 +381,7 @@ export default function KeywordResearchPage() {
 
             return (
               <IntelligenceCard
+                contextTheme="keywords"
                 badgeText="KEYWORD TARGETING INTELLIGENCE"
                 badgeIcon={<Search className="h-3.5 w-3.5 text-[#FFB020]" />}
                 title={`Which search terms should you target for "${searchResponse.query}"?`}

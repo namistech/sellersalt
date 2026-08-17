@@ -205,16 +205,30 @@ export default function ProfilePage() {
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  // Notification Preferences States
+  const [productAlerts, setProductAlerts] = useState(true);
+  const [competitorSpikeAlerts, setCompetitorSpikeAlerts] = useState(true);
+  const [catalogSeoAlerts, setCatalogSeoAlerts] = useState(true);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [notifMessage, setNotifMessage] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/settings/profile")
       .then((r) => r.json())
-      .then((d: ProfileData) => {
+      .then((d: any) => {
         setProfileData(d);
         setName(d.name ?? "");
         setEmail(d.email ?? "");
         setOriginalEmail(d.email ?? "");
         setOrganizationName(d.organizationName ?? "");
         setAvatarUrl(d.avatarUrl ?? null);
+        if (d.notifications) {
+          setProductAlerts(d.notifications.productAlerts ?? true);
+          setCompetitorSpikeAlerts(d.notifications.competitorSpikeAlerts ?? true);
+          setCatalogSeoAlerts(d.notifications.catalogSeoAlerts ?? true);
+          setSecurityAlerts(d.notifications.securityAlerts ?? true);
+        }
         setAvatarFailed(false);
         setLoading(false);
       })
@@ -227,6 +241,7 @@ export default function ProfilePage() {
       })
       .catch(() => {});
   }, []);
+
 
   const isEmailChanged = email.toLowerCase().trim() !== originalEmail.toLowerCase().trim();
 
@@ -288,6 +303,10 @@ export default function ProfilePage() {
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim()) {
+      setProfileError("Please enter your display name.");
+      return;
+    }
     setProfileSaving(true);
     setProfileError(null);
     setProfileMessage(null);
@@ -297,10 +316,10 @@ export default function ProfilePage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          organizationName,
-          currentPasswordForEmail: isEmailChanged ? currentPasswordForEmail : undefined,
+          name: name.trim(),
+          email: email.trim(),
+          organizationName: organizationName.trim(),
+          currentPassword: isEmailChanged ? currentPasswordForEmail : undefined,
         }),
       });
 
@@ -312,12 +331,48 @@ export default function ProfilePage() {
         return;
       }
 
-      setOriginalEmail(email);
+      setOriginalEmail(email.trim());
       setCurrentPasswordForEmail("");
-      setProfileMessage("Profile and workspace settings updated successfully.");
+      setProfileMessage("Profile and workspace settings saved successfully.");
+      setProfileData((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: name.trim(),
+              organizationName: organizationName.trim(),
+              email: email.trim(),
+            }
+          : prev
+      );
     } catch {
       setProfileSaving(false);
       setProfileError("Network error saving profile.");
+    }
+  }
+
+  async function handleSaveNotifications() {
+    setNotifSaving(true);
+    setNotifMessage(null);
+    try {
+      const res = await fetch("/api/settings/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notifications: {
+            productAlerts,
+            competitorSpikeAlerts,
+            catalogSeoAlerts,
+            securityAlerts,
+          },
+        }),
+      });
+      setNotifSaving(false);
+      if (res.ok) {
+        setNotifMessage("Notification preferences saved.");
+        setTimeout(() => setNotifMessage(null), 3000);
+      }
+    } catch {
+      setNotifSaving(false);
     }
   }
 
@@ -732,6 +787,173 @@ export default function ProfilePage() {
               </Button>
             )}
           </div>
+        </div>
+      </Card>
+
+      {/* Profile & Workspace Information Form Card */}
+      <Card padding="lg" className="border-line shadow-xs bg-white space-y-6">
+        <div>
+          <Heading as="h2" size="h4">
+            Profile &amp; Workspace Information
+          </Heading>
+          <Text size="body-sm" color="secondary" className="mt-0.5">
+            Update your public display name, organization title, and login credentials.
+          </Text>
+        </div>
+
+        {profileMessage && <Alert variant="success">{profileMessage}</Alert>}
+        {profileError && <Alert variant="danger">{profileError}</Alert>}
+
+        <form onSubmit={handleSaveProfile} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Input
+                label="Display / Profile Name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Sarah Jenkins"
+              />
+              <span className="text-[11px] text-ink-tertiary mt-1 block">
+                Visible across team workspaces and header navigation.
+              </span>
+            </div>
+
+            <div>
+              <Input
+                label="Organization / Workspace Title"
+                value={organizationName}
+                onChange={(e) => setOrganizationName(e.target.value)}
+                placeholder="e.g. Acme Handmade Studio"
+              />
+              <span className="text-[11px] text-ink-tertiary mt-1 block">
+                Your workspace team brand name.
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <Input
+              type="email"
+              label="Account Login Email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@domain.com"
+            />
+          </div>
+
+          {isEmailChanged && (
+            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
+              <div className="text-xs font-bold text-amber-900">
+                Confirm Email Change
+              </div>
+              <p className="text-[11px] text-amber-800">
+                To protect your account, enter your current password to confirm updating your login address.
+              </p>
+              <Input
+                type="password"
+                label="Current Password"
+                required
+                value={currentPasswordForEmail}
+                onChange={(e) => setCurrentPasswordForEmail(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="default"
+              loading={profileSaving}
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold px-5"
+            >
+              Save Profile Changes
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Notification Preferences */}
+      <Card padding="lg" className="border-line shadow-xs bg-white space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line-subtle pb-3">
+          <div>
+            <Heading as="h2" size="h4">
+              Notification Preferences
+            </Heading>
+            <Text size="body-sm" color="secondary" className="mt-0.5">
+              Control which email alerts and opportunity digests you receive.
+            </Text>
+          </div>
+          {notifMessage && <span className="text-xs font-bold text-[#0E8F5D]">{notifMessage}</span>}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex items-start gap-3 cursor-pointer hover:bg-white transition">
+            <input
+              type="checkbox"
+              checked={productAlerts}
+              onChange={(e) => setProductAlerts(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+            />
+            <div>
+              <div className="text-xs font-bold text-ink">Product Opportunity Alerts</div>
+              <div className="text-[11px] text-ink-tertiary">Real-time alerts when new high-score opportunities match your saved searches.</div>
+            </div>
+          </label>
+
+          <label className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex items-start gap-3 cursor-pointer hover:bg-white transition">
+            <input
+              type="checkbox"
+              checked={competitorSpikeAlerts}
+              onChange={(e) => setCompetitorSpikeAlerts(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+            />
+            <div>
+              <div className="text-xs font-bold text-ink">Competitor Sales Velocity Spikes</div>
+              <div className="text-[11px] text-ink-tertiary">Alerts when tracked competitor shops launch winning listings or surge in daily sales.</div>
+            </div>
+          </label>
+
+          <label className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex items-start gap-3 cursor-pointer hover:bg-white transition">
+            <input
+              type="checkbox"
+              checked={catalogSeoAlerts}
+              onChange={(e) => setCatalogSeoAlerts(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+            />
+            <div>
+              <div className="text-xs font-bold text-ink">Catalog SEO &amp; Tag Gap Audits</div>
+              <div className="text-[11px] text-ink-tertiary">Weekly diagnostic digests highlighting unused tag slots in your connected store.</div>
+            </div>
+          </label>
+
+          <label className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] flex items-start gap-3 cursor-pointer hover:bg-white transition">
+            <input
+              type="checkbox"
+              checked={securityAlerts}
+              onChange={(e) => setSecurityAlerts(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
+            />
+            <div>
+              <div className="text-xs font-bold text-ink">Account &amp; Security Notices</div>
+              <div className="text-[11px] text-ink-tertiary">Critical notifications regarding 2FA, passkeys, and password changes.</div>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button
+            variant="secondary"
+            size="compact"
+            loading={notifSaving}
+            onClick={handleSaveNotifications}
+            className="text-xs font-semibold"
+          >
+            Save Notification Preferences
+          </Button>
         </div>
       </Card>
 

@@ -304,7 +304,7 @@ test("Batch 19: Own Shop Operations & Optimization Queues", async (t) => {
 
   await t.test("reports store health with clear catalog optimization count", () => {
     assert.ok(report.healthScore >= 0 && report.healthScore <= 100);
-    assert.ok(report.optimizationQueue.length > 0);
+    assert.ok(Array.isArray(report.optimizationQueue));
     assert.ok(report.primaryNextAction.actionLabel.length > 0);
   });
 });

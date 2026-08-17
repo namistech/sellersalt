@@ -155,6 +155,7 @@ export function DraftsClient() {
 
       {/* LEVEL 1: DRAFT OPERATING STATUS INTELLIGENCE CARD */}
       <IntelligenceCard
+        contextTheme="planner"
         badgeText="MARKETPLACE DRAFT GATE"
         badgeIcon={<ShieldCheck className="h-3.5 w-3.5 text-[#16C784]" />}
         title={`${drafts.length} Prepared Listing Drafts in Workspace`}

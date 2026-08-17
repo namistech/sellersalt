@@ -1126,6 +1126,37 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         </div>
 
         <div className="pricing-grid">
+          {/* FREE EXPLORER */}
+          <div className="pricing-card">
+            <div>
+              <div className="pricing-badge-free" style={{ display: "inline-block", padding: "3px 8px", borderRadius: "6px", background: "var(--bg-surface-muted, #F4F3EF)", color: "var(--text-secondary, #525B55)", fontSize: "11px", fontWeight: 700, marginBottom: "12px", textTransform: "uppercase" }}>
+                Free Forever
+              </div>
+              <h3>Free Explorer</h3>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                Essential market discovery tools for new Etsy sellers.
+              </p>
+              <div className="pricing-price">
+                $0
+                <span> / month</span>
+              </div>
+              <div className="pricing-trial-note">No credit card required</div>
+
+              <ul className="pricing-features">
+                <li><Check className="h-4 w-4" /> 15 Monthly Keyword Searches</li>
+                <li><Check className="h-4 w-4" /> 10 Product Discoveries / mo</li>
+                <li><Check className="h-4 w-4" /> 1 Tracked Competitor Shop</li>
+                <li><Check className="h-4 w-4" /> Sample Opportunity Radar</li>
+                <li><Check className="h-4 w-4" /> 3 Workspace Planner Items</li>
+                <li><Check className="h-4 w-4" /> 3 Listing SEO Audits / mo</li>
+              </ul>
+            </div>
+
+            <Link href="/signup" className="btn btn-secondary" style={{ width: "100%" }}>
+              Start for Free
+            </Link>
+          </div>
+
           {/* STARTED */}
           <div className="pricing-card">
             <div>

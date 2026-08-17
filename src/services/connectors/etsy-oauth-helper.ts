@@ -25,23 +25,32 @@ export function resolveEtsyOAuthRedirectUri(options?: {
   reqProto?: string;
   // Admin-configured client ID (AppSetting `etsy_seller_client_id`), resolved
   // by the caller before invoking this helper. Takes priority over env vars
-  // so `isValid` reflects whichever credential source is actually in use —
-  // previously this function only ever looked at env vars, so a clientId
-  // configured solely via /admin Site Settings (the documented, intended
-  // path) still failed validation here even though the route itself had a
-  // usable clientId, producing a false "credentials not configured" error.
+  // so `isValid` reflects whichever credential source is actually in use.
   overrideClientId?: string;
 }): EtsyOAuthConfig {
   const envOverride = options?.overrideRedirectUri || process.env.ETSY_REDIRECT_URI;
-  const rawBase =
-    options?.overrideBaseUrl ||
-    process.env.NEXTAUTH_URL ||
-    process.env.APP_URL ||
-    (options?.reqHost ? `${options?.reqProto || "https"}://${options.reqHost}` : "http://localhost:3000");
+  
+  // Prioritize explicit overrideBaseUrl, then incoming reqHost (if provided, matching the current user's host),
+  // then APP_URL, then non-localhost NEXTAUTH_URL, then NEXTAUTH_URL fallback.
+  let rawBase = options?.overrideBaseUrl;
+  if (!rawBase) {
+    if (options?.reqHost) {
+      const isLocal = options.reqHost.includes("localhost") || options.reqHost.includes("127.0.0.1");
+      const proto = options.reqProto || (isLocal ? "http" : "https");
+      rawBase = `${proto}://${options.reqHost}`;
+    } else if (process.env.APP_URL) {
+      rawBase = process.env.APP_URL;
+    } else if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.includes("localhost")) {
+      rawBase = process.env.NEXTAUTH_URL;
+    } else {
+      rawBase = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    }
+  }
 
   const normalizedBase = rawBase.replace(/\/+$/, "");
   const clientId =
     options?.overrideClientId ||
+    process.env.ETSY_SELLER_CLIENT_ID ||
     process.env.ETSY_CLIENT_ID ||
     process.env.ETSY_KEYSTRING ||
     process.env.ETSY_API_KEY ||
@@ -68,7 +77,7 @@ export function resolveEtsyOAuthRedirectUri(options?: {
       baseUrl: normalizedBase,
       environment,
       isValid: false,
-      error: "Etsy Client ID (ETSY_CLIENT_ID / ETSY_KEYSTRING) is not configured in environment or settings.",
+      error: "Etsy Client ID (ETSY_CLIENT_ID / ETSY_KEYSTRING / AppSetting etsy_seller_client_id) is not configured.",
       diagnosticCode: "ETSY_CLIENT_ID_MISSING",
     };
   }
@@ -98,3 +107,4 @@ export function resolveEtsyOAuthRedirectUri(options?: {
     isValid: true,
   };
 }
+

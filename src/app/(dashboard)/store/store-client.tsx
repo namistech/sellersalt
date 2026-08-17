@@ -51,7 +51,68 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
     optimizationQueue,
     capabilities,
     primaryNextAction,
+    isConnected,
   } = report;
+
+  if (!isConnected) {
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0E8F5D]/10 text-[#0E8F5D]">
+                <Store className="h-4 w-4" />
+              </span>
+              <Heading as="h1" size="h2" className="text-xl font-bold text-ink">
+                Store Operations & Diagnostics
+              </Heading>
+            </div>
+            <Text size="body-sm" className="text-ink-secondary mt-1">
+              Connect your Etsy storefront to diagnose catalog health, discover missing tags, and boost organic visibility.
+            </Text>
+          </div>
+        </div>
+
+        {/* Actionable Empty State */}
+        <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16 px-6 max-w-2xl mx-auto space-y-6">
+          <div className="h-16 w-16 rounded-2xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto shadow-xs">
+            <Store className="h-8 w-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-extrabold text-ink">Connect your Etsy shop</h2>
+            <p className="text-sm text-ink-secondary max-w-lg mx-auto leading-relaxed">
+              Link your Etsy storefront to unlock real-time store health scores, missing tag analysis, underperforming listing alerts, and 1-click draft optimizations.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left max-w-lg mx-auto pt-2">
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-xs font-bold text-ink">1. Connect Store</div>
+              <div className="text-[11px] text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-xs font-bold text-ink">2. Audit Catalog</div>
+              <div className="text-[11px] text-ink-tertiary">Detect empty tag slots and title gaps.</div>
+            </div>
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-xs font-bold text-ink">3. Boost Sales</div>
+              <div className="text-[11px] text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Link href="/settings/channels">
+              <Button variant="primary" size="default" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-sm px-6 py-2.5 shadow-sm">
+                <Zap className="h-4 w-4 mr-2" /> Connect Etsy Shop
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   // Filter listings
   const allListings = [...underperformingListings, ...optimizationQueue];

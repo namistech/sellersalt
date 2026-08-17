@@ -222,17 +222,52 @@ export function WorkspaceClient({
 
       {/* TAB 3: OWN SHOP INTELLIGENCE LOOP */}
       {activeMainTab === "OWN_SHOP" && (
-        <div className="space-y-5">
-          {/* Level 1: Store Health Header Card */}
-          <div className="p-5 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white space-y-4 shadow-md">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5 text-[#16C784]" />
-                  <h3 className="text-base font-bold text-white">
-                    {ownShop.shopName} — Store Intelligence Loop
-                  </h3>
-                </div>
+        !ownShop.isConnected ? (
+          <div className="rounded-2xl border border-line bg-white p-12 text-center shadow-xs space-y-6 max-w-2xl mx-auto">
+            <div className="h-16 w-16 rounded-2xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto shadow-xs">
+              <ShoppingBag className="h-8 w-8" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-extrabold text-ink">Connect your Etsy shop</h3>
+              <p className="text-sm text-ink-secondary max-w-lg mx-auto leading-relaxed">
+                Connect your Etsy storefront to unlock real-time store health scores, missing tag analysis, underperforming listing alerts, and 1-click draft optimizations.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left max-w-lg mx-auto pt-2">
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-xs font-bold text-ink">1. Connect Store</div>
+                <div className="text-[11px] text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-xs font-bold text-ink">2. Audit Catalog</div>
+                <div className="text-[11px] text-ink-tertiary">Detect empty tag slots and title gaps.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+                <div className="text-xs font-bold text-ink">3. Boost Sales</div>
+                <div className="text-[11px] text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
+              </div>
+            </div>
+            <div className="pt-2">
+              <Link href="/settings/channels">
+                <Button variant="primary" size="default" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-sm px-6 py-2.5 shadow-sm">
+                  <Zap className="h-4 w-4 mr-2" /> Connect Etsy Shop
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Level 1: Store Health Header Card */}
+            <div className="p-5 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white space-y-4 shadow-md">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="h-5 w-5 text-[#16C784]" />
+                    <h3 className="text-base font-bold text-white">
+                      {ownShop.shopName} — Store Intelligence Loop
+                    </h3>
+                  </div>
+
                 <p className="text-xs text-[#9EAA9F]">
                   Diagnostic evaluation of active listings, SEO tag compliance, and competitor benchmarks.
                 </p>
@@ -393,7 +428,8 @@ export function WorkspaceClient({
             </div>
           </div>
         </div>
-      )}
+      )
+    )}
 
       {/* TAB 4: OPPORTUNITY COMPARISON & DECISION MODE */}
       {activeMainTab === "COMPARISON" && (

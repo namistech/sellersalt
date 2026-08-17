@@ -275,6 +275,7 @@ export default function SpyOnCompetitorPage() {
       {/* ==================================================================== */}
       {totalTracked > 0 ? (
         <IntelligenceCard
+          contextTheme="shop"
           badgeText="COMPETITOR SURVEILLANCE INTELLIGENCE"
           badgeIcon={<Radar className="h-3.5 w-3.5 text-[#FBBF24]" />}
           title={

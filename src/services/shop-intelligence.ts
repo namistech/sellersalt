@@ -299,6 +299,38 @@ export async function fetchCompleteShopIntelligence(
     rawReviews = [];
   }
 
+  // 4b. Ingest images for top listings if not already embedded in listing objects
+  const imageMap = new Map<number | string, string>();
+  const listingsToFetchImages = rawListings.slice(0, 24).filter((l) => {
+    const hasImg =
+      (Array.isArray(l.images) && l.images.length > 0) ||
+      (Array.isArray(l.Images) && l.Images.length > 0) ||
+      l.image_url ||
+      l.thumbnail_url;
+    return !hasImg && l.listing_id;
+  });
+
+  if (listingsToFetchImages.length > 0) {
+    await Promise.all(
+      listingsToFetchImages.map(async (l) => {
+        try {
+          const imgRes = await client.getListingImages(l.listing_id);
+          const firstImg = imgRes?.results?.[0];
+          const imgUrl =
+            firstImg?.url_570xN ||
+            firstImg?.url_fullxfull ||
+            firstImg?.url_170x135 ||
+            firstImg?.url_75x75;
+          if (imgUrl) {
+            imageMap.set(l.listing_id, imgUrl);
+          }
+        } catch {
+          // Graceful fallback if individual listing images fail
+        }
+      })
+    );
+  }
+
   // 5. Compute KPIs
   const estDailySales = totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0;
   const estMonthlySales = Math.round(estDailySales * 30.44);
@@ -374,17 +406,23 @@ export async function fetchCompleteShopIntelligence(
     const images: string[] = [];
     if (l.images && Array.isArray(l.images)) {
       for (const img of l.images) {
-        const url = img.url_570xN || img.url_fullxfull || img.url_75x75 || img.url;
+        const url = img.url_570xN || img.url_fullxfull || img.url_170x135 || img.url_75x75 || img.url;
         if (url) images.push(url);
       }
     }
     if (l.Images && Array.isArray(l.Images)) {
       for (const img of l.Images) {
-        const url = img.url_570xN || img.url_fullxfull || img.url_75x75 || img.url;
+        const url = img.url_570xN || img.url_fullxfull || img.url_170x135 || img.url_75x75 || img.url;
         if (url) images.push(url);
       }
     }
-    const imageUrl = images[0] || l.image_url || l.thumbnail_url || l.listing_image_url || null;
+    const imageUrl =
+      images[0] ||
+      imageMap.get(l.listing_id) ||
+      l.image_url ||
+      l.thumbnail_url ||
+      l.listing_image_url ||
+      null;
 
     const opp = computeProductOpportunity({
       price: priceAmount,
@@ -442,10 +480,8 @@ export async function fetchCompleteShopIntelligence(
     shopName,
     shopUrl: rawShop.url ?? `https://www.etsy.com/shop/${shopName}`,
     shopIconUrl: rawShop.icon_url_fullxfull ?? null,
-    // `banner_url_fullxfull` is not a real Etsy v3 Shop field (always
-    // undefined) — the correct field, already used correctly in
-    // src/connectors/etsy/index.ts, is `image_url_760x100`.
-    shopBannerUrl: rawShop.image_url_760x100 ?? null,
+    // Real Etsy shop banner / cover image
+    shopBannerUrl: rawShop.image_url_760x100 || rawShop.banner_url || null,
     shopAgeMonths,
     createdDate: new Date(createdTimestamp * 1000).toLocaleDateString("en-US", {
       month: "short",
@@ -468,3 +504,4 @@ export async function fetchCompleteShopIntelligence(
     isFavorite: Boolean(favoriteProspect),
   };
 }
+
