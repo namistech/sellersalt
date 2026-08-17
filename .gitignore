@@ -12,3 +12,5 @@ dist/
 # when no S3/R2 credentials are configured; ephemeral, container-local in
 # production, never meant to be committed.
 public/uploads/
+backups/
+
