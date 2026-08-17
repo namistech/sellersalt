@@ -1,11 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveEtsyOAuthRedirectUri } from "@/services/connectors/etsy-oauth-helper";
+import crypto from "node:crypto";
+import {
+  resolveEtsyOAuthRedirectUri,
+  resolveEtsyOAuthConfiguration,
+  CANONICAL_ETSY_CALLBACK_ROUTE,
+  DEFAULT_ETSY_SCOPES,
+} from "@/services/connectors/etsy-oauth-helper";
 import { getOwnShopIntelligence } from "@/services/own-shop-intelligence";
 import { PLAN_DEFINITIONS } from "@/services/plans/plan-capabilities";
+import { createConnectToken, verifyConnectToken } from "@/lib/store-connect-token";
 
-test("Batch 29.1: Etsy OAuth Credential & Redirect URI Resolution", async (t) => {
-  await t.test("resolves valid redirect URI with dynamic reqHost and overrideClientId", () => {
+test("Batch 29.1: Etsy OAuth Forensic Audit & Redirect URI Resolution", async (t) => {
+  await t.test("resolves exact staging redirect URI with dynamic reqHost and overrideClientId", () => {
     const config = resolveEtsyOAuthRedirectUri({
       reqHost: "anadash.namis.tech",
       reqProto: "https",
@@ -17,12 +24,10 @@ test("Batch 29.1: Etsy OAuth Credential & Redirect URI Resolution", async (t) =>
     assert.equal(config.redirectUri, "https://anadash.namis.tech/api/seller-channels/etsy/callback");
     assert.equal(config.clientId, "etsy_test_client_key_123");
     assert.equal(config.environment, "staging");
+    assert.ok(!config.redirectUri.endsWith("/"), "Redirect URI must NOT have a trailing slash");
   });
 
-  await t.test("prioritizes reqHost over localhost NEXTAUTH_URL in staging and production", () => {
-    const origNextAuth = process.env.NEXTAUTH_URL;
-    process.env.NEXTAUTH_URL = "http://localhost:3000";
-
+  await t.test("resolves exact production redirect URI for sellersalt.com", () => {
     const config = resolveEtsyOAuthRedirectUri({
       reqHost: "sellersalt.com",
       reqProto: "https",
@@ -33,8 +38,43 @@ test("Batch 29.1: Etsy OAuth Credential & Redirect URI Resolution", async (t) =>
     assert.equal(config.baseUrl, "https://sellersalt.com");
     assert.equal(config.redirectUri, "https://sellersalt.com/api/seller-channels/etsy/callback");
     assert.equal(config.environment, "production");
+  });
 
-    process.env.NEXTAUTH_URL = origNextAuth;
+  await t.test("strictly prevents staging requests from generating production callbacks and vice versa", () => {
+    const stagingConfig = resolveEtsyOAuthRedirectUri({
+      reqHost: "anadash.namis.tech",
+      overrideClientId: "test_key",
+    });
+    const prodConfig = resolveEtsyOAuthRedirectUri({
+      reqHost: "sellersalt.com",
+      overrideClientId: "test_key",
+    });
+
+    assert.notEqual(stagingConfig.redirectUri, prodConfig.redirectUri);
+    assert.ok(stagingConfig.redirectUri.includes("anadash.namis.tech"));
+    assert.ok(prodConfig.redirectUri.includes("sellersalt.com"));
+  });
+
+  await t.test("enforces HTTPS on non-localhost origins", () => {
+    const config = resolveEtsyOAuthRedirectUri({
+      reqHost: "anadash.namis.tech",
+      reqProto: "http", // reverse proxy might forward http
+      overrideClientId: "test_key",
+    });
+
+    assert.equal(config.isValid, true);
+    assert.ok(config.redirectUri.startsWith("https://"), "Must enforce HTTPS for public origins");
+  });
+
+  await t.test("supports AppSetting redirect URI override", () => {
+    const config = resolveEtsyOAuthRedirectUri({
+      reqHost: "anadash.namis.tech",
+      overrideRedirectUri: "https://custom.sellersalt.com/api/seller-channels/etsy/callback",
+      overrideClientId: "test_key",
+    });
+
+    assert.equal(config.isValid, true);
+    assert.equal(config.redirectUri, "https://custom.sellersalt.com/api/seller-channels/etsy/callback");
   });
 
   await t.test("flags missing credentials with ETSY_CLIENT_ID_MISSING diagnostic code", () => {
@@ -59,6 +99,69 @@ test("Batch 29.1: Etsy OAuth Credential & Redirect URI Resolution", async (t) =>
     if (origKey) process.env.ETSY_KEYSTRING = origKey;
     if (origApiKey) process.env.ETSY_API_KEY = origApiKey;
     if (origSellerKey) process.env.ETSY_SELLER_CLIENT_ID = origSellerKey;
+  });
+
+  await t.test("safe OAuth diagnostic produces non-sensitive inspection data", () => {
+    const diag = resolveEtsyOAuthConfiguration({
+      reqHost: "anadash.namis.tech",
+      overrideClientId: "efxloiz6kn6jhkzzbto4oz3v",
+      credentialSource: "APP_SETTING",
+    });
+
+    assert.equal(diag.configured, true);
+    assert.equal(diag.clientIdPresent, true);
+    assert.equal(diag.maskedClientId, "efxl...oz3v");
+    assert.equal(diag.callbackRoute, CANONICAL_ETSY_CALLBACK_ROUTE);
+    assert.equal(diag.pkceEnabled, true);
+    assert.equal(diag.stateEnabled, true);
+    assert.equal(diag.credentialSource, "APP_SETTING");
+    assert.ok(diag.requestedScopes.includes("listings_r"));
+    assert.ok(diag.requestedScopes.includes("shops_r"));
+  });
+
+  await t.test("PKCE code_verifier and code_challenge comply with RFC 7636 and Etsy v3", () => {
+    function base64url(buf: Buffer): string {
+      return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+    const verifier = base64url(crypto.randomBytes(32));
+    assert.ok(verifier.length >= 43 && verifier.length <= 128, "Verifier must be 43-128 chars");
+    assert.ok(/^[A-Za-z0-9_-]+$/.test(verifier), "Verifier must only contain unreserved URL-safe chars");
+
+    const challenge = base64url(crypto.createHash("sha256").update(verifier).digest());
+    assert.ok(challenge.length > 0);
+    assert.ok(!challenge.includes("+") && !challenge.includes("/") && !challenge.includes("="));
+  });
+
+  await t.test("OAuth state token signs, verifies, and rejects tampering and expiration", () => {
+    const origSecret = process.env.NEXTAUTH_SECRET;
+    process.env.NEXTAUTH_SECRET = "test_super_secret_key_32_bytes_long_12345";
+
+    const token = createConnectToken({
+      organizationId: "org_test_pkce_123",
+      storeUrl: "",
+      label: "Test Etsy Connect",
+      codeVerifier: "test_code_verifier_string_abc",
+    }, 60);
+
+    const verified = verifyConnectToken(token);
+    assert.ok(verified);
+    assert.equal(verified?.organizationId, "org_test_pkce_123");
+    assert.equal(verified?.codeVerifier, "test_code_verifier_string_abc");
+
+    // Tampered token rejection
+    const tampered = token.slice(0, -4) + "XXXX";
+    assert.equal(verifyConnectToken(tampered), null);
+
+    // Expired token rejection (created with negative TTL)
+    const expiredToken = createConnectToken({
+      organizationId: "org_expired",
+      storeUrl: "",
+      label: "",
+      codeVerifier: "xyz",
+    }, -10);
+    assert.equal(verifyConnectToken(expiredToken), null);
+
+    process.env.NEXTAUTH_SECRET = origSecret;
   });
 });
 

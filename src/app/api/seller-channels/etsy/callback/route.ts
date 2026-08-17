@@ -7,15 +7,18 @@ import { getSetting } from "@/lib/app-settings";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { startSellerChannelSync } from "@/lib/queue";
 import { ETSY_TOKEN_URL, resolveEtsyShopId } from "@/seller-channels/etsy-seller";
-
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { resolveEtsyOAuthRedirectUri } from "@/services/connectors/etsy-oauth-helper";
+
+// Ephemeral in-memory replay protection cache for consumed state tokens
+const consumedStates = new Set<string>();
 
 export async function GET(req: Request) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
   const proto = req.headers.get("x-forwarded-proto") || "https";
 
   let configuredClientId = await getSetting("etsy_seller_client_id");
+  let configuredRedirectUri = await getSetting("etsy_redirect_uri");
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -32,13 +35,14 @@ export async function GET(req: Request) {
     reqHost: host,
     reqProto: proto,
     overrideClientId: configuredClientId || undefined,
+    overrideRedirectUri: configuredRedirectUri || undefined,
   });
-
 
   const baseUrl = oauthConfig.baseUrl;
 
   if (oauthError) {
     const errorCode = oauthError === "access_denied" ? "etsy_access_denied" : "etsy_authorization_failed";
+    console.error("[ETSY_OAUTH_CALLBACK_ERROR]", { error: oauthError, errorCode });
     return NextResponse.redirect(new URL(`/settings/channels?error=${errorCode}`, baseUrl));
   }
 
@@ -46,8 +50,18 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_callback_incomplete", baseUrl));
   }
 
-  if (!payload || !payload.codeVerifier) {
+  // State verification and replay protection
+  if (!payload || !payload.codeVerifier || consumedStates.has(state)) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_invalid_state", baseUrl));
+  }
+  consumedStates.add(state);
+  // Cap cache size
+  if (consumedStates.size > 1000) {
+    const it = consumedStates.values();
+    for (let i = 0; i < 200; i++) {
+      const v = it.next().value;
+      if (v) consumedStates.delete(v);
+    }
   }
 
   const clientId = oauthConfig.clientId;
@@ -56,7 +70,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_not_configured", baseUrl));
   }
 
-  let accessToken: string, refreshToken: string, expiresIn: number;
+  let accessToken: string, refreshToken: string, expiresIn: number, grantedScopes: string[];
   try {
     const redirectUri = oauthConfig.redirectUri;
     const tokenRes = await axios.post(ETSY_TOKEN_URL, {
@@ -69,6 +83,8 @@ export async function GET(req: Request) {
     accessToken = tokenRes.data.access_token;
     refreshToken = tokenRes.data.refresh_token;
     expiresIn = tokenRes.data.expires_in;
+    const rawScope = tokenRes.data.scope;
+    grantedScopes = Array.isArray(rawScope) ? rawScope : typeof rawScope === "string" ? rawScope.split(/\s+/) : [];
     if (!accessToken || !refreshToken) throw new Error("Missing tokens in response.");
   } catch (err: any) {
     console.error("Etsy token exchange error:", err?.response?.data || err?.message);
@@ -78,7 +94,8 @@ export async function GET(req: Request) {
   let shopId: string;
   try {
     shopId = await resolveEtsyShopId(accessToken, clientId);
-  } catch {
+  } catch (err: any) {
+    console.error("Etsy resolve shop ID error:", err?.response?.data || err?.message);
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_no_shop_found", baseUrl));
   }
 
@@ -88,6 +105,7 @@ export async function GET(req: Request) {
     expiresAt: Date.now() + expiresIn * 1000,
     shopId,
     apiKey: clientId,
+    grantedScopes,
   };
   const storeUrl = `https://www.etsy.com/shop/${shopId}`;
 
@@ -114,7 +132,15 @@ export async function GET(req: Request) {
     },
   });
 
+  console.log("[ETSY_OAUTH_CONNECTED]", {
+    organizationId: payload.organizationId,
+    shopId,
+    grantedScopes,
+    channelId: channel.id,
+  });
+
   await startSellerChannelSync(channel.id).catch(() => {});
 
   return NextResponse.redirect(new URL("/settings/channels?connected=1", baseUrl));
 }
+

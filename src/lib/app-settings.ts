@@ -39,6 +39,8 @@ export const SETTING_DEFINITIONS = [
   // Etsy Integration Credentials
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
+  { key: "etsy_redirect_uri", label: "Etsy OAuth Callback Redirect URI Override", isSecret: false },
+  { key: "etsy_oauth_scopes", label: "Etsy OAuth Requested Scopes Override", isSecret: false },
 
   // SaltBot LLM provider credentials (OpenRouter/NVIDIA/Gemini/OpenAI) used
   // to live here as generic AppSetting rows. Superseded by the dedicated
