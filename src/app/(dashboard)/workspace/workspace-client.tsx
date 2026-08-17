@@ -21,6 +21,11 @@ import {
   Zap,
   Flame,
   Activity,
+  Inbox,
+  ShoppingBag,
+  Scale,
+  SlidersHorizontal,
+  Lock,
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import {
@@ -31,139 +36,50 @@ import {
   Text,
   Input,
   IntelligenceCard,
-  ViewSwitch,
   CountrySelector,
   MarketplaceSelector,
   HowItWorksGuide,
   HowItWorksToggle,
   PlanUsageCard,
-  type ViewMode,
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
-import { calculateSellerHealthScore, type SellerHealthReport } from "@/services/intelligence/seller-health";
-import { getMarketIntelligenceFeed, type MarketSignalEvent } from "@/services/intelligence/market-feed";
+import { OpportunityInbox } from "@/components/intelligence/OpportunityInbox";
+import { WhyThisMatters } from "@/components/intelligence/WhyThisMatters";
+import type { CanonicalOpportunity } from "@/types/opportunity";
+import type { OwnShopIntelligenceReport } from "@/services/own-shop-intelligence";
+import type { PipelineHealthReport } from "@/services/opportunity-memory";
 
-interface TaskItem {
-  id: string;
-  stage: string;
-  stageNumber: number;
-  title: string;
-  category: string;
-  metric: string;
-  metricLabel: string;
-  actionLabel: string;
-  actionHref: string;
-  urgency: "HIGH" | "MEDIUM";
-  icon: string;
-  impactScore: number;
+export interface WorkspaceClientProps {
+  organizationId: string;
+  initialOpportunities: CanonicalOpportunity[];
+  initialOwnShopReport: OwnShopIntelligenceReport;
+  initialPipelineHealth: PipelineHealthReport;
 }
 
-const PIPELINE_STAGES = [
-  { id: "RESEARCHED", number: 1, label: "Researched", count: 18, href: "/radar", convRate: "39%" },
-  { id: "SHORTLISTED", number: 2, label: "Shortlisted", count: 7, href: "/planner?status=BACKLOG", convRate: "71%" },
-  { id: "OPPORTUNITY", number: 3, label: "Opportunity", count: 5, href: "/planner", convRate: "80%" },
-  { id: "KEYWORDS", number: 4, label: "Keywords", count: 4, href: "/keyword-research", convRate: "75%" },
-  { id: "STRATEGY", number: 5, label: "Strategy", count: 3, href: "/planner", convRate: "100%" },
-  { id: "CONTENT", number: 6, label: "Content", count: 3, href: "/planner", convRate: "67%" },
-  { id: "DRAFT", number: 7, label: "Draft", count: 2, href: "/drafts", convRate: "100%" },
-  { id: "REVIEW", number: 8, label: "Review", count: 2, href: "/drafts", convRate: "100%" },
-  { id: "PUBLISHED", number: 9, label: "Published", count: 6, href: "/settings/channels", convRate: "67%" },
-  { id: "MONITORING", number: 10, label: "Monitoring", count: 4, href: "/spy/tracked", convRate: "—" },
-];
-
-export function WorkspaceClient() {
-  const [selectedStage, setSelectedStage] = useState<string>("ALL");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [searchQuery, setSearchQuery] = useState("");
+export function WorkspaceClient({
+  organizationId,
+  initialOpportunities,
+  initialOwnShopReport,
+  initialPipelineHealth,
+}: WorkspaceClientProps) {
+  const [activeMainTab, setActiveMainTab] = useState<"INBOX" | "PIPELINE" | "OWN_SHOP" | "COMPARISON">("INBOX");
   const [showGuide, setShowGuide] = useState(false);
+  const [opportunities, setOpportunities] = useState<CanonicalOpportunity[]>(initialOpportunities);
+  const [ownShop, setOwnShop] = useState<OwnShopIntelligenceReport>(initialOwnShopReport);
+  const [pipeline, setPipeline] = useState<PipelineHealthReport>(initialPipelineHealth);
 
-  // Compute live Seller Health Score
-  const healthReport: SellerHealthReport = calculateSellerHealthScore({
-    shortlistedCount: 7,
-    avgOpportunityScore: 82,
-    keywordClusterCount: 4,
-    tagCompliancePercent: 88,
-    draftsReadyCount: 2,
-    avgMarginPercent: 62,
-    avgDailySales: 3.1,
-  });
-
-  // Market signals
-  const marketSignals: MarketSignalEvent[] = getMarketIntelligenceFeed();
-
-  const continueTasks: TaskItem[] = [
-    {
-      id: "task-1",
-      stage: "SHORTLISTED",
-      stageNumber: 2,
-      title: "Handmade Leather Travel Wallet",
-      category: "Bags & Purses",
-      metric: "88/100",
-      metricLabel: "Opportunity Score",
-      actionLabel: "Build Strategy & Copy",
-      actionHref: "/planner",
-      urgency: "HIGH",
-      icon: "🎯",
-      impactScore: 92,
-    },
-    {
-      id: "task-2",
-      stage: "KEYWORDS",
-      stageNumber: 4,
-      title: "13-Tag Cluster for 'Personalized Ceramic Mug'",
-      category: "Home & Living",
-      metric: "13 Tags",
-      metricLabel: "Harvested Cluster",
-      actionLabel: "Add Cluster to Planner",
-      actionHref: "/keyword-research",
-      urgency: "HIGH",
-      icon: "#",
-      impactScore: 86,
-    },
-    {
-      id: "task-3",
-      stage: "REVIEW",
-      stageNumber: 8,
-      title: "Etsy Draft: Minimalist Desk Organizer",
-      category: "Home & Office",
-      metric: "94/100",
-      metricLabel: "Listing SEO Quality",
-      actionLabel: "Review Draft (Rule 9)",
-      actionHref: "/drafts",
-      urgency: "HIGH",
-      icon: "📦",
-      impactScore: 95,
-    },
-    {
-      id: "task-4",
-      stage: "MONITORING",
-      stageNumber: 10,
-      title: "Competitor 'ArtisanStudio' surged +24% sales",
-      category: "Personalized Gifts",
-      metric: "+24% 7d",
-      metricLabel: "Sales Momentum",
-      actionLabel: "Inspect Winning Tags",
-      actionHref: "/spy",
-      urgency: "MEDIUM",
-      icon: "👁️",
-      impactScore: 78,
-    },
+  const mainTabs = [
+    { id: "INBOX", label: "Opportunity Inbox", icon: <Inbox className="h-4 w-4" />, count: opportunities.filter(o => !o.isDismissed).length },
+    { id: "PIPELINE", label: "Pipeline & Bottlenecks", icon: <Layers className="h-4 w-4" />, count: pipeline.totalPipelineItems },
+    { id: "OWN_SHOP", label: "Own Shop Intelligence", icon: <ShoppingBag className="h-4 w-4" />, count: ownShop.optimizationQueue.length },
+    { id: "COMPARISON", label: "Decision & Comparison Mode", icon: <Scale className="h-4 w-4" /> },
   ];
-
-  // Highest Impact Priority Queue (sorted by impactScore descending)
-  const priorityQueue = [...continueTasks].sort((a, b) => b.impactScore - a.impactScore);
-
-  const filteredTasks = continueTasks.filter((t) => {
-    if (selectedStage !== "ALL" && t.stage !== selectedStage) return false;
-    if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
-        title="Seller Operating Workspace"
-        description="Your central execution hub — continue active opportunities, review listing strategies, validate drafts, and monitor published listings."
+        title="Seller Operating Workspace 2.0"
+        description="Unified command center — Opportunity Inbox, 10-stage execution pipeline, own-shop optimization, and comparative decision mode."
         primaryAction={
           <div className="flex items-center gap-2.5">
             <CountrySelector size="sm" />
@@ -180,358 +96,374 @@ export function WorkspaceClient() {
         isOpen={showGuide}
         onToggle={() => setShowGuide(!showGuide)}
         title="How the Seller Operating Workspace Works"
-        description="SellerSalt connects research, keyword clustering, content generation, and Etsy draft creation into one continuous execution pipeline."
+        description="SellerSalt connects research discovery, keyword clustering, strategic planning, Etsy draft creation, and own-store monitoring into one continuous execution loop."
         steps={[
           {
-            title: "1. Priority Execution Queue",
-            description: "Work through your highest-impact opportunities ordered by potential revenue yield.",
-            badge: "Priority Queue",
+            title: "1. Unified Opportunity Inbox",
+            description: "Review, shortlist, and action high-potential discoveries gathered from Product Research, Keywords, Competitor Spy, and the Browser Extension.",
+            badge: "Inbox Queue",
           },
           {
-            title: "2. Track Pipeline Health",
-            description: "Monitor stage-to-stage conversion rates to eliminate publishing bottlenecks.",
-            badge: "Pipeline Health",
+            title: "2. 10-Stage Pipeline Board",
+            description: "Track progression across the 10 canonical stages and eliminate bottlenecks before they slow your publishing velocity.",
+            badge: "Pipeline Engine",
           },
           {
-            title: "3. Health Score Optimization",
-            description: "Address your lowest-scoring health factors to maximize organic impressions and net profit margin.",
-            badge: "Health Engine",
+            title: "3. First-Class Own Shop Health",
+            description: "Audit your own Etsy catalog for missing 13-tag slots, underperforming listings, and competitor price movements.",
+            badge: "Own Store",
           },
         ]}
       />
 
-      {/* LEVEL 1: HIGHEST IMPACT PRIORITY ACTIONS QUEUE */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white shadow-md space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-[#FFB020]" />
-            <span className="text-xs font-bold uppercase tracking-wider text-white">
-              Highest-Impact Priority Actions
-            </span>
-          </div>
-          <span className="text-[11px] text-[#9EAA9F]">Ordered by Business Impact</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {priorityQueue.slice(0, 3).map((item) => (
-            <div
-              key={item.id}
-              className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-2.5 flex flex-col justify-between hover:border-[#16C784]/40 transition"
+      {/* Main Workspace Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-2.5">
+        {mainTabs.map((t) => {
+          const isActive = activeMainTab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActiveMainTab(t.id as typeof activeMainTab)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+                isActive
+                  ? "bg-[#141B16] text-white shadow-xs"
+                  : "bg-surface-secondary hover:bg-surface text-ink-secondary hover:text-ink"
+              }`}
             >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="text-[#16C784] font-bold uppercase">
-                    Stage {item.stageNumber}: {item.stage}
-                  </span>
-                  <span className="font-mono text-[#9EAA9F]">Impact: {item.impactScore}/100</span>
-                </div>
-                <h4 className="text-xs font-bold text-white truncate" title={item.title}>
-                  {item.title}
-                </h4>
-                <p className="text-[11px] text-[#9EAA9F] truncate">{item.category}</p>
-              </div>
-
-              <Link
-                href={item.actionHref}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] transition shadow-2xs"
-              >
-                <span>{item.actionLabel}</span>
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          ))}
-        </div>
+              <span>{t.icon}</span>
+              <span>{t.label}</span>
+              {t.count !== undefined && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                    isActive ? "bg-white/20 text-white" : "bg-line text-ink-tertiary"
+                  }`}
+                >
+                  {t.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* LEVEL 2: SELLER HEALTH SCORE INTELLIGENCE CARD */}
-      <IntelligenceCard
-        badgeText="SELLER OPERATING HEALTH SCORE"
-        badgeIcon={<Zap className="h-3.5 w-3.5 text-[#FFB020]" />}
-        title={`Overall Seller Health: ${healthReport.overallScore}/100 — ${healthReport.tierLabel}`}
-        score={healthReport.overallScore}
-        scoreMax={100}
-        verdictLabel={healthReport.tier}
-        verdictVariant={healthReport.overallScore >= 70 ? "success" : "warning"}
-        provenance="SELLERSALT_SCORE"
-        description={
-          `Your catalog demonstrates robust unit profit margins (${healthReport.factors.pricingMarginScore}/100) and steady demand capture. ${healthReport.biggestWeakness.description}`
-        }
-        actionLabel={healthReport.recommendedAction.actionLabel}
-        onAction={() => {
-          if (healthReport.recommendedAction.actionHref) {
-            window.location.href = healthReport.recommendedAction.actionHref;
-          }
-        }}
-        sidePanel={
-          <div className="space-y-3">
-            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
-              Health Factor Breakdown
-            </div>
-            <div className="space-y-2 text-xs">
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#9EAA9F]">Opportunity Pipeline:</span>
-                  <span className="text-white font-mono font-bold">{healthReport.factors.opportunityScore}%</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full bg-[#16C784]" style={{ width: `${healthReport.factors.opportunityScore}%` }} />
-                </div>
-              </div>
+      {/* TAB 1: OPPORTUNITY INBOX */}
+      {activeMainTab === "INBOX" && (
+        <OpportunityInbox
+          initialOpportunities={opportunities}
+          organizationId={organizationId}
+        />
+      )}
 
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#9EAA9F]">Keyword Coverage:</span>
-                  <span className="text-white font-mono font-bold">{healthReport.factors.keywordCoverageScore}%</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full bg-[#3B82F6]" style={{ width: `${healthReport.factors.keywordCoverageScore}%` }} />
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#9EAA9F]">Listing Content Quality:</span>
-                  <span className="text-white font-mono font-bold">{healthReport.factors.listingQualityScore}%</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full bg-[#FFB020]" style={{ width: `${healthReport.factors.listingQualityScore}%` }} />
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#9EAA9F]">Pricing &amp; Margin:</span>
-                  <span className="text-white font-mono font-bold">{healthReport.factors.pricingMarginScore}%</span>
-                </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full bg-[#16C784]" style={{ width: `${healthReport.factors.pricingMarginScore}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-      >
-        <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-[#9EAA9F]">
-          <span className="text-white font-semibold">💡 Top Opportunity:</span>
-          <span>{healthReport.biggestOpportunity.headline} ({healthReport.biggestOpportunity.potentialYield})</span>
-        </div>
-      </IntelligenceCard>
-
-      {/* Plan Quotas & Account Capacity */}
-      <PlanUsageCard
-        planName="Starter Tier"
-        keywordUsage={{ current: 42, limit: 250 }}
-        productUsage={{ current: 18, limit: 150 }}
-        seoUsage={{ current: 6, limit: 25 }}
-        competitorUsage={{ current: 4, limit: 10 }}
-      />
-
-      {/* LEVEL 3: 10-STAGE OPERATING PIPELINE & CONVERSION FUNNEL */}
-      <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-[#0E8F5D]" />
-            <span className="text-xs font-bold text-ink uppercase tracking-wide">
-              Operating Pipeline &amp; Conversion Health ({PIPELINE_STAGES.reduce((s, p) => s + p.count, 0)} Total Active Items)
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedStage("ALL")}
-            className={`text-xs font-semibold hover:underline ${selectedStage === "ALL" ? "text-[#0E8F5D] font-bold" : "text-ink-tertiary"}`}
-          >
-            Show All Stages
-          </button>
-        </div>
-
-        {/* Scrollable Stage Pills with Conversion Rates */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 pt-1">
-          {PIPELINE_STAGES.map((stg) => {
-            const isSelected = selectedStage === stg.id;
-            return (
-              <button
-                key={stg.id}
-                type="button"
-                onClick={() => setSelectedStage(isSelected ? "ALL" : stg.id)}
-                className={`p-2 rounded-xl text-center border transition-all ${
-                  isSelected
-                    ? "bg-[#141B16] text-white border-[#141B16] shadow-sm"
-                    : "bg-[#FAFAF8] text-ink border-line hover:border-[#0E8F5D]/50 hover:bg-[#E7FAF1]/50"
-                }`}
-              >
-                <div className="text-[9px] font-bold uppercase opacity-70 truncate">
-                  {stg.number}. {stg.label}
-                </div>
-                <div className="text-base font-mono font-extrabold pt-0.5">
-                  {stg.count}
-                </div>
-                <div className="text-[8px] text-ink-tertiary font-mono pt-0.5">
-                  Conv: {stg.convRate}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* LEVEL 4: MARKET INTELLIGENCE LIVE SIGNALS */}
-      <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-[#0E8F5D]" />
-            <span className="text-xs font-bold text-ink uppercase tracking-wide">
-              Market Intelligence Live Signals
-            </span>
-          </div>
-          <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {marketSignals.map((sig) => (
-            <div
-              key={sig.id}
-              className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D]/40 transition space-y-2 flex flex-col justify-between"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs">{sig.icon} <strong className="text-ink font-bold">{sig.title}</strong></span>
-                  <span className="text-[10px] text-ink-tertiary font-mono">{sig.timestamp}</span>
-                </div>
-                <p className="text-xs text-ink-secondary leading-relaxed">
-                  {sig.whatHappened}
-                </p>
-                <p className="text-[11px] text-ink-tertiary">
-                  <strong>Impact:</strong> {sig.whyItMatters}
+      {/* TAB 2: 10-STAGE PIPELINE & BOTTLENECKS */}
+      {activeMainTab === "PIPELINE" && (
+        <div className="space-y-5">
+          <div className="p-5 rounded-2xl bg-white border border-line shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+              <div>
+                <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-[#0E8F5D]" />
+                  10-Stage Operating Pipeline & Conversion Funnel
+                </h3>
+                <p className="text-xs text-ink-tertiary">
+                  Monitor stage-to-stage transition rates to identify and eliminate catalog publishing bottlenecks.
                 </p>
               </div>
+              <DataProvenanceBadge type="SELLERSALT_SCORE" />
+            </div>
 
-              <div className="pt-2 border-t border-line-subtle flex justify-end">
+            {/* 10-Stage Funnel */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+              {pipeline.stages.map((st) => (
                 <Link
-                  href={sig.actionHref}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-[#0E8F5D] text-white hover:bg-[#0C7A52] transition shadow-2xs"
+                  key={st.stage}
+                  href={st.href}
+                  className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] transition flex flex-col justify-between text-center gap-1 group shadow-2xs"
                 >
-                  <span>{sig.actionLabel}</span>
-                  <ArrowRight className="h-3 w-3" />
+                  <div className="text-[10px] font-bold text-ink-tertiary group-hover:text-[#0E8F5D]">
+                    #{st.stageNumber}
+                  </div>
+                  <div className="text-lg font-extrabold text-ink group-hover:text-[#0E8F5D]">
+                    {st.count}
+                  </div>
+                  <div className="text-[10px] font-semibold text-ink-secondary truncate" title={st.label}>
+                    {st.label}
+                  </div>
+                  <div className="text-[9px] font-mono text-ink-tertiary">
+                    {st.conversionRatePercent}% conv
+                  </div>
                 </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* LEVEL 5: CONTINUE WHERE YOU LEFT OFF SECTION */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#0E8F5D]" />
-            <Heading as="h3" size="h4">Continue Where You Left Off</Heading>
-            <Badge variant="neutral" className="text-xs font-mono">
-              {filteredTasks.length} active items
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search active tasks..."
-              className="h-8 text-xs w-48"
-            />
-            <ViewSwitch value={viewMode} onChange={setViewMode} modes={["grid", "table"]} />
-          </div>
-        </div>
-
-        {/* Grid vs Table View of Active Tasks */}
-        {filteredTasks.length > 0 ? (
-          viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {filteredTasks.map((task) => (
-                <Card
-                  key={task.id}
-                  padding="md"
-                  className="border-line bg-white shadow-2xs hover:border-[#0E8F5D]/50 transition-all flex flex-col justify-between space-y-3"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{task.icon}</span>
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-[#FAFAF8] text-ink-secondary border border-line">
-                        Stage {task.stageNumber}: {task.stage}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-xs font-bold text-ink truncate" title={task.title}>
-                        {task.title}
-                      </h4>
-                      <p className="text-[11px] text-ink-tertiary">{task.category}</p>
-                    </div>
-
-                    <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle flex items-center justify-between text-xs">
-                      <span className="text-[10px] text-ink-tertiary uppercase">{task.metricLabel}</span>
-                      <span className="font-mono font-extrabold text-[#0E8F5D]">{task.metric}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-line-subtle">
-                    <Link
-                      href={task.actionHref}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white transition shadow-2xs"
-                    >
-                      <span>{task.actionLabel}</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                  </div>
-                </Card>
               ))}
             </div>
-          ) : (
-            <div className="border border-line rounded-xl overflow-hidden bg-white shadow-xs">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
-                  <tr>
-                    <th className="p-3">Stage</th>
-                    <th className="p-3">Opportunity Title</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Key Metric</th>
-                    <th className="p-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-subtle">
-                  {filteredTasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-surface-muted transition">
-                      <td className="p-3 font-bold text-ink">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FAFAF8] text-ink border border-line">
-                          {task.stageNumber}. {task.stage}
-                        </span>
-                      </td>
-                      <td className="p-3 font-bold text-ink">{task.title}</td>
-                      <td className="p-3 text-ink-tertiary">{task.category}</td>
-                      <td className="p-3 font-mono font-bold text-[#0E8F5D]">{task.metric}</td>
-                      <td className="p-3 text-right">
-                        <Link
-                          href={task.actionHref}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-[#0E8F5D] text-white hover:bg-[#0C7A52] transition"
-                        >
-                          <span>{task.actionLabel}</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Bottleneck Diagnostic Callout */}
+            <div className="p-4 rounded-xl bg-[#FFF9EB] border border-[#FFE0A3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="h-4 w-4 text-[#FFB020] shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold text-[#664400] text-[11px] uppercase tracking-wide">
+                    Primary Pipeline Bottleneck: {pipeline.bottleneckLabel}
+                  </span>
+                  <p className="text-[#664400] text-xs leading-relaxed">
+                    {pipeline.bottleneckDescription}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={pipeline.fixBottleneckAction.href}
+                className="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
+              >
+                {pipeline.fixBottleneckAction.label} →
+              </Link>
             </div>
-          )
-        ) : (
-          <Card padding="lg" className="border-line bg-white text-center py-12 space-y-2">
-            <Layers className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
-            <div className="text-xs font-bold text-ink">No Active Tasks in Selected Stage</div>
-            <p className="text-[11px] text-ink-tertiary max-w-sm mx-auto">
-              Select &quot;Show All Stages&quot; or start new research from Opportunity Radar to feed your operating pipeline.
-            </p>
-          </Card>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: OWN SHOP INTELLIGENCE LOOP */}
+      {activeMainTab === "OWN_SHOP" && (
+        <div className="space-y-5">
+          {/* Level 1: Store Health Header Card */}
+          <div className="p-5 rounded-2xl bg-[#141B16] border border-[#2A362D] text-white space-y-4 shadow-md">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="h-5 w-5 text-[#16C784]" />
+                  <h3 className="text-base font-bold text-white">
+                    {ownShop.shopName} — Store Intelligence Loop
+                  </h3>
+                </div>
+                <p className="text-xs text-[#9EAA9F]">
+                  Diagnostic evaluation of active listings, SEO tag compliance, and competitor benchmarks.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <DataProvenanceBadge type="SELLERSALT_SCORE" />
+                <span className="px-2.5 py-1 rounded-lg bg-[#1C261F] text-[#16C784] font-bold text-xs border border-[#2A362D]">
+                  Health: {ownShop.healthScore}/100
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
+                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Active Listings</div>
+                <div className="text-base font-extrabold text-white">
+                  {ownShop.actualData.activeListingsCount}
+                </div>
+                <div className="text-[9px] text-[#16C784]">[ACTUAL ETSY DATA]</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
+                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Est. Monthly Sales</div>
+                <div className="text-base font-extrabold text-white">
+                  ${ownShop.estimatedMetrics.estMonthlyRevenue.toLocaleString()}
+                </div>
+                <div className="text-[9px] text-[#4E9FFF]">[ESTIMATED]</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
+                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Tag Gaps Detected</div>
+                <div className="text-base font-extrabold text-[#FFB020]">
+                  {ownShop.seoSummary.listingsWithTagGapsCount} listings
+                </div>
+                <div className="text-[9px] text-[#9EAA9F]">Unused 13-tag slots</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
+                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Underperforming</div>
+                <div className="text-base font-extrabold text-[#FF6B6B]">
+                  {ownShop.underperformingListings.length} listings
+                </div>
+                <div className="text-[9px] text-[#9EAA9F]">Below category benchmark</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Level 2: Connector Scope & Capability Diagnostics */}
+          <div className="p-5 rounded-2xl bg-white border border-line shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-line pb-2.5">
+              <h4 className="text-sm font-bold text-ink flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-[#0E8F5D]" />
+                Etsy Connector Scope & Capability Matrix
+              </h4>
+              <span className="text-[11px] text-ink-tertiary">Real-time OAuth scope validation</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Shop & Listing Read */}
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{ownShop.capabilities.shopRead.label}</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D]">
+                    ✓ {ownShop.capabilities.shopRead.state}
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-secondary leading-snug">
+                  {ownShop.capabilities.shopRead.details}
+                </p>
+              </div>
+
+              {/* Draft Creation */}
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{ownShop.capabilities.draftCreation.label}</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFF9EB] text-[#664400]">
+                    ⚠ {ownShop.capabilities.draftCreation.state}
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-secondary leading-snug">
+                  {ownShop.capabilities.draftCreation.details}
+                </p>
+              </div>
+
+              {/* Direct Publishing (Rule 9 Gate) */}
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-ink">{ownShop.capabilities.directPublishing.label}</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-surface-secondary text-ink-tertiary">
+                    🔒 {ownShop.capabilities.directPublishing.state}
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-secondary leading-snug">
+                  {ownShop.capabilities.directPublishing.details}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Level 3: Optimization Queue */}
+          <div className="p-5 rounded-2xl bg-white border border-line shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-2.5">
+              <div>
+                <h4 className="text-sm font-bold text-ink flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-[#FFB020]" />
+                  Listing Optimization Queue ({ownShop.optimizationQueue.length} items)
+                </h4>
+                <p className="text-xs text-ink-tertiary">
+                  Listings with missing 13-tag slots or velocity trailing category forecast.
+                </p>
+              </div>
+              <Link
+                href="/seo"
+                className="text-xs font-bold text-[#0E8F5D] hover:underline"
+              >
+                Open Full SEO Engine →
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              {ownShop.optimizationQueue.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFF9EB] text-[#664400]">
+                          {item.tagSlotsRemaining > 0 ? `${item.tagSlotsRemaining} Empty Tag Slots` : "Below Velocity Forecast"}
+                        </span>
+                        <span className="text-ink-tertiary text-[11px]">Listing #{item.listingId}</span>
+                        <DataProvenanceBadge type="SELLERSALT_SCORE" />
+                      </div>
+                      <h5 className="text-xs font-bold text-ink">{item.title}</h5>
+                      <p className="text-[11px] text-ink-secondary">{item.underperformanceReason}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-[10px] uppercase text-ink-tertiary font-bold">SEO Score</div>
+                        <div className="text-sm font-extrabold text-[#0E8F5D]">{item.seoScore}/100</div>
+                      </div>
+                      <Link
+                        href={item.nextAction.actionHref || "/seo"}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
+                      >
+                        {item.nextAction.actionLabel} →
+                      </Link>
+                    </div>
+                  </div>
+
+                  <WhyThisMatters action={item.nextAction} compact={true} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: OPPORTUNITY COMPARISON & DECISION MODE */}
+      {activeMainTab === "COMPARISON" && (
+        <div className="p-5 rounded-2xl bg-white border border-line shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <div>
+              <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                <Scale className="h-5 w-5 text-[#0E8F5D]" />
+                Multi-Opportunity Comparison & Decision Mode
+              </h3>
+              <p className="text-xs text-ink-tertiary">
+                Evaluate trade-offs across margins, demand velocity, review barriers, and launch safety.
+              </p>
+            </div>
+            <DataProvenanceBadge type="SELLERSALT_SCORE" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {opportunities.slice(0, 3).map((opp, idx) => (
+              <div
+                key={opp.id}
+                className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3 flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#141B16] text-white">
+                      {idx === 0 ? "🏆 Top Opportunity" : idx === 1 ? "💰 Top Margin" : "🛡️ Safest Entry"}
+                    </span>
+                    <span className="text-xs font-extrabold text-[#0E8F5D]">{opp.opportunityScore}/100</span>
+                  </div>
+
+                  <h5 className="text-xs font-bold text-ink line-clamp-2 leading-tight">
+                    {opp.listingTitle}
+                  </h5>
+
+                  <div className="space-y-1 text-xs pt-1">
+                    <div className="flex justify-between">
+                      <span className="text-ink-tertiary">Category:</span>
+                      <strong className="text-ink truncate max-w-[140px]">{opp.category}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-tertiary">Price:</span>
+                      <strong className="text-ink">${opp.economics.price.toFixed(2)}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-tertiary">Est. Daily Sales:</span>
+                      <strong className="text-ink">{opp.demand.estDailySales.toFixed(1)}/day</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-tertiary">Net Margin:</span>
+                      <strong className="text-[#0E8F5D]">{opp.economics.marginPercent}% (${opp.economics.estNetProfit})</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-ink-tertiary">Active Listings:</span>
+                      <strong className="text-ink">{opp.competition.activeListings}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  href={opp.nextBestAction.actionHref || "/planner"}
+                  className="w-full text-center px-3 py-1.5 text-xs font-bold rounded-lg bg-[#141B16] text-white hover:bg-[#202C23] transition"
+                >
+                  Advance to Strategy →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

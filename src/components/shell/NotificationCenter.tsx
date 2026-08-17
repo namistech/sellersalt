@@ -25,6 +25,11 @@ const CATEGORY_LABEL: Record<NotificationCategory, string> = {
   optimization: "Optimization",
   billing: "Billing",
   security: "Security",
+  opportunity: "Opportunity",
+  competitor: "Competitor",
+  keyword: "Keyword",
+  listing: "Listing",
+  product_update: "Product Update",
 };
 
 function NotificationRow({ item }: { item: NotificationItem }) {

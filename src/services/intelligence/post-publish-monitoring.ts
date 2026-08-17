@@ -61,6 +61,9 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         id: "monitor-early-indexation",
         context: "DRAFT",
         headline: "Allow Organic Indexation Period",
+        signal: "Listing was published less than 5 days ago.",
+        interpretation: "Etsy search ranking algorithms sample new listings over their first 7-14 days.",
+        whyYouShouldCare: "Allowing early traffic accumulation before altering tags prevents resetting search relevance scores.",
         rationale: "Etsy search ranking algorithms sample new listings over their first 7-14 days. Maintain current tags.",
         actionLabel: "Monitor in Surveillance",
         actionHref: "/spy/tracked",
@@ -68,6 +71,8 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         urgency: "LOW",
         scoreImpactEstimated: "Baseline Accumulation",
         icon: "⏳",
+        provenance: "SELLERSALT_SCORE",
+        confidence: 90,
       },
       provenance: "SELLERSALT_SCORE",
     };
@@ -85,6 +90,9 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         id: "expand-product-variations",
         context: "PRODUCT",
         headline: "High Velocity Detected — Create Product Variation",
+        signal: `Sales velocity (${dailyVelocity.toFixed(1)}/day) is outperforming forecast (${targetVelocity.toFixed(1)}/day) by +${Math.round((velocityIndex - 1) * 100)}%.`,
+        interpretation: "Strong organic conversion confirms buyer intent fit in this category.",
+        whyYouShouldCare: "Creating color/size variations allows you to dominate category search without starting from zero authority.",
         rationale: "Strong organic conversion confirms buyer intent fit. Create color/size variations to dominate category search.",
         actionLabel: "Create Variation in Planner",
         actionHref: "/planner",
@@ -92,6 +100,8 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         urgency: "MEDIUM",
         scoreImpactEstimated: "+35% Catalog Revenue",
         icon: "🚀",
+        provenance: "SELLERSALT_SCORE",
+        confidence: 92,
       },
       provenance: "SELLERSALT_SCORE",
     };
@@ -100,9 +110,19 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
   // Needs optimization (trailing forecast or missing tags/keywords)
   if (velocityIndex < 0.7 || tagComplianceCount < 13 || !first40CharsKeywordMatch) {
     let rationale = "Listing sales velocity is trailing opportunity projection.";
+    let signal = `Listing velocity (${dailyVelocity.toFixed(1)}/day) is trailing projected target (${targetVelocity.toFixed(1)}/day).`;
+    let interpretation = "Traffic conversion is lagging behind category baseline.";
+    let whyYouShouldCare = "Updating secondary tags and front-loading high-relevance search terms can recover search rank.";
+
     if (tagComplianceCount < 13) {
+      signal = `Only ${tagComplianceCount}/13 tags utilized on active listing.`;
+      interpretation = `Unused tag slots limit discoverability across secondary search terms.`;
+      whyYouShouldCare = `Adding ${13 - tagComplianceCount} missing tags unlocks immediate organic search reach.`;
       rationale = `Only ${tagComplianceCount}/13 tags utilized. Adding missing tag slots unlocks immediate organic search reach.`;
     } else if (!first40CharsKeywordMatch) {
+      signal = `Primary keyword is not placed in the first 40 title characters.`;
+      interpretation = `Mobile buyer search cards truncate titles beyond 40 characters.`;
+      whyYouShouldCare = `Front-loading the exact search query ensures instant recognition by browsing shoppers.`;
       rationale = "Primary high-intent keyword is not front-loaded in the first 40 title characters for mobile buyers.";
     }
 
@@ -116,6 +136,9 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         id: "optimize-live-listing-seo",
         context: "CONTENT",
         headline: "Optimize Listing Tags & Front-Loaded Title",
+        signal,
+        interpretation,
+        whyYouShouldCare,
         rationale,
         actionLabel: "Audit & Optimize in Studio",
         actionHref: "/studio",
@@ -123,6 +146,8 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
         urgency: "HIGH",
         scoreImpactEstimated: "+28% Search Impressions",
         icon: "⚡",
+        provenance: "SELLERSALT_SCORE",
+        confidence: 88,
       },
       provenance: "SELLERSALT_SCORE",
     };
@@ -139,6 +164,9 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
       id: "monitor-competitor-price-movement",
       context: "SHOP",
       headline: "Monitor Competitor Pricing Corridor",
+      signal: `Listing velocity (${dailyVelocity.toFixed(1)}/day) is on track with category baseline (${targetVelocity.toFixed(1)}/day).`,
+      interpretation: "Search placement is stable with healthy click-through retention.",
+      whyYouShouldCare: "Tracking competitor price shifts ensures your profit margin remains protected.",
       rationale: "Performance is consistent with expectation. Track competitor price shifts to preserve margin superiority.",
       actionLabel: "View Surveillance",
       actionHref: "/spy",
@@ -146,6 +174,8 @@ export function evaluatePublishedListing(metrics: PublishedListingMetrics): Post
       urgency: "LOW",
       scoreImpactEstimated: "Stable Yield",
       icon: "📊",
+      provenance: "SELLERSALT_SCORE",
+      confidence: 85,
     },
     provenance: "SELLERSALT_SCORE",
   };

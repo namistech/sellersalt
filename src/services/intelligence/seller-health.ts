@@ -127,6 +127,9 @@ export function calculateSellerHealthScore(input: SellerHealthInput): SellerHeal
     id: "optimize-seller-health",
     context: "PLANNER",
     headline: `Improve ${weakestName} (${weakestScore}/100)`,
+    signal: `${weakestName} is currently scoring ${weakestScore}/100, trailing your other operating pillars.`,
+    interpretation: `Addressing your lowest-scoring pillar delivers the greatest immediate lift in overall catalog health.`,
+    whyYouShouldCare: `Advancing your ${weakestName} will lift your overall Seller Health Score to ${Math.min(95, overallScore + 8)}/100.`,
     rationale: `Advancing your ${weakestName} will lift your overall Seller Health Score to ${Math.min(95, overallScore + 8)}/100.`,
     actionLabel: "Advance Active Opportunities",
     actionHref: "/planner",
@@ -134,6 +137,8 @@ export function calculateSellerHealthScore(input: SellerHealthInput): SellerHeal
     urgency: "HIGH",
     scoreImpactEstimated: `+8 Health Points`,
     icon: "⚡",
+    provenance: "SELLERSALT_SCORE",
+    confidence: 92,
   };
 
   return {

@@ -12,3 +12,4 @@ export * from "./product-hunting";
 export * from "./shop-research";
 export * from "./category-hunting";
 export * from "./keyword-research";
+export * from "./opportunity";

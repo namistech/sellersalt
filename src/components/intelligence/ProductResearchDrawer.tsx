@@ -365,15 +365,31 @@ export function ProductResearchDrawer({
         </div>
 
         {/* Drawer Action Footer */}
-        <div className="px-6 py-4 border-t border-line bg-[#FAFAF8] flex items-center justify-between gap-3 shrink-0">
-          <a
-            href={listing.listingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-ink-secondary hover:text-[#0E8F5D] flex items-center gap-1 font-medium"
-          >
-            View on Etsy <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+        <div className="px-6 py-4 border-t border-line bg-[#FAFAF8] flex flex-wrap items-center justify-between gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={listing.listingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-ink-secondary hover:text-[#0E8F5D] flex items-center gap-1 font-medium"
+            >
+              View on Etsy <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <span className="text-line">|</span>
+            <Link
+              href={`/keyword-research?q=${encodeURIComponent(listing.title)}`}
+              className="text-xs text-ink-secondary hover:text-[#0E8F5D] font-medium"
+            >
+              Mine Keywords →
+            </Link>
+            <span className="text-line">|</span>
+            <Link
+              href={`/spy?shop=${encodeURIComponent(shop.shopName || shop.shopId)}`}
+              className="text-xs text-ink-secondary hover:text-[#0E8F5D] font-medium"
+            >
+              Spy on Shop →
+            </Link>
+          </div>
 
           <div className="flex items-center gap-2">
             <Button

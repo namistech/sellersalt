@@ -42,3 +42,9 @@ export { ProductComparisonModal } from "./ProductComparisonModal";
 export type { ProductComparisonModalProps } from "./ProductComparisonModal";
 
 export { TaxonomyTreeBrowser } from "./TaxonomyTreeBrowser";
+
+export { WhyThisMatters } from "./WhyThisMatters";
+export type { WhyThisMattersProps } from "./WhyThisMatters";
+
+export { OpportunityInbox } from "./OpportunityInbox";
+export type { OpportunityInboxProps } from "./OpportunityInbox";

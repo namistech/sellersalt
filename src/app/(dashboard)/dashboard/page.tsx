@@ -45,6 +45,6 @@ export default async function OverviewPage() {
   }));
 
   return (
-    <DashboardClient initialData={data} connectors={connectors} userName={userName} />
+    <DashboardClient initialData={data} connectors={connectors} userName={userName} organizationId={organizationId} />
   );
 }

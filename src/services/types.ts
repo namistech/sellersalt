@@ -62,7 +62,18 @@ export interface ConnectedShopSummary {
   status: "connected" | "syncing" | "disconnected" | "failed";
 }
 
-export type NotificationCategory = "system" | "intelligence" | "shop" | "optimization" | "billing" | "security";
+export type NotificationCategory =
+  | "system"
+  | "intelligence"
+  | "shop"
+  | "optimization"
+  | "billing"
+  | "security"
+  | "opportunity"
+  | "competitor"
+  | "keyword"
+  | "listing"
+  | "product_update";
 
 export interface NotificationItem {
   id: string;

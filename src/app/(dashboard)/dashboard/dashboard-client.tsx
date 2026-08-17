@@ -16,14 +16,16 @@ import { DashboardMomentum } from "./dashboard-momentum";
 import { DashboardStreams } from "./dashboard-streams";
 import { DashboardOnboardingGuide } from "./dashboard-onboarding-guide";
 import { AssistantDailyBriefing } from "./assistant-daily-briefing";
+import { DashboardCommandCenter } from "./dashboard-command-center";
 
 interface DashboardClientProps {
   initialData: DashboardData;
   connectors: ConnectorSummary[];
   userName: string;
+  organizationId?: string;
 }
 
-export function DashboardClient({ initialData, connectors, userName }: DashboardClientProps) {
+export function DashboardClient({ initialData, connectors, userName, organizationId = "org_default" }: DashboardClientProps) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -110,6 +112,9 @@ export function DashboardClient({ initialData, connectors, userName }: Dashboard
         trackedCompetitorsCount={data.competitorRadar.length}
         topOpportunityCount={data.topOpportunities.length}
       />
+
+      {/* Seller Intelligence Operating System 2.0 Command Center */}
+      <DashboardCommandCenter organizationId={organizationId} userName={userName} />
 
       {/* Row 1: Research Pulse */}
       <DashboardPulse pulse={pulse} />
