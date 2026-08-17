@@ -302,6 +302,104 @@ account has used) and `lastLoginAt`. New minimal `AuditLog` model
 `EMAIL_VERIFICATION_RESENT`, `ADMIN_EMAIL_VERIFICATION_SENT`,
 `ADMIN_EMAIL_CHANGED`, `EMAIL_VERIFIED` — never secrets/tokens.
 
+**Notifications, canonical branding, tracking backend, marketplace/OAuth
+fixes (2026-08-17, batch-29 forensic audit)** — a full re-audit found
+several prior "complete" claims didn't hold up against actual code/live
+UI, plus one previously-undiscovered production bug:
+
+- **In-app notifications are now real**: new `AnnouncementRead` model
+  (per-user, real FK to `User`) replaced a process-memory `Map` that lost
+  all read/dismiss state on every deploy and had zero mark-read wiring in
+  the UI despite implying a real inbox. `NotificationCenter`/`AppShell`
+  now support individual mark-read (click a row) and mark-all-read,
+  persisted server-side, verified to survive a page reload. Announcement
+  *content* itself is still a small in-code list (no admin authoring UI
+  persists new ones across a restart) — only read-state is durable.
+- **Etsy OAuth "credentials not configured" bug, fixed**: the connect
+  route already merged the AppSetting-configured client ID correctly, but
+  gated on a separate `isValid` flag from `resolveEtsyOAuthRedirectUri()`
+  that only ever checked env vars — so a client ID configured the
+  documented way (via `/admin` → Site Settings only, no matching env var)
+  still bounced with "not configured". Fixed by threading the resolved
+  client ID into that validator (`overrideClientId` param). Verified live:
+  clicking "Connect Etsy Shop" now reaches Etsy's real authorize URL.
+- **Schema/migration drift discovered**: `ListingWatch`, `ListingSnapshot`,
+  and `TrackingAlert` models existed in `prisma/schema.prisma` — and a
+  fully-built API backend already queried them
+  (`/api/tracking/listings`, `/api/tracking/alerts`, `/api/tracking/
+  quota`) — but no migration had ever created these tables in staging or
+  production. The entire per-listing tracking feature was silently
+  broken (table-does-not-exist) until migration
+  `20260817112443_add_notification_read_and_tracking_days` was applied.
+  **If `npx prisma migrate status` ever shows schema fields with no
+  corresponding migration again, treat it as a live bug, not just
+  housekeeping** — check whether application code already depends on it.
+- **Shop cover photo fixed**: `shop-intelligence.ts` used
+  `rawShop.banner_url_fullxfull`, not a real Etsy v3 field (always
+  `undefined`); corrected to `image_url_760x100`, the field already used
+  correctly in `connectors/etsy/index.ts`.
+- **Listing detail gallery fixed**: the gallery UI already supported
+  multiple images, but the page never called Etsy's multi-image endpoint
+  (capped at 1 cached URL) and silently rendered fully fabricated mock
+  stats with no `[ESTIMATED]` badge when no local record matched. Now
+  does a real live Etsy fetch and 404s honestly instead of fabricating.
+- **Password change re-auth alternatives**: `/api/settings/password` now
+  accepts a current TOTP/backup code as an alternative to the old
+  password (reuses the 2FA route's `verifyPasswordOrCode`, now exported
+  from `src/lib/two-factor.ts`), and the profile page offers an
+  email-reset-link path for users without 2FA — reuses the existing
+  audited forgot-password flow rather than new OTP infrastructure. Also
+  fixed a `PUT` vs `PATCH` method mismatch that would have 405'd every
+  password change. Added a real client-side strength meter matching the
+  server's `checkPasswordStrength` policy.
+- **Shop tracking duration is real**: new `Package.maxTrackingDays`
+  (Starter=3, Pro=7, Agency=30) backs the 3/7/30-day buttons on the shop
+  detail page, previously a literal `onClick={() => {}}` no-op. CSV
+  export now uses the pre-existing (previously never-called)
+  `tracking-engine.ts` delta calculators for a real before/after report
+  instead of dumping current-state data with a fake "report" label.
+- **"Search Stream" → "Saved Search"**: prior batch only removed the term
+  from the nav sidebar, not actual page copy (prospects, radar,
+  dashboard, checkout still said "Create Search Stream" etc.) — renamed
+  everywhere it was customer-visible. `SearchConfig` internals/API routes
+  unchanged.
+- **Trial billing ($1/3-day) disabled**, not deleted: `Package.trialDays`/
+  `trialPriceUsd` nulled on staging via `/admin` (fully reversible, zero
+  code change to re-enable) and all hardcoded "$1 Trial" marketing copy
+  removed from pricing/homepage/header/footer/login/contact/email-
+  template. Stripe/PayPal trial-checkout code itself untouched. **Do the
+  same null-out on production's `Package` rows via `/admin` when ready**
+  — not automated, since it's a live pricing/business decision.
+- **Canonical brand asset system, finally exists**: `public/brand/` now
+  has real derived assets (`icon-mark.png` transparent, `icon-square.png`
+  white-backed, `wordmark.png`) cropped via `sharp` from the real
+  SellerSalt logo that was already configured in the `app_logo_url`
+  AppSetting (hosted externally on aliyanbaig.com) — that setting existed
+  but was never read anywhere in the frontend, and separately, forcing
+  its wide wordmark into square icon slots (`object-cover`) produced an
+  illegible cropped fragment. `AccountBrand.tsx` now renders the full
+  wordmark at `h-8 w-auto` when `app_logo_url` is set (matching the
+  working pattern already used on auth pages) instead of force-cropping
+  it into a square badge; the square badge always uses the derived
+  `icon-mark.png`, never the wide URL directly. Wired into: sidebar,
+  `PublicHeader`, SaltBot assistant (launcher + header badge), auth pages,
+  `src/app/icon.png`/`apple-icon.png` (real favicon, previously
+  nonexistent — the AppSetting-driven favicon had no static fallback),
+  and `extension/manifest.json` (previously had no `icons` field at all;
+  4 real sizes added).
+- **Admin image upload, not just URL paste**: new
+  `POST /api/admin/settings/upload-image` (admin-gated, reuses the
+  existing `getStorageProvider()` S3/R2-or-local factory, same pattern as
+  avatar upload) lets an admin upload a file directly for any of the 6
+  image `AppSetting` keys instead of only pasting an external URL. Same
+  S3-not-configured caveat as avatars applies — falls back to local
+  container disk, doesn't survive a redeploy, until real bucket
+  credentials exist.
+- **Login page side-image positioning**: new `auth_page_image_position_x`/
+  `_y` settings (0-100, admin sliders) drive real CSS `object-position` on
+  the auth layout's side image — previously no positioning control
+  existed at all (fixed `object-cover`, no override).
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -318,8 +416,20 @@ account has used) and `lastLoginAt`. New minimal `AuditLog` model
   lightweight live test-connection ping for either (the admin UI's
   "Test Connection" button only validates required fields are present
   for these two, unlike Stripe/PayPal which do a real API call).
-- Chrome extension, AI assistant, eBay research connector, category
-  leaderboards, mobile-responsive pass, automated backups
+- eBay research connector, category leaderboards, mobile-responsive pass,
+  automated backups
+- **Production trial-disable**: trial billing was disabled (nulled
+  `Package.trialDays`/`trialPriceUsd`) on **staging only** as part of the
+  2026-08-17 batch — do the same via `/admin` → Packages on production
+  before/when this ships, or production checkout will still show trial
+  terms while marketing copy no longer mentions them (a real
+  copy/behavior mismatch until done).
+- **Discretionary visual redesign** (per-page contextual dark-section
+  theming instead of one repeated pattern, a global spacing/typography
+  pass) — explicitly scoped out of the 2026-08-17 batch per founder
+  direction; the audit found no concrete defects in current
+  spacing/typography/button-contrast, just stylistic opinion, so this
+  is a "want" not a "broken."
 - Real Privacy Policy/Terms pages (still `mailto:` placeholders — a real
   legal gap, not cosmetic)
 - Login/register security hardening (disposable-email blocking, device
@@ -343,11 +453,6 @@ account has used) and `lastLoginAt`. New minimal `AuditLog` model
 - **"App research"** — referenced in the 2026-08-16 master completion
   pass instructions but not defined anywhere in this file or `docs/`.
   Needs founder clarification before anything is built for it.
-- **`app_name`/`app_logo_url` propagation** — admin can edit these,
-  but only a few surfaces actually read them (root `<title>`/SEO meta
-  now does, as of 2026-08-16). Header, sidebar, and most page titles
-  are still hardcoded "SellerSalt" — a real but large sweep, not done.
-
 ## Known scaling constraint (not solved, just flagged)
 
 Every customer shares one Etsy Personal Access connector — 5 req/sec,
@@ -422,6 +527,27 @@ Every customer shares one Etsy Personal Access connector — 5 req/sec,
    real state already being fetched. When auditing a feature that looks
    done, check both sides independently — a working-looking admin panel
    is not evidence the buttons in it do anything.
+8. **Schema-declared-but-never-migrated models** (2026-08-17): three
+   tracking models (`ListingWatch`/`ListingSnapshot`/`TrackingAlert`) sat
+   in `schema.prisma` with real application code already querying them,
+   but no migration had ever created the tables — silently broken in
+   both environments until caught during a routine `prisma migrate dev
+   --create-only` diff. `npx prisma migrate status` doesn't get run
+   habitually enough to catch this on its own; worth a periodic check
+   whenever picking up tracking/surveillance work.
+9. **`isValid` computed from a narrower source than the value actually
+   used** (2026-08-17): the Etsy connect route merged an AppSetting
+   client ID correctly but validated a *different*, env-var-only value —
+   a general shape to watch for whenever two variables are meant to
+   represent "the same" config but are computed by separate code paths.
+10. **Local dev DB connection differs from the documented tunnel**: the
+    working `.env.local` / this session's `DATABASE_URL` connects
+    directly to `94.72.98.206:15432` (staging Postgres), not via an SSH
+    tunnel to a `127.0.0.1` port as an earlier session's notes describe.
+    Confirmed reachable directly from a local machine — worth verifying
+    with the founder whether `15432` is intentionally publicly exposed
+    (separate from the documented `5433` production public-port toggle)
+    or is a leftover that should be closed, same category as Lesson #4.
 
 ## How to work efficiently in this project
 
