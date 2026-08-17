@@ -374,11 +374,17 @@ export async function fetchCompleteShopIntelligence(
     const images: string[] = [];
     if (l.images && Array.isArray(l.images)) {
       for (const img of l.images) {
-        const url = img.url_570xN || img.url_fullxfull || img.url_75x75;
+        const url = img.url_570xN || img.url_fullxfull || img.url_75x75 || img.url;
         if (url) images.push(url);
       }
     }
-    const imageUrl = images[0] || l.image_url || null;
+    if (l.Images && Array.isArray(l.Images)) {
+      for (const img of l.Images) {
+        const url = img.url_570xN || img.url_fullxfull || img.url_75x75 || img.url;
+        if (url) images.push(url);
+      }
+    }
+    const imageUrl = images[0] || l.image_url || l.thumbnail_url || l.listing_image_url || null;
 
     const opp = computeProductOpportunity({
       price: priceAmount,

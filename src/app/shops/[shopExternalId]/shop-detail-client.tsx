@@ -452,8 +452,8 @@ export function ShopDetailClient({
             badge: "Competition Rubric",
           },
           {
-            title: "3. 6-Hour Surveillance",
-            description: "Click 'Spy on This Competitor' to capture real-time sales movements and new listings every 6 hours.",
+            title: "3. Longitudinal Shop Tracking",
+            description: "Click 'Track This Shop' to capture recurring sales snapshots, price adjustments, and newly launched listings.",
             badge: "Automated",
           },
         ]}
@@ -805,7 +805,20 @@ export function ShopDetailClient({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center rounded-lg border border-line bg-white p-0.5 text-xs font-bold">
+                {(["3D", "7D", "30D"] as const).map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => {}}
+                    className="px-2.5 py-1 rounded-md text-ink-secondary hover:text-ink font-semibold transition text-xs"
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+
               <Button
                 variant="secondary"
                 size="compact"
@@ -887,6 +900,31 @@ export function ShopDetailClient({
               </div>
             </div>
           )}
+
+          {/* Analytical Summary Report */}
+          <div className="p-4 rounded-xl bg-white border border-line space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-line-subtle">
+              <span className="text-xs font-bold text-ink uppercase tracking-wide">Tracking Intelligence Summary</span>
+              <DataProvenanceBadge type="SELLERSALT_SCORE" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Observed Velocity</span>
+                <span className="text-sm font-extrabold text-[#0E8F5D]">~{estDaily.toFixed(1)} sales/day</span>
+                <p className="text-[11px] text-ink-secondary">Stable transaction momentum across 30-day baseline.</p>
+              </div>
+              <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Catalog Yield Ratio</span>
+                <span className="text-sm font-extrabold text-ink">{sellingRatio.toFixed(1)} sales/listing</span>
+                <p className="text-[11px] text-ink-secondary">{catalog.catalogEfficiency === "HIGH_YIELD" ? "High efficiency top-tier storefront." : "Standard catalog distribution."}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Strategic Takeaway</span>
+                <span className="text-sm font-extrabold text-ink">{evaluatedScore.verdictLabel}</span>
+                <p className="text-[11px] text-ink-secondary">Focus on unique product variations &amp; bundle positioning.</p>
+              </div>
+            </div>
+          </div>
 
           {trendPoints.length >= 2 ? (
             <div className="p-4 rounded-xl bg-white border border-line space-y-2">

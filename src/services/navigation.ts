@@ -62,9 +62,10 @@ const DISCOVER_ITEMS: NavigationItem[] = [
 
 const OPERATE_ITEMS: NavigationItem[] = [
   { id: "workspace", label: "Execution Workspace", href: "/workspace", icon: Layers },
+  { id: "store", label: "Own Shop Operations", href: "/store", icon: Store },
   { id: "drafts", label: "Etsy Drafts", href: "/drafts", icon: FileText },
-  { id: "connected-shops", label: "Connected Shops", href: "/settings/channels", icon: Store },
-  { id: "operate-analytics", label: "Analytics", href: "/analytics", icon: BarChart3 },
+  { id: "connected-shops", label: "Connected Channels", href: "/settings/channels", icon: Plug },
+  { id: "operate-analytics", label: "Operations Analytics", href: "/analytics", icon: BarChart3 },
 ];
 
 const MANAGE_ITEMS_BASE: NavigationItem[] = [
@@ -76,12 +77,9 @@ const MANAGE_ITEMS_BASE: NavigationItem[] = [
   { id: "settings", label: "Settings", href: "/settings", icon: Settings },
 ];
 
-// Agency/Institute-only Manage items — no real backend/route exists for
-// any of these yet (Decision 1 locks the domain shape, not the schema —
-// see docs/architecture/organizations.md). They only ever appear when
-// exercised via mock WorkspaceContext at /dev/shell, and route to the
-// shared placeholder rather than a fabricated page.
+// Agency/Institute-only Manage items
 const MANAGE_ITEMS_AGENCY: NavigationItem[] = [
+  { id: "team", label: "Team & Permissions", href: "/settings/team", icon: Users, requiredCapability: "manage:team" },
   { id: "clients", label: "Clients", href: "/dev/shell/placeholder/clients", icon: Users, requiredCapability: "manage:clients" },
   { id: "employees", label: "Employees", href: "/dev/shell/placeholder/employees", icon: Briefcase, requiredCapability: "manage:employees" },
 ];

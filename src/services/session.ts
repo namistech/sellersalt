@@ -1,4 +1,4 @@
-import type { Capability, WorkspaceContext } from "./types";
+import type { AccountType, Capability, ConnectedShopSummary, WorkspaceContext } from "./types";
 import { prisma } from "@/lib/db";
 
 // Real-session → WorkspaceContext mapping. Deliberately a plain
@@ -7,11 +7,6 @@ import { prisma } from "@/lib/db";
 // that file) and this just reshapes the same real values into the
 // shell's typed context, with no new data fetching and no change to
 // the existing auth/subscription redirect logic.
-//
-// Every real signed-in session today is account-type "individual" —
-// Organization.kind doesn't exist yet (docs/architecture/organizations.md,
-// still [DECISION REQUIRED] at the field level). Agency/Institute
-// contexts are exercised only through src/services/mock/workspace.ts.
 
 export interface RealSessionInput {
   userId?: string | null;
@@ -44,37 +39,102 @@ export function buildRealWorkspaceContext(input: RealSessionInput): WorkspaceCon
     },
     roleLabel: input.isAdmin ? "Admin" : "Member",
     capabilities,
-    // No availableWorkspaces, scope, or connectedShops today — real
-    // multi-org switching and real Connected Shop data aren't wired
-    // into the shell in this task (see this task's final report,
-    // "Limitations"). The components exist and render correctly once
-    // this data is supplied; they simply aren't supplied yet for the
-    // real path.
   };
 }
 
 /** Single source of truth for "real NextAuth session -> WorkspaceContext",
- * including the avatar DB lookup — every server component that needs to
- * render DashboardShell for a real session should call this rather than
- * re-deriving it, so avatar/org shape can't drift between call sites
- * (this is exactly what happened before: shop-detail's page.tsx built its
- * own context inline and never got the avatarUrl fix applied to
- * (dashboard)/layout.tsx). */
+ * including the avatar DB lookup and server-authoritative plan capabilities. */
 export async function resolveWorkspaceContextForUser(
   user: { id?: string | null; name?: string | null; email?: string | null; organizationId?: string | null; organizationName?: string | null },
   isAdmin: boolean
 ): Promise<WorkspaceContext> {
-  const avatarSetting = user.id
-    ? await prisma.appSetting.findUnique({ where: { key: `user_avatar_${user.id}` } })
-    : null;
+  const [avatarSetting, org] = await Promise.all([
+    user.id ? prisma.appSetting.findUnique({ where: { key: `user_avatar_${user.id}` } }) : null,
+    user.organizationId
+      ? prisma.organization.findUnique({
+          where: { id: user.organizationId },
+          include: {
+            package: true,
+            subscription: true,
+            sellerChannels: {
+              where: { status: "ACTIVE" },
+              select: { id: true, platform: true, label: true },
+            },
+          },
+        })
+      : null,
+  ]);
 
-  return buildRealWorkspaceContext({
-    userId: user.id,
-    userName: user.name,
-    userEmail: user.email,
-    userAvatarUrl: avatarSetting?.value ?? null,
-    organizationId: user.organizationId,
-    organizationName: user.organizationName,
-    isAdmin,
+  const rawKey = (org?.package?.key || org?.plan || "FREE").toUpperCase();
+  const planKey = rawKey === "STARTED" ? "STARTED" : rawKey === "PRO" ? "PRO" : rawKey === "AGENCY" ? "AGENCY" : "FREE";
+  const subStatus = org?.subscription?.status || "INACTIVE";
+  const isSubActive = isAdmin || subStatus === "ACTIVE" || subStatus === "TRIALING";
+
+  const capabilities = new Set<Capability>(["discover:view"]);
+
+  let accountType: AccountType = "individual";
+  if (isAdmin || planKey === "AGENCY") {
+    accountType = "agency";
+  }
+
+  // Grant capabilities based on server-authoritative plan and active subscription
+  if (isSubActive) {
+    if (planKey === "AGENCY" || isAdmin) {
+      capabilities.add("operate:view");
+      capabilities.add("manage:team");
+      capabilities.add("manage:billing");
+      capabilities.add("manage:clients");
+      capabilities.add("manage:employees");
+      capabilities.add("manage:reports");
+    } else if (planKey === "PRO") {
+      capabilities.add("operate:view");
+      capabilities.add("manage:billing");
+      capabilities.add("manage:reports");
+    } else if (planKey === "STARTED") {
+      capabilities.add("operate:view");
+      capabilities.add("manage:billing");
+    }
+  }
+
+  if (isAdmin) {
+    capabilities.add("operate:view");
+    capabilities.add("manage:team");
+    capabilities.add("manage:billing");
+    capabilities.add("manage:clients");
+    capabilities.add("manage:employees");
+    capabilities.add("manage:reports");
+    capabilities.add("view:university");
+    capabilities.add("admin:preview");
+  }
+
+  const connectedShops: ConnectedShopSummary[] = (org?.sellerChannels || []).map((ch) => {
+    const rawPlatform = ch.platform.toLowerCase();
+    const platform: "shopify" | "woocommerce" | "etsy" =
+      rawPlatform.includes("etsy") ? "etsy" : rawPlatform.includes("shopify") ? "shopify" : "woocommerce";
+    const status: "connected" | "syncing" | "disconnected" | "failed" = "connected";
+
+    return {
+      id: ch.id,
+      label: ch.label || `${ch.platform} Shop`,
+      platform,
+      status,
+    };
   });
+
+  return {
+    user: {
+      id: user.id ?? "",
+      name: user.name ?? user.email ?? "",
+      email: user.email ?? "",
+      avatarUrl: avatarSetting?.value ?? null,
+    },
+    organization: {
+      id: org?.id ?? user.organizationId ?? "",
+      name: org?.name ?? user.organizationName ?? "Your workspace",
+      accountType,
+    },
+    roleLabel: isAdmin ? "Admin" : planKey === "AGENCY" ? "Agency Owner" : planKey === "PRO" ? "Pro Seller" : "Member",
+    capabilities,
+    connectedShops: connectedShops.length > 0 ? connectedShops : undefined,
+  };
 }
