@@ -21,6 +21,17 @@ export async function POST(req: Request) {
     // Mode A: Audit an existing live Etsy listing by ID or URL
     if (body.listingId) {
       const parsed = parseEtsyListingInput(body.listingId);
+      if (parsed.isShopUrl) {
+        return NextResponse.json(
+          {
+            error: parsed.error || "Pasted input is an Etsy shop rather than a listing.",
+            isShopUrl: true,
+            shopName: parsed.shopName,
+            redirectUrl: parsed.shopName ? `/shops/${encodeURIComponent(parsed.shopName)}` : "/spy",
+          },
+          { status: 400 }
+        );
+      }
       if (!parsed.listingId) {
         return NextResponse.json(
           { error: parsed.error || "Invalid listing ID provided." },
