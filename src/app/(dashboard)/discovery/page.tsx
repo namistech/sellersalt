@@ -153,19 +153,19 @@ export default async function DiscoveryPage() {
           </Card>
         </Link>
 
-        <Link href="/connectors" className="group">
+        <Link href="/settings/channels" className="group">
           <Card padding="md" className="h-full border-line shadow-xs bg-white hover:border-[#0E8F5D] transition-all">
             <div className="flex items-center justify-between mb-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600 group-hover:scale-105 transition-transform">
-                <Zap className="h-5 w-5" />
+                <Store className="h-5 w-5" />
               </span>
               <span className="text-xs font-bold text-ink-tertiary group-hover:text-[#0E8F5D] flex items-center gap-0.5">
                 Open <ArrowRight className="h-3 w-3" />
               </span>
             </div>
-            <div className="font-bold text-sm text-ink mb-1">Search Streams</div>
+            <div className="font-bold text-sm text-ink mb-1">Marketplace Channels</div>
             <Text size="body-sm" color="secondary">
-              Configure automated Etsy scraper streams, target keywords, and sync frequency.
+              Connect your verified Etsy shop and manage multi-platform storefront sync.
             </Text>
           </Card>
         </Link>
@@ -192,12 +192,12 @@ export default async function DiscoveryPage() {
               <Search className="h-8 w-8 text-ink-tertiary mx-auto mb-2" />
               <div className="text-sm font-semibold text-ink">No research prospects yet</div>
               <p className="text-xs text-ink-secondary mt-1 max-w-sm mx-auto">
-                Launch an automated research stream in Search Streams to start discovering winning products.
+                Explore real-time product opportunities with Opportunity Radar or search any Etsy niche.
               </p>
               <div className="mt-4">
-                <Link href="/connectors">
+                <Link href="/radar">
                   <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs">
-                    Start New Stream →
+                    Explore Opportunity Radar →
                   </Button>
                 </Link>
               </div>

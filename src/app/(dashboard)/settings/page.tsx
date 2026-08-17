@@ -201,7 +201,7 @@ export default async function SettingsPage() {
               </Badge>
             </div>
             <Text size="body-sm" color="secondary" className="mb-4">
-              Invite colleagues and collaborators to share research streams, saved prospects, and tracked shops.
+              Invite colleagues and collaborators to share market research, saved prospects, and tracked shops.
             </Text>
           </div>
 

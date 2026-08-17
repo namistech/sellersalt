@@ -120,3 +120,5 @@ export async function PATCH(req: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+export const PUT = PATCH;

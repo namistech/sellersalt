@@ -69,8 +69,6 @@ const OPERATE_ITEMS: NavigationItem[] = [
 ];
 
 const MANAGE_ITEMS_BASE: NavigationItem[] = [
-  { id: "connectors", label: "Search Streams", href: "/connectors", icon: Plug },
-  { id: "jobs", label: "Scraper Jobs", href: "/jobs", icon: Briefcase },
   { id: "roadmap", label: "Public Roadmap", href: "/roadmap", icon: Compass },
   { id: "whats-new", label: "What's New", href: "/whats-new", icon: Sparkles },
   { id: "support", label: "Support & Help", href: "/support", icon: LifeBuoy },
