@@ -28,12 +28,24 @@ export interface VerificationSendGate {
   retryAfterSeconds?: number;
 }
 
-// Shared by every send path (signup, self-serve resend, the 6h/18h
-// automatic reminders, and the admin "send verification email" action) so
-// the 3-email/24h cap can't be bypassed by mixing them — they all read and
-// write the same three counters on User.
-export function checkVerificationSendGate(user: VerifiableUser): VerificationSendGate {
+export interface VerificationSendGateOptions {
+  bypassRateLimit?: boolean;
+}
+
+// Evaluates whether a verification email can be dispatched.
+// Normal users (signup/resend/reminders) are gated by a 60s cooldown and 3 sends / 24h cap.
+// Admin-initiated sends (opts.bypassRateLimit) bypass the cooldown and 24h cap entirely,
+// but still strictly reject already-verified accounts.
+export function checkVerificationSendGate(
+  user: VerifiableUser,
+  options?: VerificationSendGateOptions
+): VerificationSendGate {
   if (user.emailVerified) return { allowed: false, reason: "already_verified" };
+
+  // Explicit admin bypass for manual re-sends from admin dashboard
+  if (options?.bypassRateLimit) {
+    return { allowed: true };
+  }
 
   const now = Date.now();
 
@@ -57,14 +69,18 @@ export function checkVerificationSendGate(user: VerifiableUser): VerificationSen
 export type VerificationSendTrigger = "signup" | "resend" | "reminder" | "admin";
 
 // Creates a fresh single-use hashed token, sends EMAIL_VERIFICATION via the
-// existing template registry/provider abstraction, and advances the rate
-// limit counters — all in one place so no caller can create a token without
-// also being subject to the cap.
+// existing template registry/provider abstraction, and advances the audit counters.
+// Admin sends bypass user-facing cooldowns while recording full audit trail.
 export async function sendVerificationEmail(
   user: VerifiableUser,
-  opts: { trigger: VerificationSendTrigger; actor?: { id?: string | null; email?: string | null } }
+  opts: {
+    trigger: VerificationSendTrigger;
+    actor?: { id?: string | null; email?: string | null };
+    bypassRateLimit?: boolean;
+  }
 ): Promise<{ sent: boolean; reason?: string }> {
-  const gate = checkVerificationSendGate(user);
+  const isAdminTrigger = opts.trigger === "admin" || opts.bypassRateLimit === true;
+  const gate = checkVerificationSendGate(user, { bypassRateLimit: isAdminTrigger });
   if (!gate.allowed) return { sent: false, reason: gate.reason };
 
   const rawToken = crypto.randomBytes(32).toString("hex");
@@ -78,6 +94,11 @@ export async function sendVerificationEmail(
   const startingNewWindow = !user.verificationFirstSentAt || windowExpired;
 
   await prisma.$transaction([
+    // Invalidate older unused tokens for this user so only the freshest link is active
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
+    }),
     prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } }),
     prisma.user.update({
       where: { id: user.id },
@@ -99,7 +120,7 @@ export async function sendVerificationEmail(
   await logAuditEvent({
     event:
       opts.trigger === "admin"
-        ? "ADMIN_EMAIL_VERIFICATION_SENT"
+        ? "ADMIN_VERIFICATION_EMAIL_SENT"
         : opts.trigger === "resend"
           ? "EMAIL_VERIFICATION_RESENT"
           : "EMAIL_VERIFICATION_SENT",

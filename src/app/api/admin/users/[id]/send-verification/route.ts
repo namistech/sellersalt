@@ -8,34 +8,56 @@ import { sendVerificationEmail } from "@/lib/email-verification";
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) return null;
-  return session!.user!.email as string;
+  return session!.user as { id?: string; email: string };
 }
 
-// Admin-triggered send — same rate-limit counters as every other send path
-// (see src/lib/email-verification.ts), so this can't be used to bypass the
-// 3-email/24h cap either.
+// Admin-triggered verification email dispatch.
+// Bypasses end-user cooldown/cap restrictions to allow administrators to manually
+// re-send verification links to users on demand.
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const adminEmail = await requireAdmin();
-  if (!adminEmail) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const adminActor = await requireAdmin();
+  if (!adminActor) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const { id } = await params;
 
-  const target = await prisma.user.findUnique({ where: { id } });
+  const target = await prisma.user.findUnique({
+    where: { id },
+    include: { memberships: { include: { organization: true } } },
+  });
   if (!target) return NextResponse.json({ error: "User not found." }, { status: 404 });
 
   if (target.emailVerified) {
     return NextResponse.json({ error: "This user's email is already verified." }, { status: 400 });
   }
 
-  const result = await sendVerificationEmail(target, { trigger: "admin", actor: { email: adminEmail } });
-  if (!result.sent) {
-    const reasonMessage: Record<string, string> =
-      {
-        cooldown: "A verification email was sent very recently — please wait a minute and try again.",
-        cap_reached: "This user has already received the maximum of 3 verification emails in the last 24 hours.",
-        already_verified: "This user's email is already verified.",
-      };
-    return NextResponse.json({ error: reasonMessage[result.reason ?? ""] ?? "Could not send verification email." }, { status: 429 });
-  }
+  try {
+    const result = await sendVerificationEmail(target, {
+      trigger: "admin",
+      actor: { id: adminActor.id, email: adminActor.email },
+      bypassRateLimit: true,
+    });
 
-  return NextResponse.json({ ok: true });
+    if (!result.sent) {
+      if (result.reason === "already_verified") {
+        return NextResponse.json({ error: "This user's email is already verified." }, { status: 400 });
+      }
+      return NextResponse.json({ error: "Could not send verification email." }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: `Verification email sent to ${target.email}.`,
+      user: {
+        id: target.id,
+        email: target.email,
+        lastVerificationEmailAt: new Date().toISOString(),
+      },
+    });
+  } catch (err: any) {
+    console.error("Failed to send admin verification email:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to deliver verification email through email provider." },
+      { status: 500 }
+    );
+  }
 }
+

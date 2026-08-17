@@ -96,7 +96,7 @@ test("Task C: Email Verification Gate & Rate Limits", async (t) => {
     assert.ok((gate.retryAfterSeconds ?? 0) > 0);
   });
 
-  await t.test("enforces maximum cap of 3 sends within 24 hours", () => {
+  await t.test("enforces maximum cap of 3 sends within 24 hours for normal users", () => {
     const cappedUser: VerifiableUser = {
       ...baseUser,
       verificationEmailCount: 3,
@@ -107,4 +107,35 @@ test("Task C: Email Verification Gate & Rate Limits", async (t) => {
     assert.strictEqual(gate.allowed, false);
     assert.strictEqual(gate.reason, "cap_reached");
   });
+
+  await t.test("allows admin to resend immediately bypassing cooldown", () => {
+    const recentUser: VerifiableUser = {
+      ...baseUser,
+      lastVerificationEmailAt: new Date(Date.now() - 5 * 1000), // 5 seconds ago
+    };
+    const gate = checkVerificationSendGate(recentUser, { bypassRateLimit: true });
+    assert.strictEqual(gate.allowed, true);
+  });
+
+  await t.test("allows admin to resend repeatedly beyond 3 emails / 24h cap", () => {
+    const heavilyCappedUser: VerifiableUser = {
+      ...baseUser,
+      verificationEmailCount: 15,
+      verificationFirstSentAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
+      lastVerificationEmailAt: new Date(Date.now() - 2 * 1000),
+    };
+    const gate = checkVerificationSendGate(heavilyCappedUser, { bypassRateLimit: true });
+    assert.strictEqual(gate.allowed, true);
+  });
+
+  await t.test("admin bypass still rejects already-verified users", () => {
+    const verifiedUser: VerifiableUser = {
+      ...baseUser,
+      emailVerified: new Date(),
+    };
+    const gate = checkVerificationSendGate(verifiedUser, { bypassRateLimit: true });
+    assert.strictEqual(gate.allowed, false);
+    assert.strictEqual(gate.reason, "already_verified");
+  });
 });
+

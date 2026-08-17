@@ -297,6 +297,7 @@ export function AdminPackagesClient() {
   // User row actions
   const [userActionLoading, setUserActionLoading] = useState<string | null>(null);
   const [userActionError, setUserActionError] = useState<string | null>(null);
+  const [userActionSuccess, setUserActionSuccess] = useState<string | null>(null);
 
   // Admin User Creation modal state
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -528,6 +529,7 @@ export function AdminPackagesClient() {
   async function handleSendVerification(userId: string) {
     setUserActionLoading(userId);
     setUserActionError(null);
+    setUserActionSuccess(null);
     try {
       const res = await fetch(`/api/admin/users/${userId}/send-verification`, { method: "POST" });
       const data = await res.json();
@@ -535,9 +537,11 @@ export function AdminPackagesClient() {
         setUserActionError(data.error || "Failed to send verification email.");
         return;
       }
+      setUserActionSuccess(data.message || "Verification email sent successfully.");
+      setTimeout(() => setUserActionSuccess(null), 5000);
       await searchUsers(userSearch);
     } catch {
-      setUserActionError("Network error.");
+      setUserActionError("Network error sending verification email.");
     } finally {
       setUserActionLoading(null);
     }
@@ -1097,15 +1101,16 @@ export function AdminPackagesClient() {
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{u.email}</div>
                           <div className="text-[10px] text-[#9EAA9F]">
-                            Sent {u.verificationEmailCount}/3 · {new Date(u.createdAt).toLocaleDateString()}
+                            Sent {u.verificationEmailCount ?? 0} time(s) · Created {new Date(u.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                         <Button
                           variant="secondary"
                           size="compact"
                           loading={userActionLoading === u.id}
+                          disabled={userActionLoading !== null}
                           onClick={() => handleSendVerification(u.id)}
-                          className="text-[10px] !py-1 !px-2 bg-white text-ink hover:bg-[#F4F3EF] shrink-0"
+                          className="text-[10px] !py-1 !px-2 bg-white text-ink hover:bg-[#F4F3EF] shrink-0 disabled:opacity-50"
                         >
                           Resend
                         </Button>
@@ -1341,6 +1346,7 @@ export function AdminPackagesClient() {
           </div>
 
           {userActionError && <Alert variant="danger">{userActionError}</Alert>}
+          {userActionSuccess && <Alert variant="success">{userActionSuccess}</Alert>}
 
           {users.length > 0 ? (
             <div className="overflow-x-auto border border-line rounded-lg">
@@ -1390,7 +1396,7 @@ export function AdminPackagesClient() {
                             <div className="flex flex-col gap-0.5">
                               <Badge variant="warning">⚠ Unverified</Badge>
                               <span className="text-[10px] text-ink-tertiary">
-                                Sent {u.verificationEmailCount ?? 0}/3
+                                Sent {u.verificationEmailCount ?? 0} time(s)
                               </span>
                             </div>
                           )}
@@ -1456,8 +1462,10 @@ export function AdminPackagesClient() {
                                 variant="secondary"
                                 size="compact"
                                 loading={userActionLoading === u.id}
+                                disabled={userActionLoading !== null}
                                 onClick={() => handleSendVerification(u.id)}
-                                className="text-[11px]"
+                                className="text-[11px] disabled:opacity-50"
+                                title="Resend email verification link without cooldown"
                               >
                                 Send Verify
                               </Button>
@@ -1767,7 +1775,7 @@ export function AdminPackagesClient() {
                     <div>
                       <span className="text-ink-tertiary text-[11px] block">Emails Sent:</span>
                       <span className="font-semibold text-ink">
-                        {userDetail.verificationEmailCount ?? 0} of 3 maximum / 24h
+                        {userDetail.verificationEmailCount ?? 0} time(s) (Unrestricted Admin Resend)
                       </span>
                     </div>
                     <div>
@@ -1818,11 +1826,12 @@ export function AdminPackagesClient() {
                         variant="secondary"
                         size="compact"
                         loading={userActionLoading === userDetail.id}
+                        disabled={userActionLoading !== null}
                         onClick={async () => {
                           await handleSendVerification(userDetail.id);
                           openUserDetail(userDetail.id);
                         }}
-                        className="text-xs"
+                        className="text-xs disabled:opacity-50"
                       >
                         Resend Verification Email
                       </Button>
