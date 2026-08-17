@@ -12,5 +12,5 @@ export async function POST(req: Request) {
   if ("error" in result) return NextResponse.json({ valid: false, error: result.error });
 
   const prices = applyCouponDiscount(pkg, result.coupon);
-  return NextResponse.json({ valid: true, ...prices });
+  return NextResponse.json(prices);
 }

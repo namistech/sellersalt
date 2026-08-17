@@ -15,6 +15,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const pkg = await prisma.package.findUnique({ where: { id: packageId } });
   if (!pkg) return NextResponse.json({ error: "Package not found." }, { status: 404 });
 
-  const updated = await prisma.organization.update({ where: { id }, data: { packageId } });
-  return NextResponse.json({ organization: updated });
+  const [updated] = await prisma.$transaction([
+    prisma.organization.update({ where: { id }, data: { packageId } }),
+    prisma.subscription.upsert({
+      where: { organizationId: id },
+      create: {
+        organizationId: id,
+        packageId: pkg.id,
+        provider: "MANUAL",
+        providerSubscriptionId: "admin_provisioned",
+        status: "ACTIVE",
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      },
+      update: {
+        packageId: pkg.id,
+        status: "ACTIVE",
+        provider: "MANUAL",
+        providerSubscriptionId: "admin_provisioned",
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      },
+    }),
+  ]);
+
+  return NextResponse.json({ organization: updated, subscriptionActivated: true });
 }

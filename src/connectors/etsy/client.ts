@@ -307,6 +307,7 @@ export function createEtsyClient(
         sort_on: "score",
         sort_order: "desc",
         limit: 50,
+        includes: "Images",
         ...params,
       };
       return request<{ count: number; results: any[] }>(
@@ -320,7 +321,7 @@ export function createEtsyClient(
     getListing: (listingId, options) =>
       request(
         `/listings/${listingId}`,
-        {},
+        { includes: "Images,Shop" },
         ETSY_CACHE_TTL.LISTING_DETAIL,
         options
       ),
@@ -360,7 +361,7 @@ export function createEtsyClient(
     getShopListings: (shopId, limit = 50, options) =>
       request(
         `/shops/${shopId}/listings/active`,
-        { limit, sort_on: "score", sort_order: "desc" },
+        { limit, sort_on: "score", sort_order: "desc", includes: "Images" },
         ETSY_CACHE_TTL.LISTING_DETAIL,
         options
       ),

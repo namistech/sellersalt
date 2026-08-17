@@ -525,7 +525,7 @@ export function ShopDetailClient({
             </div>
 
             {/* Top Quick Actions */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant={tracked ? "secondary" : "primary"}
                 onClick={handleToggleTrack}
@@ -534,11 +534,11 @@ export function ShopDetailClient({
               >
                 {tracked ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 mr-1.5 inline" /> 6h Surveillance Active
+                    <CheckCircle2 className="h-4 w-4 mr-1.5 inline" /> Shop Tracking Active
                   </>
                 ) : (
                   <>
-                    <Zap className="h-4 w-4 mr-1.5 inline" /> Spy on This Competitor
+                    <Zap className="h-4 w-4 mr-1.5 inline" /> Track This Shop
                   </>
                 )}
               </Button>
@@ -601,7 +601,7 @@ export function ShopDetailClient({
         verdictVariant={evaluatedScore.verdictVariant}
         provenance="SELLERSALT_SCORE"
         description={evaluatedScore.explanation}
-        actionLabel={tracked ? "Stop 6-Hour Surveillance" : "Start 6-Hour Surveillance"}
+        actionLabel={tracked ? "Stop Tracking Shop" : "Start Tracking Shop"}
         onAction={handleToggleTrack}
         sidePanel={
           <div className="space-y-3">
@@ -767,18 +767,18 @@ export function ShopDetailClient({
       </div>
 
       {/* ==================================================================== */}
-      {/* SECTION 5: 6-HOUR LONGITUDINAL SURVEILLANCE */}
+      {/* SECTION 5: SHOP TRACKING & LONGITUDINAL INTELLIGENCE */}
       {/* ==================================================================== */}
       {!tracked ? (
         <div className="p-8 rounded-2xl bg-[#0E8F5D] text-white shadow-lg text-center space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold mx-auto">
-            <TrendingUp className="h-3.5 w-3.5" /> Automated 6-Hour Surveillance
+            <TrendingUp className="h-3.5 w-3.5" /> Longitudinal Shop Tracking
           </div>
           <h2 className="text-2xl font-bold tracking-tight max-w-lg mx-auto">
-            Track {shopName}&apos;s sales &amp; catalog movements every 6 hours
+            Track {shopName}&apos;s sales &amp; catalog movements over time
           </h2>
           <p className="text-xs text-white/90 leading-relaxed max-w-md mx-auto">
-            SellerSalt will immediately capture the current snapshot and continue monitoring daily sales velocity, catalog additions, and review growth automatically.
+            SellerSalt records regular snapshots of this shop to reveal actual transaction velocity, price adjustments, and newly launched winning products.
           </p>
           <Button
             variant="secondary"
@@ -787,37 +787,88 @@ export function ShopDetailClient({
             onClick={handleToggleTrack}
             className="bg-white hover:bg-[#FAFAF8] text-[#0E8F5D] font-bold text-sm px-6 py-3 shadow-md border-0"
           >
-            ⚡ Spy on This Competitor
+            ⚡ Track This Shop
           </Button>
         </div>
       ) : (
-        <Card padding="lg" className="border-[#0E8F5D] bg-[#E7FAF1] shadow-xs space-y-4">
+        <Card padding="lg" className="border-[#0E8F5D] bg-[#E7FAF1] shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#0E8F5D] text-white text-xs font-bold">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Surveillance Active
+                <CheckCircle2 className="h-3.5 w-3.5" /> Shop Tracking Active
               </div>
               <h3 className="text-base font-bold text-ink mt-2">
-                Automated 6-Hour Surveillance Active for {shopName}
+                Longitudinal Tracking Active for {shopName}
               </h3>
               <p className="text-xs text-ink-secondary mt-0.5">
-                Snapshots captured every 6 hours to record sales velocity spikes and catalog additions.
+                Periodic snapshots record sales velocity deltas, price adjustments, and catalog expansions.
               </p>
             </div>
 
-            <Button
-              variant="secondary"
-              size="compact"
-              loading={tracking}
-              onClick={handleToggleTrack}
-              className="text-xs"
-            >
-              Stop Tracking
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={() => {
+                  const headers = [
+                    "Timestamp",
+                    "Shop Name",
+                    "Listing ID",
+                    "Listing Title",
+                    "Price USD [ACTUAL ETSY DATA]",
+                    "Daily Velocity [ESTIMATED]",
+                    "Opportunity Score [SELLERSALT SCORE]",
+                    "Tags Count",
+                    "Listing URL",
+                  ];
+                  const rows = sortedListings.map((l) => [
+                    new Date().toISOString(),
+                    `"${shopName.replace(/"/g, '""')}"`,
+                    l.listingId,
+                    `"${l.title.replace(/"/g, '""')}"`,
+                    l.price.toFixed(2),
+                    l.estDailySales.toFixed(1),
+                    l.opportunityScore,
+                    l.tags.length,
+                    `"${l.listingUrl}"`,
+                  ]);
+                  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+                  const encodedUri = encodeURI(csvContent);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", encodedUri);
+                  link.setAttribute("download", `${shopName.toLowerCase().replace(/\s+/g, "-")}-tracking-report.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="text-xs font-semibold bg-white border-line shadow-2xs"
+              >
+                📥 Export CSV
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="compact"
+                onClick={() => setShowGuide(!showGuide)}
+                className="text-xs font-semibold bg-white border-line shadow-2xs"
+              >
+                📊 Guide &amp; Report
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="compact"
+                loading={tracking}
+                onClick={handleToggleTrack}
+                className="text-xs"
+              >
+                Stop Tracking
+              </Button>
+            </div>
           </div>
 
           {latestSnapshot && (
-            <div className="p-3.5 rounded-xl bg-white border border-line grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-white border border-line grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
               <div>
                 <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Last Snapshot</span>
                 <span className="font-bold text-ink">{new Date(latestSnapshot.capturedAt).toLocaleString()}</span>
@@ -830,13 +881,17 @@ export function ShopDetailClient({
                 <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Active Listings</span>
                 <span className="font-bold text-ink tabular-nums">{latestSnapshot.activeListings}</span>
               </div>
+              <div>
+                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Data Provenance</span>
+                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+              </div>
             </div>
           )}
 
           {trendPoints.length >= 2 ? (
             <div className="p-4 rounded-xl bg-white border border-line space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink">6-Hour Longitudinal Sales Deltas</span>
+                <span className="text-xs font-bold text-ink">Observed Sales Movements Over Window</span>
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
               </div>
               <AreaChart
@@ -851,7 +906,7 @@ export function ShopDetailClient({
             <div className="p-3.5 rounded-xl bg-white/70 border border-[#0E8F5D]/20 text-xs text-ink-secondary flex items-center gap-2">
               <Clock className="h-4 w-4 text-[#0E8F5D] shrink-0" />
               <span>
-                Surveillance active — Initial snapshot captured. Continuous 6-hour cron surveillance will plot longitudinal sales movements as further snapshots are taken.
+                Tracking active — Initial baseline snapshot captured. Longitudinal comparisons will populate as periodic snapshots are recorded.
               </span>
             </div>
           )}

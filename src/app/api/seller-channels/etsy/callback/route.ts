@@ -8,18 +8,18 @@ import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { startSellerChannelSync } from "@/lib/queue";
 import { ETSY_TOKEN_URL, resolveEtsyShopId } from "@/seller-channels/etsy-seller";
 
-// Deliberately built from NEXTAUTH_URL, never from req.url/headers — see
-// the connect route (and the WooCommerce connect route) for why. This
-// MUST match the redirect_uri sent in the initial authorize request
-// exactly, or the token exchange fails.
-function appUrl(): string {
-  const url = process.env.NEXTAUTH_URL || process.env.APP_URL;
-  if (!url) throw new Error("NEXTAUTH_URL is required to build redirect URLs.");
-  return url.replace(/\/+$/, "");
-}
+import { resolveEtsyOAuthRedirectUri } from "@/services/connectors/etsy-oauth-helper";
 
 export async function GET(req: Request) {
-  const baseUrl = appUrl();
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+
+  const oauthConfig = resolveEtsyOAuthRedirectUri({
+    reqHost: host,
+    reqProto: proto,
+  });
+
+  const baseUrl = oauthConfig.baseUrl;
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
@@ -41,9 +41,7 @@ export async function GET(req: Request) {
 
   const clientId =
     (await getSetting("etsy_seller_client_id")) ||
-    process.env.ETSY_CLIENT_ID ||
-    process.env.ETSY_KEYSTRING ||
-    "";
+    oauthConfig.clientId;
 
   if (!clientId) {
     return NextResponse.redirect(new URL("/settings/channels?error=etsy_not_configured", baseUrl));
@@ -51,7 +49,7 @@ export async function GET(req: Request) {
 
   let accessToken: string, refreshToken: string, expiresIn: number;
   try {
-    const redirectUri = `${baseUrl}/api/seller-channels/etsy/callback`;
+    const redirectUri = oauthConfig.redirectUri;
     const tokenRes = await axios.post(ETSY_TOKEN_URL, {
       grant_type: "authorization_code",
       client_id: clientId,

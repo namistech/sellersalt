@@ -121,11 +121,20 @@ export async function POST(req: Request) {
 
   const orgDisplayName = organizationName || `${name || email.split("@")[0]}'s Workspace`;
 
+  const planKey = (body.planKey || body.plan || "STARTED").toUpperCase();
+  const packageId = body.packageId;
+
+  const targetPackage = packageId
+    ? await prisma.package.findUnique({ where: { id: packageId } })
+    : await prisma.package.findUnique({ where: { key: planKey } }) ||
+      await prisma.package.findFirst({ where: { key: "STARTED" } });
+
   const [org, newUser] = await prisma.$transaction(async (tx) => {
     const createdOrg = await tx.organization.create({
       data: {
         name: orgDisplayName,
-        plan: "FREE",
+        plan: (targetPackage?.key as any) || "STARTED",
+        packageId: targetPackage?.id,
       },
     });
 
@@ -145,6 +154,19 @@ export async function POST(req: Request) {
         role,
       },
     });
+
+    if (targetPackage) {
+      await tx.subscription.create({
+        data: {
+          organizationId: createdOrg.id,
+          packageId: targetPackage.id,
+          provider: "MANUAL",
+          providerSubscriptionId: "admin_provisioned",
+          status: "ACTIVE",
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
 
     return [createdOrg, createdUser];
   });

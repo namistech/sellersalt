@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { Coupon, Package } from "@prisma/client";
+import { resolveCouponBehavior, type ResolvedCouponEvaluation } from "@/services/billing/coupon-engine";
 
 export async function validateCoupon(rawCode: string): Promise<{ coupon: Coupon } | { error: string }> {
   const code = rawCode.trim().toUpperCase();
@@ -17,22 +18,21 @@ export async function validateCoupon(rawCode: string): Promise<{ coupon: Coupon 
 }
 
 /**
- * Coupon codes MUST NOT discount the $1 trial charge.
- * Coupon discounts apply only to the recurring monthly subscription amount.
+ * Evaluates commercial behavior (Type A Free Trial, Type B First Month Free, Type C Completely Free, Type D/E Discounts)
  */
 export function applyCouponDiscount(
-  pkg: Pick<Package, "priceUsd" | "trialPriceUsd">,
-  coupon: Pick<Coupon, "type" | "value">
-): { trialPriceUsd: number | null; priceUsd: number } {
-  const discount = (amount: number) => {
-    const discounted = coupon.type === "PERCENT" ? amount * (1 - coupon.value / 100) : amount - coupon.value;
-    return Math.max(0, Math.round(discounted * 100) / 100);
-  };
+  pkg: Pick<Package, "key" | "priceUsd" | "trialPriceUsd">,
+  coupon: Pick<Coupon, "code" | "type" | "value" | "isActive" | "expiresAt" | "maxRedemptions" | "redemptionCount">
+): ResolvedCouponEvaluation & { priceUsd: number } {
+  const resolved = resolveCouponBehavior(coupon, {
+    key: (pkg as any).key || "STARTED",
+    priceUsd: pkg.priceUsd,
+    trialPriceUsd: pkg.trialPriceUsd,
+  });
 
   return {
-    // Trial price is locked to exact plan trial price ($1.00 USD), never discounted
-    trialPriceUsd: pkg.trialPriceUsd ?? 1.0,
-    priceUsd: discount(pkg.priceUsd),
+    ...resolved,
+    priceUsd: resolved.firstPeriodPriceUsd,
   };
 }
 
