@@ -146,6 +146,8 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Profile Form States
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingWorkspace, setIsEditingWorkspace] = useState(false);
   const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
@@ -333,6 +335,8 @@ export default function ProfilePage() {
 
       setOriginalEmail(email.trim());
       setCurrentPasswordForEmail("");
+      setIsEditingProfile(false);
+      setIsEditingWorkspace(false);
       setProfileMessage("Profile and workspace settings saved successfully.");
       setProfileData((prev) =>
         prev
@@ -790,90 +794,204 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      {/* Profile & Workspace Information Form Card */}
-      <Card padding="lg" className="border-line shadow-xs bg-white space-y-6">
-        <div>
-          <Heading as="h2" size="h4">
-            Profile &amp; Workspace Information
-          </Heading>
-          <Text size="body-sm" color="secondary" className="mt-0.5">
-            Update your public display name, organization title, and login credentials.
-          </Text>
+      {/* 1. Personal Profile Card (Read-Only Display by Default) */}
+      <Card padding="lg" className="border-line shadow-xs bg-white space-y-5">
+        <div className="flex items-center justify-between border-b border-line pb-3">
+          <div>
+            <Heading as="h2" size="h4">
+              Personal Identity &amp; Profile
+            </Heading>
+            <Text size="body-sm" color="secondary" className="mt-0.5">
+              Your public display name, email, and authentication credentials.
+            </Text>
+          </div>
+          {!isEditingProfile && (
+            <Button
+              variant="secondary"
+              size="compact"
+              onClick={() => setIsEditingProfile(true)}
+              className="text-xs font-semibold"
+            >
+              <Pencil className="h-3 w-3 mr-1" /> Edit Profile
+            </Button>
+          )}
         </div>
 
         {profileMessage && <Alert variant="success">{profileMessage}</Alert>}
         {profileError && <Alert variant="danger">{profileError}</Alert>}
 
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Input
-                label="Display / Profile Name"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Sarah Jenkins"
-              />
-              <span className="text-[11px] text-ink-tertiary mt-1 block">
-                Visible across team workspaces and header navigation.
-              </span>
+        {!isEditingProfile ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Display Name</div>
+              <div className="font-extrabold text-sm text-ink">{name || "—"}</div>
+              <div className="text-[11px] text-ink-tertiary">Shown in team channels and header bar.</div>
             </div>
 
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Login Email</div>
+              <div className="font-extrabold text-sm text-ink flex items-center gap-2">
+                <span>{email}</span>
+                {profileData?.emailVerified && <Badge variant="success" className="text-[10px]">Verified</Badge>}
+              </div>
+              <div className="text-[11px] text-ink-tertiary">Primary account authentication address.</div>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Input
+                  label="Display / Profile Name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Sarah Jenkins"
+                />
+              </div>
+
+              <div>
+                <Input
+                  type="email"
+                  label="Account Login Email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@domain.com"
+                />
+              </div>
+            </div>
+
+            {isEmailChanged && (
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
+                <div className="text-xs font-bold text-amber-900">
+                  Confirm Email Change
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  To protect your account, enter your current password to confirm updating your login address.
+                </p>
+                <Input
+                  type="password"
+                  label="Current Password"
+                  required
+                  value={currentPasswordForEmail}
+                  onChange={(e) => setCurrentPasswordForEmail(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={() => {
+                  setName(profileData?.name || "");
+                  setEmail(profileData?.email || "");
+                  setIsEditingProfile(false);
+                }}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="compact"
+                loading={profileSaving}
+                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold px-4"
+              >
+                Save Profile
+              </Button>
+            </div>
+          </form>
+        )}
+      </Card>
+
+      {/* 2. Workspace & Organization Card (Read-Only Display by Default) */}
+      <Card padding="lg" className="border-line shadow-xs bg-white space-y-5">
+        <div className="flex items-center justify-between border-b border-line pb-3">
+          <div>
+            <Heading as="h2" size="h4">
+              Workspace &amp; Team Details
+            </Heading>
+            <Text size="body-sm" color="secondary" className="mt-0.5">
+              Your primary business entity name and multi-tenant organization.
+            </Text>
+          </div>
+          {!isEditingWorkspace && (
+            <Button
+              variant="secondary"
+              size="compact"
+              onClick={() => setIsEditingWorkspace(true)}
+              className="text-xs font-semibold"
+            >
+              <Pencil className="h-3 w-3 mr-1" /> Edit Workspace
+            </Button>
+          )}
+        </div>
+
+        {!isEditingWorkspace ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Workspace Title</div>
+              <div className="font-extrabold text-sm text-ink">{organizationName || "—"}</div>
+              <div className="text-[11px] text-ink-tertiary">Organization workspace name.</div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Subscription Tier</div>
+              <div className="font-extrabold text-sm text-[#0E8F5D]">{profileData?.planName || "Starter"}</div>
+              <div className="text-[11px] text-ink-tertiary">Active plan entitlements.</div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Your Role</div>
+              <div className="font-extrabold text-sm text-ink">{profileData?.role || "OWNER"}</div>
+              <div className="text-[11px] text-ink-tertiary">Workspace permission level.</div>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSaveProfile} className="space-y-4">
             <div>
               <Input
                 label="Organization / Workspace Title"
+                required
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
                 placeholder="e.g. Acme Handmade Studio"
               />
               <span className="text-[11px] text-ink-tertiary mt-1 block">
-                Your workspace team brand name.
+                Brand title shown on team reports and exports.
               </span>
             </div>
-          </div>
 
-          <div>
-            <Input
-              type="email"
-              label="Account Login Email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@domain.com"
-            />
-          </div>
-
-          {isEmailChanged && (
-            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-2">
-              <div className="text-xs font-bold text-amber-900">
-                Confirm Email Change
-              </div>
-              <p className="text-[11px] text-amber-800">
-                To protect your account, enter your current password to confirm updating your login address.
-              </p>
-              <Input
-                type="password"
-                label="Current Password"
-                required
-                value={currentPasswordForEmail}
-                onChange={(e) => setCurrentPasswordForEmail(e.target.value)}
-                placeholder="••••••••"
-              />
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={() => {
+                  setOrganizationName(profileData?.organizationName || "");
+                  setIsEditingWorkspace(false);
+                }}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                size="compact"
+                loading={profileSaving}
+                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold px-4"
+              >
+                Save Workspace
+              </Button>
             </div>
-          )}
-
-          <div className="flex items-center justify-end pt-2">
-            <Button
-              type="submit"
-              variant="primary"
-              size="default"
-              loading={profileSaving}
-              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold px-5"
-            >
-              Save Profile Changes
-            </Button>
-          </div>
-        </form>
+          </form>
+        )}
       </Card>
 
       {/* Notification Preferences */}

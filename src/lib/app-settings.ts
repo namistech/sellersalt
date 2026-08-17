@@ -7,9 +7,20 @@ import { encrypt, decrypt } from "./encryption";
 export const SETTING_DEFINITIONS = [
   // Application Branding & Identity
   { key: "app_name", label: "Application Name", isSecret: false },
+  { key: "app_url", label: "Application Canonical Base URL", isSecret: false },
   { key: "app_logo_url", label: "App Logo (URL)", isSecret: false },
   { key: "app_favicon_url", label: "App Favicon / Icon (URL)", isSecret: false },
+  { key: "app_icon_square_url", label: "Square App Icon (URL)", isSecret: false },
+  { key: "extension_icon_url", label: "Browser Extension Icon (URL)", isSecret: false },
   { key: "support_email", label: "Public Support Email", isSecret: false },
+  { key: "default_timezone", label: "Default System Timezone", isSecret: false },
+  { key: "default_currency", label: "Default Currency Code", isSecret: false },
+  { key: "app_environment", label: "Deployment Environment Descriptor", isSecret: false },
+  { key: "maintenance_mode", label: "Maintenance Mode Active (true/false)", isSecret: false },
+  { key: "registration_enabled", label: "User Registration Enabled (true/false)", isSecret: false },
+  { key: "free_plan_enabled", label: "Free Explorer Plan Active (true/false)", isSecret: false },
+  { key: "default_signup_plan", label: "Default Signup Plan Key", isSecret: false },
+  { key: "default_org_behavior", label: "Default Organization Creation Behavior", isSecret: false },
   { key: "assistant_name", label: "SaltBot Assistant Display Name", isSecret: false },
   { key: "assistant_logo_url", label: "SaltBot Assistant Logo (URL)", isSecret: false },
 
@@ -27,6 +38,49 @@ export const SETTING_DEFINITIONS = [
   { key: "auth_page_image_position_x", label: "Login page image horizontal position (0-100)", isSecret: false },
   { key: "auth_page_image_position_y", label: "Login page image vertical position (0-100)", isSecret: false },
 
+  // Google OAuth Credentials
+  { key: "google_client_id", label: "Google OAuth Client ID", isSecret: false },
+  { key: "google_client_secret", label: "Google OAuth Client Secret", isSecret: true },
+
+  // Etsy Integration Credentials
+  { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
+  { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
+  { key: "etsy_redirect_uri", label: "Etsy OAuth Callback Redirect URI Override", isSecret: false },
+  { key: "etsy_oauth_scopes", label: "Etsy OAuth Requested Scopes Override", isSecret: false },
+
+  // Amazon SP-API Credentials
+  { key: "amazon_client_id", label: "Amazon SP-API Client ID (LWA)", isSecret: false },
+  { key: "amazon_client_secret", label: "Amazon SP-API Client Secret (LWA)", isSecret: true },
+  { key: "amazon_seller_id", label: "Amazon Seller ID / Merchant Token", isSecret: false },
+  { key: "amazon_region", label: "Amazon SP-API Marketplace Region (e.g. NA, EU, FE)", isSecret: false },
+
+  // Shopify Channel Credentials
+  { key: "shopify_client_id", label: "Shopify Client ID / API Key", isSecret: false },
+  { key: "shopify_client_secret", label: "Shopify Client Secret", isSecret: true },
+  { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
+  { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
+
+  // TikTok Shop Channel Credentials
+  { key: "tiktok_app_key", label: "TikTok Shop App Key", isSecret: false },
+  { key: "tiktok_app_secret", label: "TikTok Shop App Secret", isSecret: true },
+  { key: "tiktok_region", label: "TikTok Shop Region (e.g. US, UK, SEA)", isSecret: false },
+
+  // eBay Channel Credentials
+  { key: "ebay_app_id", label: "eBay App ID (Client ID)", isSecret: false },
+  { key: "ebay_cert_id", label: "eBay Cert ID (Client Secret)", isSecret: true },
+  { key: "ebay_dev_id", label: "eBay Dev ID", isSecret: false },
+  { key: "ebay_ru_name", label: "eBay RuName (Redirect URL Name)", isSecret: false },
+
+  // WooCommerce Channel Credentials
+  { key: "woocommerce_store_url", label: "WooCommerce Store Base URL", isSecret: false },
+  { key: "woocommerce_consumer_key", label: "WooCommerce Consumer Key", isSecret: false },
+  { key: "woocommerce_consumer_secret", label: "WooCommerce Consumer Secret", isSecret: true },
+  { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
+
+  // Walmart Marketplace Credentials
+  { key: "walmart_client_id", label: "Walmart Marketplace Client ID", isSecret: false },
+  { key: "walmart_client_secret", label: "Walmart Marketplace Client Secret", isSecret: true },
+
   // SellerSalt University & Education Portal
   { key: "university_enabled", label: "Show SellerSalt University in Navigation (true/false)", isSecret: false },
   { key: "university_url", label: "SellerSalt University Destination URL", isSecret: false },
@@ -35,26 +89,6 @@ export const SETTING_DEFINITIONS = [
   { key: "announcement_urgent_active", label: "Urgent Top Announcement Banner Active (true/false)", isSecret: false },
   { key: "announcement_urgent_text", label: "Urgent Top Announcement Banner Text", isSecret: false },
   { key: "announcement_urgent_link", label: "Urgent Top Announcement Link (URL)", isSecret: false },
-
-  // Etsy Integration Credentials
-  { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
-  { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
-  { key: "etsy_redirect_uri", label: "Etsy OAuth Callback Redirect URI Override", isSecret: false },
-  { key: "etsy_oauth_scopes", label: "Etsy OAuth Requested Scopes Override", isSecret: false },
-
-  // SaltBot LLM provider credentials (OpenRouter/NVIDIA/Gemini/OpenAI) used
-  // to live here as generic AppSetting rows. Superseded by the dedicated
-  // AiProvider table (migration 20260815203713_add_ai_provider_model_
-  // registry, which also migrated any already-configured key over) — that
-  // table also tracks status/priority/model selection, which a plain
-  // key-value row can't. See src/lib/ai-providers.ts.
-
-  // Secondary Channel Credentials
-  { key: "shopify_client_id", label: "Shopify Client ID", isSecret: false },
-  { key: "shopify_client_secret", label: "Shopify Client Secret", isSecret: true },
-  { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
-  { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
-  { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
 
   // Object Storage (avatars and other uploads). Without this, uploads fall
   // back to local container disk, which does NOT survive a redeploy —

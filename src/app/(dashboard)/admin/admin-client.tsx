@@ -44,6 +44,13 @@ import {
 } from "@/components/ui";
 import { Dialog } from "@/components/ui/Dialog";
 import { checkPasswordStrength } from "@/lib/password-policy";
+import { AdminSidebar, type AdminTabId } from "./components/AdminSidebar";
+import { GeneralAppSettingsView } from "./views/GeneralAppSettingsView";
+import { IntegrationsView } from "./views/IntegrationsView";
+import { StorageMediaView } from "./views/StorageMediaView";
+import { UserProvisioningView } from "./views/UserProvisioningView";
+import { SecurityAbuseView } from "./views/SecurityAbuseView";
+import { SystemHealthView } from "./views/SystemHealthView";
 
 interface AdminMetrics {
   totalUsers: number;
@@ -240,9 +247,7 @@ interface EmailTemplateSummary {
 }
 
 export function AdminPackagesClient() {
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "users" | "orgs" | "packages" | "coupons" | "payments" | "ai" | "email" | "branding"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -925,14 +930,42 @@ export function AdminPackagesClient() {
 
   async function handleSaveSetting(key: string) {
     const value = settingDrafts[key] ?? "";
+    await handleSaveSettingDirect(key, value);
+  }
+
+  async function handleSaveSettingDirect(key: string, value: string): Promise<boolean> {
     setSettingSaving(key);
-    await fetch("/api/admin/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, value }),
-    });
-    setSettingSaving(null);
-    loadAll();
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+      setSettingSaving(null);
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      setSettingSaving(null);
+      return false;
+    }
+  }
+
+  async function handleUploadGenericImage(file: File): Promise<string | null> {
+    try {
+      const formData = new FormData();
+      formData.append("key", "app_logo_url");
+      formData.append("file", file);
+      const res = await fetch("/api/admin/settings/upload-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed.");
+      await loadAll();
+      return data.url as string;
+    } catch {
+      return null;
+    }
   }
 
   async function handleUploadImageSetting(key: string, file: File) {
@@ -1034,36 +1067,19 @@ export function AdminPackagesClient() {
         </Button>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex overflow-x-auto gap-2 border-b border-line pb-2">
-        {[
-          { id: "overview", label: "Operations Overview" },
-          { id: "users", label: `Users (${users.length})` },
-          { id: "orgs", label: `Workspaces (${orgs.length})` },
-          { id: "packages", label: "Packages & Plans" },
-          { id: "coupons", label: "Coupons" },
-          { id: "payments", label: "Payment Gateways" },
-          { id: "ai", label: "AI Providers" },
-          { id: "email", label: "Email & Templates" },
-          { id: "branding", label: "App Branding & SEO" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActiveTab(t.id as any)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === t.id
-                ? "bg-[#141B16] text-white shadow-xs"
-                : "bg-white hover:bg-[#F4F3EF] text-ink border border-line"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* 2-Column Responsive Layout with AdminSidebar */}
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <AdminSidebar
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          userCount={users.length}
+          orgCount={orgs.length}
+          unverifiedCount={needsAttentionUnverified.length}
+        />
 
-      {/* 1. OPERATIONS OVERVIEW */}
-      {activeTab === "overview" && (
+        <div className="flex-1 min-w-0 w-full space-y-6">
+          {/* 1. OPERATIONS OVERVIEW */}
+          {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Level 1 — Needs Attention / Operations Banner */}
           <div className="rounded-2xl border border-[#2A362D] bg-[#141B16] text-white p-6 shadow-md">
@@ -2772,6 +2788,81 @@ export function AdminPackagesClient() {
           </div>
         </Card>
       )}
+
+      {/* 2. DEDICATED APP SETTINGS */}
+      {activeTab === "app-settings" && (
+        <GeneralAppSettingsView
+          settings={siteSettings}
+          onSaveSetting={handleSaveSettingDirect}
+          onUploadImage={handleUploadGenericImage}
+        />
+      )}
+
+      {/* 3. MEDIA STORAGE LIBRARY */}
+      {activeTab === "storage" && (
+        <StorageMediaView
+          onUploadAsset={handleUploadGenericImage}
+          activeLogoUrl={settingDrafts["app_logo_url"] || siteSettings.find((s: SiteSettingRow) => s.key === "app_logo_url")?.value}
+          activeFaviconUrl={settingDrafts["app_favicon_url"] || siteSettings.find((s: SiteSettingRow) => s.key === "app_favicon_url")?.value}
+          activeAuthImageUrl={settingDrafts["auth_page_image_url"] || siteSettings.find((s: SiteSettingRow) => s.key === "auth_page_image_url")?.value}
+        />
+      )}
+
+      {/* 4. USER PROVISIONING */}
+      {activeTab === "user-provisioning" && (
+        <UserProvisioningView
+          packages={packages}
+          onUserCreated={loadAll}
+        />
+      )}
+
+      {/* 5. INTEGRATION HUB */}
+      {activeTab === "integrations" && (
+        <IntegrationsView
+          settings={siteSettings}
+          onSaveSetting={handleSaveSettingDirect}
+          appBaseUrl={typeof window !== "undefined" ? window.location.origin : "https://sellersalt.com"}
+        />
+      )}
+
+      {/* 6. SECURITY & ABUSE TELEMETRY */}
+      {activeTab === "security" && (
+        <SecurityAbuseView
+          auditLogs={recentAuditLogs}
+          onRefreshAuditLogs={loadAll}
+          disposableDomainsVal={settingDrafts["disposable_email_domains_custom"] || siteSettings.find((s: SiteSettingRow) => s.key === "disposable_email_domains_custom")?.value || ""}
+          allowedFreeDomainsVal={settingDrafts["free_plan_allowed_domains_custom"] || siteSettings.find((s: SiteSettingRow) => s.key === "free_plan_allowed_domains_custom")?.value || ""}
+          maxFreePerBusinessVal={settingDrafts["max_free_accounts_per_business_domain"] || siteSettings.find((s: SiteSettingRow) => s.key === "max_free_accounts_per_business_domain")?.value || "2"}
+          onSaveSetting={handleSaveSettingDirect}
+        />
+      )}
+
+      {/* 7. AUDIT LOGS */}
+      {activeTab === "audit-logs" && (
+        <SecurityAbuseView
+          auditLogs={recentAuditLogs}
+          onRefreshAuditLogs={loadAll}
+          disposableDomainsVal={settingDrafts["disposable_email_domains_custom"] || siteSettings.find((s: SiteSettingRow) => s.key === "disposable_email_domains_custom")?.value || ""}
+          allowedFreeDomainsVal={settingDrafts["free_plan_allowed_domains_custom"] || siteSettings.find((s: SiteSettingRow) => s.key === "free_plan_allowed_domains_custom")?.value || ""}
+          maxFreePerBusinessVal={settingDrafts["max_free_accounts_per_business_domain"] || siteSettings.find((s: SiteSettingRow) => s.key === "max_free_accounts_per_business_domain")?.value || "2"}
+          onSaveSetting={handleSaveSettingDirect}
+        />
+      )}
+
+      {/* 8. SYSTEM HEALTH & DIAGNOSTICS */}
+      {(activeTab === "diagnostics" || activeTab === "storage-config") && (
+        <SystemHealthView
+          s3BucketVal={settingDrafts["s3_bucket"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_bucket")?.value || ""}
+          s3RegionVal={settingDrafts["s3_region"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_region")?.value || ""}
+          s3EndpointVal={settingDrafts["s3_endpoint"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_endpoint")?.value || ""}
+          s3PublicBaseVal={settingDrafts["s3_public_base_url"] || siteSettings.find((s: SiteSettingRow) => s.key === "s3_public_base_url")?.value || ""}
+          hasS3Secret={Boolean(siteSettings.find((s: SiteSettingRow) => s.key === "s3_secret_access_key")?.hasValue)}
+          onSaveSetting={handleSaveSettingDirect}
+        />
+      )}
+
+        </div>
+      </div>
     </div>
   );
 }
