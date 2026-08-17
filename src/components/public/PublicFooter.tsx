@@ -86,7 +86,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <Link href="/checkout?plan=PRO" className="hover:text-[#141B16] transition-colors">
-                  Start 3-Day Trial ($1)
+                  Choose a Plan
                 </Link>
               </li>
               <li>

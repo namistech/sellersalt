@@ -20,9 +20,8 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-[#0E8F5D] text-white font-bold flex items-center justify-center text-base shadow-xs group-hover:bg-[#0C7A52] transition-colors">
-            S
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/icon-mark.png" alt="" className="w-8 h-8" />
           <span className="font-extrabold text-lg tracking-tight text-[#141B16]">
             SellerSalt
           </span>
@@ -93,7 +92,7 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
               </Link>
               <Link href="/checkout?plan=PRO">
                 <Button variant="primary" size="compact" className="text-xs px-3.5 py-1.5 font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs">
-                  Start $1 Trial →
+                  Get Started →
                 </Button>
               </Link>
             </>
@@ -169,7 +168,7 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
                 </Link>
                 <Link href="/checkout?plan=PRO" onClick={() => setMobileOpen(false)}>
                   <Button variant="primary" size="default" fullWidth className="bg-[#141B16] text-white">
-                    Start $1 Trial
+                    Get Started
                   </Button>
                 </Link>
               </>

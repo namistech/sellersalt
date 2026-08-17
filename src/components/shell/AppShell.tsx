@@ -42,6 +42,16 @@ export function AppShell({ context, notifications: initialNotifications, searchR
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(context.organization.id);
   const [urgentBanner, setUrgentBanner] = useState<AnnouncementItem | null>(null);
   const [allNotifications, setAllNotifications] = useState<NotificationItem[]>(initialNotifications);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/settings/public")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.settings?.app_logo_url) setLogoUrl(d.settings.app_logo_url);
+      })
+      .catch(() => {});
+  }, []);
 
   // Load announcements & notifications
   useEffect(() => {
@@ -83,6 +93,32 @@ export function AppShell({ context, notifications: initialNotifications, searchR
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "dismiss", announcementId: bannerId }),
+      });
+    } catch {
+      // Non-blocking
+    }
+  }
+
+  async function handleMarkNotificationRead(id: string) {
+    setAllNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try {
+      await fetch("/api/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "read", announcementId: id }),
+      });
+    } catch {
+      // Non-blocking — local state already reflects the intent
+    }
+  }
+
+  async function handleMarkAllNotificationsRead() {
+    setAllNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      await fetch("/api/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "markAllRead" }),
       });
     } catch {
       // Non-blocking
@@ -135,6 +171,7 @@ export function AppShell({ context, notifications: initialNotifications, searchR
       <Sidebar
         groups={groups}
         organizationName={context.organization.name}
+        logoUrl={logoUrl}
         workspaceSwitcher={workspaceSwitcher}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
@@ -186,7 +223,13 @@ export function AppShell({ context, notifications: initialNotifications, searchR
       </div>
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} results={searchResults} />
-      <NotificationCenter open={notificationsOpen} onClose={() => setNotificationsOpen(false)} notifications={allNotifications} />
+      <NotificationCenter
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        notifications={allNotifications}
+        onMarkRead={handleMarkNotificationRead}
+        onMarkAllRead={handleMarkAllNotificationsRead}
+      />
       <SaltBot open={assistantOpen} onOpenChange={setAssistantOpen} />
     </div>
   );

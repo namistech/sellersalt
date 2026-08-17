@@ -7,22 +7,22 @@ import { HelpCircle } from "lucide-react";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "Pricing Plans & $1 Trial — Etsy Intelligence Platform | SellerSalt",
+  title: "Pricing Plans — Etsy Intelligence Platform | SellerSalt",
   description:
-    "Explore transparent pricing plans for SellerSalt's Etsy research engine, Opportunity Radar, and competitor tracking. Start with a 3-day trial for $1.00.",
+    "Explore transparent pricing plans for SellerSalt's Etsy research engine, Opportunity Radar, and competitor tracking.",
   alternates: { canonical: `${SITE_URL}/pricing` },
   openGraph: {
     type: "website",
     url: `${SITE_URL}/pricing`,
-    title: "Pricing Plans & $1 Trial — Etsy Intelligence Platform | SellerSalt",
-    description: "Start tracking top-selling Etsy shops and product opportunities for $1.",
+    title: "Pricing Plans — Etsy Intelligence Platform | SellerSalt",
+    description: "Track top-selling Etsy shops and product opportunities with SellerSalt.",
   },
 };
 
 const FAQ_ITEMS = [
   {
-    q: "How does the 3-day trial work?",
-    a: "You can test all Pro features for 3 days for just $1.00 USD. If you decide to keep your subscription, it will automatically transition to the standard monthly rate.",
+    q: "How does billing work?",
+    a: "Plans are billed monthly (or annually at a discount) at the price shown on this page. Your subscription renews automatically until you cancel.",
   },
   {
     q: "Can I cancel anytime?",

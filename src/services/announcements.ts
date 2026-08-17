@@ -1,4 +1,13 @@
 // System Announcements & Notification Center Service
+//
+// Announcement *content* is a small in-code list (no admin authoring UI
+// persists new ones across a restart yet — adminCreateAnnouncement mutates
+// this in-memory array, same as before). Read/dismissed *state* is real:
+// persisted per-user in the `AnnouncementRead` table so it survives
+// restarts/redeploys and is correctly isolated per user, instead of the
+// previous in-memory Map that reset on every deploy.
+
+import { prisma } from "@/lib/db";
 
 export type AnnouncementPriority = "URGENT" | "NORMAL";
 export type AnnouncementPlacement = "BANNER" | "NOTIFICATIONS" | "BOTH";
@@ -31,14 +40,10 @@ let ANNOUNCEMENTS_STORE: AnnouncementItem[] = [
   },
 ];
 
-// User dismissal store: userId -> Set of announcementIds
-const DISMISSED_STORE: Map<string, Set<string>> = new Map();
-
 export async function getActiveAnnouncements(userId?: string): Promise<{
   banner: AnnouncementItem | null;
   notifications: AnnouncementItem[];
 }> {
-  const userDismissed = userId ? DISMISSED_STORE.get(userId) || new Set() : new Set();
   const now = Date.now();
 
   const active = ANNOUNCEMENTS_STORE.filter((a) => {
@@ -47,30 +52,61 @@ export async function getActiveAnnouncements(userId?: string): Promise<{
     return true;
   });
 
+  const reads = userId
+    ? await prisma.announcementRead.findMany({
+        where: { userId, announcementId: { in: active.map((a) => a.id) } },
+        select: { announcementId: true },
+      })
+    : [];
+  const readIds = new Set(reads.map((r: { announcementId: string }) => r.announcementId));
+
   const banner =
     active.find(
-      (a) =>
-        (a.placement === "BANNER" || a.placement === "BOTH") &&
-        a.priority === "URGENT" &&
-        !userDismissed.has(a.id)
+      (a) => (a.placement === "BANNER" || a.placement === "BOTH") && a.priority === "URGENT" && !readIds.has(a.id)
     ) || null;
 
   const notifications = active
     .filter((a) => a.placement === "NOTIFICATIONS" || a.placement === "BOTH")
     .map((a) => ({
       ...a,
-      isDismissed: userDismissed.has(a.id),
+      isDismissed: readIds.has(a.id),
     }))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return { banner, notifications };
 }
 
-export async function dismissAnnouncement(announcementId: string, userId: string): Promise<void> {
-  if (!DISMISSED_STORE.has(userId)) {
-    DISMISSED_STORE.set(userId, new Set());
-  }
-  DISMISSED_STORE.get(userId)!.add(announcementId);
+export async function markAnnouncementRead(announcementId: string, userId: string): Promise<void> {
+  await prisma.announcementRead.upsert({
+    where: { userId_announcementId: { userId, announcementId } },
+    create: { userId, announcementId },
+    update: {},
+  });
+}
+
+// Backward-compatible alias — "dismiss" and "mark read" are the same
+// underlying action for this announcement-backed notification center.
+export const dismissAnnouncement = markAnnouncementRead;
+
+export async function markAllAnnouncementsRead(userId: string): Promise<void> {
+  const now = Date.now();
+  const activeIds = ANNOUNCEMENTS_STORE.filter((a) => {
+    if (!a.isActive) return false;
+    if (a.expiresAt && new Date(a.expiresAt).getTime() < now) return false;
+    return true;
+  }).map((a) => a.id);
+
+  if (activeIds.length === 0) return;
+
+  await prisma.$transaction(
+    activeIds.map((announcementId) =>
+      prisma.announcementRead.upsert({
+        where: { userId_announcementId: { userId, announcementId } },
+        create: { userId, announcementId },
+        update: {},
+      })
+    )
+  );
 }
 
 export async function adminCreateAnnouncement(params: {

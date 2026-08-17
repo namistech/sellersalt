@@ -30,6 +30,7 @@ import {
   Fingerprint,
   Clock,
   Key,
+  Upload,
 } from "lucide-react";
 import {
   Card,
@@ -209,6 +210,18 @@ interface AiProviderRow {
   models: AiModelRow[];
 }
 
+// Keeps this list in sync with the server-side allowlist in
+// src/app/api/admin/settings/upload-image/route.ts — only these settings
+// get an "Upload" affordance instead of a plain URL field.
+const IMAGE_SETTING_KEYS = [
+  "app_logo_url",
+  "app_favicon_url",
+  "assistant_logo_url",
+  "seo_og_image_url",
+  "auth_page_logo_url",
+  "auth_page_image_url",
+];
+
 interface SiteSettingRow {
   key: string;
   label: string;
@@ -258,6 +271,8 @@ export function AdminPackagesClient() {
   const [siteSettings, setSiteSettings] = useState<SiteSettingRow[]>([]);
   const [settingDrafts, setSettingDrafts] = useState<Record<string, string>>({});
   const [settingSaving, setSettingSaving] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState<string | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<Record<string, string>>({});
 
   // Email Templates & Testing
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplateSummary[]>([]);
@@ -914,6 +929,25 @@ export function AdminPackagesClient() {
     });
     setSettingSaving(null);
     loadAll();
+  }
+
+  async function handleUploadImageSetting(key: string, file: File) {
+    setImageUploading(key);
+    setImageUploadError((prev) => ({ ...prev, [key]: "" }));
+    try {
+      const formData = new FormData();
+      formData.append("key", key);
+      formData.append("file", file);
+      const res = await fetch("/api/admin/settings/upload-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed.");
+      setSettingDrafts((prev) => ({ ...prev, [key]: data.url }));
+      await loadAll();
+    } catch (err: any) {
+      setImageUploadError((prev) => ({ ...prev, [key]: err.message || "Upload failed." }));
+    } finally {
+      setImageUploading(null);
+    }
   }
 
   async function handleSendTestEmail() {
@@ -2628,33 +2662,104 @@ export function AdminPackagesClient() {
           </div>
 
           <div className="divide-y divide-line-subtle">
-            {siteSettings.map((s) => (
-              <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="min-w-0 sm:w-1/3">
-                  <div className="font-bold text-xs text-ink">{s.label}</div>
-                  <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
-                </div>
+            {siteSettings.map((s) => {
+              const isImageSetting = IMAGE_SETTING_KEYS.includes(s.key);
+              const isPositionSetting = s.key === "auth_page_image_position_x" || s.key === "auth_page_image_position_y";
+              const currentValue = settingDrafts[s.key] ?? "";
 
-                <div className="flex items-center gap-2 flex-1">
-                  <Input
-                    type={s.isSecret ? "password" : "text"}
-                    value={settingDrafts[s.key] ?? ""}
-                    onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
-                    placeholder={s.isSecret && s.hasValue ? "••••••••" : `Enter ${s.label}`}
-                    className="text-xs flex-1"
-                  />
-                  <Button
-                    variant="secondary"
-                    size="compact"
-                    loading={settingSaving === s.key}
-                    onClick={() => handleSaveSetting(s.key)}
-                    className="text-xs shrink-0"
-                  >
-                    Save
-                  </Button>
+              if (isPositionSetting) {
+                const sliderValue = Number(currentValue) || 50;
+                return (
+                  <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0 sm:w-1/3">
+                      <div className="font-bold text-xs text-ink">{s.label}</div>
+                      <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-1">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={sliderValue}
+                        onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
+                        className="flex-1 accent-[#0E8F5D]"
+                      />
+                      <span className="w-10 text-right text-xs font-mono text-ink-tertiary">{sliderValue}%</span>
+                      <Button
+                        variant="secondary"
+                        size="compact"
+                        loading={settingSaving === s.key}
+                        onClick={() => handleSaveSetting(s.key)}
+                        className="text-xs shrink-0"
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="min-w-0 sm:w-1/3">
+                    <div className="font-bold text-xs text-ink">{s.label}</div>
+                    <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
+                    {imageUploadError[s.key] && (
+                      <div className="text-[10px] text-danger mt-0.5">{imageUploadError[s.key]}</div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-1">
+                    {isImageSetting && currentValue && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={currentValue}
+                        alt=""
+                        className="h-8 w-8 rounded border border-line-subtle object-contain shrink-0 bg-[#FAFAF8] p-0.5"
+                      />
+                    )}
+                    <Input
+                      type={s.isSecret ? "password" : "text"}
+                      value={currentValue}
+                      onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
+                      placeholder={s.isSecret && s.hasValue ? "••••••••" : isImageSetting ? "Paste a URL, or upload a file" : `Enter ${s.label}`}
+                      className="text-xs flex-1"
+                    />
+                    {isImageSetting && (
+                      <label className="shrink-0">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUploadImageSetting(s.key, file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-ink hover:bg-surface-muted cursor-pointer">
+                          {imageUploading === s.key ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          Upload
+                        </span>
+                      </label>
+                    )}
+                    <Button
+                      variant="secondary"
+                      size="compact"
+                      loading={settingSaving === s.key}
+                      onClick={() => handleSaveSetting(s.key)}
+                      className="text-xs shrink-0"
+                    >
+                      Save
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}

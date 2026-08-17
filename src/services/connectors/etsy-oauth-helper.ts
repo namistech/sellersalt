@@ -23,6 +23,14 @@ export function resolveEtsyOAuthRedirectUri(options?: {
   overrideRedirectUri?: string;
   reqHost?: string;
   reqProto?: string;
+  // Admin-configured client ID (AppSetting `etsy_seller_client_id`), resolved
+  // by the caller before invoking this helper. Takes priority over env vars
+  // so `isValid` reflects whichever credential source is actually in use —
+  // previously this function only ever looked at env vars, so a clientId
+  // configured solely via /admin Site Settings (the documented, intended
+  // path) still failed validation here even though the route itself had a
+  // usable clientId, producing a false "credentials not configured" error.
+  overrideClientId?: string;
 }): EtsyOAuthConfig {
   const envOverride = options?.overrideRedirectUri || process.env.ETSY_REDIRECT_URI;
   const rawBase =
@@ -33,6 +41,7 @@ export function resolveEtsyOAuthRedirectUri(options?: {
 
   const normalizedBase = rawBase.replace(/\/+$/, "");
   const clientId =
+    options?.overrideClientId ||
     process.env.ETSY_CLIENT_ID ||
     process.env.ETSY_KEYSTRING ||
     process.env.ETSY_API_KEY ||

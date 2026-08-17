@@ -37,7 +37,7 @@ export function DashboardStreams({ streams, recentRuns, onNewSearch }: Dashboard
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Eyebrow>Active Search Streams</Eyebrow>
+            <Eyebrow>Active Saved Searches</Eyebrow>
             <Badge variant="neutral">{streams.length} active</Badge>
           </div>
           <Link
@@ -52,11 +52,11 @@ export function DashboardStreams({ streams, recentRuns, onNewSearch }: Dashboard
           <div className="py-6">
             <EmptyState
               icon={<Radar />}
-              title="No active research streams"
+              title="No active saved searches"
               description="Save a keyword query to start recurring market surveillance."
               action={
                 <Button variant="primary" size="compact" onClick={onNewSearch}>
-                  Create search stream
+                  Create saved search
                 </Button>
               }
             />

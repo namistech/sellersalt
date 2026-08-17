@@ -49,6 +49,9 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [assistantName, setAssistantName] = useState("SaltBot");
+  // Defaults to the canonical SellerSalt brand mark; an admin-configured
+  // assistant_logo_url overrides it once fetched.
+  const [assistantLogoUrl, setAssistantLogoUrl] = useState<string | null>("/brand/icon-mark.png");
   const [inputQuery, setInputQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -69,6 +72,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
       .then((r) => r.json())
       .then((d) => {
         if (d.settings?.assistant_name) setAssistantName(d.settings.assistant_name);
+        if (d.settings?.assistant_logo_url) setAssistantLogoUrl(d.settings.assistant_logo_url);
       })
       .catch(() => {});
   }, []);
@@ -166,8 +170,13 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
           title={`Open ${assistantName} Copilot`}
         >
           <div className="relative">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020] shadow-sm">
-              <Sparkles className="h-4 w-4 animate-pulse" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#141B16] text-[#FFB020] shadow-sm overflow-hidden">
+              {assistantLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={assistantLogoUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <Sparkles className="h-4 w-4 animate-pulse" />
+              )}
             </span>
             <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0E8F5D] opacity-80"></span>
@@ -194,8 +203,13 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
           {/* Header */}
           <div className="px-4 py-3.5 bg-white border-b border-line text-ink flex items-center justify-between shrink-0 select-none">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="h-8 w-8 rounded-lg bg-[#0E8F5D]/10 border border-[#0E8F5D]/30 flex items-center justify-center text-[#0E8F5D]">
-                <Sparkles className="h-4 w-4" />
+              <div className="h-8 w-8 rounded-lg bg-[#0E8F5D]/10 border border-[#0E8F5D]/30 flex items-center justify-center text-[#0E8F5D] overflow-hidden">
+                {assistantLogoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={assistantLogoUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-extrabold truncate flex items-center gap-1.5 text-ink">

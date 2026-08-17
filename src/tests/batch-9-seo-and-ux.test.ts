@@ -1,13 +1,15 @@
-import { describe, it } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { parseEtsyListingInput } from "../lib/etsy-listing-parser";
 import {
   getActiveAnnouncements,
   dismissAnnouncement,
+  markAllAnnouncementsRead,
   adminCreateAnnouncement,
 } from "../services/announcements";
 import { buildNavigation } from "../services/navigation";
 import type { WorkspaceContext } from "../services/types";
+import { prisma } from "../lib/db";
 
 describe("Batch 9: SEO Listing Parser & Type Boundary (Item 10)", () => {
   it("parses valid numeric listing ID string", () => {
@@ -63,6 +65,27 @@ describe("Batch 9: SEO Listing Parser & Type Boundary (Item 10)", () => {
 });
 
 describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", () => {
+  // Announcement read/dismiss state is persisted per-user against a real
+  // `AnnouncementRead.userId` foreign key, so these tests need real `User`
+  // rows rather than arbitrary ID strings.
+  let userA: { id: string };
+  let userB: { id: string };
+
+  before(async () => {
+    const suffix = Date.now();
+    userA = await prisma.user.create({
+      data: { email: `test-announcements-a-${suffix}@sellersalt.test`, passwordHash: "test-hash" },
+    });
+    userB = await prisma.user.create({
+      data: { email: `test-announcements-b-${suffix}@sellersalt.test`, passwordHash: "test-hash" },
+    });
+  });
+
+  after(async () => {
+    // Cascades to each user's AnnouncementRead rows.
+    await prisma.user.deleteMany({ where: { id: { in: [userA.id, userB.id] } } });
+  });
+
   it("creates and retrieves active announcements", async () => {
     const created = await adminCreateAnnouncement({
       title: "Test Urgent Announcement",
@@ -72,7 +95,7 @@ describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", 
     });
 
     assert.ok(created.id);
-    const { banner, notifications } = await getActiveAnnouncements("test-user-1");
+    const { banner, notifications } = await getActiveAnnouncements(userA.id);
     assert.ok(banner);
     assert.equal(banner?.title, "Test Urgent Announcement");
     assert.ok(notifications.some((n) => n.id === created.id));
@@ -86,9 +109,49 @@ describe("Batch 9: System Announcements & Notification Center (Items 14 & 15)", 
       placement: "BANNER",
     });
 
-    await dismissAnnouncement(created.id, "dismissing-user-99");
-    const { banner } = await getActiveAnnouncements("dismissing-user-99");
+    await dismissAnnouncement(created.id, userA.id);
+    const { banner } = await getActiveAnnouncements(userA.id);
     assert.notEqual(banner?.id, created.id);
+  });
+
+  it("read state is isolated per user — marking read for one user never affects another", async () => {
+    const created = await adminCreateAnnouncement({
+      title: "Isolation Check Notice",
+      message: "Only the acting user should see this as read.",
+      priority: "NORMAL",
+      placement: "NOTIFICATIONS",
+    });
+
+    await dismissAnnouncement(created.id, userA.id);
+
+    const { notifications: aNotifications } = await getActiveAnnouncements(userA.id);
+    const { notifications: bNotifications } = await getActiveAnnouncements(userB.id);
+
+    assert.equal(aNotifications.find((n) => n.id === created.id)?.isDismissed, true);
+    assert.equal(bNotifications.find((n) => n.id === created.id)?.isDismissed, false);
+  });
+
+  it("mark-all-read clears every active notification for the acting user only", async () => {
+    await adminCreateAnnouncement({
+      title: "Mark-All Notice 1",
+      message: "First of two.",
+      priority: "NORMAL",
+      placement: "NOTIFICATIONS",
+    });
+    await adminCreateAnnouncement({
+      title: "Mark-All Notice 2",
+      message: "Second of two.",
+      priority: "NORMAL",
+      placement: "NOTIFICATIONS",
+    });
+
+    await markAllAnnouncementsRead(userA.id);
+
+    const { notifications: aNotifications } = await getActiveAnnouncements(userA.id);
+    const { notifications: bNotifications } = await getActiveAnnouncements(userB.id);
+
+    assert.ok(aNotifications.every((n) => n.isDismissed));
+    assert.ok(bNotifications.some((n) => !n.isDismissed));
   });
 });
 

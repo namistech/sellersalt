@@ -193,16 +193,16 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateKey, EmailTemplateDefinition> 
 
   TRIAL_STARTED: {
     key: "TRIAL_STARTED",
-    name: "3-Day Trial Activated",
-    description: "Sent upon starting the $1.00 3-day trial.",
-    defaultSubject: "Your SellerSalt $1 trial is live!",
+    name: "Trial Activated",
+    description: "Sent when a plan's trial period starts (if the plan includes one).",
+    defaultSubject: "Your SellerSalt trial is live!",
     variables: ["name", "trialDays", "renewalDate", "priceUsd"],
     generateHtml: (vars) =>
       brandLayout(
         "Trial Activated",
-        `<h2 style="margin-top:0; color:#141B16;">Your $1 Trial is Live! 🌟</h2>
+        `<h2 style="margin-top:0; color:#141B16;">Your Trial is Live! 🌟</h2>
          <p>Hi ${vars.name || "there"},</p>
-         <p>Your ${vars.trialDays || "3"}-day trial is now active. Explore all features without limits.</p>`
+         <p>Your ${vars.trialDays ? `${vars.trialDays}-day` : ""} trial is now active. Explore all features without limits.</p>`
       ),
     generateText: (vars) => `Your trial is active!`,
   },

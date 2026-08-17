@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 import { encrypt, decrypt } from "./encryption";
 import { verifyTOTPCode } from "./totp";
@@ -67,4 +68,30 @@ export async function verify2FALoginCode(
   }
 
   return { ok: false, usedRecoveryCode: false };
+}
+
+/** Re-authentication check shared by any settings-area action that needs to
+ * confirm "this is really the account owner" without forcing a password
+ * (disable 2FA, regenerate backup codes, change password). Accepts EITHER
+ * the account password OR a current TOTP/backup code for a record already
+ * known to be enabled — unlike verify2FALoginCode this does NOT consume a
+ * matched backup code, since re-auth checks here aren't a login event and
+ * may reasonably be retried. Originally lived only in the 2FA route; moved
+ * here so every re-auth caller shares one implementation instead of each
+ * duplicating the check. */
+export async function verifyPasswordOrCode(
+  userId: string,
+  record: { secret: string; recoveryCodes: string[] },
+  password?: string,
+  code?: string
+): Promise<boolean> {
+  if (code) {
+    const ok = verifyTOTPCode(record.secret, code) || record.recoveryCodes.includes(code.trim().toUpperCase());
+    if (ok) return true;
+  }
+  if (password) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    return Boolean(user && (await bcrypt.compare(password, user.passwordHash)));
+  }
+  return false;
 }

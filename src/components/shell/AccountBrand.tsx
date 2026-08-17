@@ -26,22 +26,48 @@ export function AccountBrand({
   const displayName = isCustomOrg ? organizationName! : "SellerSalt";
   const initial = displayName.charAt(0).toUpperCase();
 
+  // The square badge always uses the canonical square brand mark, never an
+  // admin-uploaded `app_logo_url` — that setting is typically a wide
+  // wordmark (icon + text side by side), and force-cropping a wide image
+  // into a square with object-cover produces an illegible fragment. Custom
+  // per-org logos (isCustomOrg) fall back to an initial letter, same as
+  // before, since there's no separate square-icon field for those yet.
+  const squareMarkUrl = isCustomOrg ? null : "/brand/icon-mark.png";
+
   const brandIcon = (
     <div className="h-8 w-8 shrink-0 rounded-lg overflow-hidden border border-line-subtle shadow-xs flex items-center justify-center bg-[#141B16]">
-      {logoUrl ? (
+      {squareMarkUrl ? (
         <SafeImage
-          src={logoUrl}
+          src={squareMarkUrl}
           alt={displayName}
           fallbackType="shop"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain p-1"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#16C784]">
-          {isCustomOrg ? initial : "S"}
+          {initial}
         </div>
       )}
     </div>
   );
+
+  // When collapsed, the rail is too narrow for a wide wordmark — always
+  // show the square mark. When expanded and the default (non-custom)
+  // workspace has a real `app_logo_url` configured, show that full
+  // logo (icon + wordmark together, same pattern as the auth pages'
+  // `h-8 w-auto` logo) instead of the square badge + separate text label.
+  if (!collapsed && !isCustomOrg && logoUrl) {
+    return (
+      <Link
+        href={href}
+        className={cn("flex items-center transition-opacity hover:opacity-90", className)}
+        title={displayName}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoUrl} alt={displayName} className="h-8 w-auto max-w-[180px] object-contain" />
+      </Link>
+    );
+  }
 
   return (
     <Link

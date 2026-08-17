@@ -319,7 +319,7 @@ function LoginForm() {
       <p className="mt-6 text-center text-sm text-ink-tertiary">
         Don't have an account yet?{" "}
         <Link href="/checkout?plan=PRO" className="font-semibold text-[#0E8F5D] hover:underline">
-          Start $1 Trial
+          Get Started
         </Link>
       </p>
     </AuthLayout>

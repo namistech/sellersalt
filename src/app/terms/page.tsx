@@ -48,7 +48,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">3. Subscriptions, Trials, and Billing</h2>
               <p>
-                <strong>Trial Access:</strong> New users may be eligible for a 3-day trial for $1.00 USD. Unless cancelled before the expiration of the trial period, the subscription will automatically transition to the selected paid plan (e.g., Started at $19/mo, Pro at $49/mo, or Agency at $199/mo).
+                <strong>Plan Selection:</strong> New users select a paid plan (e.g., Started at $19/mo, Pro at $49/mo, or Agency at $199/mo) at checkout, and billing begins at the selected plan's recurring rate. From time to time, SellerSalt may offer a promotional trial period on select plans; where offered, trial terms will be disclosed at checkout, and the subscription will automatically transition to the selected paid plan unless cancelled before the trial period ends.
               </p>
               <p>
                 <strong>Recurring Billing:</strong> Subscriptions are billed in advance on a recurring monthly cycle. You authorize SellerSalt to charge your payment provider (Stripe, PayPal, or other active gateway) for applicable fees.

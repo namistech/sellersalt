@@ -481,7 +481,7 @@ export function RadarClient({
             className="gap-1.5 shadow-sm font-semibold"
           >
             <Plus className="h-4 w-4" />
-            New Search Stream
+            New Saved Search
           </Button>
         </div>
       </div>
@@ -862,7 +862,7 @@ export function RadarClient({
               value={configFilter}
               onChange={(e) => setConfigFilter(e.target.value)}
               options={[
-                { value: "ALL", label: "All Search Streams" },
+                { value: "ALL", label: "All Saved Searches" },
                 ...initialData.searchConfigs.map((c) => ({ value: c.id, label: c.name })),
               ]}
             />
@@ -928,7 +928,7 @@ export function RadarClient({
               }
               description={
                 opportunities.length === 0
-                  ? "Opportunity Radar analyzes Etsy search results in real time. Launch a search stream to uncover winning products, high-velocity shops, and untapped niches."
+                  ? "Opportunity Radar analyzes Etsy search results in real time. Launch a saved search to uncover winning products, high-velocity shops, and untapped niches."
                   : "Try clearing your filters or lowering the minimum score threshold to see more opportunities."
               }
               action={
@@ -939,7 +939,7 @@ export function RadarClient({
                     className="font-semibold shadow-sm gap-1.5"
                   >
                     <Plus className="h-4 w-4" />
-                    Create First Search Stream
+                    Create First Saved Search
                   </Button>
                 ) : (
                   <Button

@@ -30,8 +30,8 @@ const FAQ_CATEGORIES: Array<{ category: string; contactSubject: string; items: F
     ],
   },
   {
-    category: "Billing, Plans & Trials",
-    contactSubject: "Billing, Plans & $1 Trials",
+    category: "Billing & Plans",
+    contactSubject: "Billing & Plans",
     items: [
       {
         q: "How do I change my subscription plan?",
@@ -304,7 +304,7 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
                 onChange={(e) => setSubject(e.target.value)}
                 options={[
                   { value: "Account & 2FA Security", label: "Account & 2FA Security" },
-                  { value: "Billing, Plans & $1 Trials", label: "Billing, Plans & $1 Trials" },
+                  { value: "Billing & Plans", label: "Billing & Plans" },
                   { value: "Etsy Store Connection & OAuth", label: "Etsy Store Connection & OAuth" },
                   { value: "Opportunity Research & Radar", label: "Opportunity Research & Radar" },
                   { value: "Data Exports (CSV / Google Sheets)", label: "Data Exports (CSV / Google Sheets)" },
@@ -385,11 +385,11 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
               Ready to explore opportunities?
             </div>
             <p className="text-xs text-[#525B55] leading-relaxed">
-              Start researching verified Etsy sales velocity and high-converting product niches with a $1 trial.
+              Start researching verified Etsy sales velocity and high-converting product niches.
             </p>
             <Link href="/checkout?plan=PRO" className="block pt-1">
               <Button variant="secondary" size="compact" fullWidth className="text-xs font-semibold">
-                Start 3-Day Trial ($1) →
+                Get Started →
               </Button>
             </Link>
           </Card>

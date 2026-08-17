@@ -21,6 +21,11 @@ export const SETTING_DEFINITIONS = [
   // Auth Page Artwork
   { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
   { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
+  // object-position percentages (0-100) for the side image above — lets an
+  // admin recenter/reframe a tall or off-center source image without
+  // needing to re-crop and re-upload it.
+  { key: "auth_page_image_position_x", label: "Login page image horizontal position (0-100)", isSecret: false },
+  { key: "auth_page_image_position_y", label: "Login page image vertical position (0-100)", isSecret: false },
 
   // SellerSalt University & Education Portal
   { key: "university_enabled", label: "Show SellerSalt University in Navigation (true/false)", isSecret: false },

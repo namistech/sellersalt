@@ -43,7 +43,7 @@ export default async function BillingPage({
     .filter((p: string) => p === "STRIPE" || p === "PAYPAL" || p === "SAFEPAY" || p === "PAYFAST");
 
   const usageRows = [
-    { label: "Active Search Streams", ...searchConfigs },
+    { label: "Active Saved Searches", ...searchConfigs },
     { label: "Scheduled Searches", ...scheduledSearches },
     { label: "Tracked Competitor Shops", ...trackedShops },
     { label: "Prospects Discovered This Month", ...prospects },
@@ -178,7 +178,7 @@ export default async function BillingPage({
 
                   <ul className="space-y-2 text-xs text-ink-secondary mb-6">
                     <li className="flex items-center gap-1.5">
-                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxSearchConfigs} Search Streams
+                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxSearchConfigs} Saved Searches
                     </li>
                     <li className="flex items-center gap-1.5">
                       <span className="text-brand-primary font-bold">✓</span> {pkg.maxScheduledSearches} Scheduled Searches

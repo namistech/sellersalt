@@ -12,6 +12,8 @@ export async function GET() {
     "seo_og_image_url",
     "auth_page_logo_url",
     "auth_page_image_url",
+    "auth_page_image_position_x",
+    "auth_page_image_position_y",
     "support_email",
   ]);
 

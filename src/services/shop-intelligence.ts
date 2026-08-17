@@ -442,7 +442,10 @@ export async function fetchCompleteShopIntelligence(
     shopName,
     shopUrl: rawShop.url ?? `https://www.etsy.com/shop/${shopName}`,
     shopIconUrl: rawShop.icon_url_fullxfull ?? null,
-    shopBannerUrl: rawShop.banner_url_fullxfull ?? null,
+    // `banner_url_fullxfull` is not a real Etsy v3 Shop field (always
+    // undefined) — the correct field, already used correctly in
+    // src/connectors/etsy/index.ts, is `image_url_760x100`.
+    shopBannerUrl: rawShop.image_url_760x100 ?? null,
     shopAgeMonths,
     createdDate: new Date(createdTimestamp * 1000).toLocaleDateString("en-US", {
       month: "short",

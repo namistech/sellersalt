@@ -18,7 +18,7 @@ export function DashboardMomentum({ data }: DashboardMomentumProps) {
           <div>
             <Eyebrow>Discovery Momentum</Eyebrow>
             <Text size="body-sm" color="secondary" className="mt-0.5">
-              Prospects yielded across all search streams over the last 14 days.
+              Prospects yielded across all saved searches over the last 14 days.
             </Text>
           </div>
           <div className="text-right">

@@ -140,7 +140,7 @@ export default function ProspectsPage() {
       setSearchConfigs((prev) => prev.filter((s) => s.id !== streamToDelete.id));
       setStreamToDelete(null);
     } catch (err: any) {
-      alert("Failed to delete search stream: " + (err.message || "Unknown error"));
+      alert("Failed to delete saved search: " + (err.message || "Unknown error"));
     } finally {
       setIsDeletingStream(false);
     }
@@ -257,7 +257,7 @@ export default function ProspectsPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Contextual Guide */}
       <HowItWorksGuide
-        title="How Search Streams & Competitor Prospecting Work"
+        title="How Saved Searches & Competitor Prospecting Work"
         description="Configure automated query streams that match price brackets, store age filters, and keyword niches across Etsy."
         steps={[
           {
@@ -279,7 +279,7 @@ export default function ProspectsPage() {
       />
 
       <PageHeader
-        title="Discovery &amp; Saved Streams"
+        title="Discovery &amp; Saved Searches"
         description="Automated query streams monitoring Etsy for breakthrough competitors and newly emerging stores."
         primaryAction={
           <div className="flex items-center gap-2">
@@ -300,7 +300,7 @@ export default function ProspectsPage() {
               className="text-xs bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
             >
               <Plus className="h-3.5 w-3.5 mr-1.5 inline" />
-              New Stream
+              New Saved Search
             </Button>
           </div>
         }
@@ -313,7 +313,7 @@ export default function ProspectsPage() {
         <Tabs.List>
           <Tabs.Trigger value="live">Live Search</Tabs.Trigger>
           <Tabs.Trigger value="results">Results ({filtered.length})</Tabs.Trigger>
-          <Tabs.Trigger value="saved">Saved Streams ({searchConfigs.length})</Tabs.Trigger>
+          <Tabs.Trigger value="saved">Saved Searches ({searchConfigs.length})</Tabs.Trigger>
         </Tabs.List>
 
         <Tabs.Panel value="live">
@@ -388,9 +388,9 @@ export default function ProspectsPage() {
                 <div className="h-10 w-10 rounded-xl bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center mx-auto">
                   <Radar className="h-5 w-5" />
                 </div>
-                <h3 className="text-base font-bold text-ink">No Saved Search Streams</h3>
+                <h3 className="text-base font-bold text-ink">No Saved Searches</h3>
                 <p className="text-xs text-ink-secondary max-w-md mx-auto">
-                  Search streams monitor specific keyword and price niches automatically on a recurring schedule.
+                  Saved searches monitor specific keyword and price niches automatically on a recurring schedule.
                 </p>
                 <Button
                   variant="primary"
@@ -398,7 +398,7 @@ export default function ProspectsPage() {
                   onClick={() => setDrawerOpen(true)}
                   className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Create First Stream
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Create First Saved Search
                 </Button>
               </Card>
             ) : (
@@ -448,7 +448,7 @@ export default function ProspectsPage() {
                         type="button"
                         onClick={() => setStreamToDelete(sc)}
                         className="p-2 rounded-lg text-ink-tertiary hover:text-danger hover:bg-danger-subtle border border-line transition shadow-2xs"
-                        title="Delete Search Stream"
+                        title="Delete Saved Search"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -465,8 +465,8 @@ export default function ProspectsPage() {
       <Dialog
         open={Boolean(streamToDelete)}
         onClose={() => setStreamToDelete(null)}
-        title="Delete Search Stream"
-        description={`Are you sure you want to delete "${streamToDelete?.name}"? Scheduled recurring runs for this stream will stop immediately.`}
+        title="Delete Saved Search"
+        description={`Are you sure you want to delete "${streamToDelete?.name}"? Scheduled recurring runs for this saved search will stop immediately.`}
         actions={
           <>
             <Button
@@ -484,7 +484,7 @@ export default function ProspectsPage() {
               onClick={handleConfirmDeleteStream}
               className="text-xs"
             >
-              Delete Stream
+              Delete Saved Search
             </Button>
           </>
         }

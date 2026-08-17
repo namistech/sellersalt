@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import {
   getActiveAnnouncements,
   dismissAnnouncement,
+  markAllAnnouncementsRead,
   adminCreateAnnouncement,
   type AnnouncementPriority,
   type AnnouncementPlacement,
@@ -32,9 +33,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { action, announcementId, title, message, priority, placement, linkUrl, linkText, expiresAt } = body;
 
-    // 1. User dismissal action
-    if (action === "dismiss" && announcementId) {
+    // 1. User read/dismissal actions — scoped to the calling user only,
+    // never accepts a target userId from the request body.
+    if ((action === "dismiss" || action === "read") && announcementId) {
       await dismissAnnouncement(announcementId, userId);
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === "markAllRead") {
+      await markAllAnnouncementsRead(userId);
       return NextResponse.json({ success: true });
     }
 

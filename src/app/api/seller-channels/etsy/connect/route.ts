@@ -18,9 +18,12 @@ export async function GET(req: Request) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
   const proto = req.headers.get("x-forwarded-proto") || "https";
 
+  const configuredClientId = await getSetting("etsy_seller_client_id");
+
   const oauthConfig = resolveEtsyOAuthRedirectUri({
     reqHost: host,
     reqProto: proto,
+    overrideClientId: configuredClientId || undefined,
   });
 
   const baseUrl = oauthConfig.baseUrl;
@@ -33,15 +36,13 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/settings/channels?error=limit_reached", baseUrl));
   }
 
-  const clientId =
-    (await getSetting("etsy_seller_client_id")) ||
-    oauthConfig.clientId;
-
-  if (!clientId || !oauthConfig.isValid) {
+  if (!oauthConfig.isValid) {
     return NextResponse.redirect(
       new URL(`/settings/channels?error=etsy_not_configured&diag=${oauthConfig.diagnosticCode || "ETSY_OAUTH_CONFIGURATION_ERROR"}`, baseUrl)
     );
   }
+
+  const clientId = oauthConfig.clientId;
 
   // PKCE — Etsy requires this for OAuth v3
   const codeVerifier = base64url(crypto.randomBytes(32));

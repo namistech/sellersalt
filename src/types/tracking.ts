@@ -107,4 +107,59 @@ export interface TrackingQuotaInfo {
   isShopsQuotaReached: boolean;
   isListingsQuotaReached: boolean;
   planName: string;
+  // Longest shop-tracking report window (days) this org's plan can select —
+  // mirrors Package.maxTrackingDays. The 3D/7D/30D UI options are capped by
+  // this value, never invented client-side.
+  maxTrackingDays: number;
 }
+
+// ---------- Shop tracking delta report (real before/after period report) ----------
+
+export interface ShopTrackingReportShopMetrics {
+  totalSalesStart: number | null;
+  totalSalesEnd: number | null;
+  totalSalesDelta: number | null;
+  activeListingsStart: number | null;
+  activeListingsEnd: number | null;
+  activeListingsDelta: number | null;
+  reviewCountStart: number | null;
+  reviewCountEnd: number | null;
+  reviewCountDelta: number | null;
+}
+
+export interface ShopTrackingReportListingChange {
+  listingExternalId: string;
+  title: string;
+  url: string | null;
+  priceStart: number | null;
+  priceEnd: number | null;
+  priceDelta: number | null;
+  currency: string | null;
+  favorersStart: number | null;
+  favorersEnd: number | null;
+  favorersDelta: number | null;
+}
+
+/** Discriminated on `status` — "insufficient_data" carries no fabricated
+ * numbers, only enough metadata for the UI to explain what's missing. */
+export type ShopTrackingReport =
+  | {
+      status: "insufficient_data";
+      shopExternalId: string;
+      shopName: string;
+      windowDays: number;
+      snapshotCount: number;
+    }
+  | {
+      status: "ok";
+      shopExternalId: string;
+      shopName: string;
+      windowDays: number;
+      snapshotCount: number;
+      startCapturedAt: string;
+      endCapturedAt: string;
+      shopMetrics: ShopTrackingReportShopMetrics;
+      velocity: ShopVelocity;
+      listingChanges: ShopTrackingReportListingChange[];
+      generatedAt: string;
+    };

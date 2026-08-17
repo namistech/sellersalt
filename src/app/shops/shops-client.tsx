@@ -125,7 +125,7 @@ export function ShopsDirectoryClient({
           Explore real Etsy shops, sales velocity metrics, catalog yield, and verified product opportunities uncovered by SellerSalt.
         </p>
 
-        {/* Free trial highlight banner */}
+        {/* Signup highlight banner */}
         {!isAuthenticated && (
           <div className="pt-2">
             <div className="inline-flex flex-wrap items-center justify-center gap-3 bg-white p-2.5 px-5 rounded-xl border border-[#E3E6E0] shadow-xs text-xs">
@@ -134,7 +134,7 @@ export function ShopsDirectoryClient({
               </span>
               <Link href="/checkout?plan=PRO">
                 <Button variant="primary" size="compact" className="text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-xs">
-                  Try SellerSalt for $1 →
+                  Try SellerSalt →
                 </Button>
               </Link>
             </div>

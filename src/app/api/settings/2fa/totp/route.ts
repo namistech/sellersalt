@@ -1,27 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import bcrypt from "bcryptjs";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 import { generateBase32Secret, verifyTOTPCode, generateRecoveryCodes, buildOtpAuthUri } from "@/lib/totp";
-import { get2FA, save2FA, disable2FA } from "@/lib/two-factor";
-
-async function verifyPasswordOrCode(
-  userId: string,
-  record: { secret: string; recoveryCodes: string[] },
-  password?: string,
-  code?: string
-): Promise<boolean> {
-  if (code) {
-    const ok = verifyTOTPCode(record.secret, code) || record.recoveryCodes.includes(code.trim().toUpperCase());
-    if (ok) return true;
-  }
-  if (password) {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    return Boolean(user && (await bcrypt.compare(password, user.passwordHash)));
-  }
-  return false;
-}
+import { get2FA, save2FA, disable2FA, verifyPasswordOrCode } from "@/lib/two-factor";
 
 export async function GET() {
   const session = await getServerSession(authOptions);

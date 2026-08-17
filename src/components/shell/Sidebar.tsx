@@ -93,6 +93,8 @@ function SidebarLink({ item, active, collapsed }: { item: NavigationItem; active
 export interface SidebarProps {
   groups: NavigationGroup[];
   organizationName?: string;
+  /** Admin-configured `app_logo_url` (AppSetting), overrides the default brand mark. */
+  logoUrl?: string | null;
   /**
    * Rendered in place of the plain org-name line, only when the user
    * genuinely has multiple workspace memberships (see WorkspaceSwitcher's
@@ -104,7 +106,7 @@ export interface SidebarProps {
   className?: string;
 }
 
-export function Sidebar({ groups, organizationName, workspaceSwitcher, collapsed, onToggleCollapse, className }: SidebarProps) {
+export function Sidebar({ groups, organizationName, logoUrl, workspaceSwitcher, collapsed, onToggleCollapse, className }: SidebarProps) {
   const pathname = usePathname() ?? "";
 
   return (
@@ -118,6 +120,7 @@ export function Sidebar({ groups, organizationName, workspaceSwitcher, collapsed
       <div className={cn("flex items-center gap-2 px-3 py-4 border-b border-line-subtle mb-2", collapsed && "justify-center px-0")}>
         <AccountBrand
           organizationName={organizationName}
+          logoUrl={logoUrl}
           collapsed={collapsed}
           className="w-full"
         />

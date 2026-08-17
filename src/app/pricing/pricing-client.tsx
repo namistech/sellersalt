@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   Check,
-  Zap,
   Sparkles,
   ArrowRight,
   HelpCircle,
@@ -156,12 +155,6 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
                       Billed annually (${price * 12}/year)
                     </div>
                   )}
-                  {isPro && (
-                    <div className="mt-1.5 text-xs font-semibold text-[#0E8F5D] flex items-center gap-1">
-                      <Zap className="h-3.5 w-3.5 text-[#FFB020]" />
-                      <span>3-day trial available for $1.00</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Limits Snapshot */}
@@ -212,7 +205,7 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
                         : "bg-[#141B16] hover:bg-[#141B16]/90 text-white"
                     }`}
                   >
-                    <span>{isFree ? "Start Free Explorer" : isPro ? "Start $1.00 Trial" : `Choose ${plan.name}`}</span>
+                    <span>{isFree ? "Start Free Explorer" : `Choose ${plan.name}`}</span>
                     <ArrowRight className="h-3.5 w-3.5 ml-1 inline" />
                   </Button>
                 </Link>

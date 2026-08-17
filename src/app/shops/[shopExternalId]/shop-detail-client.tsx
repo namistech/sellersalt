@@ -71,6 +71,10 @@ import { addProductToPlanner } from "@/services/product-hunting-client";
 import { evaluateShopCompetition } from "@/services/intelligence/universal-scoring";
 import type { ProductHuntingResult } from "@/types/product-hunting";
 import { useResearchState } from "@/lib/research-persistence";
+import type { TrackingQuotaInfo, ShopTrackingReport } from "@/types/tracking";
+
+const TRACKING_WINDOW_OPTIONS = [3, 7, 30] as const;
+type TrackingWindowDays = (typeof TRACKING_WINDOW_OPTIONS)[number];
 
 interface ShopDetailClientProps {
   shopExternalId: string;
@@ -95,6 +99,16 @@ export function ShopDetailClient({
   const [tracked, setTracked] = useState(profile ? profile.isTracked : isTracked);
   const [trackError, setTrackError] = useState<string | null>(null);
   const [trackMessage, setTrackMessage] = useState<string | null>(null);
+
+  // Tracking report window (3D/7D/30D), gated by the org's plan entitlement
+  // (Package.maxTrackingDays, fetched via /api/tracking/quota).
+  const [quota, setQuota] = useState<TrackingQuotaInfo | null>(null);
+  const [trackingWindowDays, setTrackingWindowDays] = useState<TrackingWindowDays>(3);
+  const [durationNotice, setDurationNotice] = useState<string | null>(null);
+  const [report, setReport] = useState<ShopTrackingReport | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   // Local state for favorited listings & planned keywords
   const [shortlistedListings, setShortlistedListings] = useState<Record<string, boolean>>({});
@@ -124,6 +138,53 @@ export function ShopDetailClient({
       })
       .catch(() => {});
   }, [isAuthenticated]);
+
+  // Fetch plan entitlement (maxTrackingDays) so duration buttons reflect the
+  // org's real Package row rather than a client-invented cap.
+  useEffect(() => {
+    if (!isAuthenticated || !tracked) return;
+    fetch("/api/tracking/quota")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.quota) {
+          setQuota(d.quota as TrackingQuotaInfo);
+          // Clamp the selected window down to whatever this plan allows.
+          setTrackingWindowDays((prev) => (prev > d.quota.maxTrackingDays ? 3 : prev));
+        }
+      })
+      .catch(() => {});
+  }, [isAuthenticated, tracked]);
+
+  // Fetch the real before/after delta report for the selected window
+  // whenever tracking is active and the window changes.
+  useEffect(() => {
+    if (!isAuthenticated || !tracked) return;
+    setReportLoading(true);
+    setReportError(null);
+    fetch(`/api/shops/${shopExternalId}/tracking-report?days=${trackingWindowDays}`)
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setReportError(data.error || "Failed to load tracking report.");
+          setReport(null);
+          return;
+        }
+        setReport(data.report as ShopTrackingReport);
+      })
+      .catch(() => setReportError("Network connection interrupted while loading the tracking report."))
+      .finally(() => setReportLoading(false));
+  }, [isAuthenticated, tracked, trackingWindowDays, shopExternalId]);
+
+  function handleSelectTrackingWindow(days: TrackingWindowDays) {
+    if (quota && days > quota.maxTrackingDays) {
+      setDurationNotice(
+        `Your ${quota.planName} plan allows tracking reports up to ${quota.maxTrackingDays} day(s). Upgrade to unlock the ${days}-day window.`
+      );
+      return;
+    }
+    setDurationNotice(null);
+    setTrackingWindowDays(days);
+  }
 
   // Derive consolidated data from profile if available, otherwise from primary prospect
   const shopName = profile?.identity.shopName ?? primary?.shopName ?? `Shop ${shopExternalId}`;
@@ -268,6 +329,113 @@ export function ShopDetailClient({
       setTrackError("Network connection interrupted. Please try again.");
     } finally {
       setTracking(false);
+    }
+  }
+
+  async function handleExportTrackingReportCsv() {
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
+    setExportingCsv(true);
+    try {
+      // Always fetch the latest report for the currently selected window at
+      // export time, rather than trusting potentially-stale local state —
+      // this is a real before/after delta report, never a fabricated one.
+      const res = await fetch(`/api/shops/${shopExternalId}/tracking-report?days=${trackingWindowDays}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "Failed to generate the tracking report.");
+        return;
+      }
+      const freshReport = data.report as ShopTrackingReport;
+      setReport(freshReport);
+
+      if (freshReport.status === "insufficient_data") {
+        alert(
+          `Data collection is still in progress for this shop (only ${freshReport.snapshotCount} snapshot(s) captured so far). Check back after the next scheduled snapshot for a real delta report.`
+        );
+        return;
+      }
+
+      const rows: string[][] = [];
+      rows.push(["SellerSalt Shop Tracking Delta Report"]);
+      rows.push(["Shop Name", `"${freshReport.shopName.replace(/"/g, '""')}"`]);
+      rows.push(["Report Window (Days)", String(freshReport.windowDays)]);
+      rows.push(["Snapshots In Window", String(freshReport.snapshotCount)]);
+      rows.push(["Window Start [ACTUAL ETSY DATA]", freshReport.startCapturedAt]);
+      rows.push(["Window End [ACTUAL ETSY DATA]", freshReport.endCapturedAt]);
+      rows.push(["Generated At", freshReport.generatedAt]);
+      rows.push([]);
+      rows.push(["Shop Metric", "Start [ACTUAL ETSY DATA]", "End [ACTUAL ETSY DATA]", "Delta [ACTUAL ETSY DATA]"]);
+      rows.push([
+        "Lifetime Sales",
+        String(freshReport.shopMetrics.totalSalesStart ?? ""),
+        String(freshReport.shopMetrics.totalSalesEnd ?? ""),
+        String(freshReport.shopMetrics.totalSalesDelta ?? ""),
+      ]);
+      rows.push([
+        "Active Listings",
+        String(freshReport.shopMetrics.activeListingsStart ?? ""),
+        String(freshReport.shopMetrics.activeListingsEnd ?? ""),
+        String(freshReport.shopMetrics.activeListingsDelta ?? ""),
+      ]);
+      rows.push([
+        "Review Count",
+        String(freshReport.shopMetrics.reviewCountStart ?? ""),
+        String(freshReport.shopMetrics.reviewCountEnd ?? ""),
+        String(freshReport.shopMetrics.reviewCountDelta ?? ""),
+      ]);
+      rows.push([]);
+      rows.push(["Est. Daily Sales Velocity [ESTIMATED]", freshReport.velocity.estDailySales.toFixed(1)]);
+      rows.push(["Velocity Growth Rate % [ESTIMATED]", String(freshReport.velocity.velocityGrowthRate)]);
+      rows.push(["Sales Spike Detected [SELLERSALT SCORE]", freshReport.velocity.isSpike ? "YES" : "NO"]);
+      rows.push([]);
+
+      if (freshReport.listingChanges.length > 0) {
+        rows.push([
+          "Listing ID",
+          "Listing Title",
+          "Price Start USD [ACTUAL ETSY DATA]",
+          "Price End USD [ACTUAL ETSY DATA]",
+          "Price Delta USD [ACTUAL ETSY DATA]",
+          "Favorers Start [ACTUAL ETSY DATA]",
+          "Favorers End [ACTUAL ETSY DATA]",
+          "Favorers Delta [ACTUAL ETSY DATA]",
+          "Listing URL",
+        ]);
+        for (const l of freshReport.listingChanges) {
+          rows.push([
+            l.listingExternalId,
+            `"${l.title.replace(/"/g, '""')}"`,
+            String(l.priceStart ?? ""),
+            String(l.priceEnd ?? ""),
+            String(l.priceDelta ?? ""),
+            String(l.favorersStart ?? ""),
+            String(l.favorersEnd ?? ""),
+            String(l.favorersDelta ?? ""),
+            l.url ? `"${l.url}"` : "",
+          ]);
+        }
+      } else {
+        rows.push(["No tracked listings changed price or favorites within this window."]);
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map((r) => r.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute(
+        "download",
+        `${shopName.toLowerCase().replace(/\s+/g, "-")}-tracking-report-${freshReport.windowDays}d.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      alert("Network connection interrupted while generating the tracking report.");
+    } finally {
+      setExportingCsv(false);
     }
   }
 
@@ -807,53 +975,37 @@ export function ShopDetailClient({
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center rounded-lg border border-line bg-white p-0.5 text-xs font-bold">
-                {(["3D", "7D", "30D"] as const).map((w) => (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => {}}
-                    className="px-2.5 py-1 rounded-md text-ink-secondary hover:text-ink font-semibold transition text-xs"
-                  >
-                    {w}
-                  </button>
-                ))}
+                {TRACKING_WINDOW_OPTIONS.map((days) => {
+                  const label = `${days}D`;
+                  const isSelected = trackingWindowDays === days;
+                  const isLocked = !!quota && days > quota.maxTrackingDays;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => handleSelectTrackingWindow(days)}
+                      title={isLocked ? `Upgrade your plan to unlock the ${label} tracking window` : `Show the ${label} tracking report`}
+                      aria-pressed={isSelected}
+                      className={`px-2.5 py-1 rounded-md font-semibold transition text-xs flex items-center gap-1 ${
+                        isSelected
+                          ? "bg-[#0E8F5D] text-white"
+                          : isLocked
+                          ? "text-ink-tertiary/60 cursor-not-allowed"
+                          : "text-ink-secondary hover:text-ink"
+                      }`}
+                    >
+                      {isLocked && <Lock className="h-3 w-3" />}
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               <Button
                 variant="secondary"
                 size="compact"
-                onClick={() => {
-                  const headers = [
-                    "Timestamp",
-                    "Shop Name",
-                    "Listing ID",
-                    "Listing Title",
-                    "Price USD [ACTUAL ETSY DATA]",
-                    "Daily Velocity [ESTIMATED]",
-                    "Opportunity Score [SELLERSALT SCORE]",
-                    "Tags Count",
-                    "Listing URL",
-                  ];
-                  const rows = sortedListings.map((l) => [
-                    new Date().toISOString(),
-                    `"${shopName.replace(/"/g, '""')}"`,
-                    l.listingId,
-                    `"${l.title.replace(/"/g, '""')}"`,
-                    l.price.toFixed(2),
-                    l.estDailySales.toFixed(1),
-                    l.opportunityScore,
-                    l.tags.length,
-                    `"${l.listingUrl}"`,
-                  ]);
-                  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-                  const encodedUri = encodeURI(csvContent);
-                  const link = document.createElement("a");
-                  link.setAttribute("href", encodedUri);
-                  link.setAttribute("download", `${shopName.toLowerCase().replace(/\s+/g, "-")}-tracking-report.csv`);
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
+                loading={exportingCsv}
+                onClick={() => handleExportTrackingReportCsv()}
                 className="text-xs font-semibold bg-white border-line shadow-2xs"
               >
                 📥 Export CSV
@@ -879,6 +1031,72 @@ export function ShopDetailClient({
               </Button>
             </div>
           </div>
+
+          {durationNotice && (
+            <div className="p-2.5 rounded-lg bg-[#FFF7ED] border border-[#FDBA74] text-[11px] text-[#9A3412] font-semibold flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 shrink-0" /> {durationNotice}
+            </div>
+          )}
+
+          {/* Real windowed before/after delta report — not a single-moment
+              snapshot dump. Populates from actual ShopSnapshot history. */}
+          {reportLoading ? (
+            <div className="p-3.5 rounded-xl bg-white/70 border border-[#0E8F5D]/20 text-xs text-ink-secondary flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[#0E8F5D] shrink-0 animate-pulse" />
+              <span>Loading {trackingWindowDays}-day tracking report…</span>
+            </div>
+          ) : reportError ? (
+            <Alert variant="danger">{reportError}</Alert>
+          ) : report?.status === "insufficient_data" ? (
+            <div className="p-3.5 rounded-xl bg-white/70 border border-[#0E8F5D]/20 text-xs text-ink-secondary flex items-center gap-2">
+              <Clock className="h-4 w-4 text-[#0E8F5D] shrink-0" />
+              <span>
+                Data collection in progress — only {report.snapshotCount} snapshot{report.snapshotCount === 1 ? "" : "s"} captured
+                so far for the {trackingWindowDays}-day window. Check back after the next scheduled snapshot for a real delta report.
+              </span>
+            </div>
+          ) : report?.status === "ok" ? (
+            <div className="p-4 rounded-xl bg-white border border-line space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-line-subtle">
+                <span className="text-xs font-bold text-ink uppercase tracking-wide">
+                  {trackingWindowDays}-Day Delta Report ({report.snapshotCount} snapshots)
+                </span>
+                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Sales Δ</span>
+                  <span className="text-sm font-extrabold text-[#0E8F5D]">
+                    {report.shopMetrics.totalSalesDelta !== null ? `${report.shopMetrics.totalSalesDelta >= 0 ? "+" : ""}${report.shopMetrics.totalSalesDelta}` : "—"}
+                  </span>
+                  <p className="text-[11px] text-ink-secondary">
+                    {report.shopMetrics.totalSalesStart ?? "—"} → {report.shopMetrics.totalSalesEnd ?? "—"} lifetime sales
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Catalog Δ</span>
+                  <span className="text-sm font-extrabold text-ink">
+                    {report.shopMetrics.activeListingsDelta !== null ? `${report.shopMetrics.activeListingsDelta >= 0 ? "+" : ""}${report.shopMetrics.activeListingsDelta}` : "—"}
+                  </span>
+                  <p className="text-[11px] text-ink-secondary">
+                    {report.shopMetrics.activeListingsStart ?? "—"} → {report.shopMetrics.activeListingsEnd ?? "—"} active listings
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Velocity [ESTIMATED]</span>
+                  <span className="text-sm font-extrabold text-ink">~{report.velocity.estDailySales.toFixed(1)}/day</span>
+                  <p className="text-[11px] text-ink-secondary">
+                    {report.velocity.isSpike ? "Sales spike detected" : `${report.velocity.velocityGrowthRate >= 0 ? "+" : ""}${report.velocity.velocityGrowthRate}% vs baseline`}
+                  </p>
+                </div>
+              </div>
+              {report.listingChanges.length > 0 && (
+                <p className="text-[11px] text-ink-tertiary">
+                  {report.listingChanges.length} tracked listing{report.listingChanges.length === 1 ? "" : "s"} changed price or favorites in this window — included in the CSV export.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           {latestSnapshot && (
             <div className="p-3.5 rounded-xl bg-white border border-line grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">

@@ -122,6 +122,7 @@ export async function fetchTrackingQuota(): Promise<TrackingQuotaInfo> {
       isShopsQuotaReached: false,
       isListingsQuotaReached: false,
       planName: "Starter",
+      maxTrackingDays: 3,
     };
   }
 }

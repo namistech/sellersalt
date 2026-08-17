@@ -39,6 +39,7 @@ import {
   Badge,
 } from "@/components/ui";
 import { Dialog } from "@/components/ui/Dialog";
+import { checkPasswordStrength } from "@/lib/password-policy";
 
 interface ProfileData {
   name: string;
@@ -56,6 +57,80 @@ interface ProfileData {
     storeUrl: string;
     status: string;
   } | null;
+}
+
+// Live client-side feedback for the real server-enforced policy in
+// src/lib/password-policy.ts (length, lower/upper/digit/special, common-
+// password blocklist). This is UX assistance only — checkPasswordStrength
+// is the same pure function the server route imports, so the meter never
+// drifts from what will actually be accepted; the server remains the
+// real gate per CLAUDE.md's client-checks-are-never-the-gate rule.
+function PasswordStrengthMeter({ password }: { password: string }) {
+  const { errors } = checkPasswordStrength(password);
+  const isCommon = errors.includes("Not a commonly used password");
+  const criteriaErrors = errors.filter((e) => e !== "Not a commonly used password");
+  const TOTAL_CRITERIA = 5; // length, lowercase, uppercase, digit, special char
+  const satisfied = TOTAL_CRITERIA - criteriaErrors.length;
+
+  let label: string;
+  let barColor: string;
+  let textColor: string;
+  if (isCommon || satisfied <= 2) {
+    label = isCommon ? "Weak — too common" : "Weak";
+    barColor = "bg-red-500";
+    textColor = "text-red-600";
+  } else if (satisfied === 3) {
+    label = "Fair";
+    barColor = "bg-amber-500";
+    textColor = "text-amber-600";
+  } else if (satisfied === 4) {
+    label = "Good";
+    barColor = "bg-blue-500";
+    textColor = "text-blue-600";
+  } else {
+    label = "Strong";
+    barColor = "bg-[#0E8F5D]";
+    textColor = "text-[#0E8F5D]";
+  }
+
+  const segments = 4;
+  const filledSegments = Math.max(1, Math.round((satisfied / TOTAL_CRITERIA) * segments));
+
+  const checklistItems: Array<{ key: string; label: string; met: boolean }> = [
+    { key: "length", label: "8+ characters", met: password.length >= 8 },
+    { key: "lower", label: "Lowercase letter", met: /[a-z]/.test(password) },
+    { key: "upper", label: "Uppercase letter", met: /[A-Z]/.test(password) },
+    { key: "digit", label: "Number", met: /[0-9]/.test(password) },
+    { key: "special", label: "Special character", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <div className="flex-1 flex gap-1">
+          {Array.from({ length: segments }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full ${i < filledSegments ? barColor : "bg-surface-muted"}`}
+            />
+          ))}
+        </div>
+        <span className={`text-[11px] font-semibold ${textColor}`}>{label}</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5 text-[10px]">
+        {checklistItems.map((item) => (
+          <span
+            key={item.key}
+            className={`px-1.5 py-0.5 rounded ${
+              item.met ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#F4F3EF] text-[#7C847E]"
+            }`}
+          >
+            {item.met ? `✓ ${item.label}` : item.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -78,11 +153,17 @@ export default function ProfilePage() {
 
   // Password Form States
   const [currentPassword, setCurrentPassword] = useState("");
+  const [reauthCode, setReauthCode] = useState("");
+  // Only meaningful when 2FA is enabled — lets the user pick which
+  // re-auth factor the "Current Password" slot in the form represents.
+  const [passwordReauthMethod, setPasswordReauthMethod] = useState<"password" | "code">("password");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [resetLinkSending, setResetLinkSending] = useState(false);
+  const [resetLinkSent, setResetLinkSent] = useState(false);
 
   // 2FA TOTP States
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -250,8 +331,21 @@ export default function ProfilePage() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters.");
+    // Immediate UX feedback only — the server re-checks this
+    // authoritatively via checkPasswordStrength regardless of what's sent.
+    const strength = checkPasswordStrength(newPassword);
+    if (!strength.valid) {
+      setPasswordError(`New password must include: ${strength.errors.join(", ")}.`);
+      return;
+    }
+
+    const usingCode = twoFactorEnabled && passwordReauthMethod === "code";
+    if (usingCode && !reauthCode.trim()) {
+      setPasswordError("Enter a current 2FA or backup code.");
+      return;
+    }
+    if (!usingCode && !currentPassword) {
+      setPasswordError("Enter your current password.");
       return;
     }
 
@@ -259,9 +353,13 @@ export default function ProfilePage() {
 
     try {
       const res = await fetch("/api/settings/password", {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({
+          currentPassword: usingCode ? undefined : currentPassword,
+          code: usingCode ? reauthCode.trim() : undefined,
+          newPassword,
+        }),
       });
 
       const data = await res.json();
@@ -273,12 +371,39 @@ export default function ProfilePage() {
       }
 
       setCurrentPassword("");
+      setReauthCode("");
       setNewPassword("");
       setConfirmPassword("");
+      setResetLinkSent(false);
       setPasswordMessage("Password changed successfully.");
     } catch {
       setPasswordSaving(false);
       setPasswordError("Network error changing password.");
+    }
+  }
+
+  // Alternative to typing the current password: reuses the existing,
+  // already-audited forgot-password flow (single-use expiring hashed
+  // token emailed to the account's own address) so a signed-in user can
+  // complete a password change without ever needing to know/type their
+  // old one. Same generic response either way — no new endpoint needed.
+  async function handleSendPasswordResetLink() {
+    setPasswordError(null);
+    setPasswordMessage(null);
+    setResetLinkSending(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      await res.json().catch(() => ({}));
+      setResetLinkSending(false);
+      setResetLinkSent(true);
+      setPasswordMessage(`If ${email} has an account, a reset link is on its way — check your inbox.`);
+    } catch {
+      setResetLinkSending(false);
+      setPasswordError("Network error sending the reset link. Please try again.");
     }
   }
 
@@ -817,15 +942,53 @@ export default function ProfilePage() {
         {passwordError && <Alert variant="danger">{passwordError}</Alert>}
 
         <form onSubmit={handleChangePassword} className="space-y-4">
+          {twoFactorEnabled && (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-tertiary">Verify your identity with:</span>
+              <div className="inline-flex rounded-md border border-line overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setPasswordReauthMethod("password")}
+                  className={`px-2.5 py-1 text-[11px] font-medium ${
+                    passwordReauthMethod === "password" ? "bg-[#0E8F5D] text-white" : "bg-white text-ink hover:bg-surface-muted"
+                  }`}
+                >
+                  Password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPasswordReauthMethod("code")}
+                  className={`px-2.5 py-1 text-[11px] font-medium border-l border-line ${
+                    passwordReauthMethod === "code" ? "bg-[#0E8F5D] text-white" : "bg-white text-ink hover:bg-surface-muted"
+                  }`}
+                >
+                  2FA / backup code
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Input
-              type="password"
-              label="Current Password"
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            {(!twoFactorEnabled || passwordReauthMethod === "password") && (
+              <Input
+                type="password"
+                label="Current Password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            )}
+            {twoFactorEnabled && passwordReauthMethod === "code" && (
+              <Input
+                type="text"
+                label="2FA or Backup Code"
+                required
+                value={reauthCode}
+                onChange={(e) => setReauthCode(e.target.value)}
+                placeholder="123456 or A1B2-C3D4"
+              />
+            )}
             <Input
               type="password"
               label="New Password"
@@ -843,6 +1006,29 @@ export default function ProfilePage() {
               placeholder="••••••••"
             />
           </div>
+
+          {newPassword.length > 0 && (
+            <PasswordStrengthMeter password={newPassword} />
+          )}
+
+          {!twoFactorEnabled && (
+            <div className="flex items-center justify-between rounded-lg border border-line-subtle bg-[#FAFAF8] px-3 py-2">
+              <Text size="body-sm" color="secondary">
+                Don&apos;t know your current password?
+              </Text>
+              <Button
+                type="button"
+                variant="tertiary"
+                size="compact"
+                loading={resetLinkSending}
+                disabled={resetLinkSent}
+                onClick={handleSendPasswordResetLink}
+                className="text-xs"
+              >
+                {resetLinkSent ? "Reset link sent" : "Email me a reset link instead"}
+              </Button>
+            </div>
+          )}
 
           <div className="flex justify-end pt-2">
             <Button

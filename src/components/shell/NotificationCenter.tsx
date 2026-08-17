@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Drawer, Tabs, Text, Caption, Badge } from "@/components/ui";
+import { Drawer, Tabs, Text, Caption, Badge, cn } from "@/components/ui";
 import { Freshness } from "@/components/data";
 import { AlertCard } from "@/components/intelligence";
 import type { NotificationCategory, NotificationItem } from "@/services/types";
@@ -32,11 +32,18 @@ const CATEGORY_LABEL: Record<NotificationCategory, string> = {
   product_update: "Product Update",
 };
 
-function NotificationRow({ item }: { item: NotificationItem }) {
+function NotificationRow({ item, onMarkRead }: { item: NotificationItem; onMarkRead: (id: string) => void }) {
   return (
-    <div className="flex items-start gap-3 rounded-md border border-line-subtle bg-surface px-4 py-3">
+    <button
+      type="button"
+      onClick={() => !item.read && onMarkRead(item.id)}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-md border border-line-subtle bg-surface px-4 py-3 text-left transition-colors",
+        !item.read && "hover:bg-surface-muted"
+      )}
+    >
       {!item.read && <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />}
-      <div className={item.read ? "ml-[18px] min-w-0 flex-1" : "min-w-0 flex-1"}>
+      <div className={item.read ? "ml-[18px] min-w-0 flex-1 opacity-70" : "min-w-0 flex-1"}>
         <div className="flex items-center gap-2">
           <Text as="span" size="body-sm" weight={item.read ? "regular" : "medium"}>
             {item.title}
@@ -51,7 +58,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         )}
         <Freshness state="recent" timestamp={item.timestamp} className="mt-1" />
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -59,9 +66,11 @@ export interface NotificationCenterProps {
   open: boolean;
   onClose: () => void;
   notifications: NotificationItem[];
+  onMarkRead: (id: string) => void;
+  onMarkAllRead: () => void;
 }
 
-export function NotificationCenter({ open, onClose, notifications }: NotificationCenterProps) {
+export function NotificationCenter({ open, onClose, notifications, onMarkRead, onMarkAllRead }: NotificationCenterProps) {
   const [tab, setTab] = useState("all");
 
   const filtered = useMemo(() => {
@@ -74,38 +83,49 @@ export function NotificationCenter({ open, onClose, notifications }: Notificatio
 
   return (
     <Drawer open={open} onClose={onClose} side="right" title="Notifications" description={unreadCount > 0 ? `${unreadCount} unread` : "You're all caught up."}>
-      <Tabs value={tab} onChange={setTab}>
-        <Tabs.List aria-label="Filter notifications">
-          <Tabs.Trigger value="all">All</Tabs.Trigger>
-          <Tabs.Trigger value="unread">Unread</Tabs.Trigger>
-          <Tabs.Trigger value="important">Important</Tabs.Trigger>
-        </Tabs.List>
-        <Tabs.Panel value={tab}>
-          {filtered.length === 0 ? (
-            <div className="py-10 text-center">
-              <Text size="body-sm" color="tertiary">
-                Nothing here.
-              </Text>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {filtered.map((item) =>
-                item.severity ? (
-                  <AlertCard
-                    key={item.id}
-                    title={item.title}
-                    description={item.description}
-                    severity={item.severity}
-                    freshness={{ state: "recent", timestamp: item.timestamp }}
-                  />
-                ) : (
-                  <NotificationRow key={item.id} item={item} />
-                )
-              )}
-            </div>
-          )}
-        </Tabs.Panel>
-      </Tabs>
+      <div className="flex items-center justify-between gap-2">
+        <Tabs value={tab} onChange={setTab} className="flex-1">
+          <Tabs.List aria-label="Filter notifications">
+            <Tabs.Trigger value="all">All</Tabs.Trigger>
+            <Tabs.Trigger value="unread">Unread</Tabs.Trigger>
+            <Tabs.Trigger value="important">Important</Tabs.Trigger>
+          </Tabs.List>
+          <Tabs.Panel value={tab}>
+            {filtered.length === 0 ? (
+              <div className="py-10 text-center">
+                <Text size="body-sm" color="tertiary">
+                  Nothing here.
+                </Text>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filtered.map((item) =>
+                  item.severity ? (
+                    <AlertCard
+                      key={item.id}
+                      title={item.title}
+                      description={item.description}
+                      severity={item.severity}
+                      freshness={{ state: "recent", timestamp: item.timestamp }}
+                    />
+                  ) : (
+                    <NotificationRow key={item.id} item={item} onMarkRead={onMarkRead} />
+                  )
+                )}
+              </div>
+            )}
+          </Tabs.Panel>
+        </Tabs>
+      </div>
+      {unreadCount > 0 && (
+        <button
+          type="button"
+          onClick={onMarkAllRead}
+          className="mt-3 self-start text-sm font-medium text-accent hover:underline"
+        >
+          Mark all as read
+        </button>
+      )}
     </Drawer>
   );
 }

@@ -61,8 +61,8 @@ const FAQS = [
     a: "Yes. Spy on Competitor monitors any Etsy shop with daily snapshots of sales, listing changes, and review growth so you see real trajectories.",
   },
   {
-    q: "How does the $1 trial work?",
-    a: "You get 3 full days of access for just $1.00 USD to verify real data, test the Opportunity Radar, and explore shop intelligence. You can cancel anytime directly inside your workspace settings without penalty.",
+    q: "Can I cancel anytime?",
+    a: "Yes. You can cancel your subscription anytime directly inside your workspace settings without penalty.",
   },
 ];
 
@@ -142,7 +142,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       {/* Top Banner */}
       <div className="top-bar">
         <span>
-          ✨ <strong>LAUNCH SPECIAL:</strong> Start researching Etsy opportunities today with a 3-day full-access trial for just $1.
+          ✨ Start researching Etsy opportunities today with real, verified sales data.
         </span>
         <a href="#pricing">See Plans & Pricing →</a>
       </div>
@@ -151,7 +151,8 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       <header>
         <div className="container nav-container">
           <Link href="/" className="logo">
-            <div className="logo-icon">S</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/icon-square.png" alt="" className="logo-icon" style={{ objectFit: "contain", background: "none" }} />
             SellerSalt
           </Link>
 
@@ -171,7 +172,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               Sign In
             </Link>
             <Link href="/checkout?plan=PRO" className="btn btn-accent">
-              Start $1 Trial
+              Get Started
             </Link>
           </div>
         </div>
@@ -196,7 +197,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
 
           <div className="hero-actions">
             <Link href="/checkout?plan=PRO" className="btn btn-accent">
-              Start 3-Day Trial ($1)
+              Get Started
             </Link>
             <a href="#showcase" className="btn btn-secondary">
               Explore Live Showcase ↓
@@ -1136,10 +1137,10 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 ${started?.priceUsd ?? 19}
                 <span> / month</span>
               </div>
-              <div className="pricing-trial-note">3-day trial for $1.00, cancel anytime</div>
+              <div className="pricing-trial-note">Cancel anytime</div>
 
               <ul className="pricing-features">
-                <li><Check className="h-4 w-4" /> {started?.maxSearchConfigs ?? 3} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {started?.maxSearchConfigs ?? 3} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {started?.maxTrackedShops ?? 5} Tracked Competitor Shops</li>
                 <li><Check className="h-4 w-4" /> {started?.maxProspectsPerMonth ?? 200} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Full Opportunity Radar Access</li>
@@ -1149,7 +1150,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             </div>
 
             <Link href="/checkout?plan=STARTED" className="btn btn-secondary" style={{ width: "100%" }}>
-              Start $1 Trial (Starter)
+              Choose Starter
             </Link>
           </div>
 
@@ -1165,10 +1166,10 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 ${pro?.priceUsd ?? 49}
                 <span> / month</span>
               </div>
-              <div className="pricing-trial-note">3-day trial for $1.00, cancel anytime</div>
+              <div className="pricing-trial-note">Cancel anytime</div>
 
               <ul className="pricing-features">
-                <li><Check className="h-4 w-4" /> {pro?.maxSearchConfigs ?? 10} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {pro?.maxSearchConfigs ?? 10} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {pro?.maxTrackedShops ?? 25} Tracked Competitor Shops</li>
                 <li><Check className="h-4 w-4" /> {pro?.maxProspectsPerMonth ?? 1000} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Strategic Competition Verdicts</li>
@@ -1179,7 +1180,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             </div>
 
             <Link href="/checkout?plan=PRO" className="btn btn-accent" style={{ width: "100%" }}>
-              Start $1 Trial (Pro)
+              Choose Pro
             </Link>
           </div>
 
@@ -1194,10 +1195,10 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 ${agency?.priceUsd ?? 199}
                 <span> / month</span>
               </div>
-              <div className="pricing-trial-note">3-day trial for $1.00, cancel anytime</div>
+              <div className="pricing-trial-note">Cancel anytime</div>
 
               <ul className="pricing-features">
-                <li><Check className="h-4 w-4" /> {agency?.maxSearchConfigs ?? 50} Active Search Streams</li>
+                <li><Check className="h-4 w-4" /> {agency?.maxSearchConfigs ?? 50} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {agency?.maxTrackedShops ?? 100} Tracked Competitor Shops</li>
                 <li><Check className="h-4 w-4" /> {agency?.maxProspectsPerMonth ?? 5000} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Multi-Seat Team Workspace Access</li>
@@ -1207,7 +1208,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             </div>
 
             <Link href="/checkout?plan=AGENCY" className="btn btn-secondary" style={{ width: "100%" }}>
-              Start $1 Trial (Agency)
+              Choose Agency
             </Link>
           </div>
         </div>
@@ -1217,7 +1218,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       <section id="faq" className="container">
         <div className="section-header">
           <h2>Frequently Asked Questions</h2>
-          <p>Everything you need to know about SellerSalt, data accuracy, and risk-free trial billing.</p>
+          <p>Everything you need to know about SellerSalt, data accuracy, and billing.</p>
         </div>
 
         <div className="faq-list">
@@ -1244,9 +1245,13 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       <footer>
         <div className="container footer-container">
           <div className="logo" style={{ fontSize: "16px" }}>
-            <div className="logo-icon" style={{ width: "24px", height: "24px", fontSize: "13px" }}>
-              S
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/icon-square.png"
+              alt=""
+              className="logo-icon"
+              style={{ width: "24px", height: "24px", objectFit: "contain", background: "none" }}
+            />
             SellerSalt
           </div>
 

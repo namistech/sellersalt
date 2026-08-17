@@ -465,7 +465,7 @@ export function CheckoutClient({
                   <ShieldCheck className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-[#141B16]">Zero Lock-In</strong>
-                    Cancel anytime during your trial with 1-click in billing settings.
+                    Cancel anytime with 1-click in billing settings.
                   </div>
                 </div>
 
@@ -496,7 +496,7 @@ export function CheckoutClient({
               <Link href="/privacy" target="_blank" className="text-[#141B16] underline font-medium">
                 Privacy Policy
               </Link>
-              . You may cancel your subscription before the trial period concludes to prevent future charges.
+              . You may cancel your subscription at any time from your billing settings to prevent future charges.
             </p>
           </div>
 
@@ -625,7 +625,7 @@ export function CheckoutClient({
                 <ul className="space-y-2 text-xs text-[#525B55]">
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
-                    <span><strong>{selected.maxSearchConfigs}</strong> Saved Keyword Search Streams</span>
+                    <span><strong>{selected.maxSearchConfigs}</strong> Saved Keyword Searches</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />

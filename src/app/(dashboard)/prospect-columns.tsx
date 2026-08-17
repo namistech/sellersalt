@@ -66,7 +66,7 @@ export function buildProspectColumns({
   if (showSearchName) {
     columns.push({
       key: "search",
-      header: "Search Stream",
+      header: "Saved Search",
       render: (p) => (
         <Text size="body-sm" color="secondary">
           {showSearchName(p) ?? "—"}

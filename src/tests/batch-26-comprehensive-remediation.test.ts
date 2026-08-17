@@ -157,6 +157,57 @@ test("Batch 26 Remediation: Etsy OAuth Environment & Redirect Resolution", async
     });
     assert.equal(cfg.redirectUri, "https://custom.sellersalt.com/api/seller-channels/etsy/callback");
   });
+
+  // Regression coverage for the "Credentials are not configured" bug: the
+  // connect/callback routes merge an AppSetting-configured client ID with
+  // any env-var one, but `isValid` used to be computed from env vars only —
+  // so a clientId configured solely via /admin Site Settings (the
+  // documented, intended path) still failed this check even though the
+  // route had a perfectly usable clientId. Fixed by accepting an
+  // `overrideClientId` that takes priority over env vars.
+  await t.test("without ETSY_CLIENT_ID/ETSY_KEYSTRING/ETSY_API_KEY and no override, config is invalid", () => {
+    const saved = {
+      ETSY_CLIENT_ID: process.env.ETSY_CLIENT_ID,
+      ETSY_KEYSTRING: process.env.ETSY_KEYSTRING,
+      ETSY_API_KEY: process.env.ETSY_API_KEY,
+    };
+    delete process.env.ETSY_CLIENT_ID;
+    delete process.env.ETSY_KEYSTRING;
+    delete process.env.ETSY_API_KEY;
+    try {
+      const cfg = resolveEtsyOAuthRedirectUri({ overrideBaseUrl: "https://sellersalt.com" });
+      assert.equal(cfg.isValid, false);
+      assert.equal(cfg.diagnosticCode, "ETSY_CLIENT_ID_MISSING");
+    } finally {
+      if (saved.ETSY_CLIENT_ID !== undefined) process.env.ETSY_CLIENT_ID = saved.ETSY_CLIENT_ID;
+      if (saved.ETSY_KEYSTRING !== undefined) process.env.ETSY_KEYSTRING = saved.ETSY_KEYSTRING;
+      if (saved.ETSY_API_KEY !== undefined) process.env.ETSY_API_KEY = saved.ETSY_API_KEY;
+    }
+  });
+
+  await t.test("an AppSetting-sourced clientId (overrideClientId) is valid even with no matching env var", () => {
+    const saved = {
+      ETSY_CLIENT_ID: process.env.ETSY_CLIENT_ID,
+      ETSY_KEYSTRING: process.env.ETSY_KEYSTRING,
+      ETSY_API_KEY: process.env.ETSY_API_KEY,
+    };
+    delete process.env.ETSY_CLIENT_ID;
+    delete process.env.ETSY_KEYSTRING;
+    delete process.env.ETSY_API_KEY;
+    try {
+      const cfg = resolveEtsyOAuthRedirectUri({
+        overrideBaseUrl: "https://sellersalt.com",
+        overrideClientId: "admin-configured-client-id",
+      });
+      assert.equal(cfg.isValid, true);
+      assert.equal(cfg.clientId, "admin-configured-client-id");
+      assert.equal(cfg.diagnosticCode, undefined);
+    } finally {
+      if (saved.ETSY_CLIENT_ID !== undefined) process.env.ETSY_CLIENT_ID = saved.ETSY_CLIENT_ID;
+      if (saved.ETSY_KEYSTRING !== undefined) process.env.ETSY_KEYSTRING = saved.ETSY_KEYSTRING;
+      if (saved.ETSY_API_KEY !== undefined) process.env.ETSY_API_KEY = saved.ETSY_API_KEY;
+    }
+  });
 });
 
 test("Batch 26 Remediation: Shop Tracking & Duration Entitlements", async (t) => {

@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       isShopsQuotaReached: trackedShopsCount >= maxTrackedShops,
       isListingsQuotaReached: trackedListingsCount >= maxTrackedListings,
       planName: orgPkg.name || "Free",
+      maxTrackingDays: orgPkg.maxTrackingDays,
     };
 
     return NextResponse.json({ success: true, quota });

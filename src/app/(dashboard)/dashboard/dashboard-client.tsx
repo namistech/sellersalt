@@ -39,7 +39,7 @@ export function DashboardClient({ initialData, connectors, userName, organizatio
   const { pulse } = data;
   const statusSubtitle =
     pulse.activeSearches > 0 || pulse.pendingProspects > 0
-      ? `${pulse.activeSearches} active search stream${pulse.activeSearches === 1 ? "" : "s"} · ${pulse.pendingProspects} prospect${pulse.pendingProspects === 1 ? "" : "s"} awaiting review`
+      ? `${pulse.activeSearches} active saved search${pulse.activeSearches === 1 ? "" : "es"} · ${pulse.pendingProspects} prospect${pulse.pendingProspects === 1 ? "" : "s"} awaiting review`
       : "Start discovering high-velocity Etsy products and tracking competitor momentum.";
 
   return (

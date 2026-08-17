@@ -17,6 +17,7 @@ export async function GET() {
     "assistant_name",
     "assistant_logo_url",
     "app_name",
+    "app_logo_url",
     "support_email",
   ]);
   return NextResponse.json({ settings: values });
