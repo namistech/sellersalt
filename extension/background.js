@@ -298,6 +298,66 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   lastSuggestedKeyByTab.delete(tabId);
 });
 
+async function handleAnalyzeListing(message) {
+  const connection = await getConnection();
+  if (!connection) return { ok: false, error: "Not connected to SellerSalt." };
+  try {
+    const { analyzeListing } = await import("./lib/api-client.js");
+    const result = await analyzeListing(connection.apiBase, connection.token, message.payload);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function handleAnalyzeShop(message) {
+  const connection = await getConnection();
+  if (!connection) return { ok: false, error: "Not connected to SellerSalt." };
+  try {
+    const { analyzeShop } = await import("./lib/api-client.js");
+    const result = await analyzeShop(connection.apiBase, connection.token, message.payload);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function handleScanSearch(message) {
+  const connection = await getConnection();
+  if (!connection) return { ok: false, error: "Not connected to SellerSalt." };
+  try {
+    const { scanSearch } = await import("./lib/api-client.js");
+    const result = await scanSearch(connection.apiBase, connection.token, message.payload);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function handleSaveOpportunity(message) {
+  const connection = await getConnection();
+  if (!connection) return { ok: false, error: "Not connected to SellerSalt." };
+  try {
+    const { saveOpportunity } = await import("./lib/api-client.js");
+    const result = await saveOpportunity(connection.apiBase, connection.token, message.payload);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function handleGetPlanStatus() {
+  const connection = await getConnection();
+  if (!connection) return { ok: false, error: "Not connected." };
+  try {
+    const { fetchPlanStatus } = await import("./lib/api-client.js");
+    const result = await fetchPlanStatus(connection.apiBase, connection.token);
+    return { ok: true, result };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     switch (message?.type) {
@@ -324,6 +384,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         break;
       case "APPLY_SUGGESTION":
         sendResponse(await handleApplySuggestion(message));
+        break;
+      case "ANALYZE_LISTING":
+        sendResponse(await handleAnalyzeListing(message));
+        break;
+      case "ANALYZE_SHOP":
+        sendResponse(await handleAnalyzeShop(message));
+        break;
+      case "SCAN_SEARCH":
+        sendResponse(await handleScanSearch(message));
+        break;
+      case "SAVE_OPPORTUNITY":
+        sendResponse(await handleSaveOpportunity(message));
+        break;
+      case "GET_PLAN_STATUS":
+        sendResponse(await handleGetPlanStatus());
         break;
       default:
         sendResponse({ ok: false, error: "Unknown message type." });

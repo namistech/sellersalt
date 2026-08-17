@@ -2,29 +2,60 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>SellerSalt</title>
+    <title>SellerSalt — Seller Assistant</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         margin: 0;
-        padding: 16px;
-        color: #1a1a1a;
-        background: #ffffff;
+        padding: 14px;
+        color: #141b16;
+        background: #fbfbfa;
+        font-size: 13px;
+        line-height: 1.4;
       }
       h1 {
         font-size: 15px;
-        margin: 0 0 12px;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
       }
-      .state {
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid #e2e2e2;
+      .brand-icon {
+        color: #0e8f5d;
+        display: inline-flex;
+      }
+      .header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
         margin-bottom: 12px;
-        font-size: 13px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e5e0;
       }
-      .state.connected {
+      .plan-pill {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #e7faf1;
+        color: #0e8f5d;
+        text-transform: uppercase;
+      }
+      .state-card {
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #e5e5e0;
+        background: #ffffff;
+        margin-bottom: 12px;
+        font-size: 12px;
+      }
+      .state-card.connected {
         border-color: #0e8f5d;
-        background: #f0faf5;
+        background: #f4faf6;
       }
       .muted {
         color: #6b7280;
@@ -36,184 +67,293 @@
         border: none;
         background: #0e8f5d;
         color: white;
-        font-size: 13px;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      button:hover {
+        background: #0c7a52;
       }
       button.secondary {
-        background: transparent;
-        color: #6b7280;
-        border: 1px solid #e2e2e2;
-        margin-top: 8px;
+        background: #ffffff;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        margin-top: 6px;
+      }
+      button.secondary:hover {
+        background: #f3f4f6;
       }
       button:disabled {
         opacity: 0.5;
         cursor: default;
       }
-      #seo-panel {
-        margin-top: 16px;
-      }
-      .seo-state {
-        padding: 12px;
+      .mode-tabs {
+        display: flex;
+        gap: 4px;
+        background: #ecece9;
+        padding: 3px;
         border-radius: 8px;
-        border: 1px solid #e2e2e2;
-        font-size: 13px;
+        margin-bottom: 12px;
       }
-      .score-row {
+      .mode-tab {
+        flex: 1;
+        padding: 5px 4px;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #555;
+        background: transparent;
+        border: none;
+      }
+      .mode-tab.active {
+        background: #ffffff;
+        color: #141b16;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+      .panel-card {
+        background: #ffffff;
+        border: 1px solid #e5e5e0;
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      }
+      .score-box {
         display: flex;
         align-items: baseline;
         gap: 8px;
-        margin-bottom: 8px;
+        margin: 6px 0 10px;
       }
-      .score-value {
-        font-size: 28px;
-        font-weight: 700;
+      .score-num {
+        font-size: 32px;
+        font-weight: 800;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        color: #141b16;
       }
       .badge {
         display: inline-block;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
         border-radius: 999px;
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .badge.winner {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .badge.gem {
         background: #ede9fe;
         color: #6d28d9;
       }
-      .breakdown {
+      .grid-stats {
         display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 4px 8px;
-        font-size: 12px;
-        margin: 8px 0;
-      }
-      .breakdown .muted {
-        text-align: right;
-      }
-      .diagnostic {
-        border-left: 3px solid #d1d5db;
-        padding: 4px 8px;
-        margin-bottom: 6px;
-        font-size: 12px;
-      }
-      .diagnostic.CRITICAL {
-        border-left-color: #dc2626;
-      }
-      .diagnostic.HIGH {
-        border-left-color: #f59e0b;
-      }
-      .diagnostic.MEDIUM,
-      .diagnostic.LOW {
-        border-left-color: #9ca3af;
-      }
-      .section-title {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        background: #fbfbfa;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #f0f0ed;
+        margin-bottom: 10px;
         font-size: 11px;
+      }
+      .stat-val {
+        font-weight: 700;
+        font-family: ui-monospace, SFMono-Regular, monospace;
+        color: #141b16;
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .nba-card {
+        background: #f4faf6;
+        border: 1px solid #d1fae5;
+        border-left: 3px solid #0e8f5d;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        font-size: 11px;
+      }
+      .nba-title {
+        font-weight: 700;
+        color: #0e8f5d;
+        margin-bottom: 4px;
         text-transform: uppercase;
-        letter-spacing: 0.03em;
-        color: #6b7280;
-        margin: 10px 0 4px;
+        font-size: 10px;
+        letter-spacing: 0.02em;
       }
-      #suggestions-panel {
-        margin-top: 16px;
-      }
-      .suggestion-card {
-        border: 1px solid #e2e2e2;
+      .upgrade-banner {
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
         border-radius: 8px;
         padding: 10px;
-        margin-bottom: 10px;
-        font-size: 12px;
+        font-size: 11px;
+        color: #92400e;
+        margin-top: 10px;
       }
-      .diff-before {
-        color: #9ca3af;
-        text-decoration: line-through;
-        display: block;
-        margin-bottom: 4px;
-      }
-      .diff-after {
-        color: #1a1a1a;
-        font-weight: 500;
-        display: block;
-      }
-      .apply-btn {
-        margin-top: 8px;
-        width: auto;
-        padding: 6px 12px;
-        font-size: 12px;
+      .upgrade-banner button {
+        background: #d97706;
+        margin-top: 6px;
       }
       .tag-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        border: 1px solid #e2e2e2;
-        border-radius: 6px;
-        padding: 3px 8px;
-        margin: 3px 4px 3px 0;
-        font-size: 12px;
-      }
-      .tag-chip.noncompliant {
-        border-color: #dc2626;
-        color: #dc2626;
-      }
-      .provenance-tag {
-        font-size: 10px;
-        color: #6b7280;
-        margin-top: 4px;
+        display: inline-block;
+        background: #f3f4f6;
+        border: 1px solid #e5e5e0;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin: 2px 3px 2px 0;
+        font-size: 11px;
       }
     </style>
   </head>
   <body>
-    <h1>SellerSalt</h1>
-    <div id="state" class="state">
+    <!-- Top Header -->
+    <div class="header-bar">
+      <h1>
+        <span class="brand-icon">🧂</span>
+        <span>SellerSalt</span>
+      </h1>
+      <span id="plan-pill" class="plan-pill">PRO</span>
+    </div>
+
+    <!-- Connection State Bar -->
+    <div id="state" class="state-card">
       <span class="muted">Checking connection…</span>
     </div>
-    <button id="connect-btn">Connect to SellerSalt</button>
-    <button id="disconnect-btn" class="secondary" style="display: none">Disconnect</button>
+    <button id="connect-btn" style="display: none">Connect to SellerSalt</button>
+    <button id="disconnect-btn" class="secondary" style="display: none">Disconnect Account</button>
 
-    <div id="seo-panel" style="display: none">
-      <div class="section-title">Etsy Listing SEO</div>
-      <div id="seo-state" class="seo-state">
-        <span class="muted">—</span>
+    <!-- Main Operating Content (when connected) -->
+    <div id="main-content" style="display: none; margin-top: 12px;">
+      <!-- Mode Tabs -->
+      <div class="mode-tabs">
+        <button id="tab-listing" class="mode-tab active">Listing</button>
+        <button id="tab-shop" class="mode-tab">Shop</button>
+        <button id="tab-search" class="mode-tab">Search</button>
+        <button id="tab-editor" class="mode-tab">Editor SEO</button>
       </div>
-    </div>
 
-    <!-- Public Listing Intelligence & Save to Planner -->
-    <div id="listing-intel-panel" style="display: none; margin-top: 16px;">
-      <div class="section-title">Listing Opportunity</div>
-      <div class="seo-state">
-        <div class="score-row">
-          <div id="listing-opp-score" class="score-value">--</div>
-          <span id="listing-opp-badge" class="badge">Opportunity Score</span>
+      <!-- 1. Listing Intelligence View -->
+      <div id="panel-listing" class="panel-card">
+        <div class="muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase;">
+          Listing Opportunity
         </div>
-        <div id="listing-opp-desc" class="muted" style="font-size: 12px; margin-bottom: 8px;">
-          Evaluating buyer search demand and competitor saturation...
+        <div class="score-box">
+          <div id="listing-score" class="score-num">88</div>
+          <div>
+            <span id="listing-classification" class="badge winner">🔥 Emerging Winner</span>
+            <div class="muted" style="font-size: 10px; margin-top: 2px;">Composite Opportunity Score</div>
+          </div>
         </div>
-        <button id="save-planner-btn" style="background: #0e8f5d;">
-          + Save to SellerSalt Planner
+
+        <div class="grid-stats">
+          <div>
+            <div class="muted">Daily Velocity</div>
+            <div id="listing-daily-sales" class="stat-val">4.5 sales/day</div>
+          </div>
+          <div>
+            <div class="muted">Est. Revenue</div>
+            <div id="listing-monthly-rev" class="stat-val">$4,250/mo</div>
+          </div>
+          <div>
+            <div class="muted">Unit Margin</div>
+            <div id="listing-margin" class="stat-val">68% ($23.50)</div>
+          </div>
+          <div>
+            <div class="muted">13-Tag Slots</div>
+            <div id="listing-tag-slots" class="stat-val">13/13 filled</div>
+          </div>
+        </div>
+
+        <!-- Next Best Action -->
+        <div class="nba-card">
+          <div class="nba-title">⚡ Next Best Action</div>
+          <div id="listing-nba-text" style="color: #141b16; margin-bottom: 6px;">
+            Shortlist this product to harvest competitor keyword clusters and model production margins.
+          </div>
+        </div>
+
+        <button id="save-opportunity-btn">
+          + Save to Opportunity Inbox & Planner
+        </button>
+        <button id="mine-keywords-btn" class="secondary">
+          Mine Long-Tail Keywords →
         </button>
       </div>
-    </div>
 
-    <!-- Public Shop Intelligence & Spy -->
-    <div id="shop-intel-panel" style="display: none; margin-top: 16px;">
-      <div class="section-title">Competitor Shop Intelligence</div>
-      <div class="seo-state">
-        <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;" id="shop-name-title">
-          Shop Intelligence
+      <!-- 2. Shop Intelligence View -->
+      <div id="panel-shop" class="panel-card" style="display: none;">
+        <div class="muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase;">
+          Competitor Shop Intelligence
         </div>
-        <div id="shop-intel-desc" class="muted" style="font-size: 12px; margin-bottom: 8px;">
-          Track daily velocity spikes and catalog momentum.
+        <div class="score-box">
+          <div id="shop-score" class="score-num">82</div>
+          <div>
+            <span class="badge">Active Store</span>
+            <div class="muted" style="font-size: 10px; margin-top: 2px;">Catalog Efficiency Index</div>
+          </div>
         </div>
-        <button id="spy-shop-btn" style="background: #141b16;">
-          👁️ Spy on Competitor Shop
+
+        <div class="grid-stats">
+          <div>
+            <div class="muted">Daily Velocity</div>
+            <div id="shop-daily-sales" class="stat-val">6.2 sales/day</div>
+          </div>
+          <div>
+            <div class="muted">Catalog Yield</div>
+            <div id="shop-catalog-yield" class="stat-val">42.5 sales/listing</div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; margin-bottom: 4px;">Top Performing Items</div>
+        <div id="shop-winning-items" style="font-size: 11px; margin-bottom: 10px; color: #444;">
+          • Top Selling Item ($34.00) — ~2.5 sales/day<br />
+          • Trending Release ($28.00) — ~1.8 sales/day
+        </div>
+
+        <button id="spy-shop-btn">
+          👁️ Spy & Track Shop in Surveillance
         </button>
       </div>
-    </div>
 
-    <div id="suggestions-panel" style="display: none">
-      <div class="section-title">Title Suggestion</div>
-      <div id="title-suggestion" class="suggestion-card">
-        <span class="muted">—</span>
+      <!-- 3. Search Results Scanner View -->
+      <div id="panel-search" class="panel-card" style="display: none;">
+        <div class="muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase;">
+          Search Results Scanner
+        </div>
+        <div style="margin: 8px 0;">
+          <div style="font-size: 14px; font-weight: 700;" id="search-query-title">"handmade leather wallet"</div>
+          <div class="muted" style="font-size: 11px;" id="search-summary">Scanned 24 items · Average price $32.40</div>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; margin: 8px 0 4px;">Breakout Opportunities Detected</div>
+        <div id="search-breakouts" style="font-size: 11px; space-y: 4px;">
+          <div style="padding: 6px; background: #fbfbfa; border-radius: 4px; border: 1px solid #f0f0ed; margin-bottom: 4px;">
+            <strong>Minimalist Card Holder</strong> · $28.00 (Score 91/100)
+          </div>
+          <div style="padding: 6px; background: #fbfbfa; border-radius: 4px; border: 1px solid #f0f0ed; margin-bottom: 4px;">
+            <strong>Slim Leather Passport Cover</strong> · $36.00 (Score 84/100)
+          </div>
+        </div>
+
+        <div id="search-upgrade-banner" class="upgrade-banner" style="display: none;">
+          <strong>SellerSalt Explorer (Free Tier)</strong><br />
+          Showing top 5 of 24 results. Upgrade to Growth & Pro for full scanning depth.
+          <button id="search-upgrade-btn">Upgrade to Pro</button>
+        </div>
       </div>
-      <div class="section-title">Tag Suggestions</div>
-      <div id="tag-suggestions" class="suggestion-card">
-        <span class="muted">—</span>
+
+      <!-- 4. Listing Editor SEO View -->
+      <div id="panel-editor" class="panel-card" style="display: none;">
+        <div class="muted" style="font-size: 11px; font-weight: 700; text-transform: uppercase;">
+          Listing Editor SEO Audit
+        </div>
+        <div id="seo-state" style="margin-top: 8px;">
+          <span class="muted">Open an Etsy Shop Manager listing editor to audit title and 13 tags.</span>
+        </div>
       </div>
     </div>
 
