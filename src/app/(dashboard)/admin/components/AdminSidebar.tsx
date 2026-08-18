@@ -89,18 +89,40 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const navGroups: AdminNavGroup[] = [
     {
-      id: "general",
-      label: "General",
+      id: "overview_group",
+      label: "Overview",
       items: [
         { id: "overview", label: "Operations Overview", icon: LayoutDashboard },
-        { id: "app-settings", label: "App Settings", icon: Settings },
-        { id: "branding", label: "Branding & SEO", icon: Palette },
-        { id: "storage", label: "Media Library", icon: ImageIcon },
-        { id: "notifications", label: "Announcements", icon: Bell },
+        { id: "diagnostics", label: "Diagnostics & Health", icon: Activity },
       ],
     },
     {
-      id: "users_orgs",
+      id: "config_group",
+      label: "Configuration",
+      items: [
+        { id: "app-settings", label: "App Settings", icon: Settings },
+        { id: "branding", label: "Branding & SEO", icon: Palette },
+      ],
+    },
+    {
+      id: "integrations_group",
+      label: "Integrations",
+      items: [
+        { id: "integrations", label: "Integration Hub", icon: Globe, badge: "18+ Hubs", badgeVariant: "success" },
+        { id: "ai", label: "API Providers Directory", icon: Sparkles },
+      ],
+    },
+    {
+      id: "commerce_group",
+      label: "Commerce",
+      items: [
+        { id: "packages", label: "Plans & Quotas", icon: Layers },
+        { id: "coupons", label: "Coupons & Promos", icon: Tag },
+        { id: "payments", label: "Payment Gateways", icon: CreditCard },
+      ],
+    },
+    {
+      id: "users_group",
       label: "Users & Organizations",
       items: [
         {
@@ -115,47 +137,20 @@ export function AdminSidebar({
       ],
     },
     {
-      id: "billing",
-      label: "Billing & Plans",
+      id: "communication_group",
+      label: "Communication",
       items: [
-        { id: "packages", label: "Plans & Quotas", icon: Layers },
-        { id: "free-plan", label: "Free Explorer Plan", icon: Sliders },
-        { id: "coupons", label: "Coupons", icon: Tag },
-        { id: "payments", label: "Payment Gateways", icon: CreditCard },
-      ],
-    },
-    {
-      id: "integrations",
-      label: "Marketplace & OAuth",
-      items: [
-        { id: "integrations", label: "Integration Hub", icon: Globe, badge: "8 Channels" },
-      ],
-    },
-    {
-      id: "ai_automation",
-      label: "AI & Automation",
-      items: [
-        { id: "ai", label: "AI Providers", icon: Sparkles },
-        { id: "ai-assistant", label: "SaltBot Persona", icon: Bot },
-        { id: "mcp", label: "MCP Protocol", icon: Cpu, badge: "v1.0" },
-        { id: "webhooks", label: "Webhooks Log", icon: Webhook },
-      ],
-    },
-    {
-      id: "security",
-      label: "Security & Trust",
-      items: [
-        { id: "security", label: "Abuse & Risk Telemetry", icon: Shield, badge: "Active" },
-        { id: "audit-logs", label: "Audit Logs", icon: FileText },
-      ],
-    },
-    {
-      id: "system",
-      label: "System & Infrastructure",
-      items: [
+        { id: "notifications", label: "Announcements & Alerts", icon: Bell },
         { id: "email", label: "Email / SMTP", icon: Mail },
-        { id: "storage-config", label: "S3 / R2 Storage", icon: HardDrive },
-        { id: "diagnostics", label: "Diagnostics & Health", icon: Activity },
+      ],
+    },
+    {
+      id: "infra_group",
+      label: "Infrastructure",
+      items: [
+        { id: "storage", label: "Media & Asset Storage", icon: ImageIcon },
+        { id: "security", label: "Abuse & Risk Telemetry", icon: Shield, badge: "Active", badgeVariant: "success" },
+        { id: "audit-logs", label: "Audit Logs", icon: FileText },
       ],
     },
   ];

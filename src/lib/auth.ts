@@ -12,6 +12,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { rpID, expectedOrigin } from "./webauthn";
 import { verifyChallengeToken } from "./webauthn-challenge";
 import { get2FA, verify2FALoginCode } from "./two-factor";
+import { getSetting } from "./app-settings";
 
 // There's no NextAuth Account/Session adapter table in this schema (JWT
 // session strategy only), so User.authMethods is the only record of which
@@ -23,6 +24,59 @@ async function recordAuthMethod(userId: string, method: string, currentMethods: 
     where: { id: userId },
     data: { authMethods: { push: method } },
   });
+}
+
+export async function getAuthOptions(): Promise<NextAuthOptions> {
+  const [googleId, googleSec, etsyId, etsySec] = await Promise.all([
+    getSetting("google_client_id").catch(() => null),
+    getSetting("google_client_secret").catch(() => null),
+    getSetting("etsy_seller_client_id").catch(() => null),
+    getSetting("etsy_seller_client_secret").catch(() => null),
+  ]);
+
+  const effectiveGoogleId = (googleId || process.env.GOOGLE_CLIENT_ID || "google-client-id-placeholder").trim();
+  const effectiveGoogleSecret = (googleSec || process.env.GOOGLE_CLIENT_SECRET || "google-client-secret-placeholder").trim();
+  const effectiveEtsyId = (etsyId || process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "").trim();
+  const effectiveEtsySecret = (etsySec || process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "").trim();
+
+  return {
+    ...authOptions,
+    providers: [
+      GoogleProvider({
+        clientId: effectiveGoogleId,
+        clientSecret: effectiveGoogleSecret,
+        allowDangerousEmailAccountLinking: true,
+      }),
+      {
+        id: "etsy",
+        name: "Etsy",
+        type: "oauth",
+        version: "2.0",
+        checks: ["pkce", "state"],
+        authorization: {
+          url: "https://www.etsy.com/oauth/connect",
+          params: {
+            scope: "listings_w listings_r shops_r transactions_r",
+            response_type: "code",
+            prompt: "consent",
+          },
+        },
+        token: "https://api.etsy.com/v3/public/oauth/token",
+        userinfo: "https://openapi.etsy.com/v3/application/users/me",
+        clientId: effectiveEtsyId,
+        clientSecret: effectiveEtsySecret,
+        profile(profile: any) {
+          return {
+            id: String(profile.user_id || profile.id || Date.now()),
+            name: profile.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Etsy Seller",
+            email: profile.primary_email || profile.email || `etsy_${profile.user_id || Date.now()}@sellersalt.user`,
+            image: profile.image_url_75x75 || profile.avatar_url || null,
+          };
+        },
+      },
+      ...authOptions.providers.filter((p) => p.id !== "google" && p.id !== "etsy"),
+    ],
+  };
 }
 
 export const authOptions: NextAuthOptions = {

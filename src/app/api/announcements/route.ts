@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isAdminEmail } from "@/lib/is-admin";
 import {
   getActiveAnnouncements,
   dismissAnnouncement,
@@ -33,8 +34,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { action, announcementId, title, message, priority, placement, linkUrl, linkText, expiresAt } = body;
 
-    // 1. User read/dismissal actions — scoped to the calling user only,
-    // never accepts a target userId from the request body.
+    // 1. User read/dismissal actions — scoped to the calling user only
     if ((action === "dismiss" || action === "read") && announcementId) {
       await dismissAnnouncement(announcementId, userId);
       return NextResponse.json({ success: true });
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Admin creation action
-    const isAdmin = user?.role === "ADMIN" || user?.isAdmin === true;
+    const isAdmin = isAdminEmail(user?.email) || user?.role === "ADMIN" || user?.isAdmin === true;
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden: Admin access required." }, { status: 403 });
     }

@@ -39,18 +39,21 @@ export class S3StorageProvider implements StorageProvider {
     );
   }
 
-  async upload(file: Buffer, filename: string, mimeType: string): Promise<UploadResult> {
+  async upload(
+    file: Buffer,
+    filename: string,
+    mimeType: string,
+    options?: { folder?: string; prefix?: string; isPublic?: boolean }
+  ): Promise<UploadResult> {
     if (!this.isConfigured()) {
       throw new Error("S3/R2 storage provider is not configured with bucket credentials.");
     }
 
+    const folder = (options?.folder || "uploads").replace(/^\/+|\/+$/g, "");
+    const prefix = (options?.prefix || "asset").replace(/[^a-zA-Z0-9_-]/g, "");
     const ext = path.extname(filename) || ".png";
-    const key = `avatars/avatar_${crypto.randomBytes(16).toString("hex")}${ext}`;
+    const key = `${folder}/${prefix}_${crypto.randomBytes(16).toString("hex")}${ext}`;
 
-    // No ACL set: modern buckets (especially R2, and AWS's "bucket owner
-    // enforced" default) reject or ignore per-object ACLs — public read
-    // access must come from a bucket policy or a CDN in front of it, which
-    // is on the operator to configure once, not per upload.
     await this.client.send(
       new PutObjectCommand({
         Bucket: this.config.bucket,
@@ -71,16 +74,32 @@ export class S3StorageProvider implements StorageProvider {
 
   async delete(fileKeyOrUrl: string): Promise<boolean> {
     try {
-      // Upload always produces "avatars/<unique-filename>" as the key —
-      // whatever URL shape wraps that (default AWS URL, custom endpoint,
-      // or a public_base_url/CDN override), the filename is always the
-      // last path segment, so this recovers the key regardless of shape.
-      const filename = fileKeyOrUrl.split("/").filter(Boolean).pop();
-      if (!filename) return false;
-      const key = `avatars/${filename}`;
+      if (!fileKeyOrUrl) return false;
+
+      // Extract key from URL or raw key path
+      let key = fileKeyOrUrl;
+      if (key.startsWith("http://") || key.startsWith("https://")) {
+        try {
+          const parsed = new URL(key);
+          let pathname = parsed.pathname.replace(/^\/+/, "");
+          // If pathname starts with bucket name (path style), strip bucket prefix
+          if (pathname.startsWith(`${this.config.bucket}/`)) {
+            pathname = pathname.substring(this.config.bucket.length + 1);
+          }
+          key = pathname;
+        } catch {
+          // Fallback to segments
+          const segments = fileKeyOrUrl.split("/").filter(Boolean);
+          key = segments.slice(-2).join("/");
+        }
+      } else if (key.startsWith("/uploads/")) {
+        key = key.replace(/^\/uploads\//, "");
+      }
+
       await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }));
       return true;
-    } catch {
+    } catch (err) {
+      console.error("[S3StorageProvider:delete] Failed to delete object:", err);
       return false;
     }
   }

@@ -16,29 +16,30 @@ import {
   Sparkles,
   Zap,
   Sliders,
+  Loader2,
+  HelpCircle,
 } from "lucide-react";
-import {
-  Card,
-  Heading,
-  Text,
-  Badge,
-  Button,
-  Alert,
-} from "@/components/ui";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 export interface AnnouncementModel {
   id: string;
   title: string;
   message: string;
-  linkText?: string;
-  linkUrl?: string;
+  ctaText?: string | null;
+  ctaUrl?: string | null;
   priority: "URGENT" | "NORMAL" | "INFO";
-  placement: "TOP_BANNER" | "DASHBOARD_BANNER" | "CHECKOUT_BANNER" | "PRICING_BANNER" | "NOTIFICATIONS_PANEL";
+  placement: "TOP_BANNER" | "DASHBOARD_BANNER" | "CHECKOUT_BANNER" | "PRICING_BANNER" | "NOTIFICATIONS_PANEL" | "MODAL";
   audience: "ALL" | "LOGGED_IN" | "LOGGED_OUT" | "PAID_ONLY" | "FREE_ONLY";
-  status: "ACTIVE" | "SCHEDULED" | "DRAFT" | "EXPIRED";
-  dismissible: boolean;
-  expiresAt?: string | null;
+  isActive: boolean;
+  isPermanent?: boolean;
+  isClosable?: boolean;
+  displayFrequency?: string;
+  maxImpressions?: number | null;
+  startDate?: string;
+  endDate?: string | null;
   createdAt: string;
+  readsCount?: number;
 }
 
 interface AnnouncementsViewProps {
@@ -61,387 +62,439 @@ export function AnnouncementsView({
   const [urgentSaving, setUrgentSaving] = useState(false);
   const [urgentSaved, setUrgentSaved] = useState(false);
 
-  // Custom Announcements List
-  const [announcements, setAnnouncements] = useState<AnnouncementModel[]>([
-    {
-      id: "ann-1",
-      title: "Etsy Open API v3 Rate Limit Ceilings Expanded",
-      message: "Listing audit queues now process up to 8 req/sec with instant tag synchronization and SEO scoring.",
-      linkText: "View Diagnostics",
-      linkUrl: "/admin?tab=diagnostics",
-      priority: "NORMAL",
-      placement: "DASHBOARD_BANNER",
-      audience: "ALL",
-      status: "ACTIVE",
-      dismissible: true,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "ann-2",
-      title: "Special Launch Pricing — Starter & Pro Plans",
-      message: "Get 3-day full access trials on all growth packages with automated Etsy SEO analysis.",
-      linkText: "Upgrade Workspace",
-      linkUrl: "/checkout?plan=PRO",
-      priority: "INFO",
-      placement: "TOP_BANNER",
-      audience: "FREE_ONLY",
-      status: "ACTIVE",
-      dismissible: true,
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  // Custom Announcements List from API
+  const [announcements, setAnnouncements] = useState<AnnouncementModel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // New Announcement Form
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [linkText, setLinkText] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
+  const [ctaText, setCtaText] = useState("");
+  const [ctaUrl, setCtaUrl] = useState("");
   const [priority, setPriority] = useState<"URGENT" | "NORMAL" | "INFO">("NORMAL");
-  const [placement, setPlacement] = useState<"TOP_BANNER" | "DASHBOARD_BANNER" | "CHECKOUT_BANNER" | "PRICING_BANNER" | "NOTIFICATIONS_PANEL">("TOP_BANNER");
+  const [placement, setPlacement] = useState<"TOP_BANNER" | "DASHBOARD_BANNER" | "CHECKOUT_BANNER" | "PRICING_BANNER" | "NOTIFICATIONS_PANEL" | "MODAL">("TOP_BANNER");
   const [audience, setAudience] = useState<"ALL" | "LOGGED_IN" | "LOGGED_OUT" | "PAID_ONLY" | "FREE_ONLY">("ALL");
-  const [dismissible, setDismissible] = useState(true);
+  const [isPermanent, setIsPermanent] = useState(false);
+  const [isClosable, setIsClosable] = useState(true);
+  const [displayFrequency, setDisplayFrequency] = useState("ONCE");
+  const [maxImpressions, setMaxImpressions] = useState(3);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSaveUrgentBanner = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setUrgentSaving(true);
-    await onSaveSetting("announcement_urgent_active", String(urgentActive));
-    await onSaveSetting("announcement_urgent_text", urgentText.trim());
-    await onSaveSetting("announcement_urgent_link", urgentLink.trim());
-    setUrgentSaving(false);
-    setUrgentSaved(true);
-    setTimeout(() => setUrgentSaved(false), 2500);
+  const fetchAnnouncements = async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/admin/announcements");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.announcements) setAnnouncements(data.announcements);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCreateAnnouncement = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !message.trim()) return;
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
 
+  const handleSaveUrgent = async () => {
+    setUrgentSaving(true);
     try {
-      await fetch("/api/announcements", {
+      await onSaveSetting("announcement_urgent_active", String(urgentActive));
+      await onSaveSetting("announcement_urgent_text", urgentText);
+      await onSaveSetting("announcement_urgent_link", urgentLink);
+      setUrgentSaved(true);
+      setTimeout(() => setUrgentSaved(false), 2500);
+    } finally {
+      setUrgentSaving(false);
+    }
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !message) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/announcements", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "create",
-          title: title.trim(),
-          message: message.trim(),
-          linkText: linkText.trim() || undefined,
-          linkUrl: linkUrl.trim() || undefined,
+          title,
+          message,
+          ctaText,
+          ctaUrl,
           priority,
-          placement: placement === "TOP_BANNER" ? "BANNER" : "NOTIFICATIONS",
+          placement,
+          audience,
+          isPermanent,
+          isClosable,
+          displayFrequency,
+          maxImpressions,
         }),
       });
-    } catch {}
 
-    const newAnn: AnnouncementModel = {
-      id: `ann-${Date.now()}`,
-      title: title.trim(),
-      message: message.trim(),
-      linkText: linkText.trim() || undefined,
-      linkUrl: linkUrl.trim() || undefined,
-      priority,
-      placement,
-      audience,
-      status: "ACTIVE",
-      dismissible,
-      createdAt: new Date().toISOString(),
-    };
-
-    setAnnouncements((prev) => [newAnn, ...prev]);
-    setIsCreating(false);
-    setTitle("");
-    setMessage("");
-    setLinkText("");
-    setLinkUrl("");
+      if (res.ok) {
+        setIsCreating(false);
+        setTitle("");
+        setMessage("");
+        setCtaText("");
+        setCtaUrl("");
+        await fetchAnnouncements();
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteAnnouncement = (id: string) => {
-    setAnnouncements((prev) => prev.filter((a) => a.id !== id));
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    try {
+      await fetch("/api/admin/announcements", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isActive: !currentActive }),
+      });
+      await fetchAnnouncements();
+    } catch {
+      //
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this announcement?")) return;
+    try {
+      await fetch(`/api/admin/announcements?id=${id}`, { method: "DELETE" });
+      await fetchAnnouncements();
+    } catch {
+      //
+    }
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-[var(--color-line)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0E8F5D]/10 text-[#0E8F5D]">
-              <Megaphone className="h-4 w-4" />
-            </span>
-            <Heading as="h2" size="h3" className="text-xl font-bold text-ink">
-              Announcements & System Alerts Engine
-            </Heading>
+            <h2 className="text-xl font-bold text-[var(--color-ink)]">Announcements & Notification Center</h2>
+            <Badge variant="success">
+              Persistent Multi-Placement Broadcasts
+            </Badge>
           </div>
-          <Text size="body-sm" className="text-ink-secondary mt-1">
-            Broadcast targeted banner notifications, feature announcements, and maintenance alerts across marketing pages and customer workspaces.
-          </Text>
+          <p className="text-sm text-[var(--color-ink-muted)] mt-1">
+            Publish site-wide alert banners, target dashboard announcements to specific seller cohorts, and track dismissal metrics.
+          </p>
         </div>
 
         <Button
-          variant="primary"
           size="compact"
-          onClick={() => setIsCreating(true)}
-          className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold self-start sm:self-auto"
+          variant="primary"
+          onClick={() => setIsCreating((s) => !s)}
+          className="text-xs h-9 font-semibold flex items-center gap-1.5"
         >
-          <Plus className="h-4 w-4 mr-1" /> Create Announcement
+          <Plus className="w-4 h-4" />
+          <span>{isCreating ? "Close Composer" : "Compose Announcement"}</span>
         </Button>
       </div>
 
-      {/* 1. URGENT EMERGENCY BANNER */}
-      <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-        <div className="flex items-center justify-between border-b border-line pb-3">
+      {/* Urgent Top Banner Override Card */}
+      <div className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
           <div>
-            <h3 className="text-sm font-extrabold text-ink">Global Top Urgent Announcement Banner</h3>
-            <p className="text-xs text-ink-tertiary">Prominently rendered at the top of every public and authenticated page.</p>
+            <h3 className="text-base font-bold text-[var(--color-ink)] flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-amber-500" />
+              <span>Urgent Global Top-Bar Override</span>
+            </h3>
+            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
+              High-priority broadcast banner rendered above all navigation on every page.
+            </p>
           </div>
-          <Badge variant={urgentActive ? "success" : "neutral"}>
-            {urgentActive ? "ACTIVE BANNER" : "DISABLED"}
+          <Badge variant={urgentActive ? "warning" : "neutral"}>
+            {urgentActive ? "ACTIVE ON LIVE SITE" : "INACTIVE"}
           </Badge>
         </div>
 
-        {urgentSaved && <Alert variant="success">Urgent Announcement Banner settings saved successfully.</Alert>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-xs font-medium text-[var(--color-ink)]">Banner Headline Text</label>
+            <input
+              type="text"
+              value={urgentText}
+              onChange={(e) => setUrgentText(e.target.value)}
+              placeholder="e.g. Scheduled maintenance on Etsy synchronization engine tonight at 02:00 UTC."
+              className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+            />
+          </div>
 
-        <form onSubmit={handleSaveUrgentBanner} className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-[var(--color-ink)]">Destination Link (Optional)</label>
+            <input
+              type="url"
+              value={urgentLink}
+              onChange={(e) => setUrgentLink(e.target.value)}
+              placeholder="https://status.sellersalt.com"
+              className="w-full text-xs font-mono bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 border-t border-[var(--color-line)]">
+          <label className="flex items-center gap-2 text-xs font-medium text-[var(--color-ink)] cursor-pointer">
             <input
               type="checkbox"
-              id="urgentActiveToggle"
               checked={urgentActive}
               onChange={(e) => setUrgentActive(e.target.checked)}
-              className="h-4 w-4 accent-[#0E8F5D] rounded"
+              className="rounded border-[var(--color-line)] text-amber-500"
             />
-            <label htmlFor="urgentActiveToggle" className="text-xs font-bold text-ink cursor-pointer">
-              Display Urgent Announcement Banner Globally
-            </label>
+            <span>Enable Urgent Top-Bar Broadcast</span>
+          </label>
+
+          <Button
+            size="compact"
+            variant="primary"
+            onClick={handleSaveUrgent}
+            disabled={urgentSaving}
+            className="text-xs h-8 px-4 font-semibold"
+          >
+            {urgentSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                Saving...
+              </>
+            ) : urgentSaved ? (
+              "✓ Saved!"
+            ) : (
+              "Save Urgent Banner"
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Compose Announcement Modal / Form */}
+      {isCreating && (
+        <form
+          onSubmit={handleCreateSubmit}
+          className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-md space-y-5"
+        >
+          <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+            <h3 className="font-bold text-base text-[var(--color-ink)] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[var(--color-brand-primary)]" />
+              <span>Compose Target Announcement</span>
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">Banner Message</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-ink)]">Title</label>
               <input
                 type="text"
-                value={urgentText}
-                onChange={(e) => setUrgentText(e.target.value)}
-                placeholder="e.g. ⚡ Special Promo: 50% off all Pro plans this week only!"
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink"
+                required
+                placeholder="Etsy Tag Optimization Engine Upgraded"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)] font-semibold"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">Action Link / Destination URL</label>
-              <input
-                type="text"
-                value={urgentLink}
-                onChange={(e) => setUrgentLink(e.target.value)}
-                placeholder="https://sellersalt.com/pricing or /checkout?plan=PRO"
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink"
-              />
-            </div>
-          </div>
-
-          {/* Live Preview */}
-          {urgentActive && urgentText && (
-            <div className="p-3 rounded-xl bg-[#141B16] text-white flex items-center justify-between text-xs font-medium border border-[#2A362D]">
-              <div className="flex items-center gap-2">
-                <span className="flex h-2 w-2 rounded-full bg-[#0E8F5D] animate-pulse" />
-                <span>{urgentText}</span>
-              </div>
-              {urgentLink && (
-                <span className="text-[#0E8F5D] underline font-bold flex items-center gap-1 text-[11px]">
-                  Learn more <ExternalLink className="h-3 w-3" />
-                </span>
-              )}
-            </div>
-          )}
-
-          <Button
-            type="submit"
-            variant="secondary"
-            size="compact"
-            loading={urgentSaving}
-            className="text-xs font-bold"
-          >
-            Save Emergency Banner
-          </Button>
-        </form>
-      </Card>
-
-      {/* 2. CREATE ANNOUNCEMENT FORM */}
-      {isCreating && (
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-5 border-l-4 border-l-[#0E8F5D]">
-          <div className="flex items-center justify-between border-b border-line pb-3">
-            <h3 className="text-sm font-extrabold text-ink">Author New Announcement</h3>
-            <Button
-              variant="ghost"
-              size="compact"
-              onClick={() => setIsCreating(false)}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-          </div>
-
-          <form onSubmit={handleCreateAnnouncement} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-ink">Announcement Headline / Title</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. New Feature: Instant Keyword Clustering"
-                  className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white"
-                />
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Priority</label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as any)}
+                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="INFO">Information</option>
+                  <option value="URGENT">Urgent</option>
+                </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-ink">Placement Surface</label>
+              <div>
+                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Placement</label>
                 <select
                   value={placement}
                   onChange={(e) => setPlacement(e.target.value as any)}
-                  className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white font-semibold"
+                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
                 >
-                  <option value="TOP_BANNER">Homepage & Top Bar Banner</option>
-                  <option value="DASHBOARD_BANNER">Logged-In Workspace Dashboard</option>
-                  <option value="CHECKOUT_BANNER">Checkout Page Banner</option>
-                  <option value="PRICING_BANNER">Pricing Table Banner</option>
-                  <option value="NOTIFICATIONS_PANEL">Notification Center Bell Dropdown</option>
+                  <option value="TOP_BANNER">Top Global Banner</option>
+                  <option value="DASHBOARD_BANNER">Dashboard Header</option>
+                  <option value="CHECKOUT_BANNER">Checkout Page</option>
+                  <option value="PRICING_BANNER">Pricing Page</option>
+                  <option value="NOTIFICATIONS_PANEL">Notifications Bell</option>
+                  <option value="MODAL">Modal Popup</option>
                 </select>
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">Announcement Message Body</label>
-              <textarea
-                required
-                rows={3}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Explain the update, value proposition, or instruction clearly in plain English..."
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-ink">Button / CTA Text (Optional)</label>
-                <input
-                  type="text"
-                  value={linkText}
-                  onChange={(e) => setLinkText(e.target.value)}
-                  placeholder="e.g. Try Now"
-                  className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-ink">Destination URL (Optional)</label>
-                <input
-                  type="text"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="e.g. /keyword-research"
-                  className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-ink">Target Audience</label>
+              <div>
+                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Audience</label>
                 <select
                   value={audience}
                   onChange={(e) => setAudience(e.target.value as any)}
-                  className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white font-semibold"
+                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
                 >
-                  <option value="ALL">All Users (Public & Auth)</option>
-                  <option value="LOGGED_IN">Logged-In Customers Only</option>
-                  <option value="LOGGED_OUT">Public Visitors Only</option>
-                  <option value="FREE_ONLY">Free Tier Users Only</option>
+                  <option value="ALL">All Visitors</option>
+                  <option value="LOGGED_IN">Logged-In Sellers</option>
+                  <option value="LOGGED_OUT">Logged-Out Only</option>
+                  <option value="FREE_ONLY">Free Tier Only</option>
                   <option value="PAID_ONLY">Paid Subscribers Only</option>
                 </select>
               </div>
             </div>
+          </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="compact"
-                onClick={() => setIsCreating(false)}
-                className="text-xs"
-              >
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-[var(--color-ink)]">Announcement Body Message</label>
+            <textarea
+              required
+              rows={3}
+              placeholder="Full copy explaining new tools, Etsy API ceiling upgrades, or feature announcements..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-ink)]">Call-to-Action Button Text (Optional)</label>
+              <input
+                type="text"
+                placeholder="View Audit Studio"
+                value={ctaText}
+                onChange={(e) => setCtaText(e.target.value)}
+                className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--color-ink)]">Call-to-Action Destination URL</label>
+              <input
+                type="url"
+                placeholder="/seo-engine"
+                value={ctaUrl}
+                onChange={(e) => setCtaUrl(e.target.value)}
+                className="w-full text-xs font-mono bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-[var(--color-line)] flex-wrap gap-3">
+            <div className="flex items-center gap-4 text-xs text-[var(--color-ink)]">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isClosable}
+                  onChange={(e) => setIsClosable(e.target.checked)}
+                  className="rounded border-[var(--color-line)] text-[var(--color-brand-primary)]"
+                />
+                <span>Dismissible by users</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPermanent}
+                  onChange={(e) => setIsPermanent(e.target.checked)}
+                  className="rounded border-[var(--color-line)] text-[var(--color-brand-primary)]"
+                />
+                <span>Permanent (Stick until deleted)</span>
+              </label>
+            </div>
+
+            <div className="flex gap-2">
+              <Button size="compact" variant="secondary" type="button" onClick={() => setIsCreating(false)}>
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="compact"
-                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white text-xs font-bold px-4"
-              >
-                Publish Announcement
+              <Button size="compact" variant="primary" type="submit" disabled={isSubmitting} className="font-semibold">
+                {isSubmitting ? "Publishing..." : "Publish Announcement"}
               </Button>
             </div>
-          </form>
-        </Card>
+          </div>
+        </form>
       )}
 
-      {/* 3. ACTIVE ANNOUNCEMENTS LIST */}
-      <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-3">
-          <h3 className="text-sm font-extrabold text-ink">Active & Published Announcements ({announcements.length})</h3>
-          <Badge variant="neutral">Targeted Broadcasts</Badge>
+      {/* Announcements List */}
+      <div className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-base text-[var(--color-ink)]">Active & Scheduled Broadcasts</h3>
+          <span className="text-xs text-[var(--color-ink-muted)] font-mono">{announcements.length} recorded</span>
         </div>
 
-        <div className="space-y-3">
-          {announcements.map((ann) => (
-            <div
-              key={ann.id}
-              className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3 flex flex-col sm:flex-row sm:items-start justify-between gap-4"
-            >
-              <div className="space-y-1.5 flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={ann.priority === "URGENT" ? "danger" : ann.priority === "NORMAL" ? "success" : "neutral"} className="text-[10px]">
-                    {ann.priority}
-                  </Badge>
-                  <Badge variant="neutral" className="text-[10px]">
-                    {ann.placement}
-                  </Badge>
-                  <Badge variant="neutral" className="text-[10px]">
-                    Audience: {ann.audience}
-                  </Badge>
-                  <h4 className="text-xs font-bold text-ink truncate">{ann.title}</h4>
+        {isLoading ? (
+          <div className="py-8 flex items-center justify-center gap-2 text-xs text-[var(--color-ink-muted)]">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading announcements...</span>
+          </div>
+        ) : announcements.length === 0 ? (
+          <div className="py-8 text-center text-xs text-[var(--color-ink-muted)]">
+            No announcements created yet. Click &quot;Compose Announcement&quot; to publish your first broadcast.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {announcements.map((ann) => (
+              <div
+                key={ann.id}
+                className="p-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)] flex items-start justify-between gap-4 flex-wrap"
+              >
+                <div className="space-y-1.5 max-w-2xl">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-[var(--color-ink)]">{ann.title}</span>
+                    <Badge variant={ann.priority === "URGENT" ? "danger" : ann.priority === "INFO" ? "info" : "success"}>
+                      {ann.priority}
+                    </Badge>
+                    <Badge variant="neutral">
+                      {ann.placement}
+                    </Badge>
+                    <Badge variant="neutral">
+                      {ann.audience}
+                    </Badge>
+                  </div>
+
+                  <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">{ann.message}</p>
+
+                  <div className="flex items-center gap-4 text-[11px] text-[var(--color-ink-muted)] pt-1">
+                    {ann.ctaText && ann.ctaUrl && (
+                      <a
+                        href={ann.ctaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1 font-medium"
+                      >
+                        <span>CTA: {ann.ctaText}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                    <span>Dismissals: {ann.readsCount || 0}</span>
+                    <span>Created: {new Date(ann.createdAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <p className="text-xs text-ink-secondary">{ann.message}</p>
-                {ann.linkText && ann.linkUrl && (
-                  <a
-                    href={ann.linkUrl}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0E8F5D] hover:underline"
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="compact"
+                    variant="secondary"
+                    onClick={() => handleToggleActive(ann.id, ann.isActive)}
+                    className="text-xs h-7 px-2.5"
                   >
-                    {ann.linkText} <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+                    {ann.isActive ? "Pause" : "Activate"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(ann.id)}
+                    className="p-1.5 text-[var(--color-ink-muted)] hover:text-rose-600 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                    title="Delete Announcement"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleDeleteAnnouncement(ann.id)}
-                  className="p-1.5 rounded-lg text-ink-tertiary hover:text-red-600 hover:bg-red-50 transition text-xs"
-                  title="Delete announcement"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {announcements.length === 0 && (
-            <div className="py-8 text-center text-xs text-ink-tertiary">
-              No active announcements. Click "Create Announcement" to publish one.
-            </div>
-          )}
-        </div>
-      </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

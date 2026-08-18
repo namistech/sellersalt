@@ -14,13 +14,15 @@ import { checkRateLimit } from "@/lib/rate-limit";
 const IMAGE_SETTING_KEYS: SettingKey[] = [
   "app_logo_url",
   "app_favicon_url",
+  "app_icon_square_url",
+  "extension_icon_url",
   "assistant_logo_url",
   "seo_og_image_url",
   "auth_page_logo_url",
   "auth_page_image_url",
 ];
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB — branding/marketing images
+const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10MB — branding/marketing images
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -48,8 +50,11 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const key = formData.get("key") as string | null;
+    const folder = (formData.get("folder") as string | null) || "branding";
 
-    if (!key || !IMAGE_SETTING_KEYS.includes(key as SettingKey)) {
+    const isGenericAsset = key === "generic_asset" || key === "media_library";
+
+    if (!key || (!isGenericAsset && !IMAGE_SETTING_KEYS.includes(key as SettingKey))) {
       return NextResponse.json({ error: "Unknown or non-image setting key." }, { status: 400 });
     }
     if (!file) {
@@ -68,11 +73,18 @@ export async function POST(req: Request) {
     }
 
     const storage = await getStorageProvider();
-    const result = await storage.upload(validation.sanitizedBuffer, file.name, validation.detectedMime || file.type);
+    const result = await storage.upload(
+      validation.sanitizedBuffer,
+      file.name,
+      validation.detectedMime || file.type,
+      { folder: isGenericAsset ? (folder || "media") : "branding", prefix: key }
+    );
 
-    await setSetting(key as SettingKey, result.url);
+    if (!isGenericAsset) {
+      await setSetting(key as SettingKey, result.url);
+    }
 
-    return NextResponse.json({ success: true, url: result.url });
+    return NextResponse.json({ success: true, url: result.url, key: result.key });
   } catch (err: any) {
     console.error("Admin image upload failed:", err);
     return NextResponse.json({ error: err.message || "Failed to upload image." }, { status: 500 });

@@ -30,14 +30,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
     if (!verification?.emailVerified) redirect("/verify-email");
   }
 
-  // Every plan (including Started) now requires completed checkout — no
-  // free tier exists anymore. Admins and designated staging verification
-  // test accounts are exempt so testing can proceed without a live Stripe charge;
-  // everyone else without an active or trialing subscription gets sent to finish checkout.
+  // Free Explorer plan users and active/trialing subscribers have access.
+  // Admins and designated staging verification test accounts are exempt.
+  // Paid plan accounts without an active or trialing subscription get sent to finish checkout.
   if (!isAdmin && !isStagingVerification && user?.organizationId) {
-    const sub = await prisma.subscription.findUnique({ where: { organizationId: user.organizationId } });
-    const hasAccess = sub && (sub.status === "ACTIVE" || sub.status === "TRIALING");
-    if (!hasAccess) redirect("/checkout");
+    const org = await prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      include: { package: true, subscription: true },
+    });
+    const isFreeTier =
+      org?.package?.key === "FREE" ||
+      org?.plan === "FREE" ||
+      (org?.package?.priceUsd === 0);
+    const sub = org?.subscription;
+    const hasPaidAccess = sub && (sub.status === "ACTIVE" || sub.status === "TRIALING");
+    if (!isFreeTier && !hasPaidAccess) {
+      redirect("/checkout");
+    }
   }
 
   const context = await resolveWorkspaceContextForUser(user, isAdmin);

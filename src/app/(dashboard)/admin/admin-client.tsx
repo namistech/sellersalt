@@ -46,7 +46,11 @@ import { Dialog } from "@/components/ui/Dialog";
 import { checkPasswordStrength } from "@/lib/password-policy";
 import { AdminSidebar, type AdminTabId } from "./components/AdminSidebar";
 import { GeneralAppSettingsView } from "./views/GeneralAppSettingsView";
+import { BrandingSeoView } from "./views/BrandingSeoView";
 import { IntegrationsView } from "./views/IntegrationsView";
+import { PlansQuotasView } from "./views/PlansQuotasView";
+import { CouponsView } from "./views/CouponsView";
+import { ApiProvidersView } from "./views/ApiProvidersView";
 import { StorageMediaView } from "./views/StorageMediaView";
 import { UserProvisioningView } from "./views/UserProvisioningView";
 import { SecurityAbuseView } from "./views/SecurityAbuseView";
@@ -173,10 +177,19 @@ interface CouponRow {
   code: string;
   type: "PERCENT" | "FIXED";
   value: number;
+  behavior?: string;
+  duration?: string;
+  durationMonths?: number | null;
+  applicablePlanKey?: string | null;
+  notes?: string | null;
+  firstTimeOnly?: boolean;
+  minPlanPrice?: number | null;
   isActive: boolean;
   maxRedemptions: number | null;
   redemptionCount: number;
   expiresAt: string | null;
+  startDate?: string | null;
+  createdAt?: string;
 }
 
 interface PaymentProviderRow {
@@ -651,7 +664,84 @@ export function AdminPackagesClient() {
     }
   }
 
-  async function handleTogglePackageActive(pkg: Package) {
+  async function handleSavePackageObject(pkg: any): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/admin/packages/${pkg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pkg),
+      });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleCreatePackageObject(pkg: any): Promise<boolean> {
+    try {
+      const res = await fetch("/api/admin/packages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pkg),
+      });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleDeletePackageById(pkgId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/admin/packages/${pkgId}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleCreateCouponObject(coupon: any): Promise<boolean> {
+    try {
+      const res = await fetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(coupon),
+      });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleDeleteCouponById(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/admin/coupons?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadAll();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async function handleTogglePackageActive(pkg: any): Promise<boolean> {
     setPackageSaving(pkg.id);
     try {
       await fetch(`/api/admin/packages/${pkg.id}`, {
@@ -660,6 +750,9 @@ export function AdminPackagesClient() {
         body: JSON.stringify({ isActive: !pkg.isActive }),
       });
       await loadAll();
+      return true;
+    } catch {
+      return false;
     } finally {
       setPackageSaving(null);
     }
@@ -2094,225 +2187,27 @@ export function AdminPackagesClient() {
 
       {/* 4. PACKAGES & PLANS */}
       {activeTab === "packages" && (
-        <div className="space-y-5">
-          <div className="flex justify-end">
-            <Button variant="primary" size="compact" onClick={() => setShowNewPackageForm((s) => !s)} className="text-xs">
-              {showNewPackageForm ? "Cancel" : "+ New Package"}
-            </Button>
-          </div>
-
-          {showNewPackageForm && (
-            <Card padding="lg" className="border-line bg-[#FAFAF8] shadow-xs">
-              <form onSubmit={handleCreatePackage} className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Key</label>
-                  <input required value={newPackage.key} onChange={(e) => setNewPackage((p) => ({ ...p, key: e.target.value.toUpperCase() }))} className="w-full text-xs border border-line rounded px-2 py-1.5" placeholder="ENTERPRISE" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Name</label>
-                  <input required value={newPackage.name} onChange={(e) => setNewPackage((p) => ({ ...p, name: e.target.value }))} className="w-full text-xs border border-line rounded px-2 py-1.5" placeholder="Enterprise" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Price/mo ($)</label>
-                  <input type="number" min="0" value={newPackage.priceUsd} onChange={(e) => setNewPackage((p) => ({ ...p, priceUsd: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Saved Searches</label>
-                  <input type="number" min="0" value={newPackage.maxSearchConfigs} onChange={(e) => setNewPackage((p) => ({ ...p, maxSearchConfigs: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Scheduled Searches</label>
-                  <input type="number" min="0" value={newPackage.maxScheduledSearches} onChange={(e) => setNewPackage((p) => ({ ...p, maxScheduledSearches: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Tracked Shops</label>
-                  <input type="number" min="0" value={newPackage.maxTrackedShops} onChange={(e) => setNewPackage((p) => ({ ...p, maxTrackedShops: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Prospects/mo</label>
-                  <input type="number" min="0" value={newPackage.maxProspectsPerMonth} onChange={(e) => setNewPackage((p) => ({ ...p, maxProspectsPerMonth: Number(e.target.value) }))} className="w-full text-xs border border-line rounded px-2 py-1.5" />
-                </div>
-                <div>
-                  <input type="number" min="0" value={newPackage.maxConnectors} onChange={(e) => setNewPackage((p) => ({ ...p, maxConnectors: Number(e.target.value) }))} className="hidden" />
-                  <Button type="submit" variant="primary" size="compact" loading={packageCreating} className="text-xs w-full">Create</Button>
-                </div>
-              </form>
-            </Card>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {packages.map((pkg) => {
-              const draft = packageDrafts[pkg.id] ?? {};
-              return (
-                <Card key={pkg.id} padding="lg" className={`border-line bg-white shadow-xs space-y-3 flex flex-col justify-between ${!pkg.isActive ? "opacity-60" : ""}`}>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <input
-                        value={draft.name ?? pkg.name}
-                        onChange={(e) => updatePackageDraft(pkg.id, "name", e.target.value)}
-                        className="font-extrabold text-sm text-ink border-b border-transparent hover:border-line focus:border-[#0E8F5D] focus:outline-none bg-transparent w-2/3"
-                      />
-                      <Badge variant="neutral" className="font-mono text-[10px]">{pkg.key}</Badge>
-                    </div>
-                    <div className="flex items-center gap-1 text-xl font-extrabold text-[#0E8F5D] font-mono">
-                      $
-                      <input
-                        type="number"
-                        min="0"
-                        value={draft.priceUsd ?? pkg.priceUsd}
-                        onChange={(e) => updatePackageDraft(pkg.id, "priceUsd", e.target.value)}
-                        className="w-16 border-b border-transparent hover:border-line focus:border-[#0E8F5D] focus:outline-none bg-transparent"
-                      />
-                      <span className="text-xs font-normal text-ink-tertiary">/mo</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-ink-secondary">
-                      <label className="flex flex-col gap-0.5">
-                        Saved Searches
-                        <input type="number" min="0" value={draft.maxSearchConfigs ?? pkg.maxSearchConfigs} onChange={(e) => updatePackageDraft(pkg.id, "maxSearchConfigs", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
-                      </label>
-                      <label className="flex flex-col gap-0.5">
-                        Scheduled
-                        <input type="number" min="0" value={draft.maxScheduledSearches ?? pkg.maxScheduledSearches} onChange={(e) => updatePackageDraft(pkg.id, "maxScheduledSearches", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
-                      </label>
-                      <label className="flex flex-col gap-0.5">
-                        Tracked Shops
-                        <input type="number" min="0" value={draft.maxTrackedShops ?? pkg.maxTrackedShops} onChange={(e) => updatePackageDraft(pkg.id, "maxTrackedShops", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
-                      </label>
-                      <label className="flex flex-col gap-0.5">
-                        Prospects/mo
-                        <input type="number" min="0" value={draft.maxProspectsPerMonth ?? pkg.maxProspectsPerMonth} onChange={(e) => updatePackageDraft(pkg.id, "maxProspectsPerMonth", e.target.value)} className="border border-line rounded px-1.5 py-1 font-mono" />
-                      </label>
-                    </div>
-                  </div>
-                  <div className="pt-3 border-t border-line-subtle space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-ink-tertiary">
-                      <span>{pkg._count?.organizations ?? 0} active workspaces</span>
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePackageActive(pkg)}
-                        className={`font-semibold ${pkg.isActive ? "text-[#0E8F5D]" : "text-ink-tertiary"}`}
-                      >
-                        {pkg.isActive ? "● Active" : "○ Hidden"}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="primary"
-                        size="compact"
-                        loading={packageSaving === pkg.id}
-                        disabled={!packageDrafts[pkg.id]}
-                        onClick={() => handleSavePackage(pkg)}
-                        className="text-[11px] flex-1 bg-[#0E8F5D] hover:bg-[#0C7A52]"
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="compact"
-                        loading={packageSaving === pkg.id}
-                        onClick={() => handleDeletePackage(pkg)}
-                        className="text-[11px]"
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
+        <PlansQuotasView
+          packages={packages}
+          onSavePackage={handleSavePackageObject}
+          onCreatePackage={handleCreatePackageObject}
+          onDeletePackage={handleDeletePackageById}
+          onToggleActive={handleTogglePackageActive}
+        />
       )}
 
       {/* 5. COUPONS */}
       {activeTab === "coupons" && (
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Heading as="h2" size="h4">
-                Discount Coupons
-              </Heading>
-              <Text size="body-sm" color="secondary" className="mt-0.5">
-                Coupons discount only recurring monthly charges, never the $1.00 trial.
-              </Text>
-            </div>
-            <Button
-              variant="primary"
-              size="compact"
-              onClick={() => setShowNewCouponForm(!showNewCouponForm)}
-              className="bg-[#0E8F5D] text-xs font-semibold"
-            >
-              + Create Coupon
-            </Button>
-          </div>
+        <CouponsView
+          coupons={coupons}
+          onCreateCoupon={handleCreateCouponObject}
+          onDeleteCoupon={handleDeleteCouponById}
+        />
+      )}
 
-          {showNewCouponForm && (
-            <form onSubmit={handleCreateCoupon} className="p-4 bg-[#FAFAF8] rounded-xl border border-line space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <Input
-                  label="Coupon Code"
-                  placeholder="e.g. LAUNCH50"
-                  required
-                  value={newCoupon.code}
-                  onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value.toUpperCase() })}
-                />
-                <Select
-                  label="Discount Type"
-                  value={newCoupon.type}
-                  onChange={(e) => setNewCoupon({ ...newCoupon, type: e.target.value as any })}
-                  options={[
-                    { value: "PERCENT", label: "Percentage (%)" },
-                    { value: "FIXED", label: "Fixed USD ($)" },
-                  ]}
-                />
-                <Input
-                  label="Discount Value"
-                  type="number"
-                  required
-                  value={newCoupon.value}
-                  onChange={(e) => setNewCoupon({ ...newCoupon, value: Number(e.target.value) })}
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="secondary" size="compact" onClick={() => setShowNewCouponForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" size="compact" loading={couponSaving} className="bg-[#0E8F5D]">
-                  Save Coupon
-                </Button>
-              </div>
-            </form>
-          )}
-
-          <div className="overflow-x-auto border border-line rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-secondary font-semibold">
-                <tr>
-                  <th className="p-3">Code</th>
-                  <th className="p-3">Discount</th>
-                  <th className="p-3">Redemptions</th>
-                  <th className="p-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-subtle">
-                {coupons.map((c) => (
-                  <tr key={c.id} className="hover:bg-[#FAFAF8]">
-                    <td className="p-3 font-mono font-bold text-ink">{c.code}</td>
-                    <td className="p-3 font-bold text-[#0E8F5D]">
-                      {c.type === "PERCENT" ? `${c.value}% OFF` : `$${c.value} OFF`}
-                    </td>
-                    <td className="p-3">{c.redemptionCount} uses</td>
-                    <td className="p-3">
-                      <Badge variant={c.isActive ? "success" : "neutral"}>
-                        {c.isActive ? "Active" : "Disabled"}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      {/* 5.1 API PROVIDERS DIRECTORY */}
+      {activeTab === "ai" && (
+        <ApiProvidersView />
       )}
 
       {/* 6. OFFICIAL PAYMENT GATEWAYS */}
@@ -2752,117 +2647,11 @@ export function AdminPackagesClient() {
 
       {/* 8. APP BRANDING & SEO CONFIGURATION */}
       {activeTab === "branding" && (
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-6">
-          <div>
-            <Heading as="h2" size="h4">
-              Application Branding, Assistant & SEO Settings
-            </Heading>
-            <Text size="body-sm" color="secondary" className="mt-0.5">
-              Change application identity, assistant name, logos, and SEO meta tags without redeploying code.
-            </Text>
-          </div>
-
-          <div className="divide-y divide-line-subtle">
-            {siteSettings.map((s) => {
-              const isImageSetting = IMAGE_SETTING_KEYS.includes(s.key);
-              const isPositionSetting = s.key === "auth_page_image_position_x" || s.key === "auth_page_image_position_y";
-              const currentValue = settingDrafts[s.key] ?? "";
-
-              if (isPositionSetting) {
-                const sliderValue = Number(currentValue) || 50;
-                return (
-                  <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="min-w-0 sm:w-1/3">
-                      <div className="font-bold text-xs text-ink">{s.label}</div>
-                      <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
-                    </div>
-                    <div className="flex items-center gap-3 flex-1">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={sliderValue}
-                        onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
-                        className="flex-1 accent-[#0E8F5D]"
-                      />
-                      <span className="w-10 text-right text-xs font-mono text-ink-tertiary">{sliderValue}%</span>
-                      <Button
-                        variant="secondary"
-                        size="compact"
-                        loading={settingSaving === s.key}
-                        onClick={() => handleSaveSetting(s.key)}
-                        className="text-xs shrink-0"
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={s.key} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="min-w-0 sm:w-1/3">
-                    <div className="font-bold text-xs text-ink">{s.label}</div>
-                    <div className="font-mono text-[10px] text-ink-tertiary">{s.key}</div>
-                    {imageUploadError[s.key] && (
-                      <div className="text-[10px] text-danger mt-0.5">{imageUploadError[s.key]}</div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-1">
-                    {isImageSetting && currentValue && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={currentValue}
-                        alt=""
-                        className="h-8 w-8 rounded border border-line-subtle object-contain shrink-0 bg-[#FAFAF8] p-0.5"
-                      />
-                    )}
-                    <Input
-                      type={s.isSecret ? "password" : "text"}
-                      value={currentValue}
-                      onChange={(e) => setSettingDrafts({ ...settingDrafts, [s.key]: e.target.value })}
-                      placeholder={s.isSecret && s.hasValue ? "••••••••" : isImageSetting ? "Paste a URL, or upload a file" : `Enter ${s.label}`}
-                      className="text-xs flex-1"
-                    />
-                    {isImageSetting && (
-                      <label className="shrink-0">
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleUploadImageSetting(s.key, file);
-                            e.target.value = "";
-                          }}
-                        />
-                        <span className="inline-flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-ink hover:bg-surface-muted cursor-pointer">
-                          {imageUploading === s.key ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Upload className="h-3.5 w-3.5" />
-                          )}
-                          Upload
-                        </span>
-                      </label>
-                    )}
-                    <Button
-                      variant="secondary"
-                      size="compact"
-                      loading={settingSaving === s.key}
-                      onClick={() => handleSaveSetting(s.key)}
-                      className="text-xs shrink-0"
-                    >
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+        <BrandingSeoView
+          settings={siteSettings}
+          onSaveSetting={handleSaveSettingDirect}
+          onRefreshSettings={loadAll}
+        />
       )}
 
       {/* 2. DEDICATED APP SETTINGS */}
@@ -2870,7 +2659,6 @@ export function AdminPackagesClient() {
         <GeneralAppSettingsView
           settings={siteSettings}
           onSaveSetting={handleSaveSettingDirect}
-          onUploadImage={handleUploadGenericImage}
         />
       )}
 
@@ -2897,6 +2685,7 @@ export function AdminPackagesClient() {
         <IntegrationsView
           settings={siteSettings}
           onSaveSetting={handleSaveSettingDirect}
+          onRefreshSettings={loadAll}
           appBaseUrl={typeof window !== "undefined" ? window.location.origin : "https://sellersalt.com"}
         />
       )}

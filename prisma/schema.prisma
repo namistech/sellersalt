@@ -87,21 +87,45 @@ model User {
   announcementReads   AnnouncementRead[]
 }
 
+model Announcement {
+  id               String    @id @default(cuid())
+  title            String
+  message          String    @db.Text
+  ctaText          String?
+  ctaUrl           String?
+  placement        String    @default("TOP_BANNER") // "TOP_BANNER" | "DASHBOARD_BANNER" | "CHECKOUT_BANNER" | "PRICING_BANNER" | "NOTIFICATIONS_PANEL" | "MODAL"
+  audience         String    @default("ALL") // "ALL" | "LOGGED_IN" | "LOGGED_OUT" | "FREE_ONLY" | "PAID_ONLY"
+  priority         String    @default("NORMAL") // "URGENT" | "NORMAL" | "INFO"
+  isActive         Boolean   @default(true)
+  isPermanent      Boolean   @default(false)
+  isClosable       Boolean   @default(true)
+  displayFrequency String    @default("ONCE") // "ONCE" | "EVERY_SESSION" | "MAX_IMPRESSIONS" | "ALWAYS"
+  maxImpressions   Int?      @default(3)
+  startDate        DateTime  @default(now())
+  endDate          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  reads            AnnouncementRead[]
+
+  @@index([isActive])
+  @@index([placement])
+  @@index([audience])
+}
+
 // Per-user read state for the in-app announcement/notification center.
-// Announcement *content* stays a small in-app-code list (there's no admin
-// authoring UI for it yet), but read/dismissed state must be durable and
-// user-scoped rather than living in a process-memory Map, which is lost on
-// every deploy/restart and never shared across replicas.
 model AnnouncementRead {
   id             String   @id @default(cuid())
   userId         String
   announcementId String
   readAt         DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcement Announcement? @relation(fields: [announcementId], references: [id], onDelete: Cascade)
 
   @@unique([userId, announcementId])
   @@index([userId])
+  @@index([announcementId])
 }
 
 // One row per registered passkey/security key. credentialId is the
@@ -624,16 +648,24 @@ enum SubscriptionStatus {
 // charge and the recurring price on whichever package they're redeemed
 // against.
 model Coupon {
-  id              String     @id @default(cuid())
-  code            String     @unique
-  type            CouponType
-  value           Float
-  isActive        Boolean    @default(true)
-  maxRedemptions  Int?
-  redemptionCount Int        @default(0)
-  expiresAt       DateTime?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id                String      @id @default(cuid())
+  code              String      @unique
+  type              CouponType  @default(PERCENT)
+  value             Float       @default(0)
+  behavior          String?     @default("PERCENTAGE_DISCOUNT") // "FREE_TRIAL" | "PAID_TRIAL_FIRST_MONTH_FREE" | "COMPLETELY_FREE" | "PERCENTAGE_DISCOUNT" | "FIXED_DISCOUNT"
+  duration          String?     @default("ONCE") // "ONCE" | "REPEATING" | "FOREVER"
+  durationMonths    Int?
+  applicablePlanKey String?
+  notes             String?     @db.Text
+  firstTimeOnly     Boolean     @default(false)
+  minPlanPrice      Float?
+  isActive          Boolean     @default(true)
+  maxRedemptions    Int?
+  redemptionCount   Int         @default(0)
+  startDate         DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
 
 enum CouponType {

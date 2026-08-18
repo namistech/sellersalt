@@ -2,30 +2,19 @@
 
 import React, { useState } from "react";
 import {
-  Globe,
+  Sparkles,
   Store,
-  ShoppingBag,
-  ExternalLink,
-  ShieldCheck,
-  Copy,
-  Check,
+  Bot,
   Zap,
-  Lock,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  SlidersHorizontal,
+  Briefcase,
   Layers,
-  Key,
+  Search,
+  Filter,
+  CheckCircle2,
 } from "lucide-react";
-import {
-  Card,
-  Heading,
-  Text,
-  Badge,
-  Button,
-  Alert,
-} from "@/components/ui";
+import { IntegrationCard, type IntegrationCardProps } from "@/components/admin/IntegrationCard";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 interface SettingItem {
   key: string;
@@ -33,664 +22,877 @@ interface SettingItem {
   isSecret: boolean;
   hasValue: boolean;
   value?: string;
-  updatedAt?: string | null;
 }
 
 interface IntegrationsViewProps {
   settings: SettingItem[];
   onSaveSetting: (key: string, value: string) => Promise<boolean>;
-  appBaseUrl: string;
+  onRefreshSettings?: () => Promise<void>;
+  appBaseUrl?: string;
 }
 
 export function IntegrationsView({
   settings,
   onSaveSetting,
+  onRefreshSettings,
   appBaseUrl,
 }: IntegrationsViewProps) {
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [savingField, setSavingField] = useState<string | null>(null);
-  const [successField, setSuccessField] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [testingChannel, setTestingChannel] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ channel: string; ok: boolean; msg: string } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const getVal = (key: string, fallback = ""): string => {
-    if (drafts[key] !== undefined) return drafts[key];
-    const item = settings.find((s) => s.key === key);
-    return item?.value ?? fallback;
+  const getVal = (key: string) => settings.find((s) => s.key === key)?.value || "";
+  const hasVal = (key: string) => {
+    const s = settings.find((item) => item.key === key);
+    return Boolean(s?.hasValue || s?.value);
   };
 
-  const hasSecret = (key: string): boolean => {
-    const item = settings.find((s) => s.key === key);
-    return Boolean(item?.hasValue);
-  };
-
-  const updateDraft = (key: string, val: string) => {
-    setDrafts((prev) => ({ ...prev, [key]: val }));
-  };
-
-  const handleSave = async (key: string) => {
-    const val = drafts[key];
-    if (val === undefined || !val.trim()) return;
-    setSavingField(key);
-    const ok = await onSaveSetting(key, val.trim());
-    setSavingField(null);
-    if (ok) {
-      setSuccessField(key);
-      setTimeout(() => setSuccessField(null), 2500);
-    }
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(label);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  const handleTestConnection = async (channel: string) => {
-    setTestingChannel(channel);
-    setTestResult(null);
-    try {
-      if (channel === "ETSY") {
-        const res = await fetch("/api/admin/diagnostics/etsy-oauth");
-        const data = await res.json();
-        if (res.ok && data.diagnostic?.configured) {
-          setTestResult({ channel: "ETSY", ok: true, msg: "Etsy OAuth configuration validated successfully." });
-        } else {
-          setTestResult({ channel: "ETSY", ok: false, msg: data.diagnostic?.error || "Etsy credentials incomplete." });
-        }
-      } else if (channel === "GOOGLE") {
-        const clientId = getVal("google_client_id");
-        const hasSec = hasSecret("google_client_secret") || Boolean(drafts["google_client_secret"]);
-        if (clientId && hasSec) {
-          setTestResult({ channel: "GOOGLE", ok: true, msg: "Google OAuth Client ID & Secret configured." });
-        } else {
-          setTestResult({ channel: "GOOGLE", ok: false, msg: "Google Client ID or Secret missing." });
-        }
-      } else {
-        setTestResult({ channel, ok: true, msg: `${channel} integration configuration verified.` });
+  const handleBulkSave = async (updates: Record<string, string>) => {
+    for (const [k, v] of Object.entries(updates)) {
+      if (v !== getVal(k)) {
+        await onSaveSetting(k, v);
       }
-    } catch {
-      setTestResult({ channel, ok: false, msg: "Network error testing integration." });
-    } finally {
-      setTestingChannel(null);
     }
+    if (onRefreshSettings) {
+      await onRefreshSettings();
+    }
+    return true;
   };
 
-  const baseOrigin = appBaseUrl.replace(/\/+$/, "");
+  const PROD_BASE = "https://sellersalt.com";
+  const STAGING_BASE = "https://staging.sellersalt.com";
+
+  // Integration card definitions
+  const integrations: Omit<IntegrationCardProps, "onSave">[] = [
+    // 1. Google OAuth & APIs
+    {
+      id: "google-oauth",
+      category: "Productivity",
+      name: "Google OAuth & Identity",
+      description:
+        "Enables 1-click Google Sign-In and account linking for all sellers. Configures Google Client ID & Secret.",
+      icon: "🌐",
+      status: hasVal("google_client_id") && hasVal("google_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://console.cloud.google.com/apis/credentials",
+      documentationLabel: "Google Cloud Console",
+      callbackUrls: [
+        {
+          label: "Production Authorized Redirect URI",
+          description: "Add to Google Cloud OAuth 2.0 Client",
+          url: `${PROD_BASE}/api/auth/callback/google`,
+        },
+        {
+          label: "Staging Authorized Redirect URI",
+          description: "Add to Google Cloud OAuth 2.0 Client",
+          url: `${STAGING_BASE}/api/auth/callback/google`,
+        },
+      ],
+      fields: [
+        {
+          key: "google_client_id",
+          label: "Google Client ID",
+          placeholder: "xxxx.apps.googleusercontent.com",
+          value: getVal("google_client_id"),
+          hasValue: hasVal("google_client_id"),
+          instructions: "From Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client IDs.",
+        },
+        {
+          key: "google_client_secret",
+          label: "Google Client Secret",
+          isSecret: true,
+          value: getVal("google_client_secret"),
+          hasValue: hasVal("google_client_secret"),
+          instructions: "Keep confidential. Saved encrypted in the database.",
+        },
+      ],
+      onTestConnection: async () => {
+        try {
+          const res = await fetch("/api/admin/diagnostics/google-oauth");
+          const data = await res.json();
+          if (data.configured) {
+            return { ok: true, message: `Google OAuth client ready. Client ID prefix: ${data.clientIdPrefix}...` };
+          }
+          return { ok: false, message: data.error || "Google OAuth client credentials missing." };
+        } catch (e: any) {
+          return { ok: false, message: e.message || "Failed to query Google OAuth status." };
+        }
+      },
+    },
+
+    // 2. Etsy Open API v3
+    {
+      id: "etsy-channel",
+      category: "Marketplace",
+      name: "Etsy Open API v3",
+      description:
+        "Official Etsy Open API v3 connector with PKCE authorization, inventory sync, and draft publishing.",
+      icon: "🧡",
+      provenanceBadge: "[ACTUAL ETSY DATA]",
+      status: hasVal("etsy_seller_client_id") && hasVal("etsy_seller_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://www.etsy.com/developers/your-apps",
+      documentationLabel: "Etsy Developer Portal",
+      callbackUrls: [
+        {
+          label: "Production Channel Callback URL",
+          description: "Etsy Dev Portal → App Details → Callback URLs",
+          url: `${PROD_BASE}/api/seller-channels/etsy/callback`,
+        },
+        {
+          label: "Staging Channel Callback URL",
+          description: "Etsy Dev Portal → App Details → Callback URLs",
+          url: `${STAGING_BASE}/api/seller-channels/etsy/callback`,
+        },
+        {
+          label: "NextAuth Login Callback URL",
+          description: "Etsy Dev Portal → App Details → Callback URLs",
+          url: `${PROD_BASE}/api/auth/callback/etsy`,
+        },
+      ],
+      fields: [
+        {
+          key: "etsy_seller_client_id",
+          label: "Etsy Keystring (Client ID)",
+          placeholder: "keystring_from_etsy_app",
+          value: getVal("etsy_seller_client_id"),
+          hasValue: hasVal("etsy_seller_client_id"),
+          instructions: "Copy 'Keystring' from your registered Etsy Developer App details.",
+        },
+        {
+          key: "etsy_seller_client_secret",
+          label: "Etsy Shared Secret",
+          isSecret: true,
+          value: getVal("etsy_seller_client_secret"),
+          hasValue: hasVal("etsy_seller_client_secret"),
+          instructions: "Copy 'Shared Secret' from your Etsy Developer App details.",
+        },
+        {
+          key: "etsy_oauth_scopes",
+          label: "OAuth Requested Scopes Override (Optional)",
+          placeholder: "listings_w listings_r shops_r transactions_r",
+          value: getVal("etsy_oauth_scopes"),
+          hasValue: hasVal("etsy_oauth_scopes"),
+          instructions: "Default scopes: listings_w listings_r shops_r transactions_r billing_r.",
+        },
+      ],
+      onTestConnection: async () => {
+        try {
+          const res = await fetch("/api/admin/diagnostics/etsy-oauth");
+          const data = await res.json();
+          if (data.configured) {
+            return { ok: true, message: `Etsy Open API v3 app verified. Scopes: ${data.scopes}` };
+          }
+          return { ok: false, message: data.error || "Etsy keystring missing." };
+        } catch (e: any) {
+          return { ok: false, message: e.message || "Failed to query Etsy status." };
+        }
+      },
+    },
+
+    // 3. Shopify Multi-Channel
+    {
+      id: "shopify-channel",
+      category: "Marketplace",
+      name: "Shopify Multi-Channel",
+      description:
+        "Multi-channel catalog sync, automated cross-listing, and Netdrix affiliate store ordering pipeline.",
+      icon: "🛍️",
+      status: hasVal("shopify_client_id") && hasVal("shopify_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://partners.shopify.com",
+      documentationLabel: "Shopify Partners Console",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback URL",
+          url: `${PROD_BASE}/api/seller-channels/shopify/callback`,
+        },
+        {
+          label: "Staging OAuth Callback URL",
+          url: `${STAGING_BASE}/api/seller-channels/shopify/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "shopify_client_id",
+          label: "Shopify App Client ID",
+          placeholder: "shpa_xxxx...",
+          value: getVal("shopify_client_id"),
+          hasValue: hasVal("shopify_client_id"),
+          instructions: "From Shopify Partners → Apps → App Setup → Client credentials.",
+        },
+        {
+          key: "shopify_client_secret",
+          label: "Shopify App Client Secret",
+          isSecret: true,
+          value: getVal("shopify_client_secret"),
+          hasValue: hasVal("shopify_client_secret"),
+          instructions: "Encrypted secret used for token exchange.",
+        },
+        {
+          key: "shopify_affiliate_url",
+          label: "Shopify Affiliate Referral URL",
+          placeholder: "https://shopify.pxf.io/...",
+          value: getVal("shopify_affiliate_url"),
+          hasValue: hasVal("shopify_affiliate_url"),
+          instructions: "Your Shopify affiliate partner link embedded in store creation buttons.",
+        },
+      ],
+    },
+
+    // 4. Amazon SP-API
+    {
+      id: "amazon-spapi",
+      category: "Marketplace",
+      name: "Amazon SP-API",
+      description:
+        "Amazon Selling Partner API (SP-API) for multi-channel listings, catalog lookups, and inventory tracking.",
+      icon: "📦",
+      status: hasVal("amazon_client_id") && hasVal("amazon_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer-docs.amazon.com/sp-api/",
+      documentationLabel: "Amazon SP-API Developer Center",
+      callbackUrls: [
+        {
+          label: "Production LWA Redirect URL",
+          url: `${PROD_BASE}/api/seller-channels/amazon/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "amazon_client_id",
+          label: "LWA Client ID (Login with Amazon)",
+          placeholder: "amzn1.application-oa2-client.xxxx",
+          value: getVal("amazon_client_id"),
+          hasValue: hasVal("amazon_client_id"),
+          instructions: "From Amazon Developer Console → Login with Amazon (LWA) app.",
+        },
+        {
+          key: "amazon_client_secret",
+          label: "LWA Client Secret",
+          isSecret: true,
+          value: getVal("amazon_client_secret"),
+          hasValue: hasVal("amazon_client_secret"),
+          instructions: "LWA client secret from Amazon Developer Console.",
+        },
+        {
+          key: "amazon_region",
+          label: "Default Marketplace Region",
+          placeholder: "NA",
+          value: getVal("amazon_region"),
+          hasValue: hasVal("amazon_region"),
+          type: "select",
+          options: [
+            { label: "North America (US, CA, MX, BR)", value: "NA" },
+            { label: "Europe (UK, DE, FR, IT, ES)", value: "EU" },
+            { label: "Far East (JP, AU, SG)", value: "FE" },
+          ],
+          instructions: "Target region endpoint for Selling Partner REST calls.",
+        },
+      ],
+    },
+
+    // 5. TikTok Shop
+    {
+      id: "tiktok-shop",
+      category: "Marketplace",
+      name: "TikTok Shop Partner API",
+      description:
+        "Direct connection to TikTok Shop Partner Center for viral product tracking, inventory, and cross-channel sync.",
+      icon: "🎵",
+      status: hasVal("tiktok_app_key") && hasVal("tiktok_app_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://partner.tiktokshop.com",
+      documentationLabel: "TikTok Shop Partner Center",
+      callbackUrls: [
+        {
+          label: "Production Authorized Redirect URL",
+          url: `${PROD_BASE}/api/seller-channels/tiktok/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "tiktok_app_key",
+          label: "TikTok Shop App Key",
+          placeholder: "6a8b...",
+          value: getVal("tiktok_app_key"),
+          hasValue: hasVal("tiktok_app_key"),
+          instructions: "App Key issued in TikTok Shop Developer Console.",
+        },
+        {
+          key: "tiktok_app_secret",
+          label: "TikTok Shop App Secret",
+          isSecret: true,
+          value: getVal("tiktok_app_secret"),
+          hasValue: hasVal("tiktok_app_secret"),
+          instructions: "Secret key for signature verification and token exchange.",
+        },
+      ],
+    },
+
+    // 6. eBay REST API
+    {
+      id: "ebay-channel",
+      category: "Marketplace",
+      name: "eBay REST API",
+      description:
+        "eBay Developer Program integration for cross-marketplace listing sync and price surveillance.",
+      icon: "🏷️",
+      status: hasVal("ebay_app_id") && hasVal("ebay_cert_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer.ebay.com",
+      documentationLabel: "eBay Developers Program",
+      callbackUrls: [
+        {
+          label: "Production RuName Redirect URL",
+          url: `${PROD_BASE}/api/seller-channels/ebay/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "ebay_app_id",
+          label: "eBay App ID (Client ID)",
+          placeholder: "YourName-App-PRD-xxxx",
+          value: getVal("ebay_app_id"),
+          hasValue: hasVal("ebay_app_id"),
+          instructions: "From eBay Developer Portal → Application Keysets.",
+        },
+        {
+          key: "ebay_cert_id",
+          label: "eBay Cert ID (Client Secret)",
+          isSecret: true,
+          value: getVal("ebay_cert_id"),
+          hasValue: hasVal("ebay_cert_id"),
+          instructions: "Encrypted Cert ID for OAuth token generation.",
+        },
+        {
+          key: "ebay_ru_name",
+          label: "eBay RuName (Redirect URL Name)",
+          placeholder: "YourName-YourName-App-PRD-...",
+          value: getVal("ebay_ru_name"),
+          hasValue: hasVal("ebay_ru_name"),
+          instructions: "Registered RuName matching the redirect URL.",
+        },
+      ],
+    },
+
+    // 7. WooCommerce
+    {
+      id: "woocommerce-channel",
+      category: "Marketplace",
+      name: "WooCommerce REST API",
+      description:
+        "Self-hosted WordPress WooCommerce store connector for catalog imports, stock sync, and price management.",
+      icon: "🏪",
+      status: hasVal("woocommerce_consumer_key") && hasVal("woocommerce_consumer_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://woocommerce.com/document/woocommerce-rest-api/",
+      documentationLabel: "WooCommerce REST Docs",
+      fields: [
+        {
+          key: "woocommerce_store_url",
+          label: "Store URL",
+          placeholder: "https://shop.example.com",
+          value: getVal("woocommerce_store_url"),
+          hasValue: hasVal("woocommerce_store_url"),
+          instructions: "Canonical base URL of the WooCommerce WordPress instance.",
+        },
+        {
+          key: "woocommerce_consumer_key",
+          label: "Consumer Key",
+          placeholder: "ck_xxxxxxxx...",
+          value: getVal("woocommerce_consumer_key"),
+          hasValue: hasVal("woocommerce_consumer_key"),
+          instructions: "From WooCommerce → Settings → Advanced → REST API.",
+        },
+        {
+          key: "woocommerce_consumer_secret",
+          label: "Consumer Secret",
+          isSecret: true,
+          value: getVal("woocommerce_consumer_secret"),
+          hasValue: hasVal("woocommerce_consumer_secret"),
+          instructions: "From WooCommerce → Settings → Advanced → REST API.",
+        },
+      ],
+    },
+
+    // 8. Walmart Marketplace
+    {
+      id: "walmart-channel",
+      category: "Marketplace",
+      name: "Walmart Marketplace API",
+      description:
+        "Walmart Developer Portal connector for cross-listing and marketplace surveillance.",
+      icon: "⭐",
+      status: hasVal("walmart_client_id") && hasVal("walmart_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer.walmart.com",
+      documentationLabel: "Walmart Developer Portal",
+      fields: [
+        {
+          key: "walmart_client_id",
+          label: "Walmart Client ID",
+          placeholder: "walmart_client_id_xxxx",
+          value: getVal("walmart_client_id"),
+          hasValue: hasVal("walmart_client_id"),
+          instructions: "From Walmart Developer Portal → API Keys.",
+        },
+        {
+          key: "walmart_client_secret",
+          label: "Walmart Client Secret",
+          isSecret: true,
+          value: getVal("walmart_client_secret"),
+          hasValue: hasVal("walmart_client_secret"),
+          instructions: "Keep secret. Used for bearer auth token generation.",
+        },
+      ],
+    },
+
+    // 9. Google Sheets Connector
+    {
+      id: "google-sheets",
+      category: "Productivity",
+      name: "Google Sheets Export",
+      description:
+        "Direct export of keyword surveillance tables, shop dossiers, and SEO audits into Google Sheets.",
+      icon: "📊",
+      status: hasVal("google_sheets_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developers.google.com/sheets/api",
+      documentationLabel: "Google Sheets API Docs",
+      callbackUrls: [
+        {
+          label: "Production Sheets OAuth Callback",
+          url: `${PROD_BASE}/api/connectors/google-sheets/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "google_sheets_client_id",
+          label: "Google Sheets OAuth Client ID",
+          placeholder: "xxxx.apps.googleusercontent.com",
+          value: getVal("google_sheets_client_id"),
+          hasValue: hasVal("google_sheets_client_id"),
+          instructions: "From Google Cloud Console with Google Sheets API enabled.",
+        },
+        {
+          key: "google_sheets_client_secret",
+          label: "Google Sheets OAuth Client Secret",
+          isSecret: true,
+          value: getVal("google_sheets_client_secret"),
+          hasValue: hasVal("google_sheets_client_secret"),
+          instructions: "Client secret for Google Sheets API token handshake.",
+        },
+      ],
+    },
+
+    // 10. Zapier
+    {
+      id: "zapier-automation",
+      category: "Productivity",
+      name: "Zapier",
+      description:
+        "Connect SellerSalt events (e.g. competitor price change, low stock, SEO score drop) to 5,000+ apps.",
+      icon: "⚡",
+      status: hasVal("zapier_webhook_url") || hasVal("zapier_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://zapier.com/developer",
+      documentationLabel: "Zapier Developer Platform",
+      fields: [
+        {
+          key: "zapier_webhook_url",
+          label: "Zapier Inbound Catch Hook URL",
+          placeholder: "https://hooks.zapier.com/hooks/catch/xxxx/yyyy",
+          value: getVal("zapier_webhook_url"),
+          hasValue: hasVal("zapier_webhook_url"),
+          instructions: "Webhook URL to receive triggered alerts from SellerSalt.",
+        },
+        {
+          key: "zapier_client_id",
+          label: "Zapier Partner Client ID (Optional)",
+          placeholder: "zapier_client_id",
+          value: getVal("zapier_client_id"),
+          hasValue: hasVal("zapier_client_id"),
+          instructions: "For custom OAuth-based private Zapier apps.",
+        },
+      ],
+    },
+
+    // 11. Make / Integromat
+    {
+      id: "make-automation",
+      category: "Productivity",
+      name: "Make (Integromat)",
+      description:
+        "Visual automation workflows for custom seller operations, multi-step listing syndication, and notifications.",
+      icon: "🔄",
+      status: hasVal("make_webhook_url") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://www.make.com/en/help",
+      documentationLabel: "Make Developer Docs",
+      fields: [
+        {
+          key: "make_webhook_url",
+          label: "Make Webhook Hook URL",
+          placeholder: "https://hook.eu1.make.com/xxxx...",
+          value: getVal("make_webhook_url"),
+          hasValue: hasVal("make_webhook_url"),
+          instructions: "Custom Webhook module endpoint from your Make scenario.",
+        },
+      ],
+    },
+
+    // 12. Slack
+    {
+      id: "slack-notifications",
+      category: "Productivity",
+      name: "Slack Notifications & Bot",
+      description:
+        "Broadcast competitor surveillance alerts, daily shop summaries, and sales spikes directly to Slack channels.",
+      icon: "💬",
+      status: hasVal("slack_webhook_url") || hasVal("slack_bot_token") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://api.slack.com/apps",
+      documentationLabel: "Slack API Console",
+      fields: [
+        {
+          key: "slack_webhook_url",
+          label: "Incoming Webhook URL",
+          placeholder: "https://hooks.slack.com/services/Txxx/Bxxx/xxxx",
+          value: getVal("slack_webhook_url"),
+          hasValue: hasVal("slack_webhook_url"),
+          instructions: "From Slack App Directory → Incoming WebHooks.",
+        },
+        {
+          key: "slack_bot_token",
+          label: "Bot User OAuth Token",
+          isSecret: true,
+          placeholder: "xoxb-xxxx...",
+          value: getVal("slack_bot_token"),
+          hasValue: hasVal("slack_bot_token"),
+          instructions: "Bot token for two-way interactive message actions.",
+        },
+      ],
+    },
+
+    // 13. QuickBooks Online
+    {
+      id: "quickbooks-accounting",
+      category: "Accounting",
+      name: "QuickBooks Online",
+      description:
+        "Automated accounting sync for Etsy & multi-channel sales, fees, refunds, and cost of goods sold.",
+      icon: "📗",
+      status: hasVal("quickbooks_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer.intuit.com",
+      documentationLabel: "Intuit Developer Portal",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback",
+          url: `${PROD_BASE}/api/integrations/quickbooks/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "quickbooks_client_id",
+          label: "QuickBooks Client ID",
+          placeholder: "ABxxxx...",
+          value: getVal("quickbooks_client_id"),
+          hasValue: hasVal("quickbooks_client_id"),
+          instructions: "From Intuit Developer Portal App Keys.",
+        },
+        {
+          key: "quickbooks_client_secret",
+          label: "QuickBooks Client Secret",
+          isSecret: true,
+          value: getVal("quickbooks_client_secret"),
+          hasValue: hasVal("quickbooks_client_secret"),
+          instructions: "Encrypted client secret for Intuit OAuth 2.0.",
+        },
+      ],
+    },
+
+    // 14. Xero
+    {
+      id: "xero-accounting",
+      category: "Accounting",
+      name: "Xero Cloud Accounting",
+      description:
+        "Sync invoices, bank feeds, and marketplace payout reconciliation with Xero.",
+      icon: "📘",
+      status: hasVal("xero_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer.xero.com",
+      documentationLabel: "Xero Developer Portal",
+      fields: [
+        {
+          key: "xero_client_id",
+          label: "Xero Client ID",
+          placeholder: "xero_client_id_xxxx",
+          value: getVal("xero_client_id"),
+          hasValue: hasVal("xero_client_id"),
+          instructions: "From Xero App Developer portal.",
+        },
+        {
+          key: "xero_client_secret",
+          label: "Xero Client Secret",
+          isSecret: true,
+          value: getVal("xero_client_secret"),
+          hasValue: hasVal("xero_client_secret"),
+          instructions: "Encrypted Xero client secret.",
+        },
+      ],
+    },
+
+    // 15. WordPress
+    {
+      id: "wordpress-cms",
+      category: "CMS",
+      name: "WordPress / WooCommerce Headless",
+      description:
+        "Publish marketing content, SEO guides, and product catalogs directly to WordPress via Application Passwords.",
+      icon: "📰",
+      status: hasVal("wordpress_site_url") && hasVal("wordpress_app_username") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/",
+      documentationLabel: "WordPress Application Passwords",
+      fields: [
+        {
+          key: "wordpress_site_url",
+          label: "WordPress Site URL",
+          placeholder: "https://blog.example.com",
+          value: getVal("wordpress_site_url"),
+          hasValue: hasVal("wordpress_site_url"),
+          instructions: "Base WordPress site URL with REST API enabled.",
+        },
+        {
+          key: "wordpress_app_username",
+          label: "Application Username",
+          placeholder: "sellersalt_admin",
+          value: getVal("wordpress_app_username"),
+          hasValue: hasVal("wordpress_app_username"),
+          instructions: "WordPress username with author or administrator privileges.",
+        },
+        {
+          key: "wordpress_app_password",
+          label: "Application Password",
+          isSecret: true,
+          placeholder: "xxxx xxxx xxxx xxxx",
+          value: getVal("wordpress_app_password"),
+          hasValue: hasVal("wordpress_app_password"),
+          instructions: "Generated from WP Admin → Users → Profile → Application Passwords.",
+        },
+      ],
+    },
+
+    // 16. OpenAI
+    {
+      id: "openai-ai",
+      category: "AI & Infrastructure",
+      name: "OpenAI (GPT-4o & Text Generation)",
+      description:
+        "Powers listing copy generation, tag recommendation, and competitor synthesis with originality guards.",
+      icon: "🤖",
+      status: hasVal("openai_api_key") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://platform.openai.com/api-keys",
+      documentationLabel: "OpenAI Developer Platform",
+      fields: [
+        {
+          key: "openai_api_key",
+          label: "OpenAI Secret API Key",
+          isSecret: true,
+          placeholder: "sk-proj-xxxx...",
+          value: getVal("openai_api_key"),
+          hasValue: hasVal("openai_api_key"),
+          instructions: "From OpenAI Platform → API Keys.",
+        },
+        {
+          key: "openai_default_model",
+          label: "Default Model",
+          placeholder: "gpt-4o",
+          value: getVal("openai_default_model"),
+          hasValue: hasVal("openai_default_model"),
+          instructions: "e.g. gpt-4o, gpt-4o-mini, o1-preview.",
+        },
+      ],
+    },
+
+    // 17. Anthropic Claude
+    {
+      id: "anthropic-ai",
+      category: "AI & Infrastructure",
+      name: "Anthropic Claude",
+      description:
+        "Claude 3.5 Sonnet engine for advanced contextual SEO copy and humanized product description generation.",
+      icon: "🧠",
+      status: hasVal("anthropic_api_key") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://console.anthropic.com",
+      documentationLabel: "Anthropic Console",
+      fields: [
+        {
+          key: "anthropic_api_key",
+          label: "Anthropic API Key",
+          isSecret: true,
+          placeholder: "sk-ant-xxxx...",
+          value: getVal("anthropic_api_key"),
+          hasValue: hasVal("anthropic_api_key"),
+          instructions: "From Anthropic Console → API Keys.",
+        },
+        {
+          key: "anthropic_default_model",
+          label: "Default Model",
+          placeholder: "claude-3-5-sonnet-20241022",
+          value: getVal("anthropic_default_model"),
+          hasValue: hasVal("anthropic_default_model"),
+          instructions: "e.g. claude-3-5-sonnet-20241022, claude-3-haiku-20240307.",
+        },
+      ],
+    },
+
+    // 18. Google Gemini AI
+    {
+      id: "gemini-ai",
+      category: "AI & Infrastructure",
+      name: "Google Gemini AI",
+      description:
+        "High-speed multimodal intelligence for image analysis, listing audits, and market trend processing.",
+      icon: "✨",
+      status: hasVal("gemini_api_key") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://aistudio.google.com",
+      documentationLabel: "Google AI Studio",
+      fields: [
+        {
+          key: "gemini_api_key",
+          label: "Google Gemini API Key",
+          isSecret: true,
+          placeholder: "AIzaSy...",
+          value: getVal("gemini_api_key"),
+          hasValue: hasVal("gemini_api_key"),
+          instructions: "From Google AI Studio → Get API Key.",
+        },
+        {
+          key: "gemini_default_model",
+          label: "Default Model",
+          placeholder: "gemini-1.5-flash",
+          value: getVal("gemini_default_model"),
+          hasValue: hasVal("gemini_default_model"),
+          instructions: "e.g. gemini-1.5-pro, gemini-1.5-flash.",
+        },
+      ],
+    },
+
+    // 19. Model Context Protocol (MCP)
+    {
+      id: "mcp-server",
+      category: "AI & Infrastructure",
+      name: "Model Context Protocol (MCP)",
+      description:
+        "Connect SellerSalt intelligence tools directly to Claude Desktop, Cursor, and MCP-compatible agents.",
+      icon: "🔌",
+      status: hasVal("mcp_server_url") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://modelcontextprotocol.io",
+      documentationLabel: "Model Context Protocol Docs",
+      callbackUrls: [
+        {
+          label: "MCP Protocol Server Endpoint",
+          description: "SSE / Stream Endpoint for AI Agents",
+          url: `${PROD_BASE}/api/mcp/v1`,
+        },
+      ],
+      fields: [
+        {
+          key: "mcp_server_url",
+          label: "MCP Server URL",
+          placeholder: `${PROD_BASE}/api/mcp/v1`,
+          value: getVal("mcp_server_url"),
+          hasValue: hasVal("mcp_server_url"),
+          instructions: "Canonical MCP endpoint exposed by SellerSalt.",
+        },
+        {
+          key: "mcp_auth_token",
+          label: "MCP Protocol Bearer Auth Token",
+          isSecret: true,
+          placeholder: "mcp_sec_xxxx...",
+          value: getVal("mcp_auth_token"),
+          hasValue: hasVal("mcp_auth_token"),
+          instructions: "Secret token required for external agents to invoke SellerSalt tools.",
+        },
+      ],
+    },
+  ];
+
+  const categories = [
+    { id: "ALL", label: "All Integrations", count: integrations.length },
+    { id: "Marketplace", label: "Marketplaces", count: integrations.filter((i) => i.category === "Marketplace").length },
+    { id: "Productivity", label: "Productivity & Automation", count: integrations.filter((i) => i.category === "Productivity").length },
+    { id: "Accounting", label: "Accounting & Finance", count: integrations.filter((i) => i.category === "Accounting").length },
+    { id: "CMS", label: "CMS & Publishing", count: integrations.filter((i) => i.category === "CMS").length },
+    { id: "AI & Infrastructure", label: "AI & Developer Infra", count: integrations.filter((i) => i.category === "AI & Infrastructure").length },
+  ];
+
+  const filteredIntegrations = integrations.filter((item) => {
+    if (selectedCategory !== "ALL" && item.category !== selectedCategory) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const configuredCount = integrations.filter((i) => i.status === "CONFIGURED" || i.status === "CONNECTED").length;
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0E8F5D]/10 text-[#0E8F5D]">
-            <Globe className="h-4 w-4" />
-          </span>
-          <Heading as="h2" size="h3" className="text-xl font-bold text-ink">
-            Integration Hub & Marketplace Connectors
-          </Heading>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-[var(--color-line)]">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-[var(--color-ink)]">Integration Hub</h2>
+            <Badge variant="success">
+              {configuredCount} / {integrations.length} Active
+            </Badge>
+          </div>
+          <p className="text-sm text-[var(--color-ink-muted)] mt-1">
+            Canonical command center for all marketplace connectors, productivity automations, accounting sync, and AI providers.
+          </p>
         </div>
-        <Text size="body-sm" className="text-ink-secondary mt-1">
-          Manage OAuth 2.0 applications, API credentials, and webhook endpoints for marketplaces, identity providers, and future channels.
-        </Text>
       </div>
 
-      {testResult && (
-        <Alert variant={testResult.ok ? "success" : "danger"}>
-          <strong>{testResult.channel} Diagnostic:</strong> {testResult.msg}
-        </Alert>
-      )}
-
-      {/* INTEGRATION CARDS GRID */}
-      <div className="space-y-6">
-        {/* ==================================================================== */}
-        {/* 1. GOOGLE APIS & OAUTH */}
-        {/* ==================================================================== */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#FAFAF8] border border-line flex items-center justify-center font-extrabold text-sm text-[#4285F4]">
-                G
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-ink">Google APIs / Google OAuth</h3>
-                  <Badge variant={getVal("google_client_id") && hasSecret("google_client_secret") ? "success" : "warning"}>
-                    {getVal("google_client_id") && hasSecret("google_client_secret") ? "CONFIGURED" : "NOT CONFIGURED"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-ink-tertiary">Single sign-on authentication and Google Sheets connector.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="compact"
-                loading={testingChannel === "GOOGLE"}
-                onClick={() => handleTestConnection("GOOGLE")}
-                className="text-xs"
+      {/* Category Pills and Search */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === cat.id
+                  ? "bg-[var(--color-brand-primary)] text-white shadow-xs font-semibold"
+                  : "bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-line)]"
+              }`}
+            >
+              <span>{cat.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  selectedCategory === cat.id ? "bg-white/20 text-white" : "bg-[var(--color-paper)] text-[var(--color-ink-muted)]"
+                }`}
               >
-                <RefreshCw className="h-3 w-3 mr-1" /> Test Setup
-              </Button>
-              <a
-                href="https://console.cloud.google.com/apis/credentials"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-ink-secondary hover:text-ink inline-flex items-center gap-1 border border-line rounded-lg px-2.5 py-1.5 hover:bg-[#F4F3EF]"
-              >
-                Cloud Console <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink flex items-center justify-between">
-                <span>Google Client ID</span>
-                {successField === "google_client_id" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={getVal("google_client_id")}
-                  onChange={(e) => updateDraft("google_client_id", e.target.value)}
-                  placeholder="e.g. 123456789-abc.apps.googleusercontent.com"
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "google_client_id"}
-                  onClick={() => handleSave("google_client_id")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink flex items-center justify-between">
-                <span>Google Client Secret</span>
-                {hasSecret("google_client_secret") && <span className="text-[10px] text-[#0E8F5D] font-mono">ENCRYPTED AT REST</span>}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={drafts["google_client_secret"] ?? ""}
-                  onChange={(e) => updateDraft("google_client_secret", e.target.value)}
-                  placeholder={hasSecret("google_client_secret") ? "••••••••••••••••••••" : "Paste client secret"}
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "google_client_secret"}
-                  onClick={() => handleSave("google_client_secret")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Callback URLs & Setup Instructions */}
-          <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3">
-            <div className="text-xs font-bold text-ink">Authorized Redirect URI (Google Cloud Console)</div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-white border border-line">
-              <span className="font-mono text-xs text-ink truncate select-all">{`${baseOrigin}/api/auth/callback/google`}</span>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(`${baseOrigin}/api/auth/callback/google`, "google-callback")}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-ink-secondary hover:text-ink shrink-0"
-              >
-                {copiedKey === "google-callback" ? <Check className="h-3.5 w-3.5 text-[#0E8F5D]" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedKey === "google-callback" ? "Copied" : "Copy URI"}</span>
-              </button>
-            </div>
-            <p className="text-[11px] text-ink-tertiary">
-              Create an <strong>OAuth 2.0 Client ID</strong> (Web Application) in Google Cloud Console and paste the exact Redirect URI above.
-            </p>
-          </div>
-        </Card>
-
-        {/* ==================================================================== */}
-        {/* 2. ETSY OPEN API V3 */}
-        {/* ==================================================================== */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#F1641E]/10 border border-[#F1641E]/20 flex items-center justify-center font-extrabold text-sm text-[#F1641E]">
-                <Store className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-ink">Etsy API v3 & Seller Channels</h3>
-                  <Badge variant={getVal("etsy_seller_client_id") ? "success" : "warning"}>
-                    {getVal("etsy_seller_client_id") ? "ACTIVE CONNECTOR" : "NOT CONFIGURED"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-ink-tertiary">Public search extraction, live listing audits, and Seller OAuth 2.0 with PKCE.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="compact"
-                loading={testingChannel === "ETSY"}
-                onClick={() => handleTestConnection("ETSY")}
-                className="text-xs"
-              >
-                <RefreshCw className="h-3 w-3 mr-1" /> Run Diagnostic
-              </Button>
-              <a
-                href="https://www.etsy.com/developers/your-apps"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-ink-secondary hover:text-ink inline-flex items-center gap-1 border border-line rounded-lg px-2.5 py-1.5 hover:bg-[#F4F3EF]"
-              >
-                Etsy Developer <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink flex items-center justify-between">
-                <span>Etsy Keystring / Client ID</span>
-                {successField === "etsy_seller_client_id" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={getVal("etsy_seller_client_id")}
-                  onChange={(e) => updateDraft("etsy_seller_client_id", e.target.value)}
-                  placeholder="e.g. 123456789abcdefgh"
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "etsy_seller_client_id"}
-                  onClick={() => handleSave("etsy_seller_client_id")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink flex items-center justify-between">
-                <span>Etsy Shared Secret (Optional for PKCE)</span>
-                {hasSecret("etsy_seller_client_secret") && <span className="text-[10px] text-[#0E8F5D] font-mono">ENCRYPTED AT REST</span>}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={drafts["etsy_seller_client_secret"] ?? ""}
-                  onChange={(e) => updateDraft("etsy_seller_client_secret", e.target.value)}
-                  placeholder={hasSecret("etsy_seller_client_secret") ? "••••••••••••••••••••" : "Paste secret if required"}
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "etsy_seller_client_secret"}
-                  onClick={() => handleSave("etsy_seller_client_secret")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Callback URLs & Scopes */}
-          <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3">
-            <div className="text-xs font-bold text-ink">Etsy Developer App Callback URLs (Character-for-character match)</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-2.5 rounded-lg bg-white border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-secondary">Seller Store Authorization Callback:</div>
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-mono text-xs text-ink truncate select-all">{`${baseOrigin}/api/seller-channels/etsy/callback`}</span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(`${baseOrigin}/api/seller-channels/etsy/callback`, "etsy-seller-cb")}
-                    className="p-1 text-ink-secondary hover:text-ink shrink-0"
-                  >
-                    {copiedKey === "etsy-seller-cb" ? <Check className="h-3 w-3 text-[#0E8F5D]" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-white border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-secondary">NextAuth Etsy Login Callback:</div>
-                <div className="flex items-center justify-between gap-1">
-                  <span className="font-mono text-xs text-ink truncate select-all">{`${baseOrigin}/api/auth/callback/etsy`}</span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(`${baseOrigin}/api/auth/callback/etsy`, "etsy-auth-cb")}
-                    className="p-1 text-ink-secondary hover:text-ink shrink-0"
-                  >
-                    {copiedKey === "etsy-auth-cb" ? <Check className="h-3 w-3 text-[#0E8F5D]" /> : <Copy className="h-3 w-3" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-[11px] text-ink-tertiary">
-              Requested Scopes: <code className="font-mono text-ink font-semibold">listings_w listings_r shops_w shops_r transactions_r billing_r</code> with RFC 7636 PKCE S256 verifier.
-            </div>
-          </div>
-        </Card>
-
-        {/* ==================================================================== */}
-        {/* 3. SHOPIFY INTEGRATION */}
-        {/* ==================================================================== */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#96BF48]/10 border border-[#96BF48]/20 flex items-center justify-center font-extrabold text-sm text-[#96BF48]">
-                <ShoppingBag className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-ink">Shopify Multi-Channel Connector</h3>
-                  <Badge variant={getVal("shopify_client_id") ? "success" : "neutral"}>
-                    {getVal("shopify_client_id") ? "CONFIGURED" : "READY TO CONFIGURE"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-ink-tertiary">Direct product catalog sync and inventory webhook processing.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <a
-                href="https://partners.shopify.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-semibold text-ink-secondary hover:text-ink inline-flex items-center gap-1 border border-line rounded-lg px-2.5 py-1.5 hover:bg-[#F4F3EF]"
-              >
-                Shopify Partners <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink">Shopify Client ID / API Key</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={getVal("shopify_client_id")}
-                  onChange={(e) => updateDraft("shopify_client_id", e.target.value)}
-                  placeholder="e.g. shp_api_123456"
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "shopify_client_id"}
-                  onClick={() => handleSave("shopify_client_id")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-ink">Shopify Client Secret</label>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={drafts["shopify_client_secret"] ?? ""}
-                  onChange={(e) => updateDraft("shopify_client_secret", e.target.value)}
-                  placeholder={hasSecret("shopify_client_secret") ? "••••••••••••••••••••" : "Paste secret"}
-                  className="flex-1 text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-                />
-                <Button
-                  variant="secondary"
-                  size="compact"
-                  loading={savingField === "shopify_client_secret"}
-                  onClick={() => handleSave("shopify_client_secret")}
-                  className="text-xs"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-2">
-            <div className="text-xs font-bold text-ink">Shopify App Redirection URL</div>
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-line">
-              <span className="font-mono text-xs text-ink truncate select-all">{`${baseOrigin}/api/seller-channels/shopify/callback`}</span>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(`${baseOrigin}/api/seller-channels/shopify/callback`, "shopify-cb")}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-ink-secondary hover:text-ink"
-              >
-                {copiedKey === "shopify-cb" ? <Check className="h-3.5 w-3.5 text-[#0E8F5D]" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedKey === "shopify-cb" ? "Copied" : "Copy"}</span>
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        {/* ==================================================================== */}
-        {/* 4. AMAZON SELLING PARTNER SP-API */}
-        {/* ==================================================================== */}
-        <Card padding="lg" className="border-line bg-white shadow-xs space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-[#FF9900]/10 border border-[#FF9900]/20 flex items-center justify-center font-extrabold text-sm text-[#FF9900]">
-                A
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-ink">Amazon SP-API Connector</h3>
-                  <Badge variant="warning">COMING SOON — ARCHITECTURE READY</Badge>
-                </div>
-                <p className="text-xs text-ink-tertiary">Amazon Selling Partner API for BSR tracking and FBA fee calculations.</p>
-              </div>
-            </div>
-
-            <span className="text-xs font-semibold text-ink-tertiary">Phase 2 Channel</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">SP-API Client ID (LWA)</label>
-              <input
-                type="text"
-                value={getVal("amazon_client_id")}
-                onChange={(e) => updateDraft("amazon_client_id", e.target.value)}
-                placeholder="amzn1.application-oa2-client..."
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">SP-API Client Secret (LWA)</label>
-              <input
-                type="password"
-                value={drafts["amazon_client_secret"] ?? ""}
-                onChange={(e) => updateDraft("amazon_client_secret", e.target.value)}
-                placeholder={hasSecret("amazon_client_secret") ? "••••••••••••••••••••" : "amzn1.oa2-cs.v1..."}
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-ink">Marketplace Region</label>
-              <select
-                value={getVal("amazon_region", "NA")}
-                onChange={(e) => {
-                  updateDraft("amazon_region", e.target.value);
-                  onSaveSetting("amazon_region", e.target.value);
-                }}
-                className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink"
-              >
-                <option value="NA">North America (US, CA, MX, BR)</option>
-                <option value="EU">Europe (UK, DE, FR, IT, ES)</option>
-                <option value="FE">Far East (JP, AU, SG)</option>
-              </select>
-            </div>
-          </div>
-        </Card>
-
-        {/* ==================================================================== */}
-        {/* 5. TIKTOK SHOP, EBAY, WOOCOMMERCE & WALMART */}
-        {/* ==================================================================== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* TikTok Shop Card */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="h-8 w-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-xs">TT</span>
-                <div>
-                  <h4 className="text-xs font-extrabold text-ink">TikTok Shop API</h4>
-                  <span className="text-[10px] text-ink-tertiary">Fast-moving video commerce trends</span>
-                </div>
-              </div>
-              <Badge variant="neutral">COMING SOON</Badge>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">App Key</label>
-                <input
-                  type="text"
-                  value={getVal("tiktok_app_key")}
-                  onChange={(e) => updateDraft("tiktok_app_key", e.target.value)}
-                  placeholder="e.g. 6a1b2c3d..."
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">App Secret</label>
-                <input
-                  type="password"
-                  value={drafts["tiktok_app_secret"] ?? ""}
-                  onChange={(e) => updateDraft("tiktok_app_secret", e.target.value)}
-                  placeholder="Paste secret"
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5 font-mono"
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* eBay API Card */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="h-8 w-8 rounded-lg bg-[#E53238]/10 text-[#E53238] flex items-center justify-center font-extrabold text-xs">eBay</span>
-                <div>
-                  <h4 className="text-xs font-extrabold text-ink">eBay REST API</h4>
-                  <span className="text-[10px] text-ink-tertiary">Secondary marketplace intelligence</span>
-                </div>
-              </div>
-              <Badge variant="neutral">COMING SOON</Badge>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">App ID (Client ID)</label>
-                <input
-                  type="text"
-                  value={getVal("ebay_app_id")}
-                  onChange={(e) => updateDraft("ebay_app_id", e.target.value)}
-                  placeholder="e.g. MyCompany-SellerSa-PRD..."
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">Cert ID (Client Secret)</label>
-                <input
-                  type="password"
-                  value={drafts["ebay_cert_id"] ?? ""}
-                  onChange={(e) => updateDraft("ebay_cert_id", e.target.value)}
-                  placeholder="Paste cert secret"
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5 font-mono"
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* WooCommerce Card */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="h-8 w-8 rounded-lg bg-[#96588A]/10 text-[#96588A] flex items-center justify-center font-extrabold text-xs">WC</span>
-                <div>
-                  <h4 className="text-xs font-extrabold text-ink">WooCommerce REST API</h4>
-                  <span className="text-[10px] text-ink-tertiary">Self-hosted WordPress stores</span>
-                </div>
-              </div>
-              <Badge variant="neutral">READY</Badge>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">Store Base URL</label>
-                <input
-                  type="url"
-                  value={getVal("woocommerce_store_url")}
-                  onChange={(e) => updateDraft("woocommerce_store_url", e.target.value)}
-                  placeholder="https://mystore.com"
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">Consumer Key</label>
-                <input
-                  type="text"
-                  value={getVal("woocommerce_consumer_key")}
-                  onChange={(e) => updateDraft("woocommerce_consumer_key", e.target.value)}
-                  placeholder="ck_..."
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5 font-mono"
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* Walmart Marketplace Card */}
-          <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="h-8 w-8 rounded-lg bg-[#0071DC]/10 text-[#0071DC] flex items-center justify-center font-extrabold text-xs">W</span>
-                <div>
-                  <h4 className="text-xs font-extrabold text-ink">Walmart Marketplace</h4>
-                  <span className="text-[10px] text-ink-tertiary">Enterprise retail connector</span>
-                </div>
-              </div>
-              <Badge variant="neutral">COMING SOON</Badge>
-            </div>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">Client ID</label>
-                <input
-                  type="text"
-                  value={getVal("walmart_client_id")}
-                  onChange={(e) => updateDraft("walmart_client_id", e.target.value)}
-                  placeholder="Client ID"
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-bold text-ink">Client Secret</label>
-                <input
-                  type="password"
-                  value={drafts["walmart_client_secret"] ?? ""}
-                  onChange={(e) => updateDraft("walmart_client_secret", e.target.value)}
-                  placeholder="Paste client secret"
-                  className="w-full text-xs border border-line rounded px-2.5 py-1.5 font-mono"
-                />
-              </div>
-            </div>
-          </Card>
+                {cat.count}
+              </span>
+            </button>
+          ))}
         </div>
+
+        <div className="relative min-w-[240px]">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+          <input
+            type="text"
+            placeholder="Search connectors & tools..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-line)] text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+          />
+        </div>
+      </div>
+
+      {/* Integration Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {filteredIntegrations.map((item) => (
+          <IntegrationCard
+            key={item.id}
+            {...item}
+            onSave={handleBulkSave}
+          />
+        ))}
       </div>
     </div>
   );

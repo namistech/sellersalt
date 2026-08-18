@@ -18,13 +18,35 @@ async function loadS3Config(): Promise<S3Config | null> {
     "s3_public_base_url",
   ]);
 
-  const bucket = settings.s3_bucket || process.env.AWS_S3_BUCKET || process.env.S3_BUCKET || process.env.R2_BUCKET || "";
-  const region = settings.s3_region || process.env.AWS_S3_REGION || process.env.S3_REGION || "auto";
-  const accessKeyId = settings.s3_access_key_id || process.env.AWS_ACCESS_KEY_ID || process.env.S3_ACCESS_KEY_ID || "";
+  const bucket =
+    settings.s3_bucket || process.env.R2_BUCKET || process.env.AWS_S3_BUCKET || process.env.S3_BUCKET || "";
+  const region =
+    settings.s3_region || process.env.R2_REGION || process.env.AWS_S3_REGION || process.env.S3_REGION || "auto";
+  const accessKeyId =
+    settings.s3_access_key_id ||
+    process.env.R2_ACCESS_KEY_ID ||
+    process.env.AWS_ACCESS_KEY_ID ||
+    process.env.S3_ACCESS_KEY_ID ||
+    "";
   const secretAccessKey =
-    settings.s3_secret_access_key || process.env.AWS_SECRET_ACCESS_KEY || process.env.S3_SECRET_ACCESS_KEY || "";
-  const endpoint = settings.s3_endpoint || process.env.S3_ENDPOINT || process.env.R2_ENDPOINT || undefined;
-  const publicBaseUrl = settings.s3_public_base_url || process.env.S3_PUBLIC_BASE_URL || undefined;
+    settings.s3_secret_access_key ||
+    process.env.R2_SECRET_ACCESS_KEY ||
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    process.env.S3_SECRET_ACCESS_KEY ||
+    "";
+
+  // Derive R2 endpoint from account ID if full endpoint URL is omitted
+  const endpoint =
+    settings.s3_endpoint ||
+    process.env.R2_ENDPOINT ||
+    process.env.S3_ENDPOINT ||
+    (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined);
+
+  const publicBaseUrl =
+    settings.s3_public_base_url ||
+    process.env.R2_PUBLIC_BASE_URL ||
+    process.env.S3_PUBLIC_BASE_URL ||
+    undefined;
 
   if (!bucket || !accessKeyId || !secretAccessKey) return null;
   return { bucket, region, accessKeyId, secretAccessKey, endpoint, publicBaseUrl };

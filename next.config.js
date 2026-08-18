@@ -5,7 +5,7 @@ const CSP_HEADER = `
   script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.stripe.com https://*.paypal.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' data: blob: https://*.etsystatic.com https://*.etsy.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.stripe.com https://*.paypal.com https://*.r2.cloudflarestorage.com https://*.s3.amazonaws.com https://images.unsplash.com https://*.sellersalt.com;
+  img-src 'self' data: blob: https://*.etsystatic.com https://*.etsy.com https://lh3.googleusercontent.com https://avatars.githubusercontent.com https://*.stripe.com https://*.paypal.com https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.s3.amazonaws.com https://images.unsplash.com https://*.sellersalt.com;
   connect-src 'self' https://api.etsy.com https://openapi.etsy.com https://*.googleapis.com https://*.stripe.com https://*.paypal.com https://*.safepay.com https://*.payfast.co.za https://*.payfast.io;
   frame-src 'self' https://*.stripe.com https://*.paypal.com https://*.safepay.com https://*.payfast.co.za https://*.payfast.io;
   frame-ancestors 'none';
@@ -64,7 +64,15 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "sellersalt.com",
+      },
+      {
+        protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.r2.dev",
       },
       {
         protocol: "https",

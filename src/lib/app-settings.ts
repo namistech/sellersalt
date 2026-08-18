@@ -27,59 +27,133 @@ export const SETTING_DEFINITIONS = [
   // SEO & Social Defaults
   { key: "seo_default_title", label: "Default SEO Meta Title", isSecret: false },
   { key: "seo_default_description", label: "Default SEO Description", isSecret: false },
+  { key: "seo_canonical_url", label: "SEO Canonical Base URL Override", isSecret: false },
   { key: "seo_og_image_url", label: "OpenGraph / Social Preview Image (URL)", isSecret: false },
+  { key: "seo_google_site_verification", label: "Google Search Console Verification Token", isSecret: false },
+  { key: "seo_bing_site_verification", label: "Bing Webmaster Tools Verification Token", isSecret: false },
+  { key: "seo_schema_org_name", label: "Structured Data Organization Name", isSecret: false },
+  { key: "seo_schema_website_name", label: "Structured Data WebSite Name", isSecret: false },
 
   // Auth Page Artwork
   { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
   { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
-  // object-position percentages (0-100) for the side image above — lets an
-  // admin recenter/reframe a tall or off-center source image without
-  // needing to re-crop and re-upload it.
   { key: "auth_page_image_position_x", label: "Login page image horizontal position (0-100)", isSecret: false },
   { key: "auth_page_image_position_y", label: "Login page image vertical position (0-100)", isSecret: false },
 
-  // Google OAuth Credentials
+  // Identity & Google OAuth Credentials
   { key: "google_client_id", label: "Google OAuth Client ID", isSecret: false },
   { key: "google_client_secret", label: "Google OAuth Client Secret", isSecret: true },
 
-  // Etsy Integration Credentials
+  // Marketplace: Etsy Integration Credentials
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
   { key: "etsy_redirect_uri", label: "Etsy OAuth Callback Redirect URI Override", isSecret: false },
   { key: "etsy_oauth_scopes", label: "Etsy OAuth Requested Scopes Override", isSecret: false },
 
-  // Amazon SP-API Credentials
+  // Marketplace: Amazon SP-API Credentials
   { key: "amazon_client_id", label: "Amazon SP-API Client ID (LWA)", isSecret: false },
   { key: "amazon_client_secret", label: "Amazon SP-API Client Secret (LWA)", isSecret: true },
   { key: "amazon_seller_id", label: "Amazon Seller ID / Merchant Token", isSecret: false },
   { key: "amazon_region", label: "Amazon SP-API Marketplace Region (e.g. NA, EU, FE)", isSecret: false },
 
-  // Shopify Channel Credentials
+  // Marketplace: Shopify Channel Credentials
   { key: "shopify_client_id", label: "Shopify Client ID / API Key", isSecret: false },
   { key: "shopify_client_secret", label: "Shopify Client Secret", isSecret: true },
   { key: "shopify_affiliate_url", label: "Shopify affiliate link", isSecret: false },
   { key: "netdrix_shopify_order_url", label: "Netdrix: order a Shopify store (URL)", isSecret: false },
 
-  // TikTok Shop Channel Credentials
+  // Marketplace: TikTok Shop Channel Credentials
   { key: "tiktok_app_key", label: "TikTok Shop App Key", isSecret: false },
   { key: "tiktok_app_secret", label: "TikTok Shop App Secret", isSecret: true },
   { key: "tiktok_region", label: "TikTok Shop Region (e.g. US, UK, SEA)", isSecret: false },
 
-  // eBay Channel Credentials
+  // Marketplace: eBay Channel Credentials
   { key: "ebay_app_id", label: "eBay App ID (Client ID)", isSecret: false },
   { key: "ebay_cert_id", label: "eBay Cert ID (Client Secret)", isSecret: true },
   { key: "ebay_dev_id", label: "eBay Dev ID", isSecret: false },
   { key: "ebay_ru_name", label: "eBay RuName (Redirect URL Name)", isSecret: false },
 
-  // WooCommerce Channel Credentials
+  // Marketplace: WooCommerce Channel Credentials
   { key: "woocommerce_store_url", label: "WooCommerce Store Base URL", isSecret: false },
   { key: "woocommerce_consumer_key", label: "WooCommerce Consumer Key", isSecret: false },
   { key: "woocommerce_consumer_secret", label: "WooCommerce Consumer Secret", isSecret: true },
   { key: "netdrix_woocommerce_order_url", label: "Netdrix: order a WooCommerce store (URL)", isSecret: false },
 
-  // Walmart Marketplace Credentials
+  // Marketplace: Walmart Marketplace Credentials
   { key: "walmart_client_id", label: "Walmart Marketplace Client ID", isSecret: false },
   { key: "walmart_client_secret", label: "Walmart Marketplace Client Secret", isSecret: true },
+
+  // Productivity: Google Sheets
+  { key: "google_sheets_client_id", label: "Google Sheets OAuth Client ID", isSecret: false },
+  { key: "google_sheets_client_secret", label: "Google Sheets OAuth Client Secret", isSecret: true },
+
+  // Productivity: Zapier
+  { key: "zapier_client_id", label: "Zapier Client ID", isSecret: false },
+  { key: "zapier_client_secret", label: "Zapier Client Secret", isSecret: true },
+  { key: "zapier_webhook_url", label: "Zapier Inbound Webhook URL", isSecret: false },
+
+  // Productivity: Make / Integromat
+  { key: "make_client_id", label: "Make App Client ID", isSecret: false },
+  { key: "make_client_secret", label: "Make App Client Secret", isSecret: true },
+  { key: "make_webhook_url", label: "Make Webhook Hook URL", isSecret: false },
+
+  // Productivity: Slack
+  { key: "slack_client_id", label: "Slack Client ID", isSecret: false },
+  { key: "slack_client_secret", label: "Slack Client Secret", isSecret: true },
+  { key: "slack_bot_token", label: "Slack Bot User OAuth Token", isSecret: true },
+  { key: "slack_webhook_url", label: "Slack Incoming Webhook URL", isSecret: false },
+
+  // Productivity: Asana
+  { key: "asana_client_id", label: "Asana Client ID", isSecret: false },
+  { key: "asana_client_secret", label: "Asana Client Secret", isSecret: true },
+  { key: "asana_access_token", label: "Asana Personal Access Token", isSecret: true },
+
+  // Productivity: ClickUp
+  { key: "clickup_client_id", label: "ClickUp Client ID", isSecret: false },
+  { key: "clickup_client_secret", label: "ClickUp Client Secret", isSecret: true },
+  { key: "clickup_api_token", label: "ClickUp API Token", isSecret: true },
+
+  // Productivity: Monday.com
+  { key: "monday_client_id", label: "Monday.com Client ID", isSecret: false },
+  { key: "monday_client_secret", label: "Monday.com Client Secret", isSecret: true },
+  { key: "monday_api_token", label: "Monday.com API Token", isSecret: true },
+
+  // Accounting: QuickBooks Online
+  { key: "quickbooks_client_id", label: "QuickBooks OAuth Client ID", isSecret: false },
+  { key: "quickbooks_client_secret", label: "QuickBooks OAuth Client Secret", isSecret: true },
+  { key: "quickbooks_realm_id", label: "QuickBooks Company / Realm ID", isSecret: false },
+
+  // Accounting: Xero
+  { key: "xero_client_id", label: "Xero Client ID", isSecret: false },
+  { key: "xero_client_secret", label: "Xero Client Secret", isSecret: true },
+  { key: "xero_tenant_id", label: "Xero Tenant ID", isSecret: false },
+
+  // Accounting: Zoho CRM
+  { key: "zoho_client_id", label: "Zoho CRM Client ID", isSecret: false },
+  { key: "zoho_client_secret", label: "Zoho CRM Client Secret", isSecret: true },
+  { key: "zoho_org_id", label: "Zoho Organization ID", isSecret: false },
+
+  // CMS: WordPress
+  { key: "wordpress_site_url", label: "WordPress Site REST Endpoint URL", isSecret: false },
+  { key: "wordpress_app_username", label: "WordPress Application Username", isSecret: false },
+  { key: "wordpress_app_password", label: "WordPress Application Password", isSecret: true },
+
+  // AI: OpenAI
+  { key: "openai_api_key", label: "OpenAI Secret API Key", isSecret: true },
+  { key: "openai_org_id", label: "OpenAI Organization ID", isSecret: false },
+  { key: "openai_default_model", label: "OpenAI Default Model", isSecret: false },
+
+  // AI: Anthropic Claude
+  { key: "anthropic_api_key", label: "Anthropic Claude API Key", isSecret: true },
+  { key: "anthropic_default_model", label: "Anthropic Default Model", isSecret: false },
+
+  // AI: Google Gemini
+  { key: "gemini_api_key", label: "Google Gemini API Key", isSecret: true },
+  { key: "gemini_default_model", label: "Google Gemini Default Model", isSecret: false },
+
+  // AI: Model Context Protocol (MCP)
+  { key: "mcp_server_url", label: "MCP Protocol Server Endpoint URL", isSecret: false },
+  { key: "mcp_auth_token", label: "MCP Protocol Bearer Auth Token", isSecret: true },
 
   // SellerSalt University & Education Portal
   { key: "university_enabled", label: "Show SellerSalt University in Navigation (true/false)", isSecret: false },
@@ -90,9 +164,7 @@ export const SETTING_DEFINITIONS = [
   { key: "announcement_urgent_text", label: "Urgent Top Announcement Banner Text", isSecret: false },
   { key: "announcement_urgent_link", label: "Urgent Top Announcement Link (URL)", isSecret: false },
 
-  // Object Storage (avatars and other uploads). Without this, uploads fall
-  // back to local container disk, which does NOT survive a redeploy —
-  // configure this before relying on avatar uploads in production.
+  // Object Storage (Cloudflare R2 & AWS S3)
   { key: "s3_bucket", label: "S3/R2 Bucket Name", isSecret: false },
   { key: "s3_region", label: "S3/R2 Region (e.g. us-east-1, or \"auto\" for R2)", isSecret: false },
   { key: "s3_access_key_id", label: "S3/R2 Access Key ID", isSecret: false },

@@ -1,79 +1,137 @@
 // System Announcements & Notification Center Service
 //
-// Announcement *content* is a small in-code list (no admin authoring UI
-// persists new ones across a restart yet — adminCreateAnnouncement mutates
-// this in-memory array, same as before). Read/dismissed *state* is real:
-// persisted per-user in the `AnnouncementRead` table so it survives
-// restarts/redeploys and is correctly isolated per user, instead of the
-// previous in-memory Map that reset on every deploy.
+// Announcement *content* and read/dismissed state are durably persisted in Postgres:
+// - `Announcement` model stores broadcast messages with placement & audience targeting
+// - `AnnouncementRead` records per-user read/dismiss state across restarts & replicas.
 
 import { prisma } from "@/lib/db";
 
-export type AnnouncementPriority = "URGENT" | "NORMAL";
-export type AnnouncementPlacement = "BANNER" | "NOTIFICATIONS" | "BOTH";
+export type AnnouncementPriority = "URGENT" | "NORMAL" | "INFO";
+export type AnnouncementPlacement =
+  | "BANNER"
+  | "NOTIFICATIONS"
+  | "BOTH"
+  | "TOP_BANNER"
+  | "DASHBOARD_BANNER"
+  | "CHECKOUT_BANNER"
+  | "PRICING_BANNER"
+  | "MODAL"
+  | "NOTIFICATIONS_PANEL";
+
+export type AnnouncementAudience = "ALL" | "LOGGED_IN" | "LOGGED_OUT" | "FREE_ONLY" | "PAID_ONLY";
 
 export interface AnnouncementItem {
   id: string;
   title: string;
   message: string;
   priority: AnnouncementPriority;
-  placement: AnnouncementPlacement;
+  placement: string;
+  audience?: string;
   linkUrl?: string | null;
   linkText?: string | null;
   isActive: boolean;
   isDismissed?: boolean;
+  isClosable?: boolean;
+  isPermanent?: boolean;
+  displayFrequency?: string;
+  maxImpressions?: number | null;
+  startDate?: string;
   expiresAt?: string | null;
   createdAt: string;
 }
 
-let ANNOUNCEMENTS_STORE: AnnouncementItem[] = [
-  {
-    id: "ann-welcome",
-    title: "Welcome to SellerSalt Intelligence v1.8",
-    message: "Explore our upgraded competitor surveillance engine and new keyword discovery tools.",
-    priority: "NORMAL",
-    placement: "NOTIFICATIONS",
-    linkUrl: "/whats-new",
-    linkText: "View Changelog",
-    isActive: true,
-    createdAt: "2026-08-16T12:00:00.000Z",
-  },
-];
+const DEFAULT_WELCOME_ANNOUNCEMENT: AnnouncementItem = {
+  id: "ann-welcome",
+  title: "Welcome to SellerSalt Intelligence v1.8",
+  message: "Explore our upgraded competitor surveillance engine and new keyword discovery tools.",
+  priority: "NORMAL",
+  placement: "NOTIFICATIONS",
+  audience: "ALL",
+  linkUrl: "/whats-new",
+  linkText: "View Changelog",
+  isActive: true,
+  createdAt: "2026-08-16T12:00:00.000Z",
+};
 
-export async function getActiveAnnouncements(userId?: string): Promise<{
+export async function getActiveAnnouncements(
+  userId?: string,
+  options?: { placement?: string; audience?: string }
+): Promise<{
   banner: AnnouncementItem | null;
   notifications: AnnouncementItem[];
+  all: AnnouncementItem[];
 }> {
-  const now = Date.now();
+  const now = new Date();
 
-  const active = ANNOUNCEMENTS_STORE.filter((a) => {
-    if (!a.isActive) return false;
-    if (a.expiresAt && new Date(a.expiresAt).getTime() < now) return false;
-    return true;
-  });
+  // Load active announcements from database
+  let dbAnnouncements: any[] = [];
+  try {
+    dbAnnouncements = await prisma.announcement.findMany({
+      where: {
+        isActive: true,
+        startDate: { lte: now },
+        OR: [{ endDate: null }, { endDate: { gt: now } }],
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (e) {
+    // If DB is initializing or empty
+    dbAnnouncements = [];
+  }
+
+  const items: AnnouncementItem[] = dbAnnouncements.length > 0
+    ? dbAnnouncements.map((a) => ({
+        id: a.id,
+        title: a.title,
+        message: a.message,
+        priority: (a.priority as AnnouncementPriority) || "NORMAL",
+        placement: a.placement,
+        audience: a.audience,
+        linkUrl: a.ctaUrl,
+        linkText: a.ctaText,
+        isActive: a.isActive,
+        isClosable: a.isClosable,
+        isPermanent: a.isPermanent,
+        displayFrequency: a.displayFrequency,
+        maxImpressions: a.maxImpressions,
+        startDate: a.startDate.toISOString(),
+        expiresAt: a.endDate ? a.endDate.toISOString() : null,
+        createdAt: a.createdAt.toISOString(),
+      }))
+    : [DEFAULT_WELCOME_ANNOUNCEMENT];
 
   const reads = userId
     ? await prisma.announcementRead.findMany({
-        where: { userId, announcementId: { in: active.map((a) => a.id) } },
+        where: { userId, announcementId: { in: items.map((a) => a.id) } },
         select: { announcementId: true },
-      })
+      }).catch(() => [])
     : [];
   const readIds = new Set(reads.map((r: { announcementId: string }) => r.announcementId));
 
+  // Determine top banner
   const banner =
-    active.find(
-      (a) => (a.placement === "BANNER" || a.placement === "BOTH") && a.priority === "URGENT" && !readIds.has(a.id)
+    items.find(
+      (a) =>
+        (a.placement === "TOP_BANNER" || a.placement === "BANNER" || a.placement === "BOTH") &&
+        (a.isPermanent || !readIds.has(a.id))
     ) || null;
 
-  const notifications = active
-    .filter((a) => a.placement === "NOTIFICATIONS" || a.placement === "BOTH")
+  // Determine notifications list
+  const notifications = items
+    .filter(
+      (a) =>
+        a.placement === "NOTIFICATIONS" ||
+        a.placement === "NOTIFICATIONS_PANEL" ||
+        a.placement === "BOTH" ||
+        a.placement === "DASHBOARD_BANNER"
+    )
     .map((a) => ({
       ...a,
       isDismissed: readIds.has(a.id),
     }))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  return { banner, notifications };
+  return { banner, notifications, all: items };
 }
 
 export async function markAnnouncementRead(announcementId: string, userId: string): Promise<void> {
@@ -81,22 +139,18 @@ export async function markAnnouncementRead(announcementId: string, userId: strin
     where: { userId_announcementId: { userId, announcementId } },
     create: { userId, announcementId },
     update: {},
-  });
+  }).catch(() => {});
 }
 
-// Backward-compatible alias — "dismiss" and "mark read" are the same
-// underlying action for this announcement-backed notification center.
 export const dismissAnnouncement = markAnnouncementRead;
 
 export async function markAllAnnouncementsRead(userId: string): Promise<void> {
-  const now = Date.now();
-  const activeIds = ANNOUNCEMENTS_STORE.filter((a) => {
-    if (!a.isActive) return false;
-    if (a.expiresAt && new Date(a.expiresAt).getTime() < now) return false;
-    return true;
-  }).map((a) => a.id);
+  const active = await prisma.announcement.findMany({
+    where: { isActive: true },
+    select: { id: true },
+  }).catch(() => []);
 
-  if (activeIds.length === 0) return;
+  const activeIds = active.length > 0 ? active.map((a) => a.id) : ["ann-welcome"];
 
   await prisma.$transaction(
     activeIds.map((announcementId) =>
@@ -106,31 +160,68 @@ export async function markAllAnnouncementsRead(userId: string): Promise<void> {
         update: {},
       })
     )
-  );
+  ).catch(() => {});
 }
 
 export async function adminCreateAnnouncement(params: {
   title: string;
   message: string;
-  priority: AnnouncementPriority;
-  placement: AnnouncementPlacement;
+  priority?: AnnouncementPriority;
+  placement?: string;
+  audience?: string;
   linkUrl?: string;
   linkText?: string;
-  expiresAt?: string;
+  isClosable?: boolean;
+  isPermanent?: boolean;
+  displayFrequency?: string;
+  maxImpressions?: number;
+  startDate?: Date;
+  expiresAt?: string | Date | null;
 }): Promise<AnnouncementItem> {
-  const newItem: AnnouncementItem = {
-    id: `ann-${Date.now()}`,
-    title: params.title.trim(),
-    message: params.message.trim(),
-    priority: params.priority,
-    placement: params.placement,
-    linkUrl: params.linkUrl || null,
-    linkText: params.linkText || null,
-    isActive: true,
-    expiresAt: params.expiresAt || null,
-    createdAt: new Date().toISOString(),
-  };
+  const created = await prisma.announcement.create({
+    data: {
+      title: params.title.trim(),
+      message: params.message.trim(),
+      priority: params.priority || "NORMAL",
+      placement: params.placement || "TOP_BANNER",
+      audience: params.audience || "ALL",
+      ctaUrl: params.linkUrl || null,
+      ctaText: params.linkText || null,
+      isClosable: params.isClosable !== false,
+      isPermanent: Boolean(params.isPermanent),
+      displayFrequency: params.displayFrequency || "ONCE",
+      maxImpressions: params.maxImpressions ?? 3,
+      startDate: params.startDate || new Date(),
+      endDate: params.expiresAt ? new Date(params.expiresAt) : null,
+      isActive: true,
+    },
+  });
 
-  ANNOUNCEMENTS_STORE.unshift(newItem);
-  return newItem;
+  return {
+    id: created.id,
+    title: created.title,
+    message: created.message,
+    priority: created.priority as AnnouncementPriority,
+    placement: created.placement,
+    audience: created.audience,
+    linkUrl: created.ctaUrl,
+    linkText: created.ctaText,
+    isActive: created.isActive,
+    isClosable: created.isClosable,
+    isPermanent: created.isPermanent,
+    displayFrequency: created.displayFrequency,
+    maxImpressions: created.maxImpressions,
+    startDate: created.startDate.toISOString(),
+    expiresAt: created.endDate ? created.endDate.toISOString() : null,
+    createdAt: created.createdAt.toISOString(),
+  };
+}
+
+export async function adminDeleteAnnouncement(id: string): Promise<boolean> {
+  try {
+    await prisma.announcement.delete({ where: { id } });
+    return true;
+  } catch {
+    return false;
+  }
 }
