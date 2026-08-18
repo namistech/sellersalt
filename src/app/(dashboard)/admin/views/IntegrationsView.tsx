@@ -562,7 +562,128 @@ export function IntegrationsView({
       ],
     },
 
-    // 13. QuickBooks Online
+    // 13. Google Drive
+    {
+      id: "google-drive",
+      category: "Productivity",
+      name: "Google Drive & Cloud Storage",
+      description:
+        "Automated backup of generated listing assets, studio copy exports, and product research spreadsheets.",
+      icon: "📁",
+      status: hasVal("google_drive_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developers.google.com/drive/api",
+      documentationLabel: "Google Drive API Docs",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback",
+          url: `${PROD_BASE}/api/integrations/google-drive/callback`,
+        },
+        {
+          label: "Staging OAuth Callback",
+          url: `${STAGING_BASE}/api/integrations/google-drive/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "google_drive_client_id",
+          label: "Google Drive Client ID",
+          placeholder: "google-drive-client-id.apps.googleusercontent.com",
+          value: getVal("google_drive_client_id"),
+          hasValue: hasVal("google_drive_client_id"),
+          instructions: "From Google Cloud Console with Google Drive API enabled.",
+        },
+        {
+          key: "google_drive_client_secret",
+          label: "Google Drive Client Secret",
+          isSecret: true,
+          value: getVal("google_drive_client_secret"),
+          hasValue: hasVal("google_drive_client_secret"),
+          instructions: "Encrypted client secret for Drive scope authorization.",
+        },
+      ],
+    },
+
+    // 14. Asana
+    {
+      id: "asana-tasks",
+      category: "Productivity",
+      name: "Asana Task & Workflow Management",
+      description:
+        "Dispatch listing production tasks, photo shoot briefs, and SEO optimization assignments to Asana projects.",
+      icon: "📋",
+      status: hasVal("asana_access_token") || hasVal("asana_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developers.asana.com",
+      documentationLabel: "Asana Developer Portal",
+      fields: [
+        {
+          key: "asana_access_token",
+          label: "Asana Personal Access Token",
+          isSecret: true,
+          placeholder: "1/1234567890:xxxx...",
+          value: getVal("asana_access_token"),
+          hasValue: hasVal("asana_access_token"),
+          instructions: "Generate from Asana Developer App Console → Personal Access Tokens.",
+        },
+        {
+          key: "asana_client_id",
+          label: "Asana OAuth Client ID (Optional)",
+          placeholder: "asana_client_id",
+          value: getVal("asana_client_id"),
+          hasValue: hasVal("asana_client_id"),
+          instructions: "For multi-user organization OAuth flows.",
+        },
+      ],
+    },
+
+    // 15. ClickUp
+    {
+      id: "clickup-tasks",
+      category: "Productivity",
+      name: "ClickUp Content & Production Pipelines",
+      description:
+        "Create ClickUp tasks and track listing progress across staging, photographing, and publishing workflows.",
+      icon: "🎯",
+      status: hasVal("clickup_api_token") || hasVal("clickup_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://clickup.com/api",
+      documentationLabel: "ClickUp API Docs",
+      fields: [
+        {
+          key: "clickup_api_token",
+          label: "ClickUp API Token",
+          isSecret: true,
+          placeholder: "pk_xxxx...",
+          value: getVal("clickup_api_token"),
+          hasValue: hasVal("clickup_api_token"),
+          instructions: "From ClickUp Workspace Settings → Apps → API Token.",
+        },
+      ],
+    },
+
+    // 16. Monday.com
+    {
+      id: "monday-pipeline",
+      category: "Productivity",
+      name: "Monday.com Work OS",
+      description:
+        "Sync product inventory batches, competitor tracking signals, and listing launches with Monday boards.",
+      icon: "📊",
+      status: hasVal("monday_api_token") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://developer.monday.com",
+      documentationLabel: "Monday.com API Docs",
+      fields: [
+        {
+          key: "monday_api_token",
+          label: "Monday.com API Token",
+          isSecret: true,
+          placeholder: "eyJhbGciOi...",
+          value: getVal("monday_api_token"),
+          hasValue: hasVal("monday_api_token"),
+          instructions: "From Monday.com Profile → Developers → API V2 Token.",
+        },
+      ],
+    },
+
+    // 17. QuickBooks Online
     {
       id: "quickbooks-accounting",
       category: "Accounting",
@@ -577,6 +698,10 @@ export function IntegrationsView({
         {
           label: "Production OAuth Callback",
           url: `${PROD_BASE}/api/integrations/quickbooks/callback`,
+        },
+        {
+          label: "Staging OAuth Callback",
+          url: `${STAGING_BASE}/api/integrations/quickbooks/callback`,
         },
       ],
       fields: [
@@ -599,7 +724,7 @@ export function IntegrationsView({
       ],
     },
 
-    // 14. Xero
+    // 18. Xero
     {
       id: "xero-accounting",
       category: "Accounting",
@@ -610,6 +735,16 @@ export function IntegrationsView({
       status: hasVal("xero_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
       documentationUrl: "https://developer.xero.com",
       documentationLabel: "Xero Developer Portal",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback",
+          url: `${PROD_BASE}/api/integrations/xero/callback`,
+        },
+        {
+          label: "Staging OAuth Callback",
+          url: `${STAGING_BASE}/api/integrations/xero/callback`,
+        },
+      ],
       fields: [
         {
           key: "xero_client_id",
@@ -626,6 +761,47 @@ export function IntegrationsView({
           value: getVal("xero_client_secret"),
           hasValue: hasVal("xero_client_secret"),
           instructions: "Encrypted Xero client secret.",
+        },
+      ],
+    },
+
+    // 19. Zoho CRM
+    {
+      id: "zoho-crm",
+      category: "Accounting",
+      name: "Zoho CRM & B2B Leads",
+      description:
+        "Capture wholesale inquiries, custom order buyer leads, and enterprise supplier relationships.",
+      icon: "💼",
+      status: hasVal("zoho_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
+      documentationUrl: "https://api-console.zoho.com",
+      documentationLabel: "Zoho API Console",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback",
+          url: `${PROD_BASE}/api/integrations/zoho/callback`,
+        },
+        {
+          label: "Staging OAuth Callback",
+          url: `${STAGING_BASE}/api/integrations/zoho/callback`,
+        },
+      ],
+      fields: [
+        {
+          key: "zoho_client_id",
+          label: "Zoho Client ID",
+          placeholder: "1000.xxxx...",
+          value: getVal("zoho_client_id"),
+          hasValue: hasVal("zoho_client_id"),
+          instructions: "From Zoho API Console Client Credentials.",
+        },
+        {
+          key: "zoho_client_secret",
+          label: "Zoho Client Secret",
+          isSecret: true,
+          value: getVal("zoho_client_secret"),
+          hasValue: hasVal("zoho_client_secret"),
+          instructions: "Encrypted secret key for Zoho OAuth authorization.",
         },
       ],
     },
