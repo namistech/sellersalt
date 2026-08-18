@@ -1,7 +1,7 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import crypto from "node:crypto";
 import path from "node:path";
-import type { StorageProvider, UploadResult } from "./index";
+import type { StorageProvider, UploadResult, StoredObject } from "./index";
 
 export interface S3Config {
   bucket: string;
@@ -39,6 +39,34 @@ export class S3StorageProvider implements StorageProvider {
     );
   }
 
+  private extractKey(fileKeyOrUrl: string): string {
+    if (!fileKeyOrUrl) return "";
+    let key = fileKeyOrUrl.trim();
+
+    if (key.startsWith("/api/assets/")) {
+      return key.replace(/^\/api\/assets\//, "");
+    }
+    if (key.startsWith("/uploads/")) {
+      return key.replace(/^\/uploads\//, "");
+    }
+
+    if (key.startsWith("http://") || key.startsWith("https://")) {
+      try {
+        const parsed = new URL(key);
+        let pathname = parsed.pathname.replace(/^\/+/, "");
+        if (pathname.startsWith(`${this.config.bucket}/`)) {
+          pathname = pathname.substring(this.config.bucket.length + 1);
+        }
+        return pathname;
+      } catch {
+        const segments = key.split("/").filter(Boolean);
+        return segments.slice(-2).join("/");
+      }
+    }
+
+    return key.replace(/^\/+/, "");
+  }
+
   async upload(
     file: Buffer,
     filename: string,
@@ -63,38 +91,47 @@ export class S3StorageProvider implements StorageProvider {
       })
     );
 
-    const url = this.config.publicBaseUrl
+    const url = this.config.publicBaseUrl && !this.config.publicBaseUrl.includes("r2.cloudflarestorage.com")
       ? `${this.config.publicBaseUrl.replace(/\/+$/, "")}/${key}`
-      : this.config.endpoint
-        ? `${this.config.endpoint.replace(/\/+$/, "")}/${this.config.bucket}/${key}`
-        : `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
+      : `/api/assets/${key}`;
 
     return { url, key, sizeBytes: file.length, mimeType };
+  }
+
+  async getObject(fileKeyOrUrl: string): Promise<StoredObject | null> {
+    if (!this.isConfigured()) return null;
+    const key = this.extractKey(fileKeyOrUrl);
+    if (!key) return null;
+
+    try {
+      const res = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.config.bucket,
+          Key: key,
+        })
+      );
+
+      if (!res.Body) return null;
+      const byteArray = await res.Body.transformToByteArray();
+      const buffer = Buffer.from(byteArray);
+      const mimeType = res.ContentType || "application/octet-stream";
+
+      return {
+        buffer,
+        mimeType,
+        sizeBytes: buffer.length,
+      };
+    } catch (err) {
+      console.error("[S3StorageProvider:getObject] Error fetching key:", key, err);
+      return null;
+    }
   }
 
   async delete(fileKeyOrUrl: string): Promise<boolean> {
     try {
       if (!fileKeyOrUrl) return false;
-
-      // Extract key from URL or raw key path
-      let key = fileKeyOrUrl;
-      if (key.startsWith("http://") || key.startsWith("https://")) {
-        try {
-          const parsed = new URL(key);
-          let pathname = parsed.pathname.replace(/^\/+/, "");
-          // If pathname starts with bucket name (path style), strip bucket prefix
-          if (pathname.startsWith(`${this.config.bucket}/`)) {
-            pathname = pathname.substring(this.config.bucket.length + 1);
-          }
-          key = pathname;
-        } catch {
-          // Fallback to segments
-          const segments = fileKeyOrUrl.split("/").filter(Boolean);
-          key = segments.slice(-2).join("/");
-        }
-      } else if (key.startsWith("/uploads/")) {
-        key = key.replace(/^\/uploads\//, "");
-      }
+      const key = this.extractKey(fileKeyOrUrl);
+      if (!key) return false;
 
       await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: key }));
       return true;

@@ -21,7 +21,9 @@ import {
   Badge,
   Button,
   Alert,
+  SafeImage,
 } from "@/components/ui";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 interface MediaAsset {
   id: string;
@@ -166,13 +168,14 @@ export function StorageMediaView({
             <div className="space-y-3">
               {/* Asset Preview Container */}
               <div className="h-40 w-full rounded-xl bg-[#FAFAF8] border border-line flex items-center justify-center p-3 overflow-hidden relative group">
-                <img
-                  src={asset.url}
+                <SafeImage
+                  src={resolveAssetUrl(asset.url)}
                   alt={asset.name}
+                  fallbackType="product"
                   className="max-h-full max-w-full object-contain rounded"
                 />
                 <a
-                  href={asset.url}
+                  href={resolveAssetUrl(asset.url) || asset.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"

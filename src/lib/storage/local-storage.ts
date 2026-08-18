@@ -1,7 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import type { StorageProvider, UploadResult } from "./index";
+import type { StorageProvider, UploadResult, StoredObject } from "./index";
+
+const MIME_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
 
 export class LocalStorageProvider implements StorageProvider {
   name = "local";
@@ -9,6 +19,14 @@ export class LocalStorageProvider implements StorageProvider {
 
   isConfigured(): boolean {
     return true;
+  }
+
+  private extractKey(fileKeyOrUrl: string): string {
+    if (!fileKeyOrUrl) return "";
+    let key = fileKeyOrUrl.trim();
+    if (key.startsWith("/api/assets/")) return key.replace(/^\/api\/assets\//, "");
+    if (key.startsWith("/uploads/")) return key.replace(/^\/uploads\//, "");
+    return key.replace(/^\/+/, "");
   }
 
   async upload(
@@ -30,18 +48,37 @@ export class LocalStorageProvider implements StorageProvider {
     await fs.writeFile(filePath, file);
 
     return {
-      url: `/uploads/${key}`,
+      url: `/api/assets/${key}`,
       key,
       sizeBytes: file.length,
       mimeType,
     };
   }
 
+  async getObject(fileKeyOrUrl: string): Promise<StoredObject | null> {
+    const key = this.extractKey(fileKeyOrUrl);
+    if (!key) return null;
+    const filePath = path.join(this.baseDir, key);
+
+    try {
+      const buffer = await fs.readFile(filePath);
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeType = MIME_TYPES[ext] || "application/octet-stream";
+      return {
+        buffer,
+        mimeType,
+        sizeBytes: buffer.length,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   async delete(fileKeyOrUrl: string): Promise<boolean> {
     try {
       if (!fileKeyOrUrl) return false;
-      const cleanPath = fileKeyOrUrl.replace(/^\/uploads\//, "").replace(/^https?:\/\/[^\/]+\/uploads\//, "");
-      const filePath = path.join(this.baseDir, cleanPath);
+      const key = this.extractKey(fileKeyOrUrl);
+      const filePath = path.join(this.baseDir, key);
       await fs.unlink(filePath);
       return true;
     } catch {

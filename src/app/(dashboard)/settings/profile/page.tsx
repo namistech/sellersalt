@@ -40,6 +40,7 @@ import {
 } from "@/components/ui";
 import { Dialog } from "@/components/ui/Dialog";
 import { checkPasswordStrength } from "@/lib/password-policy";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 interface ProfileData {
   name: string;
@@ -712,7 +713,7 @@ export default function ProfilePage() {
             <div className="relative group">
               {avatarUrl && !avatarFailed ? (
                 <img
-                  src={avatarUrl}
+                  src={resolveAssetUrl(avatarUrl) || avatarUrl}
                   alt={name || email}
                   onError={() => setAvatarFailed(true)}
                   className="h-20 w-20 rounded-2xl object-cover border-2 border-line shadow-sm"

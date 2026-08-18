@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { cn } from "@/components/ui";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 export interface AccountBrandProps {
   organizationName?: string | null;
@@ -56,7 +57,8 @@ export function AccountBrand({
   // workspace has a real `app_logo_url` configured, show that full
   // logo (icon + wordmark together, same pattern as the auth pages'
   // `h-8 w-auto` logo) instead of the square badge + separate text label.
-  if (!collapsed && !isCustomOrg && logoUrl) {
+  const resolvedLogoUrl = resolveAssetUrl(logoUrl);
+  if (!collapsed && !isCustomOrg && resolvedLogoUrl) {
     return (
       <Link
         href={href}
@@ -64,7 +66,7 @@ export function AccountBrand({
         title={displayName}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoUrl} alt={displayName} className="h-8 w-auto max-w-[180px] object-contain" />
+        <img src={resolvedLogoUrl} alt={displayName} className="h-8 w-auto max-w-[180px] object-contain" />
       </Link>
     );
   }

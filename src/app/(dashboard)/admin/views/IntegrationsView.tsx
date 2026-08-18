@@ -1009,15 +1009,15 @@ export function IntegrationsView({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-[var(--color-line)]">
+      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-line">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-[var(--color-ink)]">Integration Hub</h2>
+            <h2 className="text-xl font-bold text-ink">Integration Hub</h2>
             <Badge variant="success">
               {configuredCount} / {integrations.length} Active
             </Badge>
           </div>
-          <p className="text-sm text-[var(--color-ink-muted)] mt-1">
+          <p className="text-sm text-ink-secondary mt-1">
             Canonical command center for all marketplace connectors, productivity automations, accounting sync, and AI providers.
           </p>
         </div>
@@ -1029,17 +1029,20 @@ export function IntegrationsView({
           {categories.map((cat) => (
             <button
               key={cat.id}
+              type="button"
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0 ${
                 selectedCategory === cat.id
-                  ? "bg-[var(--color-brand-primary)] text-white shadow-xs font-semibold"
-                  : "bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] border border-[var(--color-line)]"
+                  ? "bg-[#141B16] text-white shadow-xs"
+                  : "bg-white text-ink-secondary hover:text-ink hover:bg-[#F4F3EF] border border-line"
               }`}
             >
               <span>{cat.label}</span>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  selectedCategory === cat.id ? "bg-white/20 text-white" : "bg-[var(--color-paper)] text-[var(--color-ink-muted)]"
+                  selectedCategory === cat.id
+                    ? "bg-white/20 text-white"
+                    : "bg-[#FAFAF8] text-ink-tertiary border border-line"
                 }`}
               >
                 {cat.count}
@@ -1049,13 +1052,13 @@ export function IntegrationsView({
         </div>
 
         <div className="relative min-w-[240px]">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-muted)]" />
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-tertiary" />
           <input
             type="text"
             placeholder="Search connectors & tools..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl bg-[var(--color-surface)] border border-[var(--color-line)] text-[var(--color-ink)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+            className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl bg-white border border-line text-ink placeholder:text-ink-tertiary focus:outline-none focus:border-[#0E8F5D]"
           />
         </div>
       </div>

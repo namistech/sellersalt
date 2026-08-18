@@ -2,23 +2,10 @@
 
 import React, { useState } from "react";
 import { Store, ShoppingBag, User } from "lucide-react";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 export function normalizeImageUrl(url?: string | null): string | null {
-  if (!url || typeof url !== "string") return null;
-  const trimmed = url.trim();
-  if (!trimmed) return null;
-
-  // Upgrade protocol-relative URLs
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-
-  // Upgrade HTTP to HTTPS for mixed-content prevention on Etsy assets
-  if (trimmed.startsWith("http://")) {
-    return `https://${trimmed.slice(7)}`;
-  }
-
-  return trimmed;
+  return resolveAssetUrl(url);
 }
 
 export interface SafeImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {

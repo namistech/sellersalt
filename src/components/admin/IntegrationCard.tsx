@@ -68,7 +68,6 @@ export function IntegrationCard({
   provenanceBadge,
   onSave,
   onTestConnection,
-  onReset,
 }: IntegrationCardProps) {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -150,56 +149,36 @@ export function IntegrationCard({
     switch (status) {
       case "CONFIGURED":
       case "CONNECTED":
-        return (
-          <Badge variant="success">
-            Configured & Ready
-          </Badge>
-        );
+        return <Badge variant="success">Configured & Ready</Badge>;
       case "COMING_SOON":
-        return (
-          <Badge variant="info">
-            Roadmap / Coming Soon
-          </Badge>
-        );
+        return <Badge variant="info">Roadmap / Soon</Badge>;
       case "DISABLED":
-        return (
-          <Badge variant="neutral">
-            Disabled
-          </Badge>
-        );
+        return <Badge variant="neutral">Disabled</Badge>;
       case "NOT_CONFIGURED":
       default:
-        return (
-          <Badge variant="warning">
-            Not Configured
-          </Badge>
-        );
+        return <Badge variant="warning">Not Configured</Badge>;
     }
   };
 
   return (
     <div
       id={`integration-${id}`}
-      className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-sm hover:shadow transition-shadow flex flex-col justify-between"
+      className="p-6 rounded-2xl border border-line bg-white shadow-xs hover:border-line-strong hover:shadow transition-all flex flex-col justify-between"
     >
       {/* Header */}
       <div>
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-[var(--color-paper)] border border-[var(--color-line)] flex items-center justify-center text-xl shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-[#FAFAF8] border border-line flex items-center justify-center text-xl shrink-0 text-ink">
               {icon || "🔌"}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-lg text-[var(--color-ink)]">{name}</h3>
-                {provenanceBadge && (
-                  <Badge variant="neutral">
-                    {provenanceBadge}
-                  </Badge>
-                )}
+                <h3 className="font-bold text-base text-ink tracking-tight">{name}</h3>
+                {provenanceBadge && <Badge variant="neutral">{provenanceBadge}</Badge>}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs font-mono uppercase tracking-wider text-[var(--color-ink-muted)]">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary">
                   {category}
                 </span>
               </div>
@@ -208,27 +187,27 @@ export function IntegrationCard({
           <div className="shrink-0">{getStatusBadge()}</div>
         </div>
 
-        <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed mb-5">{description}</p>
+        <p className="text-body-sm text-ink-secondary leading-relaxed mb-5">{description}</p>
 
         {/* Callbacks & Redirect URIs */}
         {callbackUrls && callbackUrls.length > 0 && (
-          <div className="mb-5 p-3.5 rounded-xl bg-[var(--color-paper)] border border-[var(--color-line)] space-y-2.5">
-            <div className="text-xs font-medium text-[var(--color-ink)] flex items-center gap-1.5">
+          <div className="mb-5 p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-2.5">
+            <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
               <span>Required Redirect / Callback URLs</span>
-              <span className="text-[var(--color-ink-muted)] text-[11px]">(Copy to your Developer Portal)</span>
+              <span className="text-ink-tertiary text-[11px] font-normal">(Copy to your Developer Portal)</span>
             </div>
             {callbackUrls.map((cb, idx) => (
               <div key={idx} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-[var(--color-ink-muted)]">
-                  <span className="font-medium text-[var(--color-ink)]">{cb.label}</span>
-                  {cb.description && <span className="text-[11px]">{cb.description}</span>}
+                <div className="flex items-center justify-between text-xs text-ink-secondary">
+                  <span className="font-medium text-ink">{cb.label}</span>
+                  {cb.description && <span className="text-[11px] text-ink-tertiary">{cb.description}</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value={cb.url}
-                    className="w-full text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-line)] px-2.5 py-1.5 rounded-lg text-[var(--color-ink)] select-all focus:outline-none"
+                    className="w-full text-xs font-mono bg-white border border-line px-2.5 py-1.5 rounded-lg text-ink select-all focus:outline-none focus:border-[#0E8F5D]"
                   />
                   <Button
                     size="compact"
@@ -238,8 +217,8 @@ export function IntegrationCard({
                   >
                     {copiedKey === `${id}-cb-${idx}` ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        <span className="text-emerald-700">Copied</span>
+                        <Check className="w-3.5 h-3.5 text-[#0E8F5D]" />
+                        <span className="text-[#0E8F5D] font-bold">Copied</span>
                       </>
                     ) : (
                       <>
@@ -266,19 +245,19 @@ export function IntegrationCard({
                   <div className="flex items-center justify-between">
                     <label
                       htmlFor={`input-${field.key}`}
-                      className="text-xs font-medium text-[var(--color-ink)] flex items-center gap-1.5"
+                      className="text-xs font-semibold text-ink flex items-center gap-1.5"
                     >
                       <span>{field.label}</span>
                       {field.isSecret && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-paper)] text-[var(--color-ink-muted)] border border-[var(--color-line)]">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FAFAF8] text-ink-tertiary border border-line">
                           Encrypted
                         </span>
                       )}
                     </label>
                     {isConfigured && (
-                      <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Set
+                      <span className="text-[11px] text-[#0E8F5D] font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-[#0E8F5D]" />
+                        Configured
                       </span>
                     )}
                   </div>
@@ -289,7 +268,7 @@ export function IntegrationCard({
                         id={`input-${field.key}`}
                         value={fieldValues[field.key] || ""}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                        className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)]"
+                        className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                       >
                         {field.options?.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -304,7 +283,7 @@ export function IntegrationCard({
                         placeholder={field.placeholder || (field.isSecret ? "••••••••••••••••" : "")}
                         value={fieldValues[field.key] || ""}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                        className="w-full text-xs font-mono bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] pr-10"
+                        className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink placeholder:text-ink-tertiary focus:bg-white focus:outline-none focus:border-[#0E8F5D] pr-10"
                       />
                     )}
 
@@ -312,7 +291,7 @@ export function IntegrationCard({
                       <button
                         type="button"
                         onClick={() => toggleSecret(field.key)}
-                        className="absolute right-2.5 p-1 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                        className="absolute right-2.5 p-1 text-ink-tertiary hover:text-ink transition-colors"
                         title={visibleSecrets[field.key] ? "Hide Secret" : "Reveal Secret"}
                       >
                         {visibleSecrets[field.key] ? (
@@ -324,8 +303,8 @@ export function IntegrationCard({
                     )}
                   </div>
 
-                  <p className="text-[11px] text-[var(--color-ink-muted)] leading-normal flex items-start gap-1">
-                    <HelpCircle className="w-3 h-3 shrink-0 mt-0.5 text-[var(--color-ink-muted)]" />
+                  <p className="text-[11px] text-ink-tertiary leading-normal flex items-start gap-1">
+                    <HelpCircle className="w-3 h-3 shrink-0 mt-0.5 text-ink-tertiary" />
                     <span>{field.instructions}</span>
                   </p>
                 </div>
@@ -339,46 +318,46 @@ export function IntegrationCard({
           <div
             className={`p-3 rounded-xl text-xs mb-4 flex items-start gap-2 ${
               testResult.ok
-                ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                : "bg-rose-50 text-rose-900 border border-rose-200"
+                ? "bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/40"
+                : "bg-red-50 text-red-900 border border-red-200"
             }`}
           >
             {testResult.ok ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-[#0E8F5D] shrink-0 mt-0.5" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
-              <span className="font-semibold">{testResult.ok ? "Connection Verified: " : "Verification Issue: "}</span>
+              <span className="font-bold">{testResult.ok ? "Connection Verified: " : "Verification Issue: "}</span>
               <span>{testResult.message}</span>
             </div>
           </div>
         )}
 
         {saveSuccess && (
-          <div className="p-3 rounded-xl text-xs mb-4 bg-emerald-50 text-emerald-900 border border-emerald-200 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Credentials encrypted and saved successfully.</span>
+          <div className="p-3 rounded-xl text-xs mb-4 bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/40 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-[#0E8F5D] shrink-0" />
+            <span className="font-semibold">Credentials encrypted and saved successfully.</span>
           </div>
         )}
 
         {saveError && (
-          <div className="p-3 rounded-xl text-xs mb-4 bg-rose-50 text-rose-900 border border-rose-200 flex items-center gap-2">
-            <XCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="p-3 rounded-xl text-xs mb-4 bg-red-50 text-red-900 border border-red-200 flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-red-600 shrink-0" />
             <span>{saveError}</span>
           </div>
         )}
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-4 border-t border-[var(--color-line)] flex items-center justify-between gap-3 flex-wrap">
+      <div className="pt-4 border-t border-line flex items-center justify-between gap-3 flex-wrap">
         <div>
           {documentationUrl && (
             <a
               href={documentationUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1 font-medium"
+              className="text-xs text-[#0E8F5D] hover:underline inline-flex items-center gap-1 font-semibold"
             >
               <span>{documentationLabel}</span>
               <ExternalLink className="w-3 h-3" />
@@ -415,7 +394,7 @@ export function IntegrationCard({
               variant="primary"
               onClick={handleSave}
               disabled={isSaving || isTesting}
-              className="text-xs h-8 px-4 font-medium"
+              className="text-xs h-8 px-4 font-semibold"
             >
               {isSaving ? (
                 <>

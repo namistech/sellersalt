@@ -103,11 +103,11 @@ export function AnnouncementsView({
   const handleSaveUrgent = async () => {
     setUrgentSaving(true);
     try {
-      await onSaveSetting("announcement_urgent_active", String(urgentActive));
-      await onSaveSetting("announcement_urgent_text", urgentText);
-      await onSaveSetting("announcement_urgent_link", urgentLink);
+      await onSaveSetting("announcement_banner_active", urgentActive ? "true" : "false");
+      await onSaveSetting("announcement_banner_text", urgentText);
+      await onSaveSetting("announcement_banner_link", urgentLink);
       setUrgentSaved(true);
-      setTimeout(() => setUrgentSaved(false), 2500);
+      setTimeout(() => setUrgentSaved(false), 3000);
     } finally {
       setUrgentSaving(false);
     }
@@ -115,7 +115,8 @@ export function AnnouncementsView({
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !message) return;
+    if (!title.trim() || !message.trim()) return;
+
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/admin/announcements", {
@@ -124,24 +125,24 @@ export function AnnouncementsView({
         body: JSON.stringify({
           title,
           message,
-          ctaText,
-          ctaUrl,
+          ctaText: ctaText.trim() || undefined,
+          ctaUrl: ctaUrl.trim() || undefined,
           priority,
           placement,
           audience,
           isPermanent,
           isClosable,
           displayFrequency,
-          maxImpressions,
+          maxImpressions: isPermanent ? null : Number(maxImpressions) || 3,
         }),
       });
 
       if (res.ok) {
-        setIsCreating(false);
         setTitle("");
         setMessage("");
         setCtaText("");
         setCtaUrl("");
+        setIsCreating(false);
         await fetchAnnouncements();
       }
     } finally {
@@ -149,17 +150,15 @@ export function AnnouncementsView({
     }
   };
 
-  const handleToggleActive = async (id: string, currentActive: boolean) => {
+  const handleToggleActive = async (id: string, current: boolean) => {
     try {
-      await fetch("/api/admin/announcements", {
+      await fetch(`/api/admin/announcements?id=${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, isActive: !currentActive }),
+        body: JSON.stringify({ isActive: !current }),
       });
       await fetchAnnouncements();
-    } catch {
-      //
-    }
+    } catch {}
   };
 
   const handleDelete = async (id: string) => {
@@ -167,86 +166,119 @@ export function AnnouncementsView({
     try {
       await fetch(`/api/admin/announcements?id=${id}`, { method: "DELETE" });
       await fetchAnnouncements();
-    } catch {
-      //
+    } catch {}
+  };
+
+  const getPriorityBadge = (p: string) => {
+    switch (p) {
+      case "URGENT":
+        return <Badge variant="danger">Urgent</Badge>;
+      case "INFO":
+        return <Badge variant="info">Info</Badge>;
+      case "NORMAL":
+      default:
+        return <Badge variant="neutral">Normal</Badge>;
+    }
+  };
+
+  const getPlacementBadge = (plc: string) => {
+    switch (plc) {
+      case "TOP_BANNER":
+        return <Badge variant="warning">Top Banner</Badge>;
+      case "DASHBOARD_BANNER":
+        return <Badge variant="neutral">Dashboard</Badge>;
+      case "CHECKOUT_BANNER":
+        return <Badge variant="gold">Checkout</Badge>;
+      case "PRICING_BANNER":
+        return <Badge variant="info">Pricing</Badge>;
+      case "NOTIFICATIONS_PANEL":
+        return <Badge variant="neutral">Notifications</Badge>;
+      case "MODAL":
+        return <Badge variant="danger">Modal</Badge>;
+      default:
+        return <Badge variant="neutral">{plc}</Badge>;
     }
   };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-[var(--color-line)]">
+      <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-line">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-[var(--color-ink)]">Announcements & Notification Center</h2>
-            <Badge variant="success">
-              Persistent Multi-Placement Broadcasts
-            </Badge>
+            <h2 className="text-xl font-bold text-ink">Announcements & Notification Center</h2>
+            <Badge variant="success">Broadcast Engine</Badge>
           </div>
-          <p className="text-sm text-[var(--color-ink-muted)] mt-1">
-            Publish site-wide alert banners, target dashboard announcements to specific seller cohorts, and track dismissal metrics.
+          <p className="text-sm text-ink-secondary mt-1">
+            Broadcast platform updates, scheduled maintenance, and promotional offers across specific app placements.
           </p>
         </div>
 
         <Button
+          onClick={() => setIsCreating(!isCreating)}
+          variant={isCreating ? "secondary" : "primary"}
           size="compact"
-          variant="primary"
-          onClick={() => setIsCreating((s) => !s)}
-          className="text-xs h-9 font-semibold flex items-center gap-1.5"
+          className="text-xs h-9 px-4 font-semibold"
         >
-          <Plus className="w-4 h-4" />
-          <span>{isCreating ? "Close Composer" : "Compose Announcement"}</span>
+          {isCreating ? (
+            "Cancel Creation"
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Targeted Broadcast
+            </>
+          )}
         </Button>
       </div>
 
-      {/* Urgent Top Banner Override Card */}
-      <div className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
+      {/* 1. Global Urgent Top Banner */}
+      <div className="p-6 rounded-2xl border border-line bg-white shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-line pb-3">
           <div>
-            <h3 className="text-base font-bold text-[var(--color-ink)] flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-amber-500" />
-              <span>Urgent Global Top-Bar Override</span>
+            <h3 className="text-base font-bold text-ink flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-amber-600" />
+              <span>Global Emergency Top Bar</span>
             </h3>
-            <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">
-              High-priority broadcast banner rendered above all navigation on every page.
+            <p className="text-xs text-ink-secondary mt-0.5">
+              Pinned bar rendered on every page for immediate maintenance or critical notices.
             </p>
           </div>
           <Badge variant={urgentActive ? "warning" : "neutral"}>
-            {urgentActive ? "ACTIVE ON LIVE SITE" : "INACTIVE"}
+            {urgentActive ? "Active Live" : "Disabled"}
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 space-y-1.5">
-            <label className="text-xs font-medium text-[var(--color-ink)]">Banner Headline Text</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-ink">Banner Headline Text</label>
             <input
               type="text"
+              placeholder="e.g. Scheduled Etsy API sync maintenance this Sunday at 2 AM EST..."
               value={urgentText}
               onChange={(e) => setUrgentText(e.target.value)}
-              placeholder="e.g. Scheduled maintenance on Etsy synchronization engine tonight at 02:00 UTC."
-              className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+              className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[var(--color-ink)]">Destination Link (Optional)</label>
+            <label className="text-xs font-semibold text-ink">Destination Link (Optional)</label>
             <input
               type="url"
+              placeholder="https://status.sellersalt.com"
               value={urgentLink}
               onChange={(e) => setUrgentLink(e.target.value)}
-              placeholder="https://status.sellersalt.com"
-              className="w-full text-xs font-mono bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+              className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-[var(--color-line)]">
-          <label className="flex items-center gap-2 text-xs font-medium text-[var(--color-ink)] cursor-pointer">
+        <div className="flex items-center justify-between pt-3 border-t border-line">
+          <label className="flex items-center gap-2 text-xs font-semibold text-ink cursor-pointer">
             <input
               type="checkbox"
               checked={urgentActive}
               onChange={(e) => setUrgentActive(e.target.checked)}
-              className="rounded border-[var(--color-line)] text-amber-500"
+              className="rounded border-line text-amber-600 accent-amber-600"
             />
             <span>Enable Urgent Top-Bar Broadcast</span>
           </label>
@@ -276,35 +308,35 @@ export function AnnouncementsView({
       {isCreating && (
         <form
           onSubmit={handleCreateSubmit}
-          className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-md space-y-5"
+          className="p-6 rounded-2xl border border-line bg-white shadow-md space-y-5"
         >
-          <div className="flex items-center justify-between border-b border-[var(--color-line)] pb-3">
-            <h3 className="font-bold text-base text-[var(--color-ink)] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[var(--color-brand-primary)]" />
-              <span>Compose Target Announcement</span>
+          <div className="flex items-center justify-between border-b border-line pb-3">
+            <h3 className="font-bold text-base text-ink flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#0E8F5D]" />
+              <span>Compose Targeted Announcement</span>
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-ink)]">Title</label>
+              <label className="text-xs font-semibold text-ink">Title</label>
               <input
                 type="text"
                 required
                 placeholder="Etsy Tag Optimization Engine Upgraded"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)] font-semibold"
+                className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink font-semibold focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Priority</label>
+                <label className="text-xs font-semibold text-ink block mb-1">Priority</label>
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as any)}
-                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
+                  className="w-full text-xs bg-[#FAFAF8] border border-line px-2.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 >
                   <option value="NORMAL">Normal</option>
                   <option value="INFO">Information</option>
@@ -313,11 +345,11 @@ export function AnnouncementsView({
               </div>
 
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Placement</label>
+                <label className="text-xs font-semibold text-ink block mb-1">Placement</label>
                 <select
                   value={placement}
                   onChange={(e) => setPlacement(e.target.value as any)}
-                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
+                  className="w-full text-xs bg-[#FAFAF8] border border-line px-2.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 >
                   <option value="TOP_BANNER">Top Global Banner</option>
                   <option value="DASHBOARD_BANNER">Dashboard Header</option>
@@ -329,11 +361,11 @@ export function AnnouncementsView({
               </div>
 
               <div>
-                <label className="text-xs font-medium text-[var(--color-ink)] block mb-1">Audience</label>
+                <label className="text-xs font-semibold text-ink block mb-1">Audience</label>
                 <select
                   value={audience}
                   onChange={(e) => setAudience(e.target.value as any)}
-                  className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-2.5 py-2 rounded-xl text-[var(--color-ink)]"
+                  className="w-full text-xs bg-[#FAFAF8] border border-line px-2.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 >
                   <option value="ALL">All Visitors</option>
                   <option value="LOGGED_IN">Logged-In Sellers</option>
@@ -346,129 +378,140 @@ export function AnnouncementsView({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[var(--color-ink)]">Announcement Body Message</label>
+            <label className="text-xs font-semibold text-ink">Announcement Body Message</label>
             <textarea
-              required
               rows={3}
-              placeholder="Full copy explaining new tools, Etsy API ceiling upgrades, or feature announcements..."
+              required
+              placeholder="Detailed notification copy explaining the feature update or platform notification..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+              className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-ink)]">Call-to-Action Button Text (Optional)</label>
+              <label className="text-xs font-semibold text-ink">Call-to-Action Button Text (Optional)</label>
               <input
                 type="text"
-                placeholder="View Audit Studio"
+                placeholder="View Documentation"
                 value={ctaText}
                 onChange={(e) => setCtaText(e.target.value)}
-                className="w-full text-xs bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+                className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[var(--color-ink)]">Call-to-Action Destination URL</label>
+              <label className="text-xs font-semibold text-ink">Call-to-Action Destination URL</label>
               <input
                 type="url"
-                placeholder="/seo-engine"
+                placeholder="https://sellersalt.com/changelog"
                 value={ctaUrl}
                 onChange={(e) => setCtaUrl(e.target.value)}
-                className="w-full text-xs font-mono bg-[var(--color-paper)] border border-[var(--color-line)] px-3 py-2 rounded-xl text-[var(--color-ink)]"
+                className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--color-line)] flex-wrap gap-3">
-            <div className="flex items-center gap-4 text-xs text-[var(--color-ink)]">
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isClosable}
-                  onChange={(e) => setIsClosable(e.target.checked)}
-                  className="rounded border-[var(--color-line)] text-[var(--color-brand-primary)]"
-                />
-                <span>Dismissible by users</span>
-              </label>
-
-              <label className="flex items-center gap-1.5 cursor-pointer">
+          <div className="flex items-center justify-between pt-3 border-t border-line flex-wrap gap-3">
+            <div className="flex items-center gap-4 text-xs text-ink">
+              <label className="flex items-center gap-1.5 cursor-pointer font-medium">
                 <input
                   type="checkbox"
                   checked={isPermanent}
                   onChange={(e) => setIsPermanent(e.target.checked)}
-                  className="rounded border-[var(--color-line)] text-[var(--color-brand-primary)]"
+                  className="rounded border-line text-[#0E8F5D] accent-[#0E8F5D]"
                 />
-                <span>Permanent (Stick until deleted)</span>
+                <span>Persistent / Evergreen</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+                <input
+                  type="checkbox"
+                  checked={isClosable}
+                  onChange={(e) => setIsClosable(e.target.checked)}
+                  className="rounded border-line text-[#0E8F5D] accent-[#0E8F5D]"
+                />
+                <span>Allow User Dismissal</span>
               </label>
             </div>
 
-            <div className="flex gap-2">
-              <Button size="compact" variant="secondary" type="button" onClick={() => setIsCreating(false)}>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="compact"
+                onClick={() => setIsCreating(false)}
+                className="text-xs"
+              >
                 Cancel
               </Button>
-              <Button size="compact" variant="primary" type="submit" disabled={isSubmitting} className="font-semibold">
-                {isSubmitting ? "Publishing..." : "Publish Announcement"}
+              <Button
+                type="submit"
+                variant="primary"
+                size="compact"
+                disabled={isSubmitting}
+                className="text-xs font-semibold"
+              >
+                {isSubmitting ? "Publishing Broadcast..." : "Publish Broadcast"}
               </Button>
             </div>
           </div>
         </form>
       )}
 
-      {/* Announcements List */}
-      <div className="p-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] shadow-sm space-y-4">
+      {/* 2. Active & Scheduled Broadcasts List */}
+      <div className="p-6 rounded-2xl border border-line bg-white shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-base text-[var(--color-ink)]">Active & Scheduled Broadcasts</h3>
-          <span className="text-xs text-[var(--color-ink-muted)] font-mono">{announcements.length} recorded</span>
+          <h3 className="font-bold text-base text-ink">Active & Scheduled Broadcasts</h3>
+          <span className="text-xs text-ink-tertiary font-mono">{announcements.length} recorded</span>
         </div>
 
         {isLoading ? (
-          <div className="py-8 flex items-center justify-center gap-2 text-xs text-[var(--color-ink-muted)]">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Loading announcements...</span>
+          <div className="py-8 flex items-center justify-center gap-2 text-xs text-ink-tertiary">
+            <Loader2 className="w-4 h-4 animate-spin text-[#0E8F5D]" />
+            <span>Loading broadcasts...</span>
           </div>
         ) : announcements.length === 0 ? (
-          <div className="py-8 text-center text-xs text-[var(--color-ink-muted)]">
-            No announcements created yet. Click &quot;Compose Announcement&quot; to publish your first broadcast.
+          <div className="py-8 text-center text-xs text-ink-tertiary">
+            No targeted announcements created yet. Click "New Targeted Broadcast" above to create one.
           </div>
         ) : (
           <div className="space-y-3">
             {announcements.map((ann) => (
               <div
                 key={ann.id}
-                className="p-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)] flex items-start justify-between gap-4 flex-wrap"
+                className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex items-start justify-between gap-4 flex-wrap"
               >
-                <div className="space-y-1.5 max-w-2xl">
+                <div className="space-y-1.5 flex-1 min-w-[280px]">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-sm text-[var(--color-ink)]">{ann.title}</span>
-                    <Badge variant={ann.priority === "URGENT" ? "danger" : ann.priority === "INFO" ? "info" : "success"}>
-                      {ann.priority}
+                    <span className="font-bold text-sm text-ink">{ann.title}</span>
+                    {getPriorityBadge(ann.priority)}
+                    {getPlacementBadge(ann.placement)}
+                    <Badge variant="neutral" className="text-[10px]">
+                      Audience: {ann.audience}
                     </Badge>
-                    <Badge variant="neutral">
-                      {ann.placement}
-                    </Badge>
-                    <Badge variant="neutral">
-                      {ann.audience}
+                    <Badge variant={ann.isActive ? "success" : "neutral"} className="text-[10px]">
+                      {ann.isActive ? "Live" : "Paused"}
                     </Badge>
                   </div>
 
-                  <p className="text-xs text-[var(--color-ink-muted)] leading-relaxed">{ann.message}</p>
+                  <p className="text-xs text-ink-secondary leading-relaxed">{ann.message}</p>
 
-                  <div className="flex items-center gap-4 text-[11px] text-[var(--color-ink-muted)] pt-1">
+                  <div className="flex items-center gap-4 text-[11px] text-ink-tertiary pt-1">
+                    <span>Created: {new Date(ann.createdAt).toLocaleDateString()}</span>
+                    <span>Dismissals: {ann.readsCount || 0}</span>
                     {ann.ctaText && ann.ctaUrl && (
                       <a
                         href={ann.ctaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[var(--color-brand-primary)] hover:underline inline-flex items-center gap-1 font-medium"
+                        className="text-[#0E8F5D] hover:underline inline-flex items-center gap-1 font-semibold"
                       >
                         <span>CTA: {ann.ctaText}</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
-                    <span>Dismissals: {ann.readsCount || 0}</span>
-                    <span>Created: {new Date(ann.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
 
@@ -477,14 +520,15 @@ export function AnnouncementsView({
                     size="compact"
                     variant="secondary"
                     onClick={() => handleToggleActive(ann.id, ann.isActive)}
-                    className="text-xs h-7 px-2.5"
+                    className="text-xs h-7 px-2.5 font-semibold"
                   >
                     {ann.isActive ? "Pause" : "Activate"}
                   </Button>
+
                   <button
                     type="button"
                     onClick={() => handleDelete(ann.id)}
-                    className="p-1.5 text-[var(--color-ink-muted)] hover:text-rose-600 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                    className="p-1.5 text-ink-tertiary hover:text-red-600 rounded-lg hover:bg-white transition-colors"
                     title="Delete Announcement"
                   >
                     <Trash2 className="w-4 h-4" />

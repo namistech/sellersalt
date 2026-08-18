@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "./cn";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 // design-system-v1.md §11 — Avatar: circular, initials fallback, sizes
 // 24/32/40px. AvatarGroup is included here too (not a separate file) —
@@ -27,7 +28,7 @@ function initialsFrom(name: string): string {
 }
 
 export interface AvatarProps {
-  src?: string;
+  src?: string | null;
   /** Used for the initials fallback and as the image alt text. */
   name?: string;
   size?: AvatarSize;
@@ -44,15 +45,16 @@ const STATUS_DOT_CLASS: Record<NonNullable<AvatarProps["status"]>, string> = {
 };
 
 export function Avatar({ src, name, size = "md", status, className }: AvatarProps) {
+  const resolvedSrc = resolveAssetUrl(src);
   const [imgFailed, setImgFailed] = useState(false);
-  const [prevSrc, setPrevSrc] = useState(src);
+  const [prevSrc, setPrevSrc] = useState(resolvedSrc);
 
-  if (src !== prevSrc) {
-    setPrevSrc(src);
+  if (resolvedSrc !== prevSrc) {
+    setPrevSrc(resolvedSrc);
     setImgFailed(false);
   }
 
-  const showImage = Boolean(src && !imgFailed);
+  const showImage = Boolean(resolvedSrc && !imgFailed);
 
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
@@ -64,7 +66,7 @@ export function Avatar({ src, name, size = "md", status, className }: AvatarProp
       >
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- avatar sources are arbitrary external URLs, not static assets
-          <img src={src} alt={name ?? ""} className="h-full w-full object-cover" onError={() => setImgFailed(true)} />
+          <img src={resolvedSrc!} alt={name ?? ""} className="h-full w-full object-cover" onError={() => setImgFailed(true)} />
         ) : (
           <span aria-hidden={Boolean(name)}>{name ? initialsFrom(name) : "?"}</span>
         )}
