@@ -15,7 +15,14 @@ import {
   type UniversalScoreResult,
   type ScoreFactorBreakdown,
 } from "@/services/intelligence/universal-scoring";
-import type { MarketplaceId } from "./types";
+import {
+  evaluateCanonicalOpportunity,
+  extractOpportunityInputFromNormalizedProduct,
+  type CanonicalOpportunityReport,
+  type OpportunityMetric,
+} from "@/services/intelligence/canonical-opportunity";
+import type { MarketplaceId, NormalizedProduct } from "./types";
+import type { MarketplaceOptimizationRules } from "./optimization-rules";
 
 export interface OpportunityFactor {
   id: string;
@@ -109,4 +116,43 @@ export function scoreShopCompetition(params: {
 }): OpportunityScore {
   const result = evaluateShopCompetition(params);
   return wrap(result, params.marketplace);
+}
+
+/**
+ * Evaluates a NormalizedProduct record using the canonical opportunity scoring
+ * engine, returning the standardized OpportunityScore envelope.
+ */
+export function scoreNormalizedProductOpportunity(
+  product: NormalizedProduct,
+  rules?: MarketplaceOptimizationRules | null
+): OpportunityScore {
+  const input = extractOpportunityInputFromNormalizedProduct(product, rules);
+  const report = evaluateCanonicalOpportunity(input);
+
+  const factors: OpportunityFactor[] = [
+    ...report.signals.available.map((s) => ({
+      id: s.id,
+      name: s.name,
+      available: true,
+      weight: s.weight,
+      score: s.score,
+      explanation: s.explanation,
+    })),
+    ...report.signals.unavailable.map((s) => ({
+      id: s.id,
+      name: s.name,
+      available: false,
+      weight: s.weight,
+      score: null,
+      explanation: s.explanation,
+    })),
+  ];
+
+  return {
+    score: report.overallScore,
+    factors,
+    confidence: report.confidenceScore,
+    dataSources: [product.marketplace],
+    calculatedAt: report.scoredAt,
+  };
 }

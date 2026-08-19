@@ -59,12 +59,17 @@ verified byte-identical throughout.
 ## PHASE 4 — Intelligence Layer
 **Status: DONE**
 
+`canonical-opportunity.ts` established as the single canonical marketplace-neutral
+opportunity intelligence engine, defining explicit metric availability semantics
+(`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`) and dynamic weight redistribution
+for unavailable signal groups. Cross-Marketplace Opportunity Radar (`/radar`) and Prospects
+(`/prospects`) consume `POST /api/marketplaces/research` with canonical opportunity scoring,
+exposing marketplace-level intelligence summaries, score tiers, calibrated confidence, and signal availability tags.
 `universal-scoring.ts`'s margin factor and `seo-engine.ts`'s
 `auditListingSeo` both accept marketplace rules instead of hardcoding
 Etsy's numbers, defaulting to Etsy's exact current behavior (verified
-unchanged by test). A third, previously-undiscovered scoring engine
-(`opportunity-scoring.ts`, self-labeled "Universal" while hardcoding Etsy
-fees, zero live consumers) was found and parameterized for consistency.
+unchanged by test). The legacy/unused `opportunity-scoring.ts` engine is marked
+deprecated in favor of `canonical-opportunity.ts`.
 `POST /api/seo/audit` now resolves the *selected* marketplace's rules and
 returns which marketplace it scored against; the Draft Playground tab on
 `/seo` shows "Optimizing for [Marketplace]" (dynamic rubric targets,
@@ -75,18 +80,17 @@ authoritative over a manually-picked marketplace
 org-scoped) — a listing bound for a real store is never scored against
 the wrong marketplace's rules.
 
-## PHASE 5 — Listing/Shop Optimization
+## PHASE 5 — Listing/Shop Optimization & Intelligence Canonical Migration
 **Status: IN PROGRESS**
 
-SEO Audit is now marketplace-aware end to end (Phase 4). Still open: a
-shop-completeness audit for marketplaces beyond Etsy (Shop SEO Audit tab
-is still Etsy-only, correctly — no other marketplace has a live shop-data
-connector yet), the AI Listing Studio's actual draft-generation/push flow
-staying Etsy-only by design (`ListingDraft` is schema-level Etsy-shaped —
-see `AGENTS.md` §15), and eventually reconciling `product-hunting.ts`'s
-own 5-factor Etsy scoring with `universal-scoring.ts`'s 4-factor engine
-(currently two real, separate, undocumented-as-intentional-duplicates
-scoring paths — see `AGENTS.md` §8 and the technical debt list).
+SEO Audit is marketplace-aware end to end (Phase 4). Product Detail (`/products/[listingId]`),
+Shop Intelligence (`/shops/[shopExternalId]` & `src/services/shop-intelligence.ts`), Prospect Export (`/api/prospects/export` & Google Sheets),
+Opportunity Radar data service (`src/services/opportunities.ts`), and Market Research tracking
+(`src/workers/index.ts`) have been migrated onto the canonical opportunity engine and `MarketplaceRegistry`,
+eliminating hardcoded fake KPI constants, synthetic category benchmarks, SaltBot card fallbacks, and ad-hoc client-side formula calculations. Still open: a
+shop-completeness audit for marketplaces beyond Etsy (Shop SEO Audit tab is still Etsy-only, correctly — no
+other marketplace has a live shop-data connector yet), and the AI Listing Studio's actual draft-generation/push flow
+staying Etsy-only by design (`ListingDraft` is schema-level Etsy-shaped — see `AGENTS.md` §15).
 
 ## PHASE 6 — Connected Marketplace Accounts
 **Status: DONE (Etsy, Shopify, WooCommerce) / PLANNED (rest)**

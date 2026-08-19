@@ -5,6 +5,11 @@
  * Moves from "data -> decision -> content" rather than raw AI text generation.
  */
 
+import {
+  ETSY_OPTIMIZATION_RULES,
+  type MarketplaceOptimizationRules,
+} from "@/marketplaces/core/optimization-rules";
+
 export interface OpportunityPackageParams {
   productTitle: string;
   price: number;
@@ -60,10 +65,15 @@ export interface OpportunityPackage {
   strategy: ListingStrategyPlan;
 }
 
-export function buildOpportunityPackage(params: OpportunityPackageParams): OpportunityPackage {
+export function buildOpportunityPackage(
+  params: OpportunityPackageParams,
+  rules: MarketplaceOptimizationRules = ETSY_OPTIMIZATION_RULES
+): OpportunityPackage {
   const price = params.price || 28.0;
   const cogs = params.estimatedCogs || price * 0.25;
-  const etsyFees = Math.round((price * 0.095 + 0.20) * 100) / 100;
+  const percentageFee = rules.feeSchedule?.percentageFee ?? 0.095;
+  const flatFee = rules.feeSchedule?.flatFee ?? 0.20;
+  const etsyFees = Math.round((price * percentageFee + flatFee) * 100) / 100;
   const netProfit = Math.round(Math.max(0, price - cogs - etsyFees) * 100) / 100;
   const profitMarginPercent = price > 0 ? Math.round((netProfit / price) * 1000) / 10 : 0;
   const score = params.opportunityScore ?? 75;
@@ -104,9 +114,9 @@ export function buildOpportunityPackage(params: OpportunityPackageParams): Oppor
       price,
       category: params.category || "Handmade Goods",
       shopName: params.shopName || "Competitor Store",
-      shopTotalSales: params.shopTotalSales || 1200,
-      shopReviewCount: params.shopReviewCount || 150,
-      estDailySales: params.estDailySales || 2.2,
+      shopTotalSales: params.shopTotalSales ?? 0,
+      shopReviewCount: params.shopReviewCount ?? 0,
+      estDailySales: params.estDailySales ?? 0,
       opportunityScore: score,
     },
     keywords: {

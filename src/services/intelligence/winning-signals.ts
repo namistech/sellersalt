@@ -7,6 +7,10 @@ export interface WinningProductSignal {
   recommendedAction: "SHORTLIST" | "STUDY_PRICING" | "MONITOR_VELOCITY" | "IGNORE";
 }
 
+/**
+ * @deprecated Superseded by `evaluateCanonicalOpportunity` in `src/services/intelligence/canonical-opportunity.ts`.
+ * Kept only for test compatibility. Production consumers (prospect export, google sheets) now consume canonical scoring.
+ */
 export function computeProductWinningSignals(params: {
   estDailySales: number | null;
   totalSales: number | null;

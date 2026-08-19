@@ -17,6 +17,7 @@ flowchart TB
     end
 
     subgraph Intel["INTELLIGENCE LAYER"]
+        Canonical["canonical-opportunity.ts — canonical opportunity scoring & metric availability"]
         Universal["universal-scoring.ts — opportunity/competition scoring"]
         SEO["seo-engine.ts — listing SEO audit"]
         AI["listing-generation.ts + originality-engine.ts"]
@@ -167,7 +168,7 @@ surface.
 | "Is marketplace X capable of Y" | Abstraction | `src/marketplaces/core/{capabilities,registry}.ts` |
 | "What are marketplace X's listing rules" | Abstraction | `src/marketplaces/core/optimization-rules.ts` |
 | "Translate marketplace X's API response into our shape" | Connector | `src/marketplaces/<x>/connector.ts`, `core/normalizers/<x>.ts` |
-| "Score this product/shop's opportunity" | Intelligence | `src/services/intelligence/universal-scoring.ts`, `src/marketplaces/core/opportunity-engine.ts` |
+| "Score this product/shop's opportunity" | Intelligence | `src/services/intelligence/canonical-opportunity.ts`, `src/services/intelligence/universal-scoring.ts`, `src/marketplaces/core/opportunity-engine.ts` |
 | "Audit this listing's SEO" | Intelligence | `src/services/seo-engine.ts` |
 | "Generate an original AI listing draft" | Intelligence | `src/services/listing-generation.ts`, `src/services/originality-engine.ts` |
 | "Orchestrate a research request end to end" | Abstraction | `src/marketplaces/core/research-pipeline.ts` |
@@ -183,9 +184,9 @@ documentation or code comments:
 1. **Marketplace-aware UI** — a page renders `MarketplaceSelector` and
    *acts* on the selection (calls a marketplace-parameterized route/
    service instead of hardcoding Etsy). This is a routing/plumbing fact.
-   As of 2026-08-19, four surfaces are wired this way: Prospects/Product
-   Research, Keyword Research, Category Hunting, and the SEO Audit's
-   Draft Playground.
+   As of 2026-08-19, five surfaces are wired this way: Prospects/Product
+   Research (`/prospects`), Opportunity Radar (`/radar`), Keyword Research (`/keyword-research`),
+   Category Hunting (`/categories`), and the SEO Audit's Draft Playground (`/seo`).
 2. **Marketplace capability** — what `MarketplaceCapabilities` on a given
    connector actually asserts as `true` (`src/marketplaces/core/
    capabilities.ts`), verified by test to match what the connector's

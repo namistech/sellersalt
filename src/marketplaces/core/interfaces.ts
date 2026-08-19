@@ -3,6 +3,7 @@ import type {
   MarketplaceId,
   MarketplaceAccount,
   MarketplaceShop,
+  MarketplaceShopStats,
   Product,
   Listing,
   Order,
@@ -91,7 +92,7 @@ export interface MarketplaceConnector {
    * consumes; searchPublicListings stays the lightweight preview shape used
    * by simpler "what listings match this keyword" callers. */
   searchProducts?(query: MarketplaceResearchQuery): Promise<NormalizedProduct[]>;
-  getPublicShopStats?(shopExternalId: string): Promise<MarketplaceShop | null>;
+  getPublicShopStats?(shopExternalId: string, organizationId?: string): Promise<MarketplaceShopStats | null>;
   getCategories?(): Promise<Category[]>;
   getDemandSignal?(query: MarketplaceResearchQuery): Promise<DemandSignal>;
   getPriceSignal?(query: MarketplaceResearchQuery): Promise<PriceSignal>;

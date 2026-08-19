@@ -94,46 +94,56 @@ export function computeCategoryBenchmarks(
   const avgDailySalesProxy =
     velocities.length > 0
       ? Math.round((velocities.reduce((a, b) => a + b, 0) / velocities.length) * 100) / 100
-      : 3.5;
+      : 0;
 
   const catalogYieldProxy =
     yields.length > 0
       ? Math.round((yields.reduce((a, b) => a + b, 0) / yields.length) * 100) / 100
-      : 22.0;
+      : 0;
 
   const reviewSaturationAverage =
     reviews.length > 0
       ? Math.round(reviews.reduce((a, b) => a + b, 0) / reviews.length)
-      : 120;
+      : 0;
 
   // Niche Saturation Index
   let nicheSaturationIndex: CategoryMarketBenchmarks["nicheSaturationIndex"] = "MODERATE";
-  if (reviewSaturationAverage < 100 && catalogYieldProxy >= 25) {
-    nicheSaturationIndex = "LOW";
-  } else if (reviewSaturationAverage >= 1200) {
-    nicheSaturationIndex = "SATURATED";
-  } else if (reviewSaturationAverage >= 500) {
-    nicheSaturationIndex = "HIGH";
+  if (reviews.length > 0) {
+    if (reviewSaturationAverage < 100 && catalogYieldProxy >= 25) {
+      nicheSaturationIndex = "LOW";
+    } else if (reviewSaturationAverage >= 1200) {
+      nicheSaturationIndex = "SATURATED";
+    } else if (reviewSaturationAverage >= 500) {
+      nicheSaturationIndex = "HIGH";
+    }
   }
 
   // Composite Category Opportunity Score (0 - 100)
+  // When shop-level metrics exist, compute balanced 4-factor score:
   // Velocity (35%) + Yield (30%) + Low Saturation (25%) + Price Health (10%)
-  const velocityScore = Math.min(100, Math.max(20, (avgDailySalesProxy / 8) * 85));
-  const yieldScore = Math.min(100, Math.max(20, (catalogYieldProxy / 35) * 85));
-  const saturationScore =
-    nicheSaturationIndex === "LOW"
-      ? 95
-      : nicheSaturationIndex === "MODERATE"
-      ? 75
-      : nicheSaturationIndex === "HIGH"
-      ? 50
-      : 30;
-  const priceScore = medianPrice >= 20 ? 90 : medianPrice >= 12 ? 75 : 55;
+  // When shop metrics are not available, evaluate purely on observed listing price health
+  let opportunityScore = 50;
+  if (velocities.length > 0 || yields.length > 0) {
+    const velocityScore = Math.min(100, Math.max(20, (avgDailySalesProxy / 8) * 85));
+    const yieldScore = Math.min(100, Math.max(20, (catalogYieldProxy / 35) * 85));
+    const saturationScore =
+      nicheSaturationIndex === "LOW"
+        ? 95
+        : nicheSaturationIndex === "MODERATE"
+        ? 75
+        : nicheSaturationIndex === "HIGH"
+        ? 50
+        : 30;
+    const priceScore = medianPrice >= 20 ? 90 : medianPrice >= 12 ? 75 : 55;
 
-  const rawOpp = Math.round(
-    0.35 * velocityScore + 0.30 * yieldScore + 0.25 * saturationScore + 0.10 * priceScore
-  );
-  const opportunityScore = Math.min(95, Math.max(15, rawOpp));
+    const rawOpp = Math.round(
+      0.35 * velocityScore + 0.30 * yieldScore + 0.25 * saturationScore + 0.10 * priceScore
+    );
+    opportunityScore = Math.min(95, Math.max(15, rawOpp));
+  } else {
+    const priceScore = medianPrice >= 20 ? 80 : medianPrice >= 12 ? 65 : 50;
+    opportunityScore = priceScore;
+  }
 
   let verdictBadge: CategoryMarketBenchmarks["verdictBadge"] = "BALANCED NICHE";
   let verdictColor = "text-[#B37800] bg-[#FFF8E6] border-[#FFB020]/30";
@@ -142,11 +152,15 @@ export function computeCategoryBenchmarks(
   if (opportunityScore >= 80) {
     verdictBadge = "PRIME OPPORTUNITY";
     verdictColor = "text-[#0E8F5D] bg-[#E7FAF1] border-[#16C784]/30";
-    verdictSummary = `High-yield niche with strong daily velocity (${avgDailySalesProxy.toFixed(1)} sales/day) and low review barrier. Outstanding category for new product launches.`;
+    verdictSummary = avgDailySalesProxy > 0
+      ? `High-yield niche with strong daily velocity (${avgDailySalesProxy.toFixed(1)} sales/day) and low review barrier. Outstanding category for new product launches.`
+      : `High-yield niche with favorable median pricing ($${medianPrice.toFixed(2)}). Outstanding category for product discovery.`;
   } else if (nicheSaturationIndex === "SATURATED" || opportunityScore < 45) {
     verdictBadge = "HIGH SATURATION";
     verdictColor = "text-[#E02424] bg-[#FDF2F2] border-[#F98080]/30";
-    verdictSummary = `Heavily saturated category with high incumbent review barriers (${reviewSaturationAverage.toLocaleString()} avg reviews). Requires high-ticket bundling or specialized sub-niche targeting.`;
+    verdictSummary = reviewSaturationAverage > 0
+      ? `Heavily saturated category with high incumbent review barriers (${reviewSaturationAverage.toLocaleString()} avg reviews). Requires high-ticket bundling or specialized sub-niche targeting.`
+      : `Heavily competitive category segment. Requires high-ticket bundling or specialized sub-niche targeting.`;
   } else if (opportunityScore < 60) {
     verdictBadge = "COMPETITIVE SEGMENT";
     verdictColor = "text-[#525B55] bg-[#F4F3EF] border-[#E3E6E0]";
@@ -386,18 +400,17 @@ export async function fetchCategoryIntelligence(
   const productSamples: ProductHuntingResult[] = rawListings.map((l: any) => {
     const listingId = String(l.listing_id);
     const price = (l.price?.amount ?? 0) / (l.price?.divisor ?? 100);
-    const shop = shopProfiles.get(l.shop_id) || {};
-    const totalSales = shop.transaction_sold_count ?? 500;
-    const activeListings = Math.max(1, shop.listing_active_count ?? 25);
-    const reviewCount = shop.review_count ?? 30;
-    const reviewAverage = shop.review_average ?? 4.9;
-    const shopAgeMonths = Math.max(
-      1,
-      Math.round((now - (shop.create_date ?? Math.floor(now / 1000 - 365 * 24 * 3600)) * 1000) / (30.44 * 24 * 3600 * 1000))
-    );
+    const shop = shopProfiles.get(l.shop_id) || null;
+    const totalSales = shop?.transaction_sold_count ?? 0;
+    const activeListings = Math.max(1, shop?.listing_active_count ?? 1);
+    const reviewCount = shop?.review_count ?? 0;
+    const reviewAverage = shop?.review_average ?? null;
+    const shopAgeMonths = shop?.create_date
+      ? Math.max(1, Math.round((now - shop.create_date * 1000) / (30.44 * 24 * 3600 * 1000)))
+      : 12;
 
-    const estDailySales = totalSales / (shopAgeMonths * 30.44);
-    const avgSellingRatio = totalSales / activeListings;
+    const estDailySales = totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0;
+    const avgSellingRatio = totalSales > 0 ? totalSales / activeListings : 0;
     const listingAgeDays = Math.max(
       1,
       Math.round((now - (l.created_timestamp ?? Math.floor(now / 1000)) * 1000) / (24 * 3600 * 1000))

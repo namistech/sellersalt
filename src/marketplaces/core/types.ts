@@ -71,6 +71,14 @@ export interface MarketplaceShop extends MarketplaceRef {
   country?: string;
 }
 
+export interface MarketplaceShopStats extends MarketplaceShop {
+  totalSales?: number;
+  reviewCount?: number;
+  reviewAverage?: number;
+  activeListings?: number;
+  numFavorers?: number;
+}
+
 export interface ProductVariant {
   externalId?: string;
   sku?: string;
@@ -301,6 +309,11 @@ export interface NormalizedProduct extends MarketplaceRef {
 export interface OpportunityScoreRef {
   score: number | null;
   confidence: number;
+  tier?: string;
+  verdict?: string;
+  verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  availableSignals?: string[];
+  unavailableSignals?: string[];
 }
 
 /** A single cross-marketplace-comparable opportunity — what

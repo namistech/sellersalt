@@ -62,7 +62,7 @@ import {
 import { resolveResearchShopUrl } from "@/services/researchShops";
 import type { TrackedShopSummary, TrackingQuotaInfo } from "@/types/tracking";
 import { useResearchState } from "@/lib/research-persistence";
-import { evaluateShopCompetition } from "@/services/intelligence/universal-scoring";
+import { scoreShopCompetition } from "@/marketplaces/core/opportunity-engine";
 
 // Curated high-potential shops worth watching as inspiration
 const SHOPS_WORTH_WATCHING = [
@@ -520,7 +520,8 @@ export default function SpyOnCompetitorPage() {
           /* Large Research Cards (Grid View) */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredShops.map((shop) => {
-              const competitionEvaluation = evaluateShopCompetition({
+              const competitionEvaluation = scoreShopCompetition({
+                marketplace: "etsy",
                 shopName: shop.shopName,
                 totalSales: shop.latestSnapshot?.totalSales ?? 0,
                 reviewCount: shop.latestSnapshot?.reviewCount ?? 0,
@@ -528,6 +529,9 @@ export default function SpyOnCompetitorPage() {
                 shopAgeMonths: 24,
                 estDailySales: shop.velocity.estDailySales,
               });
+
+              const compScore = competitionEvaluation.score ?? 50;
+              const verdictLabel = compScore >= 75 ? "Emerging Winner" : compScore >= 45 ? "Moderate Barrier" : "High Barrier";
 
               return (
                 <Card
@@ -569,11 +573,11 @@ export default function SpyOnCompetitorPage() {
                     <div className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle flex items-center justify-between text-xs">
                       <div>
                         <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Strategic Verdict</span>
-                        <span className="font-bold text-ink">{competitionEvaluation.verdictLabel}</span>
+                        <span className="font-bold text-ink">{verdictLabel}</span>
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Opportunity</span>
-                        <span className="font-bold text-[#0E8F5D] tabular-nums">{competitionEvaluation.score}/100</span>
+                        <span className="font-bold text-[#0E8F5D] tabular-nums">{compScore}/100</span>
                       </div>
                     </div>
 

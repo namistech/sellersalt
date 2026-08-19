@@ -1,6 +1,11 @@
 /**
  * SellerSalt Universal Opportunity Scoring Engine (v2)
  * 
+ * @deprecated This engine is superseded by the canonical opportunity engine in
+ * src/services/intelligence/canonical-opportunity.ts (evaluateCanonicalOpportunity)
+ * and src/marketplaces/core/opportunity-engine.ts. Kept solely for backwards compatibility
+ * with existing tests.
+ * 
  * Computes an explainable, multi-factor opportunity composite (0-100) with
  * complete mathematical point breakdown and natural-language rationale.
  * Strict compliance with Rule 2 (Provenance) and Rule 5 (Explainable Inputs).

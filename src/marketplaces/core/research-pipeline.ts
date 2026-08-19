@@ -12,7 +12,11 @@
 // to know which marketplace the data came from.
 
 import { MarketplaceRegistry, assertCapability, registerAllConnectors } from "./registry";
-import { scoreProductOpportunity } from "./opportunity-engine";
+import { scoreProductOpportunity, scoreNormalizedProductOpportunity } from "./opportunity-engine";
+import {
+  evaluateCanonicalOpportunity,
+  extractOpportunityInputFromNormalizedProduct,
+} from "@/services/intelligence/canonical-opportunity";
 import type { MarketplaceId, SearchResult, NormalizedProduct } from "./types";
 import type { OpportunityScore } from "./opportunity-engine";
 
@@ -23,12 +27,22 @@ import type { OpportunityScore } from "./opportunity-engine";
  * differently. */
 export type MarketplaceResultStatus = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
 
+export interface MarketplaceOpportunitySummary {
+  totalProducts: number;
+  scoredProductsCount: number;
+  averageOpportunityScore: number | null;
+  averageConfidence: number | null;
+  availableSignalGroups: string[];
+  unavailableSignalGroups: string[];
+}
+
 export interface ProductResearchResult {
   marketplace: MarketplaceId;
   status: MarketplaceResultStatus;
   products: NormalizedProduct[];
   message?: string;
   generatedAt: Date;
+  summary?: MarketplaceOpportunitySummary;
 }
 
 export type ResearchType = "products" | "categories" | "opportunities";
@@ -220,7 +234,54 @@ export async function runProductResearch(request: ResearchRequest): Promise<Prod
       maxShopAgeMonths: request.maxShopAgeMonths,
       minReviewCount: request.minReviewCount,
     });
-    return { marketplace: request.marketplace, status: "AVAILABLE", products, generatedAt };
+
+    // Attach canonical opportunity score to normalized products
+    const availableGroupsSet = new Set<string>();
+    const unavailableGroupsSet = new Set<string>();
+    let totalScore = 0;
+    let scoredCount = 0;
+    let totalConfidence = 0;
+
+    const scoredProducts = products.map((prod) => {
+      if (prod.price !== null) {
+        const input = extractOpportunityInputFromNormalizedProduct(prod);
+        const report = evaluateCanonicalOpportunity(input);
+        if (report.overallScore !== null) {
+          prod.opportunityScore = {
+            score: report.overallScore,
+            confidence: report.confidenceScore,
+            tier: report.tier,
+            verdict: report.verdictLabel,
+            verdictVariant: report.verdictVariant,
+            availableSignals: report.signals.available.map((s) => s.id),
+            unavailableSignals: report.signals.unavailable.map((s) => s.id),
+          };
+          totalScore += report.overallScore;
+          scoredCount++;
+          totalConfidence += report.confidenceScore;
+          report.signals.available.forEach((s) => availableGroupsSet.add(s.name));
+          report.signals.unavailable.forEach((s) => unavailableGroupsSet.add(s.name));
+        }
+      }
+      return prod;
+    });
+
+    const summary: MarketplaceOpportunitySummary | undefined = scoredProducts.length > 0 ? {
+      totalProducts: scoredProducts.length,
+      scoredProductsCount: scoredCount,
+      averageOpportunityScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : null,
+      averageConfidence: scoredCount > 0 ? Math.round(totalConfidence / scoredCount) : null,
+      availableSignalGroups: Array.from(availableGroupsSet),
+      unavailableSignalGroups: Array.from(unavailableGroupsSet),
+    } : undefined;
+
+    return {
+      marketplace: request.marketplace,
+      status: "AVAILABLE",
+      products: scoredProducts,
+      summary,
+      generatedAt,
+    };
   } catch (err: any) {
     // A real connector that's configured to be live but failed this call
     // (e.g. no credentials configured, network error) — UNAVAILABLE, not

@@ -230,10 +230,15 @@ export const etsyConnector: MarketplaceConnector = {
     return limited.map(normalizeEtsyProspectToNormalizedProduct);
   },
 
-  async getPublicShopStats(shopExternalId) {
-    if (!researchConnector.getShopByName) return null;
-    const { credentials } = await resolveResearchCredentials(undefined);
-    const stats = await researchConnector.getShopByName(credentials, shopExternalId);
+  async getPublicShopStats(shopExternalId, organizationId) {
+    const { credentials } = await resolveResearchCredentials(organizationId);
+    let stats = null;
+    if (researchConnector.getShopStats) {
+      stats = await researchConnector.getShopStats(credentials, shopExternalId);
+    }
+    if (!stats && researchConnector.getShopByName) {
+      stats = await researchConnector.getShopByName(credentials, shopExternalId);
+    }
     return stats ? normalizeEtsyShopStats(stats) : null;
   },
 };

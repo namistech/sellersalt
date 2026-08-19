@@ -9,6 +9,7 @@ import type { SellerOrderResult } from "@/seller-channels/types";
 import type {
   SearchResult,
   MarketplaceShop,
+  MarketplaceShopStats,
   Order,
   Listing,
   NormalizedProduct,
@@ -64,7 +65,7 @@ export function normalizeEtsyProspectToSearchResult(p: ProspectResult): SearchRe
   };
 }
 
-export function normalizeEtsyShopStats(s: ShopStats): MarketplaceShop {
+export function normalizeEtsyShopStats(s: ShopStats): MarketplaceShopStats {
   return {
     marketplace: "etsy",
     externalId: s.shopExternalId,
@@ -73,6 +74,11 @@ export function normalizeEtsyShopStats(s: ShopStats): MarketplaceShop {
     iconUrl: s.shopIconUrl,
     bannerUrl: s.shopBannerUrl,
     ageMonths: s.shopAgeMonths,
+    totalSales: s.totalSales,
+    reviewCount: s.reviewCount,
+    reviewAverage: s.reviewAverage,
+    activeListings: s.activeListings,
+    numFavorers: s.numFavorers,
     currency: "USD",
   };
 }

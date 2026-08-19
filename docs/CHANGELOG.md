@@ -196,3 +196,99 @@ snapshots of their own moment in time, not claims about current state.
 - **Onboarding Activation Flow**: Added `onboardingCompletedAt`, `onboardingCategory`, `onboardingGoal`, and `onboardingNiche` to `User` model. `POST /api/onboarding/complete` persists real choices with input validation. `/onboarding` features a server-side guard bouncing completed users to `/dashboard`. `checkout-client.tsx` routes new free signups to `/onboarding` and existing logins to `/dashboard`. `DashboardOnboardingGuide` calculates checklist completion from real server props, eliminating `localStorage` for business facts.
 - **Regression Test Coverage**: Added dedicated test suites (`saltbot-no-fabricated-data.test.ts`, `quota-enforcement.test.ts`, `plan-usage-consistency.test.ts`, `onboarding-activation-and-routing.test.ts`). Full test baseline reaches 724/724 passing.
 
+## Intelligence Core Foundation — Implementation Batch 1 (2026-08-19)
+
+**Why**: SellerSalt's intelligence layer had multiple overlapping/unconsolidated scoring implementations:
+1. `universal-scoring.ts` (4-factor product/shop opportunity scoring)
+2. `product-hunting.ts` (5-factor Etsy search & radar scoring)
+3. `opportunity-scoring.ts` (orphaned 5-factor scoring engine with zero live callers)
+4. `opportunity-engine.ts` (capability-aware wrapper)
+
+Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted rather than honestly declared unavailable with calibrated confidence, and individual metric containers lacked explicit granularity distinctions (`OBSERVED` vs `ESTIMATED` vs `DERIVED` vs `UNAVAILABLE`).
+
+**What changed**:
+- **Single Canonical Opportunity Intelligence Model (`src/services/intelligence/canonical-opportunity.ts`)**:
+  - Established `MetricAvailability` (`"OBSERVED" | "ESTIMATED" | "DERIVED" | "UNAVAILABLE"`).
+  - Created standardized `OpportunityMetric<T>` container so missing signals carry `value: null` with `availability: "UNAVAILABLE"` rather than fabricating 0.
+  - Implemented `evaluateCanonicalOpportunity(input)`: 100% marketplace-neutral scoring engine parameterized by `MarketplaceOptimizationRules`. Dynamically redistributes weights proportionally when signal groups are unavailable and calibrates confidence score accordingly.
+  - Added `extractOpportunityInputFromNormalizedProduct(product, rules)` for zero-boilerplate ingestion of canonical `NormalizedProduct` entities.
+- **Scoring Engine Consolidation**:
+  - `opportunity-engine.ts` updated to export `scoreNormalizedProductOpportunity` using the canonical intelligence model.
+  - `research-pipeline.ts` (`runProductResearch`) automatically attaches canonical opportunity scores to normalized products when missing.
+  - Legacy `opportunity-scoring.ts` explicitly marked `@deprecated` in favor of `canonical-opportunity.ts`.
+  - `universal-scoring.ts` and `product-hunting.ts` behavior preserved with 100% backwards compatibility for existing live callers and tests.
+- **Test Baseline**:
+  - Created `src/tests/canonical-opportunity-engine.test.ts` with 14 comprehensive tests covering determinism, Etsy backwards compatibility, absence of hardcoded fee literals, unavailable signal handling, calibrated confidence, marketplace isolation, and envelope generation.
+  - All 738 tests passing across 92 test suites.
+
+## Cross-Marketplace Intelligence & Opportunity Radar Consolidation — Batch 2 (2026-08-19)
+
+**Why**: Opportunity Radar (`/radar`) lacked functional cross-marketplace wiring, and `POST /api/marketplaces/research` outputs needed rich, standardized canonical opportunity metrics (score, tier, confidence, and signal availability tags) for cross-marketplace comparison.
+
+**What changed**:
+- **Multi-Marketplace Opportunity Reports (`src/marketplaces/core/research-pipeline.ts` & `src/marketplaces/core/types.ts`)**:
+  - Extended `OpportunityScoreRef` with `tier`, `verdict`, `verdictVariant`, `availableSignals`, and `unavailableSignals`.
+  - Added `MarketplaceOpportunitySummary` to `ProductResearchResult` exposing aggregated average opportunity score, average calibrated confidence, and evaluated signal groups.
+  - `runProductResearch` now evaluates canonical opportunity for every normalized product and generates the marketplace-level intelligence summary.
+- **Cross-Marketplace Opportunity Radar (`src/app/(dashboard)/radar/radar-client.tsx`)**:
+  - Wired `MarketplaceSelector` with "All Marketplaces" support and persistent state.
+  - In "All Marketplaces" mode, executes cross-marketplace research via `POST /api/marketplaces/research` and renders comparable marketplace opportunity cards.
+  - In non-Etsy single-marketplace mode (Amazon, eBay, TikTok Shop), renders an honest `MarketplaceStatusCard` with `NOT_IMPLEMENTED` status, never fabricating fake data.
+  - In Etsy mode, preserves the full rich live Etsy radar items and pulse metrics.
+- **Enhanced AllMarketplacesResults Component (`src/components/intelligence/AllMarketplacesResults.tsx`)**:
+  - Renders marketplace summary bars with average opportunity score, confidence percentage, and evaluated signal group badges.
+  - Displays opportunity score badges, confidence indicators, and price/metric provenance on each product card without defaulting missing numbers to 0.
+## Product Detail & Shop Intelligence Canonical Migration — Batch 3 (2026-08-19)
+
+**Why**: Product Detail (`/products/[listingId]`), Shop Intelligence (`/shops/[shopExternalId]`), and Market Research Tracking (`handleShopWatchJob`) maintained disparate scoring paths or fallback constants:
+1. Product Detail (`page.tsx`) used an ad-hoc inline calculation `(estDailySales / 4) * 60 + ...` on the server while the client recomputed formulas via `evaluateProductOpportunity`.
+2. Shop Detail (`shop-detail-client.tsx`) contained hardcoded fallback literals (`12500` sales, `48` listings, `1420` reviews, `$24.5` avg price) for missing values.
+3. Market Research shop-tracking worker (`handleShopWatchJob` in `src/workers/index.ts`) bypassed `MarketplaceRegistry` and directly imported the legacy connector registry.
+
+**What changed**:
+- **Product Detail Canonical Intelligence Migration**:
+  - `src/app/(dashboard)/products/[listingId]/page.tsx` now evaluates `evaluateCanonicalOpportunity()` server-side with explicit metric provenance (`ACTUAL_DATA`, `ESTIMATED`, `UNAVAILABLE`) and attaches the structured `CanonicalOpportunityReport` to `ProductDetailData`.
+  - `src/app/(dashboard)/products/[listingId]/product-detail-client.tsx` directly consumes the server-evaluated canonical intelligence result (score, confidence, tier, verdict label, verdict variant, summary, and explanation) rather than importing or recalculating scoring formulas in React.
+- **Shop Intelligence & Competition Migration**:
+  - `src/services/shop-intelligence.ts` computes shop competition via `scoreShopCompetition()` bridge from `@/marketplaces/core/opportunity-engine` and attaches `competition?: OpportunityScore` to `CompleteShopIntelligenceProfile`.
+  - `src/app/shops/[shopExternalId]/shop-detail-client.tsx` removed all hardcoded fallback constants (`12500`, `48`, `1420`, `24.5`), safely defaulting missing fields to `0` or `null` and consuming `scoreShopCompetition`.
+  - `src/app/(dashboard)/spy/page.tsx` migrated to consume `scoreShopCompetition` via the centralized opportunity envelope.
+- **Market Research Tracking / Shop Watch Migration**:
+  - `handleShopWatchJob` in `src/workers/index.ts` migrated to `MarketplaceRegistry.tryGetConnector(marketplace)` with `registerAllConnectors()`.
+  - Extended `MarketplaceConnector` with `getPublicShopStats(shopExternalId, organizationId)` returning normalized `MarketplaceShopStats`.
+  - Updated Etsy connector (`src/marketplaces/etsy/connector.ts`) and normalizer (`src/marketplaces/core/normalizers/etsy.ts`) to return canonical shop stats.
+- **Regression Test Coverage**:
+  - Created `src/tests/product-detail-and-shop-intelligence-migration.test.ts` (12 tests) verifying product detail canonical routing, shop competition scoring, zero-fabrication of missing metrics, and shop-watch worker registry dispatch.
+  - Full test baseline reaches **760/760 passing across 102 test suites**.
+
+## Prospect Export, Radar Data & Category Zero-Fabrication Consolidation — Batch 5 (2026-08-19)
+
+**Why**: Remaining data-integrity and scoring inconsistencies were audited and resolved across several downstream and side-service paths:
+1. Prospect Export (CSV export at `src/app/api/prospects/export/route.ts` and Google Sheets export at `src/services/connectors/google-sheets.ts`) called a separate legacy calculation `computeProductWinningSignals()` instead of reading/evaluating canonical opportunity intelligence.
+2. Category Hunting (`src/services/category-hunting.ts`) contained synthetic fallback constants (`500` sales, `25` listings, `30` reviews, `4.9` rating, `3.5` daily sales, `22.0` yield, `120` reviews) when shop profile data was omitted.
+3. SaltBot tool cards (`src/services/assistant/tool-registry.ts`) used default fallbacks (`|| 75`, `|| 1.2`, `|| '5.0 ★'`) for missing product opportunity scores and ratings.
+4. Opportunity Radar data service (`src/services/opportunities.ts` `getOpportunityRadarData()`) evaluated a private 5-factor loop with arbitrary weights rather than the canonical opportunity intelligence engine.
+5. Listing Strategy (`src/services/listing-strategy.ts`) hardcoded Etsy fee percentages and fallback values (`1200` sales, `150` reviews, `2.2` velocity), and Listing Assistant (`src/services/listing-assistant.ts`) duplicated Jaccard similarity calculations.
+
+**What changed**:
+- **Prospect CSV & Google Sheets Export**:
+  - Migrated both `src/app/api/prospects/export/route.ts` and `src/services/connectors/google-sheets.ts` to `evaluateCanonicalOpportunity()`.
+  - Replaced legacy 50-base score with canonical `overallScore`, structured demand signal, competition signal, and explanation.
+  - `computeProductWinningSignals()` in `src/services/intelligence/winning-signals.ts` marked `@deprecated` with zero production callers remaining.
+- **Category Hunting Zero-Fabrication**:
+  - Removed all synthetic fallback values in `src/services/category-hunting.ts`.
+  - Missing shop metrics safely evaluate to `0` proxies with zero fabrication, adjusting category composite opportunity score based on observed price health when shop data is absent.
+  - Product samples map actual shop metrics without inventing fake lifetime sales or ratings.
+- **SaltBot Data Honesty**:
+  - In `src/services/assistant/tool-registry.ts`, replaced synthetic score fallbacks (`|| 75`) with honest `Score: —` markers and `No rating` when ratings are absent.
+- **Opportunity Radar Data Service Consolidation**:
+  - `getOpportunityRadarData()` in `src/services/opportunities.ts` now routes all prospect scoring through `evaluateCanonicalOpportunity()`, unifying Radar scores with Prospects, Product Detail, and All Marketplaces research.
+- **Listing Strategy & Assistant Consolidation**:
+  - `buildOpportunityPackage` in `src/services/listing-strategy.ts` parameterized by `MarketplaceOptimizationRules` (default `ETSY_OPTIMIZATION_RULES`), computing fee schedules dynamically and eliminating hardcoded fallback constants.
+  - `calculateJaccardSimilarity` in `src/services/listing-assistant.ts` delegates to `src/services/originality-engine.ts`.
+- **Regression Test Coverage & Baseline**:
+  - Created `src/tests/batch-5-intelligence-consolidation.test.ts` (10 tests).
+  - Full test baseline: **770/770 passing across 109 suites**.
+  - TypeScript clean, Prisma valid (29 migrations), clean Next.js build (161/161 routes).
+
+

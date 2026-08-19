@@ -183,15 +183,16 @@ a route.
 
 | Engine | Purpose | Marketplace coupling | Status |
 |---|---|---|---|
-| `src/services/intelligence/universal-scoring.ts` | Deterministic product/shop opportunity scoring | Fee schedule parameterized (defaults to Etsy's real fees) | Live, marketplace-neutral signature |
-| `src/marketplaces/core/opportunity-engine.ts` | Wraps universal-scoring in an `available`/`confidence`-aware envelope | None | Live |
+| `src/services/intelligence/canonical-opportunity.ts` | **Canonical Opportunity Intelligence Engine** — evaluates multi-factor signal groups with explicit metric availability (`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`), dynamic weight redistribution, and calibrated confidence | Marketplace-neutral, parameterizable by `MarketplaceOptimizationRules` | **Canonical, Live** |
+| `src/services/intelligence/universal-scoring.ts` | Deterministic product/shop opportunity scoring | Fee schedule parameterized (defaults to Etsy's real fees) | Live, backwards-compatible |
+| `src/marketplaces/core/opportunity-engine.ts` | Wraps canonical and universal scoring in an `available`/`confidence`-aware envelope (`scoreProductOpportunity`, `scoreNormalizedProductOpportunity`, `scoreShopCompetition`) | None | Live |
 | `src/services/seo-engine.ts` | `auditListingSeo(input, rules?)` — title/tag/synergy/taxonomy audit | Rules-parameterized (`MarketplaceOptimizationRules`), Etsy default | Live, marketplace-neutral signature |
 | `src/services/listing-generation.ts` | AI listing draft generation + `sanitizeTitle`/`sanitizeTags` | Rules-parameterized, Etsy default; AI prompt itself still Etsy-worded (only marketplace with live write) | Live |
 | `src/services/originality-engine.ts` | N-gram/Jaccard similarity gate (<15% overlap) vs. source listing | None — pure text comparison | Live |
-| `src/services/product-hunting.ts` | Etsy product search + its own 5-factor scoring (`computeProductOpportunity`) | Etsy-specific by design (own scoring engine, distinct from universal-scoring.ts — known, documented duplication, not yet consolidated) | Live |
+| `src/services/product-hunting.ts` | Etsy product search + its own 5-factor scoring (`computeProductOpportunity`) | Etsy-specific by design (own scoring engine for live search/radar) | Live |
 | `src/services/keyword-research.ts` | Standalone keyword research/tag harvesting | Etsy-only implementation; marketplace-aware entry points (`fetchMarketplaceKeywordResearch` single, `fetchAllMarketplaceKeywordResearch` fan-out) wrap it; both wired into `/keyword-research` | Live |
 | `src/services/category-hunting.ts` | Etsy buyer taxonomy exploration | Etsy-only implementation; marketplace-aware entry points (`fetchMarketplaceCategoryTree` single, `fetchAllMarketplaceCategoryTree` fan-out) wrap it; both wired into `/categories` | Live |
-| `src/services/intelligence/opportunity-scoring.ts` | A third, self-labeled "Universal" opportunity engine | **Zero live consumers** (dead code, one test only) — fee-parameterized for consistency, not adopted anywhere | Unused |
+| `src/services/intelligence/opportunity-scoring.ts` | Old/superseded opportunity scoring engine | **Deprecated** — superseded by `canonical-opportunity.ts` | Deprecated (test compatibility only) |
 
 ## 9. Marketplace-Specific Rules
 
@@ -333,30 +334,19 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      724/724 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts)
+Tests:      770/770 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 109 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, up to date (npx prisma validate && npx prisma migrate status — 29 migrations)
-Build:      clean            (npx next build)
+Next.js:    clean build      (npx next build — 161/161 static and dynamic routes compiled)
 ```
 
 ## 19. Known Technical Debt
 
 Verified against current code as of this pass:
 
-- `src/services/intelligence/opportunity-scoring.ts` — a third, unused,
-  self-labeled "Universal" scoring engine; parameterized but not adopted
-  anywhere. Consider deleting or wiring it in deliberately, not leaving it
-  as an orphan.
-- `handleShopWatchJob` (`src/workers/index.ts`, the Market Research
-  shop-tracking worker — distinct from the Prospects worker, which **was**
-  migrated) still calls `src/connectors/registry.ts` directly, not the new
-  `MarketplaceRegistry`.
-- "All Marketplaces" backend is now wired into Prospects
-  (`/api/marketplaces/research`), Keyword Research
-  (`fetchAllMarketplaceKeywordResearch`), and Category Hunting
-  (`fetchAllMarketplaceCategoryTree`) — no longer a gap. The AI Listing
-  Studio's actual draft-generation/push flow remains Etsy-only by design
-  (see §15's `ListingDraft` note), not a wiring gap to close.
+- `src/services/intelligence/opportunity-scoring.ts` and `computeProductWinningSignals` (`winning-signals.ts`) — superseded by `canonical-opportunity.ts`. Zero production callers remain.
+- Prospect Export (CSV & Google Sheets), Opportunity Radar (`/radar` & `opportunities.ts`), Product Detail (`/products/[listingId]`), and Shop Intelligence (`/shops/[shopExternalId]`) are all unified onto the canonical intelligence architecture.
+- Category Hunting (`category-hunting.ts`) and SaltBot tool cards (`tool-registry.ts`) strictly obey the Zero-Fabrication Rule (zero synthetic fallbacks).
 - Pre-existing drift between `prisma/schema.prisma` (source of truth) and
   the actual staging database: the schema file already declares
   `Announcement.updatedAt`'s default, `Coupon.type`/`value` defaults, and

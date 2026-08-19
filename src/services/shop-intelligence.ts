@@ -11,6 +11,7 @@ import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
 import { computeShopWinningSignals } from "@/services/intelligence/winning-signals";
 import { computeProductOpportunity } from "@/services/product-hunting";
+import { scoreShopCompetition } from "@/marketplaces/core/opportunity-engine";
 import type {
   CompleteShopIntelligenceProfile,
   ShopIdentityOverview,
@@ -362,7 +363,17 @@ export async function fetchCompleteShopIntelligence(
     avgObservedPrice: Math.round(avgObservedPrice * 100) / 100,
   };
 
-  // 6. Compute Winning Signals & Strategic Verdict
+  // 6. Compute Winning Signals, Shop Competition, & Strategic Verdict
+  const competition = scoreShopCompetition({
+    marketplace: "etsy",
+    shopName,
+    totalSales,
+    reviewCount,
+    activeListings: activeListingsCount,
+    shopAgeMonths,
+    estDailySales,
+  });
+
   const shopSignals = computeShopWinningSignals({
     totalSales,
     activeListings: activeListingsCount,
@@ -372,7 +383,7 @@ export async function fetchCompleteShopIntelligence(
   });
 
   const verdict = computeStrategicShopVerdict({
-    opportunityScore: shopSignals.opportunityScore,
+    opportunityScore: competition.score ?? shopSignals.opportunityScore,
     totalSales,
     activeListings: activeListingsCount,
     estDailySales,
@@ -500,6 +511,7 @@ export async function fetchCompleteShopIntelligence(
     keywords,
     topListings,
     signals: shopSignals,
+    competition,
     isTracked: Boolean(watch?.isActive),
     isFavorite: Boolean(favoriteProspect),
   };

@@ -112,22 +112,26 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
           data: results.results,
           summary: `Found ${results.totalCount} Etsy listings for "${query}". Displaying top opportunities sorted by Opportunity Radar score [SELLERSALT SCORE].`,
           provenance: "ACTUAL_ETSY_DATA",
-          cards: results.results.slice(0, 4).map((p) => ({
-            id: p.listing.listingId,
-            title: p.listing.title,
-            subtitle: `Shop: ${p.shop.shopName || "Unknown"} • $${p.listing.price?.toFixed(2) || "0.00"}`,
-            badge: {
-              label: `Score: ${p.opportunity.opportunityScore || 75}/100`,
-              variant: (p.opportunity.opportunityScore || 75) >= 80 ? "success" : "accent",
-            },
-            metrics: [
-              { label: "Price", value: `$${p.listing.price?.toFixed(2) || "0.00"}` },
-              { label: "Daily Sales", value: `~${p.signals.estDailySales || 1.2}/day [ESTIMATED]` },
-              { label: "Favorites", value: p.listing.numFavorers?.toLocaleString() || "—" },
-            ],
-            href: p.listing.listingUrl,
-            imageUrl: p.listing.imageUrl ?? undefined,
-          })),
+          cards: results.results.slice(0, 4).map((p) => {
+            const oppScore = p.opportunity?.opportunityScore;
+            const dailySales = p.signals?.estDailySales;
+            return {
+              id: p.listing.listingId,
+              title: p.listing.title,
+              subtitle: `Shop: ${p.shop.shopName || "Unknown"} • $${p.listing.price ? p.listing.price.toFixed(2) : "0.00"}`,
+              badge: {
+                label: oppScore !== undefined && oppScore !== null ? `Score: ${oppScore}/100` : "Score: —",
+                variant: (oppScore ?? 0) >= 80 ? "success" : "accent",
+              },
+              metrics: [
+                { label: "Price", value: p.listing.price ? `$${p.listing.price.toFixed(2)}` : "—" },
+                { label: "Daily Sales", value: dailySales !== undefined && dailySales !== null && dailySales > 0 ? `~${dailySales.toFixed(1)}/day [ESTIMATED]` : "—" },
+                { label: "Favorites", value: p.listing.numFavorers?.toLocaleString() || "—" },
+              ],
+              href: p.listing.listingUrl,
+              imageUrl: p.listing.imageUrl ?? undefined,
+            };
+          }),
           actions: [
             { label: "View on Opportunity Radar", href: `/radar?q=${encodeURIComponent(query)}`, variant: "primary" },
             { label: "Add to Planner", actionKey: `Add top product for ${query} to planner`, variant: "secondary" },
@@ -180,7 +184,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
               title: identity.shopName,
               subtitle: `Established: ${identity.shopAgeMonths} months ago • Selling Ratio: ${kpis.avgSellingRatio.toFixed(1)} sales/listing`,
               badge: {
-                label: `Rating: ${kpis.reviewAverage ? kpis.reviewAverage.toFixed(1) + " ★" : "5.0 ★"}`,
+                label: kpis.reviewAverage ? `${kpis.reviewAverage.toFixed(1)} ★` : "No rating",
                 variant: "success",
               },
               metrics: [

@@ -93,6 +93,7 @@ export { CountrySelector, SUPPORTED_MARKETPLACE_COUNTRIES } from "./CountrySelec
 export type { CountrySelectorProps, CountryOption } from "./CountrySelector";
 
 export { MarketplaceSelector } from "./MarketplaceSelector";
+export type { MarketplaceSelectValue, ResearchMarketplaceId } from "./MarketplaceSelector";
 export { UpgradeGate } from "./UpgradeGate";
 export type { UpgradeGateProps } from "./UpgradeGate";
 export { PlanUsageCard } from "./PlanUsageCard";

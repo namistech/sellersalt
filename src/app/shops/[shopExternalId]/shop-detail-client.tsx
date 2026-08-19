@@ -68,7 +68,7 @@ import { Share2 } from "lucide-react";
 import type { CompleteShopIntelligenceProfile } from "@/types/shop-research";
 import type { Prospect } from "@prisma/client";
 import { addProductToPlanner } from "@/services/product-hunting-client";
-import { evaluateShopCompetition } from "@/services/intelligence/universal-scoring";
+import { scoreShopCompetition } from "@/marketplaces/core/opportunity-engine";
 import type { ProductHuntingResult } from "@/types/product-hunting";
 import { useResearchState } from "@/lib/research-persistence";
 import type { TrackingQuotaInfo, ShopTrackingReport } from "@/types/tracking";
@@ -195,20 +195,21 @@ export function ShopDetailClient({
   const createdDate = profile?.identity.createdDate ?? `${Math.round(shopAgeMonths)} months ago`;
   const location = profile?.identity.location ?? "United States";
 
-  // KPIs
-  const totalSales = profile?.kpis.totalSales ?? primary?.totalSales ?? 12500;
-  const activeListings = profile?.kpis.activeListings ?? primary?.activeListings ?? 48;
-  const reviewCount = profile?.kpis.reviewCount ?? primary?.reviewCount ?? 1420;
-  const reviewAverage = profile?.kpis.reviewAverage ?? primary?.reviewAverage ?? 4.9;
-  const estDaily = profile?.kpis.estDailySales ?? primary?.estDailySales ?? (totalSales / (Math.max(1, shopAgeMonths) * 30.44));
+  // KPIs from real profile or prospect record (no fabricated numbers)
+  const totalSales = profile?.kpis.totalSales ?? primary?.totalSales ?? 0;
+  const activeListings = profile?.kpis.activeListings ?? primary?.activeListings ?? 0;
+  const reviewCount = profile?.kpis.reviewCount ?? primary?.reviewCount ?? 0;
+  const reviewAverage = profile?.kpis.reviewAverage ?? primary?.reviewAverage ?? null;
+  const estDaily = profile?.kpis.estDailySales ?? primary?.estDailySales ?? (totalSales > 0 ? totalSales / (Math.max(1, shopAgeMonths) * 30.44) : 0);
   const estMonthlySales = profile?.kpis.estMonthlySales ?? Math.round(estDaily * 30.44);
-  const sellingRatio = profile?.kpis.avgSellingRatio ?? (totalSales / Math.max(1, activeListings));
-  const avgPrice = profile?.kpis.avgObservedPrice ?? 24.5;
+  const sellingRatio = profile?.kpis.avgSellingRatio ?? (activeListings > 0 ? totalSales / activeListings : 0);
+  const avgPrice = profile?.kpis.avgObservedPrice ?? 0;
   const estMonthlyRevenue = profile?.kpis.estMonthlyRevenue ?? Math.round(estMonthlySales * avgPrice);
   const estGrossProfit = profile?.kpis.estGrossProfit ?? Math.round(estMonthlyRevenue * 0.72);
 
-  // Universal Score Evaluation
-  const evaluatedScore = evaluateShopCompetition({
+  // Shop Competition Evaluation via centralized opportunity-engine bridge
+  const scoreEnvelope = profile?.competition ?? scoreShopCompetition({
+    marketplace: "etsy",
     shopName,
     totalSales,
     reviewCount,
@@ -216,6 +217,15 @@ export function ShopDetailClient({
     shopAgeMonths,
     estDailySales: estDaily,
   });
+
+  const evaluatedScore = {
+    score: scoreEnvelope.score ?? profile?.verdict.opportunityScore ?? 50,
+    verdictLabel: profile?.verdict.verdictLabel ?? (scoreEnvelope.score && scoreEnvelope.score >= 75 ? "Emerging High Potential" : "Established Competitor"),
+    verdictVariant: ((scoreEnvelope.score ?? 50) >= 70 ? "success" : (scoreEnvelope.score ?? 50) >= 45 ? "warning" : "neutral") as "success" | "warning" | "danger" | "info" | "neutral",
+    explanation: profile?.verdict.summary ?? `Competitive evaluation for ${shopName}.`,
+    factors: scoreEnvelope.factors,
+    confidence: scoreEnvelope.confidence,
+  };
 
   // Snapshots
   const snapshots = profile?.snapshots ?? [];
@@ -685,7 +695,7 @@ export function ShopDetailClient({
                   </span>
                   <span>·</span>
                   <span className="flex items-center gap-1 font-semibold text-ink">
-                    <Star className="h-3.5 w-3.5 text-[#FBBF24] fill-current" /> {reviewAverage.toFixed(1)} ({reviewCount.toLocaleString()} reviews)
+                    <Star className="h-3.5 w-3.5 text-[#FBBF24] fill-current" /> {reviewAverage != null ? reviewAverage.toFixed(1) : "—"} ({reviewCount.toLocaleString()} reviews)
                   </span>
                 </div>
               </div>

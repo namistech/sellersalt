@@ -34,6 +34,7 @@ import {
   ViewSwitch,
   SafeImage,
   MarketplaceSelector,
+  type MarketplaceSelectValue,
   type ViewMode,
 } from "@/components/ui";
 import { EmptyState, Table, type Column } from "@/components/data";
@@ -42,6 +43,9 @@ import { createSearchConfig, type CreateSearchConfigInput } from "@/services/sea
 import { updateProspect } from "@/services/prospects";
 import { addProductToPlanner } from "@/services/product-hunting-client";
 import { ProductResearchDrawer } from "@/components/intelligence/ProductResearchDrawer";
+import { AllMarketplacesResults } from "@/components/intelligence/AllMarketplacesResults";
+import { MarketplaceStatusCard, MARKETPLACE_LABELS } from "@/components/intelligence/MarketplaceStatusCard";
+import { fetchJson } from "@/services/http";
 import { NewSearchDrawer } from "../new-search-drawer";
 import { useResearchState } from "@/lib/research-persistence";
 
@@ -64,13 +68,20 @@ export function RadarClient({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [connectors, setConnectors] = useState<ConnectorSummary[]>([]);
 
-  // Research persistence states
+  // Marketplace & research persistence states
+  const [marketplace, setMarketplace] = useResearchState<MarketplaceSelectValue>("radar_marketplace", "etsy");
   const [searchQuery, setSearchQuery] = useResearchState<string>("radar_query", initialQuery);
   const [typeFilter, setTypeFilter] = useResearchState<string>("radar_type", selectedType);
   const [configFilter, setConfigFilter] = useResearchState<string>("radar_config", searchConfigId || "ALL");
   const [scoreFilter, setScoreFilter] = useResearchState<number>("radar_min_score", minScore);
   const [sortBy, setSortBy] = useResearchState<string>("radar_sort", "score");
   const [viewMode, setViewMode] = useResearchState<ViewMode>("radar_view_mode", "table");
+
+  // Cross-Marketplace Radar states
+  const [crossResults, setCrossResults] = useState<any[] | null>(null);
+  const [crossLoading, setCrossLoading] = useState(false);
+  const [crossError, setCrossError] = useState<string | null>(null);
+  const [crossQuery, setCrossQuery] = useState(searchQuery || "digital planner");
 
   // Local state for optimistic updates
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>(initialData.allOpportunities);
@@ -84,6 +95,33 @@ export function RadarClient({
   useEffect(() => {
     fetchConnectors().then(setConnectors).catch(() => {});
   }, []);
+
+  async function handleRunCrossRadar(q?: string) {
+    const queryToSearch = (q !== undefined ? q : crossQuery).trim() || "digital planner";
+    setCrossLoading(true);
+    setCrossError(null);
+    try {
+      const data = await fetchJson<{ results: any[] }>("/api/marketplaces/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keywords: queryToSearch,
+          limit: 25,
+        }),
+      });
+      setCrossResults(data.results);
+    } catch (err: any) {
+      setCrossError(err.message || "Failed to fetch cross-marketplace opportunity radar data.");
+    } finally {
+      setCrossLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (marketplace === "all" && crossResults === null && !crossLoading) {
+      handleRunCrossRadar(crossQuery);
+    }
+  }, [marketplace]);
 
   function toProductHuntingResult(opp: OpportunityItem): ProductHuntingResult {
     return {
@@ -487,8 +525,97 @@ export function RadarClient({
       </div>
 
       {/* Multi-Marketplace Selector */}
-      <MarketplaceSelector className="w-fit" />
+      <MarketplaceSelector selectedId={marketplace} onChange={setMarketplace} allowAll className="w-fit" />
 
+      {/* ---------------------------------------------------------------- */}
+      {/* ALL MARKETPLACES VIEW                                           */}
+      {/* ---------------------------------------------------------------- */}
+      {marketplace === "all" && (
+        <div className="space-y-6">
+          <Card padding="md" className="border-line bg-white shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <Heading as="h2" size="h3" className="tracking-tight">
+                  Cross-Marketplace Opportunity Radar
+                </Heading>
+                <Text size="body-sm" color="secondary" className="mt-0.5">
+                  Scan and compare real-time product opportunities across all registered marketplaces using the canonical intelligence engine.
+                </Text>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRunCrossRadar();
+              }}
+              className="flex flex-col sm:flex-row items-center gap-3"
+            >
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-tertiary" />
+                <Input
+                  value={crossQuery}
+                  onChange={(e) => setCrossQuery(e.target.value)}
+                  placeholder="Enter niche or keyword (e.g. digital planner, leather bag, pottery)..."
+                  className="pl-9 w-full"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="primary"
+                size="default"
+                loading={crossLoading}
+                className="w-full sm:w-auto font-semibold gap-1.5 shrink-0"
+              >
+                <Sparkles className="h-4 w-4" />
+                Scan All Marketplaces
+              </Button>
+            </form>
+
+            {crossError && (
+              <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
+                {crossError}
+              </div>
+            )}
+          </Card>
+
+          {crossLoading ? (
+            <Card padding="lg" className="border-line bg-white text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-brand-primary border-t-transparent" />
+              <Text size="body-md" color="secondary" className="mt-3">
+                Evaluating cross-marketplace opportunity radar signals...
+              </Text>
+            </Card>
+          ) : crossResults ? (
+            <AllMarketplacesResults results={crossResults} />
+          ) : (
+            <EmptyState
+              icon={<Compass className="h-8 w-8 text-ink-tertiary" />}
+              title="Scan All Marketplaces"
+              description="Enter a niche or keyword above to run cross-marketplace radar evaluation across all registered connectors."
+            />
+          )}
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* OTHER NON-ETSY MARKETPLACES VIEW                                */}
+      {/* ---------------------------------------------------------------- */}
+      {marketplace !== "etsy" && marketplace !== "all" && (
+        <div className="space-y-4">
+          <MarketplaceStatusCard
+            marketplace={marketplace}
+            status="NOT_IMPLEMENTED"
+            message={`${MARKETPLACE_LABELS[marketplace] || marketplace} Opportunity Radar is currently architecture-ready. Public market research requires official API developer credentials.`}
+          />
+        </div>
+      )}
+
+      {/* ---------------------------------------------------------------- */}
+      {/* ETSY LIVE RADAR VIEW                                            */}
+      {/* ---------------------------------------------------------------- */}
+      {marketplace === "etsy" && (
+        <>
       {/* ---------------------------------------------------------------- */}
       {/* ROW 1: RADAR PULSE METRICS                                      */}
       {/* ---------------------------------------------------------------- */}
@@ -1037,6 +1164,8 @@ export function RadarClient({
           />
         )}
       </div>
+      </>
+      )}
 
       {/* New Search Drawer */}
       <NewSearchDrawer

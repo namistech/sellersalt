@@ -87,6 +87,8 @@ export interface ShopSnapshotTrendPoint {
   activeListings: number;
 }
 
+import type { OpportunityScore } from "@/marketplaces/core/opportunity-engine";
+
 export interface CompleteShopIntelligenceProfile {
   identity: ShopIdentityOverview;
   kpis: ShopPerformanceKpis;
@@ -96,6 +98,7 @@ export interface CompleteShopIntelligenceProfile {
   keywords: TagFrequencyItem[];
   topListings: ShopWinningListing[];
   signals: WinningShopSignal;
+  competition?: OpportunityScore;
   isTracked: boolean;
   isFavorite: boolean;
 }

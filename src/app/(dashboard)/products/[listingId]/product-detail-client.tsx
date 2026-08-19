@@ -56,7 +56,6 @@ import {
   type ChartState,
 } from "@/components/data/charts";
 import { addProductToPlanner } from "@/services/product-hunting-client";
-import { evaluateProductOpportunity } from "@/services/intelligence/universal-scoring";
 import type { ProductHuntingResult } from "@/types/product-hunting";
 import { useResearchState } from "@/lib/research-persistence";
 
@@ -81,6 +80,17 @@ export interface ProductDetailData {
   numFavorers: number;
   views: number;
   opportunityScore: number;
+  canonicalOpportunity?: {
+    overallScore: number | null;
+    confidenceScore: number;
+    tier: string;
+    verdictLabel: string;
+    verdictVariant: "success" | "warning" | "danger" | "info" | "neutral";
+    summary: string;
+    explanation: string;
+    availableSignals?: string[];
+    unavailableSignals?: string[];
+  };
   estDailySales: number;
   estMonthlySales: number;
   estMonthlyRevenue: number;
@@ -104,14 +114,15 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
   const [viewMode, setViewMode] = useResearchState<ViewMode>("product_tags_view", "table");
   const [showGuide, setShowGuide] = useState(false);
 
-  // Universal Score Evaluation
-  const evaluatedScore = evaluateProductOpportunity({
-    price: product.price,
-    estDailySales: product.estDailySales,
-    shopReviewCount: product.shopReviewCount,
-    listingAgeDays: product.listingAgeDays,
-    numFavorers: product.numFavorers,
-  });
+  // Consume canonical intelligence result from server
+  const evaluatedScore = {
+    score: product.canonicalOpportunity?.overallScore ?? product.opportunityScore,
+    confidenceScore: product.canonicalOpportunity?.confidenceScore ?? 85,
+    verdictLabel: product.canonicalOpportunity?.verdictLabel ?? (product.opportunityScore >= 75 ? "High Potential Opportunity" : "Moderate Demand Potential"),
+    verdictVariant: product.canonicalOpportunity?.verdictVariant ?? ((product.canonicalOpportunity?.overallScore ?? product.opportunityScore) >= 70 ? "success" : "warning") as "success" | "warning" | "danger" | "info" | "neutral",
+    summary: product.canonicalOpportunity?.summary ?? `Daily velocity and economics benchmarked for ${product.title}.`,
+    explanation: product.canonicalOpportunity?.explanation ?? "Evaluated via SellerSalt's canonical opportunity intelligence model.",
+  };
 
   // Trajectory Simulation Data (Dual series: Volume & Revenue)
   const monthlyUnits = product.estMonthlySales;

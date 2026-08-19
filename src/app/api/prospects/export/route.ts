@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { computeProductWinningSignals } from "@/services/intelligence/winning-signals";
+import { evaluateCanonicalOpportunity } from "@/services/intelligence/canonical-opportunity";
+import type { MarketplaceId } from "@/marketplaces/core/types";
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -53,15 +54,45 @@ export async function GET(req: Request) {
   };
 
   const rows = prospects.map((p) => {
-    const signals = computeProductWinningSignals({
-      estDailySales: p.estDailySales,
-      totalSales: p.totalSales,
-      activeListings: p.activeListings,
-      reviewCount: p.reviewCount,
-      reviewAverage: p.reviewAverage,
-      price: p.price,
-      shopAgeMonths: p.shopAgeMonths,
+    const marketplace = (p.marketplace?.toLowerCase() as MarketplaceId) || "etsy";
+    const canonical = evaluateCanonicalOpportunity({
+      marketplace,
+      price: {
+        value: p.price > 0 ? p.price : null,
+        availability: p.price > 0 ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_listing_price",
+      },
+      estDailySales: {
+        value: p.estDailySales && p.estDailySales > 0 ? p.estDailySales : null,
+        availability: p.estDailySales && p.estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        provenance: p.estDailySales && p.estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        source: "etsy_transaction_velocity",
+      },
+      shopReviewCount: {
+        value: p.reviewCount,
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "etsy_shop_review_count",
+      },
+      listingAgeDays: {
+        value: Math.max(1, Math.round((Date.now() - new Date(p.createdAt).getTime()) / (24 * 3600 * 1000))),
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "prospect_created_at",
+      },
+      numFavorers: {
+        value: p.numFavorers,
+        availability: p.numFavorers !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.numFavorers !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_num_favorers",
+      },
     });
+
+    const score = canonical.overallScore !== null ? canonical.overallScore : "—";
+    const demandSignal = canonical.signalBreakdown.velocity?.explanation || canonical.signalBreakdown.velocity?.name || "Estimated Demand";
+    const competitionSignal = canonical.signalBreakdown.competition?.explanation || canonical.signalBreakdown.competition?.name || "Market Competition";
+    const whyItWins = canonical.explanation.whyThisScore || canonical.summary || `Opportunity score: ${score}/100`;
 
     return [
       escapeCsv(p.listingTitle),
@@ -69,14 +100,14 @@ export async function GET(req: Request) {
       (p.estDailySales ?? 0).toFixed(1),
       p.totalSales ?? 0,
       p.reviewCount,
-      p.reviewAverage?.toFixed(1) ?? "5.0",
+      p.reviewAverage?.toFixed(1) ?? "—",
       escapeCsv(p.shopName),
       Math.round(p.shopAgeMonths),
       escapeCsv(p.keyword),
-      signals.opportunityScore,
-      signals.demandSignal,
-      signals.competitionSignal,
-      escapeCsv(signals.whyItWins),
+      score,
+      escapeCsv(demandSignal),
+      escapeCsv(competitionSignal),
+      escapeCsv(whyItWins),
       escapeCsv(p.listingUrl),
       escapeCsv(p.createdAt.toISOString()),
     ].join(",");

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { computeProductWinningSignals } from "@/services/intelligence/winning-signals";
+import { evaluateCanonicalOpportunity } from "@/services/intelligence/canonical-opportunity";
+import type { MarketplaceId } from "@/marketplaces/core/types";
 
 export interface GoogleSheetsExportParams {
   organizationId: string;
@@ -56,15 +57,44 @@ export async function exportProspectsToGoogleSheets(
   ];
 
   const rows = prospects.map((p) => {
-    const sig = computeProductWinningSignals({
-      estDailySales: p.estDailySales,
-      totalSales: p.totalSales,
-      activeListings: p.activeListings,
-      reviewCount: p.reviewCount,
-      reviewAverage: p.reviewAverage,
-      price: p.price,
-      shopAgeMonths: p.shopAgeMonths,
+    const marketplace = (p.marketplace?.toLowerCase() as MarketplaceId) || "etsy";
+    const canonical = evaluateCanonicalOpportunity({
+      marketplace,
+      price: {
+        value: p.price > 0 ? p.price : null,
+        availability: p.price > 0 ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_listing_price",
+      },
+      estDailySales: {
+        value: p.estDailySales && p.estDailySales > 0 ? p.estDailySales : null,
+        availability: p.estDailySales && p.estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        provenance: p.estDailySales && p.estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        source: "etsy_transaction_velocity",
+      },
+      shopReviewCount: {
+        value: p.reviewCount,
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "etsy_shop_review_count",
+      },
+      listingAgeDays: {
+        value: Math.max(1, Math.round((Date.now() - new Date(p.createdAt).getTime()) / (24 * 3600 * 1000))),
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "prospect_created_at",
+      },
+      numFavorers: {
+        value: p.numFavorers,
+        availability: p.numFavorers !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.numFavorers !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_num_favorers",
+      },
     });
+
+    const score = canonical.overallScore !== null ? canonical.overallScore : "—";
+    const demandSignal = canonical.signalBreakdown.velocity?.explanation || canonical.signalBreakdown.velocity?.name || "Estimated Demand";
+    const whyItWins = canonical.explanation.whyThisScore || canonical.summary || `Opportunity score: ${score}/100`;
 
     return [
       p.listingTitle,
@@ -74,9 +104,9 @@ export async function exportProspectsToGoogleSheets(
       p.reviewCount,
       p.shopName,
       Math.round(p.shopAgeMonths),
-      sig.opportunityScore,
-      sig.demandSignal,
-      sig.whyItWins,
+      score,
+      demandSignal,
+      whyItWins,
       p.listingUrl,
     ];
   });

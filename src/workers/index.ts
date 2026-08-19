@@ -11,8 +11,7 @@ import {
   type SellerChannelSyncJobData,
   type VerificationReminderJobData,
 } from "../lib/queue";
-import { decrypt } from "../lib/encryption";
-import { getConnector } from "../connectors/registry";
+import { MarketplaceRegistry, registerAllConnectors } from "../marketplaces/core/registry";
 import { runProductResearch } from "../marketplaces/core/research-pipeline";
 import type { MarketplaceId } from "../marketplaces/core/types";
 import { sendEmail } from "../lib/send-email";
@@ -151,6 +150,8 @@ async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
   const { shopWatchId, organizationId, connectorId, shopExternalId } = job.data;
 
   try {
+    registerAllConnectors();
+
     let connectorRow = connectorId
       ? await prisma.connector.findUnique({ where: { id: connectorId } })
       : null;
@@ -166,20 +167,23 @@ async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
       return;
     }
 
-    const connector = getConnector(connectorRow.type);
-    if (!connector.getShopStats) return;
+    const marketplace = connectorRow.type.toLowerCase() as MarketplaceId;
+    const connector = MarketplaceRegistry.tryGetConnector(marketplace);
+    if (!connector || !connector.getPublicShopStats) {
+      console.warn(`[SHOP_WATCH_WORKER] Connector for ${marketplace} does not support public shop stats`);
+      return;
+    }
 
-    const credentials = JSON.parse(decrypt(connectorRow.encryptedCredentials));
-    const stats = await connector.getShopStats(credentials, shopExternalId);
+    const stats = await connector.getPublicShopStats(shopExternalId, organizationId);
     if (!stats) return;
 
     await prisma.shopSnapshot.create({
       data: {
         shopWatchId,
         totalSales: stats.totalSales,
-        reviewCount: stats.reviewCount,
+        reviewCount: stats.reviewCount ?? 0,
         reviewAverage: stats.reviewAverage,
-        activeListings: stats.activeListings,
+        activeListings: stats.activeListings ?? 0,
         numFavorers: stats.numFavorers,
       },
     });
@@ -192,7 +196,7 @@ async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
       where: { shopWatchId, capturedAt: { lt: retentionCutoff } },
     }).catch(() => {});
 
-    console.log(`[SHOP_WATCH_WORKER] Captured snapshot for shop ${shopExternalId} (${stats.shopName})`);
+    console.log(`[SHOP_WATCH_WORKER] Captured snapshot for shop ${shopExternalId} (${stats.name}) on ${marketplace}`);
   } catch (err: any) {
     console.error(`[SHOP_WATCH_WORKER_ERROR] Failed shop watch for ${shopExternalId}:`, err.message);
   }

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
+import { evaluateCanonicalOpportunity } from "@/services/intelligence/canonical-opportunity";
 import { ProductDetailClient, type ProductDetailData } from "./product-detail-client";
 
 /** Etsy's listing image resource exposes several pre-sized CDN URLs; prefer the
@@ -160,14 +161,42 @@ export default async function ProductDetailPage({
     )
   );
 
-  // opportunityScore is currently an unused field on ProductDetailData (the client
-  // component recomputes its own live score via evaluateProductOpportunity from
-  // the same real inputs), kept here only for interface completeness — sourced
-  // from real resolved values rather than a fixed placeholder.
-  const opportunityScore = Math.min(
-    100,
-    Math.max(0, Math.round((estDailySales / 4) * 60 + (numFavorers > 0 ? 20 : 0) + (shopReviewCount > 50 ? 20 : 0)))
-  );
+  // Evaluate product opportunity via the canonical opportunity intelligence engine
+  const canonicalReport = evaluateCanonicalOpportunity({
+    marketplace: "etsy",
+    price: {
+      value: price > 0 ? price : null,
+      availability: price > 0 ? "OBSERVED" : "UNAVAILABLE",
+      provenance: price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: "etsy_listing_price",
+    },
+    estDailySales: {
+      value: estDailySales > 0 ? estDailySales : null,
+      availability: estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+      provenance: estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+      source: "etsy_transaction_velocity",
+    },
+    shopReviewCount: {
+      value: shopReviewCount,
+      availability: "OBSERVED",
+      provenance: "ACTUAL_DATA",
+      source: "etsy_shop_review_count",
+    },
+    listingAgeDays: {
+      value: listingAgeDays,
+      availability: "OBSERVED",
+      provenance: "ACTUAL_DATA",
+      source: "etsy_listing_created_timestamp",
+    },
+    numFavorers: {
+      value: numFavorers,
+      availability: "OBSERVED",
+      provenance: "ACTUAL_DATA",
+      source: "etsy_num_favorers",
+    },
+  });
+
+  const opportunityScore = canonicalReport.overallScore ?? 50;
 
   const product: ProductDetailData = {
     listingId: prospect?.id ?? listingId,
@@ -190,6 +219,17 @@ export default async function ProductDetailPage({
     numFavorers,
     views,
     opportunityScore,
+    canonicalOpportunity: {
+      overallScore: canonicalReport.overallScore,
+      confidenceScore: canonicalReport.confidenceScore,
+      tier: canonicalReport.tier,
+      verdictLabel: canonicalReport.verdictLabel,
+      verdictVariant: canonicalReport.verdictVariant,
+      summary: canonicalReport.summary,
+      explanation: canonicalReport.explanation.summary || canonicalReport.explanation.whyThisScore,
+      availableSignals: canonicalReport.signals.available.map((s) => s.name),
+      unavailableSignals: canonicalReport.signals.unavailable.map((s) => s.name),
+    },
     estDailySales,
     estMonthlySales,
     estMonthlyRevenue,

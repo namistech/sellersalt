@@ -11,7 +11,7 @@ condensed version of everything else in this file, current as of the
 Keyword Research / Category Hunting / SEO Audit marketplace-context batch
 and the documentation-synchronization pass that followed it.
 
-**Architecture** (`src/marketplaces/core/` — canonical, don't rebuild):
+**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
 `MarketplaceConnector` interface (`interfaces.ts`) · `MarketplaceRegistry`
 + `registerAllConnectors()` (`registry/index.ts`) · capability flags
 (`capabilities.ts`, `MarketplaceCapabilities`) · research pipeline
@@ -19,15 +19,23 @@ and the documentation-synchronization pass that followed it.
 `runAllMarketplaceProductResearch`/`fanOutMarketplaceRequest<T>()`) ·
 optimization rules (`optimization-rules.ts` — `getOptimizationRules`,
 `MarketplaceOptimizationRules`, Etsy the only marketplace with real
-values) · normalized research types (`types.ts` — `NormalizedProduct`,
-`Listing`, `Order`, `MarketplaceId`, `marketplaceFromSellerChannelPlatform`).
+values) · canonical opportunity engine (`canonical-opportunity.ts` —
+`evaluateCanonicalOpportunity`, explicit `OBSERVED`/`ESTIMATED`/`DERIVED`/`UNAVAILABLE`
+metric availability, dynamic weight redistribution, `toOpportunityMetric`) ·
+opportunity scoring envelope (`opportunity-engine.ts` — `scoreProductOpportunity`,
+`scoreNormalizedProductOpportunity`, `scoreShopCompetition`) · normalized research
+types (`types.ts` — `NormalizedProduct`, `Listing`, `Order`, `MarketplaceId`,
+`marketplaceFromSellerChannelPlatform`).
 
-**Implemented (marketplace-aware) intelligence surfaces** — all four wired
+**Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,
 not decorative):
 - **Product Research / Prospects** (`/prospects`) — the original flagship;
   `POST /api/marketplaces/research` fans out via
   `runAllMarketplaceProductResearch`.
+- **Opportunity Radar** (`/radar`) — cross-marketplace decision layer;
+  "All Marketplaces" via `POST /api/marketplaces/research`, rendering standardized
+  canonical opportunity reports, score tiers, confidence badges, and signal breakdowns.
 - **Keyword Research** (`/keyword-research`) — `POST /api/keywords/search`;
   "All Marketplaces" via `fetchAllMarketplaceKeywordResearch`.
 - **Category Hunting** (`/categories`) — `GET /api/categories`; "All
@@ -326,13 +334,13 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of the Launch Readiness & Onboarding Completion batch (2026-08-19),
+As of the Prospect Export, Radar Data & Category Zero-Fabrication Consolidation batch (2026-08-19),
 independently re-run (not copied from an earlier report):
 
-- Tests: **724/724 passing** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **770/770 passing** across 109 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: clean (`npx tsc --noEmit`)
 - Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status` — 29 migrations)
-- Build: clean (`npx next build`)
+- Build: clean (`npx next build` — 161/161 static and dynamic pages generated)
 
 If these numbers differ when you run them yourself, trust your own run —
 this file is a snapshot, not a live dashboard.

@@ -41,6 +41,8 @@ export interface GeneratedListingContent {
   titleLength: number;
 }
 
+import { calculateJaccardSimilarity as calculateJaccardTokens } from "./originality-engine";
+
 /**
  * Calculates token-level Jaccard similarity between candidate copy and competitor copy.
  * Ensures <15% overlap to guarantee true originality (Rule 6).
@@ -49,30 +51,23 @@ export function calculateJaccardSimilarity(candidate: string, referenceList: str
   if (!referenceList || referenceList.length === 0 || !candidate) return 0;
 
   const tokenize = (str: string) =>
-    new Set(
-      str
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
-        .split(/\s+/)
-        .filter((w) => w.length > 2)
-    );
+    str
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .map((w) => w.trim())
+      .filter((w) => w.length > 2);
 
-  const candidateSet = tokenize(candidate);
-  if (candidateSet.size === 0) return 0;
+  const candidateTokens = tokenize(candidate);
+  if (candidateTokens.length === 0) return 0;
 
   let maxSimilarity = 0;
 
   for (const ref of referenceList) {
-    const refSet = tokenize(ref);
-    if (refSet.size === 0) continue;
+    const refTokens = tokenize(ref);
+    if (refTokens.length === 0) continue;
 
-    let intersectionCount = 0;
-    for (const token of candidateSet) {
-      if (refSet.has(token)) intersectionCount++;
-    }
-
-    const unionCount = new Set([...candidateSet, ...refSet]).size;
-    const similarity = (intersectionCount / unionCount) * 100;
+    const similarity = calculateJaccardTokens(candidateTokens, refTokens) * 100;
     if (similarity > maxSimilarity) {
       maxSimilarity = similarity;
     }

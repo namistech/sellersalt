@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/db";
 import type { ProspectStatus } from "@prisma/client";
+import { evaluateCanonicalOpportunity } from "@/services/intelligence/canonical-opportunity";
+import type { MarketplaceId } from "@/marketplaces/core/types";
 
 // Server-only Frontend Data/Service Adapter for SellerSalt Opportunity Radar.
 // Translates raw Etsy research data (Prospect, SearchConfig, ShopWatch, ShopSnapshot)
-// into deterministic, explainable Opportunity Intelligence.
+// into deterministic, explainable Opportunity Intelligence via the canonical engine.
 //
 // Import only from Server Components or API route handlers.
 
@@ -84,94 +86,8 @@ export interface OpportunityFilters {
 }
 
 // --------------------------------------------------------------------------
-// Deterministic Opportunity Calculation Engine
+// Opportunity Signals & Classification Helpers
 // --------------------------------------------------------------------------
-
-function calculateVelocitySignal(estDailySales: number, totalSales: number): OpportunitySignal {
-  let score = 20;
-  let label = "Low velocity";
-
-  if (estDailySales >= 20) {
-    score = Math.min(100, Math.round(92 + (estDailySales - 20) * 0.5));
-    label = "High velocity";
-  } else if (estDailySales >= 8) {
-    score = Math.round(75 + (estDailySales - 8) * 1.4);
-    label = "Strong velocity";
-  } else if (estDailySales >= 3) {
-    score = Math.round(55 + (estDailySales - 3) * 4);
-    label = "Moderate velocity";
-  } else if (estDailySales >= 1) {
-    score = Math.round(35 + (estDailySales - 1) * 10);
-    label = "Emerging velocity";
-  } else {
-    score = Math.max(15, Math.round(estDailySales * 35));
-  }
-
-  return {
-    score,
-    label,
-    metricValue: `${estDailySales.toFixed(1)} sales/day`,
-  };
-}
-
-function calculateDensitySignal(avgSellingRatio: number, totalSales: number, activeListings: number): OpportunitySignal {
-  let score = 20;
-  let label = "Broad catalog";
-
-  if (avgSellingRatio >= 40) {
-    score = Math.min(100, Math.round(90 + (avgSellingRatio - 40) * 0.3));
-    label = "High yield per listing";
-  } else if (avgSellingRatio >= 15) {
-    score = Math.round(75 + (avgSellingRatio - 15) * 0.6);
-    label = "Lean efficient catalog";
-  } else if (avgSellingRatio >= 6) {
-    score = Math.round(55 + (avgSellingRatio - 6) * 2.2);
-    label = "Healthy catalog yield";
-  } else if (avgSellingRatio >= 2) {
-    score = Math.round(35 + (avgSellingRatio - 2) * 5);
-    label = "Moderate yield";
-  } else {
-    score = Math.max(10, Math.round(avgSellingRatio * 15));
-  }
-
-  return {
-    score,
-    label,
-    metricValue: `${avgSellingRatio.toFixed(1)} sales/listing`,
-  };
-}
-
-function calculateCompetitionSignal(activeListings: number, reviewCount: number, shopAgeMonths: number, estDailySales: number): OpportunitySignal {
-  let score = 80;
-  let label = "Accessible niche";
-
-  // Penalty for crowded listings
-  score -= Math.min(35, Math.round(activeListings / 12));
-
-  // Penalty for high review barriers
-  score -= Math.min(30, Math.round(reviewCount / 60));
-
-  // Bonus for young shops entering successfully with strong daily sales
-  if (shopAgeMonths <= 14 && estDailySales >= 3) {
-    score += 15;
-  }
-
-  score = Math.max(15, Math.min(98, score));
-
-  if (score >= 75) {
-    label = "Low barrier to entry";
-  } else if (score >= 50) {
-    label = "Moderate competition";
-  } else {
-    label = "High competition barrier";
-  }
-
-  return {
-    score,
-    label,
-    metricValue: `${activeListings} listings · ${reviewCount} reviews`,
-  };
-}
 
 function calculateFreshnessSignal(discoveredAt: Date): OpportunitySignal {
   const ageHours = Math.max(0, (Date.now() - discoveredAt.getTime()) / (3600 * 1000));
@@ -327,32 +243,73 @@ export async function getOpportunityRadarData(
 
   const trackedSet = new Set(trackedShops.map((t: { shopExternalId: string }) => t.shopExternalId));
 
-  // Transform raw prospects into scored Opportunities
+  // Transform raw prospects into scored Opportunities using canonical evaluation
   const opportunities: OpportunityItem[] = rawProspects.map((p: typeof rawProspects[number]) => {
     const totalSales = p.totalSales ?? 0;
     const activeListings = Math.max(1, p.activeListings);
     const shopAgeMonths = Math.max(1, p.shopAgeMonths);
-    const estDailySales = p.estDailySales ?? totalSales / (shopAgeMonths * 30.44);
-    const avgSellingRatio = p.avgSellingRatio ?? totalSales / activeListings;
+    const estDailySales = p.estDailySales ?? (totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0);
+    const avgSellingRatio = p.avgSellingRatio ?? (totalSales > 0 ? totalSales / activeListings : 0);
     const reviewCount = p.reviewCount;
     const discoveredAt = p.createdAt;
+    const marketplace = (p.marketplace?.toLowerCase() as MarketplaceId) || "etsy";
 
-    const velocitySignal = calculateVelocitySignal(estDailySales, totalSales);
-    const densitySignal = calculateDensitySignal(avgSellingRatio, totalSales, activeListings);
-    const competitionSignal = calculateCompetitionSignal(activeListings, reviewCount, shopAgeMonths, estDailySales);
+    const canonicalReport = evaluateCanonicalOpportunity({
+      marketplace,
+      price: {
+        value: p.price > 0 ? p.price : null,
+        availability: p.price > 0 ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_listing_price",
+      },
+      estDailySales: {
+        value: estDailySales > 0 ? estDailySales : null,
+        availability: estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        provenance: estDailySales > 0 ? "ESTIMATED" : "UNAVAILABLE",
+        source: "etsy_transaction_velocity",
+      },
+      shopReviewCount: {
+        value: reviewCount,
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "etsy_shop_review_count",
+      },
+      listingAgeDays: {
+        value: Math.max(1, Math.round((Date.now() - discoveredAt.getTime()) / (24 * 3600 * 1000))),
+        availability: "OBSERVED",
+        provenance: "ACTUAL_DATA",
+        source: "prospect_created_at",
+      },
+      numFavorers: {
+        value: p.numFavorers,
+        availability: p.numFavorers !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.numFavorers !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+        source: "etsy_num_favorers",
+      },
+    });
+
+    const score = canonicalReport.overallScore ?? 50;
+
+    const velocitySignal: OpportunitySignal = {
+      score: canonicalReport.signalBreakdown.velocity?.score ?? 50,
+      label: canonicalReport.signalBreakdown.velocity?.name || "Velocity",
+      metricValue: canonicalReport.signalBreakdown.velocity?.rawMetric || `${estDailySales.toFixed(1)} sales/day`,
+    };
+
+    const densitySignal: OpportunitySignal = {
+      score: canonicalReport.signalBreakdown.margin?.score ?? 50,
+      label: canonicalReport.signalBreakdown.margin?.name || "Catalog Density",
+      metricValue: canonicalReport.signalBreakdown.margin?.rawMetric || `${avgSellingRatio.toFixed(1)} sales/listing`,
+    };
+
+    const competitionSignal: OpportunitySignal = {
+      score: canonicalReport.signalBreakdown.competition?.score ?? 50,
+      label: canonicalReport.signalBreakdown.competition?.name || "Competition",
+      metricValue: canonicalReport.signalBreakdown.competition?.rawMetric || `${activeListings} listings · ${reviewCount} reviews`,
+    };
+
     const freshnessSignal = calculateFreshnessSignal(discoveredAt);
     const momentumSignal = calculateMomentumSignal(reviewCount, totalSales, p.numFavorers);
-
-    // Weighted composite calculation:
-    // Velocity: 30%, Density: 25%, Competition: 20%, Momentum: 15%, Freshness: 10%
-    const rawScore =
-      0.30 * velocitySignal.score +
-      0.25 * densitySignal.score +
-      0.20 * competitionSignal.score +
-      0.15 * momentumSignal.score +
-      0.10 * freshnessSignal.score;
-
-    const score = Math.max(10, Math.min(99, Math.round(rawScore)));
 
     const classification = classifyOpportunity(
       score,
