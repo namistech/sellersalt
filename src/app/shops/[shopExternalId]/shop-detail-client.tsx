@@ -593,7 +593,7 @@ export function ShopDetailClient({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2 text-xs text-ink-tertiary">
           <Link href="/radar" className="hover:text-ink font-semibold transition-colors">
-            Competitor Surveillance
+            Market Research
           </Link>
           <span>/</span>
           <span className="text-ink font-bold">{shopName}</span>

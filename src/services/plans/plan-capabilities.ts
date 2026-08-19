@@ -82,7 +82,7 @@ export const PLAN_DEFINITIONS: Record<PlanTierKey, PlanDefinition> = {
     priceMonthlyUsd: 49,
     priceAnnualMonthlyUsd: 39,
     badge: "Most Popular",
-    description: "For scaling multi-product storefronts seeking automated surveillance & strategy.",
+    description: "For scaling multi-product storefronts seeking automated market research & strategy.",
     outcome: "Operate your seller business with intelligence.",
     limits: {
       monthlyKeywordSearches: 2500,

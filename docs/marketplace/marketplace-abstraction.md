@@ -1,7 +1,18 @@
-Status: Draft
+> **SUPERSEDED (2026-08-19) — the plan below was implemented.** This was
+> the pre-implementation planning document ("No implementation started,"
+> per the original status line preserved below). The marketplace
+> abstraction it proposed was subsequently built — see
+> `docs/SELLERSALT-MARKETPLACE-ARCHITECTURE.md` (current technical
+> reference) and `docs/SELLERSALT-ARCHITECTURE.md` (canonical overview)
+> for what actually exists now. Retained as historical record of the
+> original design intent, which the implementation largely followed —
+> useful for understanding *why* the shape is what it is, not for current
+> API details.
+
+Status: Draft (historical — see notice above)
 Owner: [ASSUMPTION] Founder (Aliyan)
 Last Updated: 2026-08-14
-Decision State: The pipeline shape below is [LOCKED] (Decision 3, 2026-08-14). The concrete normalized-entity schema is [DEFERRED] until a second marketplace is selected — deliberately, not an oversight. No implementation started.
+Decision State: The pipeline shape below is [LOCKED] (Decision 3, 2026-08-14). The concrete normalized-entity schema is [DEFERRED] until a second marketplace is selected — deliberately, not an oversight. No implementation started (as of this document's original writing — now implemented, see notice above).
 
 # Marketplace Abstraction
 

@@ -5,11 +5,16 @@ import type {
   HarvestedKeyword,
   KeywordSearchSummary,
 } from "@/types/keyword-research";
+import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
 
+/** Single-marketplace research. When `request.marketplace` names a
+ * marketplace/capability that isn't wired up yet, the API returns a
+ * structured CapabilityUnavailable instead of throwing — callers must
+ * check for that shape rather than assuming real keyword results. */
 export async function searchStandaloneKeywords(
   request: KeywordSearchRequest
-): Promise<KeywordSearchResponse> {
-  return fetchJson<KeywordSearchResponse>("/api/keywords/search", {
+): Promise<KeywordSearchResponse | CapabilityUnavailable> {
+  return fetchJson<KeywordSearchResponse | CapabilityUnavailable>("/api/keywords/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),

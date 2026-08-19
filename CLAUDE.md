@@ -99,7 +99,7 @@ why).
 4. **Never treat mock data as production data**: Clearly distinguish prototype stubs from real database records.
 5. **Every score needs explainable inputs**: Any composite metric (Opportunity Score, SEO Score, Competition Level) must clearly disclose its mathematical formula and point breakdown.
 6. **Every AI generation feature needs originality protection**: AI output must never duplicate competitor titles, tags, or copy. Enforce N-gram/Jaccard similarity thresholds (<15% overlap).
-7. **Every Etsy write operation requires proper OAuth scope**: Ensure `listings_w`, `shops_w`, `billing_r` scopes are verified before write attempts.
+7. **Every Etsy write operation requires proper OAuth scope**: Ensure `listings_w` is verified before write attempts. Current scope set is `listings_w listings_r shops_r transactions_r` — `shops_w` and `billing_r` were deliberately removed during Etsy compliance remediation (no feature uses them; `billing_r` was never a real Etsy v3 scope). Do not reintroduce either without a real, implemented feature that needs it.
 8. **Every third-party external link opens in a new tab**: Always use `target="_blank" rel="noopener noreferrer"` for external Etsy or partner links.
 9. **Never silently publish AI-generated Etsy content**: Drafts must be created in `draft` state and require explicit human review/approval before publication.
 10. **Do not build around unauthorized Etsy scraping**: Use official SellerSalt backend/API data and legal capabilities only.
@@ -400,6 +400,140 @@ UI, plus one previously-undiscovered production bug:
   the auth layout's side image — previously no positioning control
   existed at all (fixed `object-cover`, no override).
 
+**Etsy Commercial API compliance remediation (2026-08-19)** — prepares the
+app for a future Etsy Commercial Access reapplication per the *current*
+(June 2025) Etsy API Terms and Open API v3 docs. Not a claim of "Etsy
+compliant" — see caveats below.
+- **OAuth scopes narrowed to least-privilege**: dropped `shops_w` (no
+  write-to-shop-metadata feature exists) and `billing_r` (no feature reads
+  Etsy's shop billing/payment-account data; `transactions_r` alone backs
+  the real order/receipt sync in `src/seller-channels/etsy-seller/
+  index.ts`, confirmed still genuinely required). New default:
+  `listings_w listings_r shops_r transactions_r`. Canonical value lives in
+  `DEFAULT_ETSY_SCOPES` (`src/services/connectors/etsy-oauth-helper.ts`).
+- **OAuth user resolution fixed**: both Etsy provider blocks in
+  `src/lib/auth.ts` no longer call the non-existent
+  `openapi.etsy.com/v3/application/users/me` — they resolve the numeric
+  user ID from the access token prefix and call the real
+  `/v3/application/users/{user_id}` endpoint.
+- **Etsy-hosted browser extension content script fully removed**, not
+  merely disabled: `extension/etsy-content-script.js` and the
+  `extension/etsy/` directory (`page-detector.js`, `payload.js`,
+  `selectors.js` — including the `_setNativeValue` DOM write path used to
+  inject title/tag edits directly into Etsy's Shop Manager editor) are
+  deleted outright, `manifest.json` no longer requests `*.etsy.com` host
+  permissions or registers any content script there, and every
+  background-worker message handler that only existed to serve that
+  bridge (`ETSY_EDITOR_SNAPSHOT`, `GET_SEO_AUDIT_STATE`,
+  `GET_SUGGESTIONS_STATE`, `APPLY_SUGGESTION`) plus their now-orphaned
+  support modules (`extension/lib/seo-request.js`,
+  `extension/lib/suggestions.js`) are gone. The extension's remaining
+  Listing/Shop/Search panels only ever called SellerSalt's own backend
+  (`extension/lib/api-client.js`) — they never read or wrote Etsy page
+  DOM and were left as-is. **If real-time in-editor SEO scoring is wanted
+  again, it needs Etsy's written authorization first** (their API Terms
+  prohibit browser extensions accessing/analyzing/scraping Etsy's site
+  without it) — this is a product decision, not a code TODO.
+- **Snapshot retention is now bounded, not indefinite**: new
+  `src/lib/data-retention.ts` (`getSnapshotRetentionCutoff()`) derives a
+  prune cutoff from the *widest tracking window any active `Package`
+  actually sells* (`Package.maxTrackingDays`, currently up to 30 on
+  Agency) rather than a fixed/invented number — deliberately avoids
+  hardcoding an Etsy-derived retention rule that doesn't exist in their
+  docs. Wired into both `ShopSnapshot` capture (`src/workers/index.ts`)
+  and `ListingSnapshot` capture (`src/app/api/tracking/listings/
+  route.ts`); both prune on every new snapshot write.
+- **Surveillance/spy/stalk terminology removed from user-visible
+  surfaces**: marketing homepage, root metadata/JSON-LD, public footer,
+  login/checkout/contact copy, transactional emails
+  (`src/services/email/template-registry.ts`), changelog/announcements,
+  and the full dashboard (nav, quick actions, onboarding, university,
+  support FAQ, admin Integrations/Plans views) now say "Market Research"
+  instead of "Spy on Competitor"/"Competitor Surveillance". Internal code
+  identifiers (`COMPETITOR_SURVEILLANCE` opportunity source,
+  `SURVEILLANCE` feature-request category key, `canUseAdvancedSurveillance`
+  entitlement field) were **deliberately left unrenamed** — they're
+  DB-shape-adjacent string literals with test-file coupling, not
+  user-visible, and renaming them wasn't necessary for the compliance
+  goal. Also removed literal "scraper"/"scraping" claims from pricing and
+  billing copy (SellerSalt doesn't scrape Etsy — it uses the official API
+  — so marketing shouldn't claim otherwise).
+- **Full remediation test suite**:
+  `src/tests/etsy-commercial-compliance-remediation.test.ts` (14 checks —
+  scope set, user resolution, extension removal, retention, disconnect
+  lifecycle, AI data isolation, terminology). All 608 tests across the
+  suite pass; `npx tsc --noEmit` and `npx next build` are clean.
+- **Not addressed, needs a human decision**: `EmailSettings.fromName`
+  still `@default("Anadash")` at the schema level (the admin creation
+  route already overrides this with `"SellerSalt"` — see
+  `src/app/api/admin/email-settings/route.ts` — but if a live
+  `EmailSettings` row predates that safeguard, outbound email could still
+  show "Anadash" as the sender name). Verify via `/admin` → Email
+  Settings on both environments; changing the schema default itself
+  needs a migration, out of scope for this pass per the schema-change
+  rule above.
+
+**Marketplace-agnostic architecture (2026-08-19, four-phase build following
+the Etsy compliance remediation above)** — SellerSalt repositioned from an
+Etsy-centric app into a marketplace-agnostic ecommerce intelligence
+platform architecturally, without changing the customer-facing product
+scope (Etsy stays the only fully live marketplace; see MVP Scope section
+above, unchanged). Full detail lives in the docs listed below — this entry
+is a pointer, not a duplicate.
+
+- **`src/marketplaces/core/`** — a `MarketplaceConnector` interface,
+  `MarketplaceCapabilities` flags, a central `MarketplaceRegistry`,
+  canonical types (`NormalizedProduct`, `Listing`, `Order`, etc.), and a
+  `research-pipeline.ts` orchestration layer
+  (`runProductResearch`/`runAllMarketplaceProductResearch`/etc.) — wraps
+  the pre-existing `src/connectors/` (platform research) and
+  `src/seller-channels/` (OAuth accounts) rather than replacing them.
+- Six connector adapters registered: Etsy (real), Shopify/WooCommerce
+  (partial — real account+orders, no research), Amazon/eBay/TikTok Shop
+  (honest architecture-ready stubs, zero live capabilities, throw
+  `MarketplaceNotImplementedError` rather than fabricate data).
+- `/api/products/search`, `/api/keywords/search`, `/api/categories`, and
+  the scheduled Prospects worker now capability-check via the registry
+  before doing Etsy-specific work — Etsy's actual behavior verified
+  byte-identical throughout.
+- A real "All Marketplaces" research mode
+  (`POST /api/marketplaces/research`) exists and is wired into the
+  Prospects page — fans a request across every registered connector in
+  parallel, each independently `AVAILABLE`/`PARTIAL`/`UNAVAILABLE`/
+  `NOT_IMPLEMENTED`, with per-connector error isolation.
+- `seo-engine.ts`'s `auditListingSeo` and `universal-scoring.ts`'s margin
+  factor now accept marketplace rules (`MarketplaceOptimizationRules`)
+  instead of hardcoding Etsy's 140-char/13-tag/20-char/fee numbers —
+  Etsy's default behavior unchanged (verified by test).
+- One additive Prisma migration (`ConnectorType`/`SellerChannelPlatform`
+  enum expansion for the new marketplaces) — no destructive schema
+  changes. A separate, pre-existing, unrelated schema drift
+  (`Announcement`/`Coupon`/`AnnouncementRead`) was found during this work
+  and deliberately excluded — needs its own reviewed migration.
+- **Full canonical documentation set added/rewritten this pass**: root
+  `AGENTS.md` (now the primary cross-agent instruction file — `GEMINI.md`
+  now just points to it instead of duplicating), `docs/SELLERSALT-
+  HANDOFF.md`, `docs/SELLERSALT-ARCHITECTURE.md`,
+  `docs/SELLERSALT-MARKETPLACE-ARCHITECTURE.md`,
+  `docs/MARKETPLACE-INTEGRATION-MATRIX.md`, `docs/SELLERSALT-ROADMAP.md`,
+  `docs/CHANGELOG.md`, and a new root `README.md` (none existed before).
+  Several actively-stale legacy docs (`SETUP.md`,
+  `docs/25-roadmap/SELLERSALT_CAPABILITY_MATRIX.md`,
+  `docs/marketplace/marketplace-abstraction.md`,
+  `docs/architecture/marketplace.md`, the `docs/17-browser-extension/*`
+  specs) got superseded-notices rather than rewrites or deletion — they
+  described a pre-remediation or pre-abstraction state that could mislead
+  a new agent reading them in isolation.
+- **Known remaining gaps** (see `docs/SELLERSALT-ROADMAP.md`/`AGENTS.md`
+  §19 for the full, current list): "All Marketplaces" mode isn't wired
+  into Keyword Research/Category Hunting/Studio yet (Prospects only);
+  `handleShopWatchJob` (shop-tracking worker) still uses the old connector
+  registry directly; a third, unused, mislabeled-"universal"
+  `opportunity-scoring.ts` engine was found and parameterized but never
+  adopted anywhere; Amazon/eBay/TikTok Shop need real developer
+  credentials before any capability can go live — external dependency,
+  not an engineering task.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -548,6 +682,21 @@ Every customer shares one Etsy Personal Access connector — 5 req/sec,
     with the founder whether `15432` is intentionally publicly exposed
     (separate from the documented `5433` production public-port toggle)
     or is a leftover that should be closed, same category as Lesson #4.
+11. **Uncommitted cross-session work must be re-verified, not just
+    resumed (2026-08-19)**: a prior session had already started the Etsy
+    Commercial API compliance remediation and left real, uncommitted
+    changes in the working tree — but its edit to `src/lib/auth.ts`'s
+    Etsy `userinfo` resolver had accidentally deleted the `token:
+    "https://api.etsy.com/v3/public/oauth/token"` line from the
+    `getAuthOptions()` provider block (the one actually wired to
+    `src/app/api/auth/[...nextauth]/route.ts` — the static `authOptions`
+    export still had it, which made the drift easy to miss on a partial
+    read). That would have silently broken all Etsy OAuth sign-in. Caught
+    only by diffing both Etsy provider blocks side-by-side and noticing
+    only one had `token:`. Same category as Lesson #2 (sandbox/session
+    drift) — when picking up another session's in-progress uncommitted
+    diff, diff every touched block against its sibling/equivalent rather
+    than assuming a partial edit was applied consistently everywhere.
 
 ## How to work efficiently in this project
 

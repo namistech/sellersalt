@@ -1,3 +1,12 @@
+> **HISTORICAL — different roadmap, different era.** This document's
+> Phase A–S sequence describes the pre-marketplace-abstraction build
+> order (product research through the browser extension) and is now
+> largely complete history, not a forward-looking plan. For the current
+> roadmap (marketplace abstraction onward, Phase 0–9), see
+> `docs/SELLERSALT-ROADMAP.md` instead — the two use different phase
+> letters/numbers on purpose and are not meant to be read as one
+> continuous sequence.
+
 # SellerSalt — Phased Implementation Roadmap
 
 - **Document Version:** 2.0.0

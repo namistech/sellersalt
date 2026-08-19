@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { fetchStandaloneKeywordResearch } from "@/services/keyword-research";
+import { fetchMarketplaceKeywordResearch, fetchAllMarketplaceKeywordResearch } from "@/services/keyword-research";
 import type { KeywordSearchRequest } from "@/types/keyword-research";
+import type { MarketplaceId } from "@/marketplaces/core/types";
+import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
+
+const SUPPORTED: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
+
+function resolveMarketplace(raw: unknown): MarketplaceId {
+  return SUPPORTED.includes(raw as MarketplaceId) ? (raw as MarketplaceId) : "etsy";
+}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -18,13 +26,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Query keyword is required." }, { status: 400 });
     }
 
-    const response = await fetchStandaloneKeywordResearch(organizationId, {
+    const rawMarketplace = (body as any).marketplace;
+    const request: KeywordSearchRequest = {
       query: body.query.trim(),
       limit: body.limit || 50,
       minPrice: body.minPrice,
       maxPrice: body.maxPrice,
       categoryTaxonomyId: body.categoryTaxonomyId,
-    });
+    };
+
+    if (rawMarketplace === "all") {
+      registerAllConnectors();
+      const marketplaces = MarketplaceRegistry.list().map((c) => c.marketplace);
+      const results = await fetchAllMarketplaceKeywordResearch(marketplaces, organizationId, request);
+      return NextResponse.json({ results });
+    }
+
+    const marketplace = resolveMarketplace(rawMarketplace);
+    const response = await fetchMarketplaceKeywordResearch(marketplace, organizationId, request);
 
     return NextResponse.json(response);
   } catch (err: any) {

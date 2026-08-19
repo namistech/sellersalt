@@ -148,7 +148,7 @@ function LoginForm() {
         Sign in to your workspace
       </Heading>
       <Text size="body-sm" color="secondary" className="mb-6">
-        Access your Opportunity Radar, competitor spy data, and tracked Etsy shops.
+        Access your Opportunity Radar, market research data, and tracked Etsy shops.
       </Text>
 
       {notice && (

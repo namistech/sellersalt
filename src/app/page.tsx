@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     "SellerSalt helps Etsy sellers, brands, and agencies discover winning products, analyze competitor sales velocity, and spot high-demand niches using verified marketplace sales data.",
   keywords:
-    "Etsy product research, Etsy competitor spy tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing, shop intelligence",
+    "Etsy product research, Etsy market research tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing, shop intelligence",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",

@@ -1,9 +1,12 @@
 // Side panel UI for SellerSalt Assistant Extension v1.
-// Supports 4 operating modes:
+// Supports 3 operating modes:
 // 1. Listing Opportunity Intelligence
-// 2. Shop Intelligence & Competitor Surveillance
+// 2. Shop Market Research
 // 3. Search Page Results Scanner
-// 4. Live Etsy Listing Editor SEO Auditing
+//
+// All modes call SellerSalt's own backend (see lib/api-client.js) with
+// user-supplied input — this extension never reads or writes Etsy page
+// DOM content.
 
 import { SELLERSALT_ORIGIN } from "./lib/config.js";
 
@@ -19,13 +22,11 @@ const planPillEl = document.getElementById("plan-pill");
 const tabListing = document.getElementById("tab-listing");
 const tabShop = document.getElementById("tab-shop");
 const tabSearch = document.getElementById("tab-search");
-const tabEditor = document.getElementById("tab-editor");
 
 // Panels
 const panelListing = document.getElementById("panel-listing");
 const panelShop = document.getElementById("panel-shop");
 const panelSearch = document.getElementById("panel-search");
-const panelEditor = document.getElementById("panel-editor");
 
 // Action Buttons
 const saveOppBtn = document.getElementById("save-opportunity-btn");
@@ -36,8 +37,8 @@ let connected = false;
 let currentPlanTier = "PRO";
 
 function switchMode(mode) {
-  [tabListing, tabShop, tabSearch, tabEditor].forEach((t) => t?.classList.remove("active"));
-  [panelListing, panelShop, panelSearch, panelEditor].forEach((p) => {
+  [tabListing, tabShop, tabSearch].forEach((t) => t?.classList.remove("active"));
+  [panelListing, panelShop, panelSearch].forEach((p) => {
     if (p) p.style.display = "none";
   });
 
@@ -50,16 +51,12 @@ function switchMode(mode) {
   } else if (mode === "search") {
     tabSearch?.classList.add("active");
     if (panelSearch) panelSearch.style.display = "block";
-  } else if (mode === "editor") {
-    tabEditor?.classList.add("active");
-    if (panelEditor) panelEditor.style.display = "block";
   }
 }
 
 tabListing?.addEventListener("click", () => switchMode("listing"));
 tabShop?.addEventListener("click", () => switchMode("shop"));
 tabSearch?.addEventListener("click", () => switchMode("search"));
-tabEditor?.addEventListener("click", () => switchMode("editor"));
 
 function renderConnection(status) {
   connected = Boolean(status.connected);

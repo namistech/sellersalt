@@ -15,7 +15,7 @@ function formatErrorMessage(err: unknown, fallback: string): string {
     if (err.response?.status === 404) return "The requested shop could not be found.";
     if (err.response?.status === 429) return "Marketplace request limit reached. Please wait a moment and try again.";
     if (err.response?.status && err.response.status >= 500) {
-      return "SellerSalt surveillance service is temporarily refreshing. Please try again in a few moments.";
+      return "SellerSalt market research service is temporarily refreshing. Please try again in a few moments.";
     }
   }
   if (err instanceof Error) return err.message;

@@ -41,7 +41,7 @@ export interface EtsyOAuthDiagnostic {
 }
 
 export const CANONICAL_ETSY_CALLBACK_ROUTE = "/api/seller-channels/etsy/callback";
-export const DEFAULT_ETSY_SCOPES = "listings_w listings_r shops_w shops_r transactions_r billing_r";
+export const DEFAULT_ETSY_SCOPES = "listings_w listings_r shops_r transactions_r";
 
 export function resolveEtsyOAuthRedirectUri(options?: {
   overrideBaseUrl?: string;

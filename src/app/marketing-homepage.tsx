@@ -196,7 +196,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
           </h1>
 
           <p>
-            SellerSalt combines verified marketplace sales data, opportunity scoring, and competitor surveillance into one cohesive research platform for Etsy creators, entrepreneurs, and eCommerce brands.
+            SellerSalt combines verified marketplace sales data, opportunity scoring, and market research into one cohesive productivity platform for Etsy creators, entrepreneurs, and eCommerce brands.
           </p>
 
           <div className="hero-actions">
@@ -260,9 +260,9 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <span className="audience-pill" style={{ backgroundColor: "#FFFBEB", color: "#D97706" }}>
               <Users className="h-3 w-3" /> Agencies &amp; Multi-Brand Teams
             </span>
-            <h3 style={{ fontSize: "15px", fontWeight: 700 }}>Portfolio Surveillance</h3>
+            <h3 style={{ fontSize: "15px", fontWeight: 700 }}>Market Opportunity Radar</h3>
             <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-              Track competitor shop momentum with automated daily snapshots and build synchronized keyword roadmaps in Planner.
+              Evaluate shop momentum with automated research snapshots and build synchronized keyword roadmaps in Planner.
             </p>
           </div>
         </div>
@@ -525,10 +525,10 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                       <div>
                         <div style={{ fontSize: "12px", fontWeight: 700, color: "#141B16" }}>
-                          🔒 Full {freeToolResult.catalogSize}-Listing Catalog Surveillance Locked
+                          🔒 Full {freeToolResult.catalogSize}-Listing Deep Catalog Research Locked
                         </div>
                         <p style={{ fontSize: "11px", color: "#525B55", margin: "2px 0 0 0" }}>
-                          Track 24h &amp; 7d sales deltas, competitor tag clusters, and automated trajectory alerts.
+                          Analyze 24h &amp; 7d sales trends, marketplace tag clusters, and demand signals.
                         </p>
                       </div>
                       <button
@@ -1237,7 +1237,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 <li><Check className="h-4 w-4" /> {agency?.maxTrackedShops ?? 100} Tracked Competitor Shops</li>
                 <li><Check className="h-4 w-4" /> {agency?.maxProspectsPerMonth ?? 5000} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Multi-Seat Team Workspace Access</li>
-                <li><Check className="h-4 w-4" /> Dedicated Scraper Capacity</li>
+                <li><Check className="h-4 w-4" /> Dedicated Research Query Capacity</li>
                 <li><Check className="h-4 w-4" /> Full Revenue &amp; Fee Audit Engine</li>
               </ul>
             </div>

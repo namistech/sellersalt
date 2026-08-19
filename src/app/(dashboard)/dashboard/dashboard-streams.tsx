@@ -53,7 +53,7 @@ export function DashboardStreams({ streams, recentRuns, onNewSearch }: Dashboard
             <EmptyState
               icon={<Radar />}
               title="No active saved searches"
-              description="Save a keyword query to start recurring market surveillance."
+              description="Save a keyword query to start recurring market research tracking."
               action={
                 <Button variant="primary" size="compact" onClick={onNewSearch}>
                   Create saved search

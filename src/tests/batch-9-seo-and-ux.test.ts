@@ -169,7 +169,7 @@ describe("Batch 9: SellerSalt University Navigation Gating (Item 13)", () => {
 
   it("hides SellerSalt University by default for standard customer workspace", () => {
     const groups = buildNavigation(baseContext);
-    const discoverGroup = groups.find((g) => g.id === "discover");
+    const discoverGroup = groups.find((g) => g.id === "research");
     const universityItem = discoverGroup?.items.find((i) => i.id === "university");
     assert.equal(universityItem, undefined, "SellerSalt University should be hidden by default for customers");
   });
@@ -180,7 +180,7 @@ describe("Batch 9: SellerSalt University Navigation Gating (Item 13)", () => {
       capabilities: new Set([...baseContext.capabilities, "view:university"]),
     };
     const groups = buildNavigation(elevatedContext);
-    const discoverGroup = groups.find((g) => g.id === "discover");
+    const discoverGroup = groups.find((g) => g.id === "research");
     const universityItem = discoverGroup?.items.find((i) => i.id === "university");
     assert.ok(universityItem, "SellerSalt University should be visible when view:university capability is granted");
     assert.equal(universityItem?.href, "/university");

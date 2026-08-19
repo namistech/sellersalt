@@ -147,7 +147,7 @@ export function OpportunityInbox({
               <span>📥</span> Opportunity Inbox & Execution Queue
             </h3>
             <p className="text-xs text-ink-tertiary">
-              Unified operating queue across Product Research, Keywords, Surveillance, and Extension discoveries.
+              Unified operating queue across Product Research, Keywords, Market Research, and Extension discoveries.
             </p>
           </div>
 
@@ -221,7 +221,7 @@ export function OpportunityInbox({
           <div className="space-y-1">
             <h4 className="text-base font-bold text-ink">No opportunities in your queue yet</h4>
             <p className="text-xs text-ink-secondary leading-relaxed">
-              When you find high-potential products in Opportunity Radar, Keyword Hunter, or Shop Surveillance, save them to your workspace to track them here.
+              When you find high-potential products in Opportunity Radar, Keyword Hunter, or Market Research, save them to your workspace to track them here.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
@@ -241,7 +241,7 @@ export function OpportunityInbox({
               href="/spy"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-line bg-surface-secondary hover:bg-surface text-ink transition"
             >
-              Shop Surveillance
+              Market Research
             </Link>
           </div>
         </div>

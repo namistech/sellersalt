@@ -7,6 +7,10 @@ import type { AiProviderType } from "@prisma/client";
 import type { ListingDraftPayload, ListingGenerationMetadata } from "@/types/listing-draft";
 import type { OriginalityCheckResult } from "@/types/originality";
 import type { CompleteListingSeoAudit } from "@/types/seo";
+import {
+  ETSY_OPTIMIZATION_RULES,
+  type MarketplaceOptimizationRules,
+} from "@/marketplaces/core/optimization-rules";
 
 export interface ListingGenerationInput {
   conceptTitle: string;
@@ -47,11 +51,18 @@ function chatHeaders(provider: AiProviderType, apiKey: string): Record<string, s
 }
 
 /**
- * Sanitizes and repairs a generated Etsy title to satisfy hard constraints:
- * - Maximum 140 characters
- * - Front-loaded high intent
+ * Sanitizes and repairs a generated title to satisfy a marketplace's hard
+ * constraints. Defaults to Etsy's rules (140 chars) so every existing
+ * caller — which never passed a third argument — is unaffected; a
+ * marketplace with `titleMaxLength: null` (i.e. unknown/unconfigured, see
+ * src/marketplaces/core/optimization-rules.ts) skips truncation entirely
+ * rather than guessing a limit.
  */
-export function sanitizeTitle(rawTitle: string, fallbackKeywords: string[] = []): string {
+export function sanitizeTitle(
+  rawTitle: string,
+  fallbackKeywords: string[] = [],
+  rules: MarketplaceOptimizationRules = ETSY_OPTIMIZATION_RULES
+): string {
   let title = (rawTitle || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
   if (!title && fallbackKeywords.length > 0) {
     title = fallbackKeywords.slice(0, 4).join(" | ");
@@ -60,11 +71,13 @@ export function sanitizeTitle(rawTitle: string, fallbackKeywords: string[] = [])
     title = "Handmade Custom Product";
   }
 
-  if (title.length > 140) {
-    // Truncate at last word/pipe boundary before 140
-    const sliced = title.slice(0, 140);
+  const maxLength = rules.titleMaxLength;
+  if (maxLength !== null && title.length > maxLength) {
+    // Truncate at last word/pipe boundary before the limit
+    const sliced = title.slice(0, maxLength);
     const lastDelimiter = Math.max(sliced.lastIndexOf("|"), sliced.lastIndexOf(","), sliced.lastIndexOf(" - "), sliced.lastIndexOf(" "));
-    if (lastDelimiter > 90) {
+    const boundaryFloor = Math.round(maxLength * 0.64); // matches the original 90/140 ratio
+    if (lastDelimiter > boundaryFloor) {
       title = sliced.slice(0, lastDelimiter).trim();
     } else {
       title = sliced.trim();
@@ -74,12 +87,23 @@ export function sanitizeTitle(rawTitle: string, fallbackKeywords: string[] = [])
 }
 
 /**
- * Sanitizes and repairs generated tags to satisfy hard constraints:
- * - Exactly 13 unique tags
- * - Each tag <= 20 characters
- * - No special punctuation
+ * Sanitizes and repairs generated tags to satisfy a marketplace's hard
+ * constraints (exact tag count, per-tag max length). Defaults to Etsy's
+ * rules (13 tags, 20 chars each) — unchanged behavior for every existing
+ * caller. A marketplace that doesn't support tags at all
+ * (`supportsTags: false`) returns an empty array rather than padding with
+ * filler, since "tags" isn't a concept that marketplace has.
  */
-export function sanitizeTags(rawTags: string[], targetKeywords: string[] = []): string[] {
+export function sanitizeTags(
+  rawTags: string[],
+  targetKeywords: string[] = [],
+  rules: MarketplaceOptimizationRules = ETSY_OPTIMIZATION_RULES
+): string[] {
+  if (!rules.supportsTags || rules.tagCount === null) return [];
+
+  const tagCount = rules.tagCount;
+  const tagMaxLength = rules.tagMaxLength ?? 20;
+
   const cleanTags: string[] = [];
   const seen = new Set<string>();
 
@@ -106,18 +130,17 @@ export function sanitizeTags(rawTags: string[], targetKeywords: string[] = []): 
 
     if (!cleaned) continue;
 
-    // Hard ceiling: 20 characters
-    if (cleaned.length > 20) {
+    if (cleaned.length > tagMaxLength) {
       const words = cleaned.split(" ");
       let truncated = "";
       for (const w of words) {
-        if ((truncated + " " + w).trim().length <= 20) {
+        if ((truncated + " " + w).trim().length <= tagMaxLength) {
           truncated = (truncated + " " + w).trim();
         } else {
           break;
         }
       }
-      cleaned = truncated || cleaned.slice(0, 20).trim();
+      cleaned = truncated || cleaned.slice(0, tagMaxLength).trim();
     }
 
     if (cleaned.length >= 2 && !seen.has(cleaned)) {
@@ -125,11 +148,11 @@ export function sanitizeTags(rawTags: string[], targetKeywords: string[] = []): 
       cleanTags.push(cleaned);
     }
 
-    if (cleanTags.length === 13) break;
+    if (cleanTags.length === tagCount) break;
   }
 
-  // Ensure exactly 13 tags
-  while (cleanTags.length < 13) {
+  // Ensure exactly `tagCount` tags
+  while (cleanTags.length < tagCount) {
     const filler = `gift idea ${cleanTags.length + 1}`;
     if (!seen.has(filler)) {
       seen.add(filler);
@@ -137,7 +160,7 @@ export function sanitizeTags(rawTags: string[], targetKeywords: string[] = []): 
     }
   }
 
-  return cleanTags.slice(0, 13);
+  return cleanTags.slice(0, tagCount);
 }
 
 /**

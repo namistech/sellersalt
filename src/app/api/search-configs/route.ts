@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { upsertSchedule, triggerScrapeJob, SCHEDULE_FREQUENCIES } from "@/lib/queue";
+import { upsertSchedule, triggerMarketSearchJob, SCHEDULE_FREQUENCIES } from "@/lib/queue";
 import { checkLimit } from "@/lib/plan-limits";
 
 async function requireOrg() {
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   // Auto-run research immediately upon submission (zero extra click required)
   let queuedJobId: string | null = null;
   try {
-    const job = await triggerScrapeJob(organizationId, config.id, connectorId);
+    const job = await triggerMarketSearchJob(organizationId, config.id, connectorId);
     queuedJobId = job.id;
   } catch (err: any) {
     console.warn("Auto-run job queueing warning (Redis offline or worker busy):", err?.message);

@@ -505,9 +505,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         if (watches.length === 0) {
           return {
             success: true,
-            summary: "You are not tracking any competitor shops yet. You can track any competitor store from Spy on Competitor (/spy).",
+            summary: "You are not tracking any research shops yet. You can track any benchmark store from Market Research (/spy).",
             provenance: "ACTUAL_ETSY_DATA",
-            actions: [{ label: "Discover Competitors to Track", href: "/spy", variant: "primary" }],
+            actions: [{ label: "Discover Shops to Track", href: "/spy", variant: "primary" }],
           };
         }
 

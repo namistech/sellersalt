@@ -13,9 +13,12 @@ import {
 } from "../lib/queue";
 import { decrypt } from "../lib/encryption";
 import { getConnector } from "../connectors/registry";
+import { runProductResearch } from "../marketplaces/core/research-pipeline";
+import type { MarketplaceId } from "../marketplaces/core/types";
 import { sendEmail } from "../lib/send-email";
 import { syncSellerChannel } from "../lib/sync-seller-channel";
 import { sendVerificationEmail } from "../lib/email-verification";
+import { getSnapshotRetentionCutoff } from "../lib/data-retention";
 
 console.log("SellerSalt worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
 
@@ -68,10 +71,18 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
       prisma.searchConfig.findUniqueOrThrow({ where: { id: searchConfigId } }),
     ]);
 
-    const connector = getConnector(connectorRow.type);
-    const credentials = JSON.parse(decrypt(connectorRow.encryptedCredentials));
-
-    const results = await connector.runSearch(credentials, {
+    // Migrated off the old connector registry onto the marketplace-neutral
+    // pipeline (src/marketplaces/core/research-pipeline.ts) — ETSY is the
+    // only ConnectorType with a real research connector today, so this
+    // resolves to exactly the same Etsy search this job always ran; a
+    // future connectorRow.type of AMAZON/EBAY/etc. now degrades to a
+    // clean UNAVAILABLE/NOT_IMPLEMENTED job failure instead of an
+    // unhandled crash.
+    const marketplace = connectorRow.type.toLowerCase() as MarketplaceId;
+    const research = await runProductResearch({
+      marketplace,
+      type: "products",
+      organizationId,
       keywords: searchConfig.keywords,
       minPrice: searchConfig.minPrice,
       maxPrice: searchConfig.maxPrice,
@@ -80,6 +91,12 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
       minReviewCount: searchConfig.minReviewCount,
     });
 
+    if (research.status !== "AVAILABLE") {
+      throw new Error(research.message || `${marketplace} research is not available (${research.status}).`);
+    }
+
+    const results = research.products;
+
     if (results.length > 0) {
       await prisma.prospect.createMany({
         data: results.map((r) => ({
@@ -87,26 +104,26 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
           searchConfigId,
           jobId,
           marketplace: connectorRow.type as any,
-          keyword: r.keyword,
-          shopExternalId: r.shopExternalId,
-          listingExternalId: r.listingExternalId,
-          shopName: r.shopName,
-          shopUrl: r.shopUrl,
-          shopIconUrl: r.shopIconUrl,
-          shopAgeMonths: r.shopAgeMonths,
-          reviewCount: r.reviewCount,
-          activeListings: r.activeListings,
-          reviewRatio: r.reviewRatio,
-          reviewVelocity: r.reviewVelocity,
-          totalSales: r.totalSales,
-          reviewAverage: r.reviewAverage,
-          numFavorers: r.numFavorers,
-          avgSellingRatio: r.avgSellingRatio,
-          estDailySales: r.estDailySales,
-          listingTitle: r.listingTitle,
-          listingUrl: r.listingUrl,
-          listingImageUrl: r.listingImageUrl,
-          price: r.price,
+          keyword: r.keyword ?? "",
+          shopExternalId: r.shop?.externalId ?? "",
+          listingExternalId: r.externalId,
+          shopName: r.shop?.name ?? "",
+          shopUrl: r.shop?.url ?? "",
+          shopIconUrl: r.shop?.iconUrl,
+          shopAgeMonths: r.shop?.ageMonths ?? 0,
+          reviewCount: r.reviewCount ?? 0,
+          activeListings: r.shop?.activeListings ?? 0,
+          reviewRatio: r.shop?.reviewRatio ?? 0,
+          reviewVelocity: r.shop?.reviewVelocity ?? 0,
+          totalSales: r.salesCount,
+          reviewAverage: r.rating,
+          numFavorers: r.favoritesCount,
+          avgSellingRatio: r.shop?.avgSellingRatio,
+          estDailySales: r.estimatedDemand,
+          listingTitle: r.title,
+          listingUrl: r.url ?? "",
+          listingImageUrl: r.imageUrl,
+          price: r.price ?? 0,
         })),
       });
     }
@@ -166,6 +183,14 @@ async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
         numFavorers: stats.numFavorers,
       },
     });
+
+    // Data minimization: prune snapshots outside the widest tracking window
+    // any active plan actually sells (see src/lib/data-retention.ts) so
+    // Etsy-derived history is never kept longer than the service needs it.
+    const retentionCutoff = await getSnapshotRetentionCutoff();
+    await prisma.shopSnapshot.deleteMany({
+      where: { shopWatchId, capturedAt: { lt: retentionCutoff } },
+    }).catch(() => {});
 
     console.log(`[SHOP_WATCH_WORKER] Captured snapshot for shop ${shopExternalId} (${stats.shopName})`);
   } catch (err: any) {

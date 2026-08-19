@@ -43,6 +43,14 @@ export interface OpportunityScoreInput {
   competingListingsCount?: number;
   keywordCount?: number;
   tagComplianceRate?: number;
+  /** Defaults to Etsy's real fee structure (9.5% + $0.20) — this file is
+   * unused by any live caller today (confirmed by search), but was labeled
+   * "Universal" while hardcoding Etsy's fees regardless; parameterized here
+   * to match src/services/intelligence/universal-scoring.ts's pattern so
+   * a future caller for another marketplace doesn't inherit a silent
+   * Etsy assumption. Pass a real schedule for a live marketplace, or
+   * `null` to exclude the margin factor rather than guess. */
+  feeSchedule?: { percentageFee: number; flatFee: number } | null;
 }
 
 export function evaluateOpportunityScore(input: OpportunityScoreInput): OpportunityScoreReport {
@@ -54,19 +62,24 @@ export function evaluateOpportunityScore(input: OpportunityScoreInput): Opportun
     competingListingsCount = 450,
     keywordCount = 6,
     tagComplianceRate = 0.85,
+    feeSchedule = { percentageFee: 0.095, flatFee: 0.2 }, // Etsy default — unchanged from prior hardcoded behavior
   } = input;
 
   // 1. Demand Score (0-100) - 30% weight
   // Velocity: 1/day = 50, 3/day = 80, 5+/day = 95+
   const demandScore = Math.min(100, Math.round(Math.min(5, estDailySales) * 18 + 10));
 
-  // 2. Margin Score (0-100) - 25% weight
-  // Standard Etsy Fees: 9.5% + $0.20
-  const etsyFees = price * 0.095 + 0.20;
-  const netMargin = Math.max(0, price - estimatedCogs - etsyFees);
-  const marginPct = price > 0 ? (netMargin / price) * 100 : 0;
-  // Margin %: 30% = 50, 50% = 75, 65%+ = 95+
-  const marginScore = Math.min(100, Math.round(marginPct * 1.4));
+  // 2. Margin Score (0-100) - 25% weight — 0 when no fee schedule is known
+  // for this marketplace, never guessed against the wrong marketplace's fees.
+  let marginPct = 0;
+  let marginScore = 0;
+  if (feeSchedule) {
+    const marketplaceFees = price * feeSchedule.percentageFee + feeSchedule.flatFee;
+    const netMargin = Math.max(0, price - estimatedCogs - marketplaceFees);
+    marginPct = price > 0 ? (netMargin / price) * 100 : 0;
+    // Margin %: 30% = 50, 50% = 75, 65%+ = 95+
+    marginScore = Math.min(100, Math.round(marginPct * 1.4));
+  }
 
   // 3. Competition Score (0-100) - 20% weight (Higher score = lower friction)
   let compScore = 70;

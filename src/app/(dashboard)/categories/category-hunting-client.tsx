@@ -33,13 +33,15 @@ import {
   IntelligenceCard,
   Input,
   ViewSwitch,
+  Alert,
   HowItWorksGuide,
   HowItWorksToggle,
   SafeImage,
   CountrySelector,
-  MarketplaceSelector,
   type ViewMode,
 } from "@/components/ui";
+import { MarketplaceSelector, type MarketplaceSelectValue } from "@/components/ui/MarketplaceSelector";
+import { MarketplaceStatusCard, MARKETPLACE_LABELS, type MarketplaceResultStatus } from "@/components/intelligence/MarketplaceStatusCard";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import {
   BarChart,
@@ -51,6 +53,8 @@ import {
 import {
   searchCategoryTaxonomy,
   fetchCategoryDetail,
+  fetchCategoryRoots,
+  fetchAllMarketplaceCategoryRoots,
   addCategoryToPlanner,
 } from "@/services/category-hunting-client";
 import { addProductToPlanner } from "@/services/product-hunting-client";
@@ -58,6 +62,21 @@ import type { EtsyRawTaxonomyNode, FlattenedTaxonomyNode } from "@/connectors/et
 import type { CategoryIntelligenceProfile } from "@/types/category-hunting";
 import type { ProductHuntingResult } from "@/types/product-hunting";
 import { useResearchState } from "@/lib/research-persistence";
+
+/** True when the API returned a structured "this marketplace can't do this
+ * yet" response (src/marketplaces/core/availability.ts's
+ * CapabilityUnavailable) instead of a real category tree — never rendered
+ * as an empty taxonomy. */
+function isCapabilityUnavailable(res: unknown): res is { available: false; message: string } {
+  return typeof res === "object" && res !== null && (res as any).available === false;
+}
+
+interface CategoryMarketplaceFanOutResult {
+  marketplace: string;
+  status: MarketplaceResultStatus;
+  data?: { roots: EtsyRawTaxonomyNode[]; totalNodes: number };
+  message?: string;
+}
 
 interface CategoryHuntingClientProps {
   initialRoots: EtsyRawTaxonomyNode[];
@@ -68,7 +87,7 @@ export function CategoryHuntingClient({
   initialRoots,
   initialTaxonomyId,
 }: CategoryHuntingClientProps) {
-  const [roots] = useState<EtsyRawTaxonomyNode[]>(initialRoots);
+  const [roots, setRoots] = useState<EtsyRawTaxonomyNode[]>(initialRoots);
   const [selectedTaxonomyId, setSelectedTaxonomyId] = useResearchState<number | null>(
     "cat_selected_id",
     initialTaxonomyId || (initialRoots[0]?.id ?? null)
@@ -79,6 +98,69 @@ export function CategoryHuntingClient({
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Marketplace selection — the taxonomy tree, search, and profile drill-down
+  // below are all Etsy-taxonomy-shaped (real Etsy category data), so only
+  // "etsy" renders that existing experience unchanged. A specific
+  // non-Etsy marketplace shows an honest "not available yet" state instead
+  // of fabricating a taxonomy; "all" fans out to a root-category summary
+  // per marketplace (src/services/category-hunting.ts's
+  // fetchAllMarketplaceCategoryTree).
+  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("etsy");
+  const [isLoadingRoots, setIsLoadingRoots] = useState(false);
+  const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
+  const [allMarketplaceResults, setAllMarketplaceResults] = useState<CategoryMarketplaceFanOutResult[] | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadForMarketplace() {
+      setUnavailableMessage(null);
+      setAllMarketplaceResults(null);
+
+      if (marketplace === "all") {
+        setIsLoadingRoots(true);
+        try {
+          const res = await fetchAllMarketplaceCategoryRoots();
+          if (isMounted) setAllMarketplaceResults(res.results);
+        } catch (err: any) {
+          if (isMounted) setError(err.message || "Failed to load category taxonomy across marketplaces.");
+        } finally {
+          if (isMounted) setIsLoadingRoots(false);
+        }
+        return;
+      }
+
+      if (marketplace === "etsy") {
+        // Already have server-rendered roots for Etsy — no refetch needed
+        // unless we're switching back from a different marketplace.
+        setRoots(initialRoots);
+        return;
+      }
+
+      setIsLoadingRoots(true);
+      try {
+        const res = await fetchCategoryRoots(marketplace);
+        if (!isMounted) return;
+        if (isCapabilityUnavailable(res)) {
+          setUnavailableMessage(res.message);
+          setRoots([]);
+        } else {
+          setRoots(res.roots);
+        }
+      } catch (err: any) {
+        if (isMounted) setError(err.message || "Failed to load category taxonomy.");
+      } finally {
+        if (isMounted) setIsLoadingRoots(false);
+      }
+    }
+
+    loadForMarketplace();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketplace]);
 
   // Planner states
   const [savingPlannerCategory, setSavingPlannerCategory] = useState(false);
@@ -209,12 +291,12 @@ export function CategoryHuntingClient({
           <div className="flex items-center gap-2.5">
             <CountrySelector size="sm" />
             <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
-            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+            {marketplace === "etsy" && <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />}
           </div>
         </div>
 
         {/* Multi-Marketplace Selector */}
-        <MarketplaceSelector className="w-fit" />
+        <MarketplaceSelector className="w-fit" selectedId={marketplace} onChange={(id) => setMarketplace(id)} />
 
       {/* Expandable Guide */}
       <HowItWorksGuide
@@ -241,7 +323,10 @@ export function CategoryHuntingClient({
         ]}
       />
 
-        {/* Top Search Input & Root Quick Chips */}
+        {/* Top Search Input & Root Quick Chips — Etsy's real taxonomy only;
+            other marketplaces don't have a comparable searchable tree wired
+            up yet (see the unavailable/all-marketplace states below). */}
+        {marketplace === "etsy" && (
         <div className="space-y-3 pt-1">
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-tertiary" />
@@ -304,10 +389,65 @@ export function CategoryHuntingClient({
             ))}
           </div>
         </div>
+        )}
       </Card>
 
+      {/* Capability-Unavailable State (single non-Etsy marketplace, not yet wired up) */}
+      {marketplace !== "etsy" && marketplace !== "all" && unavailableMessage && (
+        <Alert variant="info" title="Not available for this marketplace yet">
+          {unavailableMessage}
+        </Alert>
+      )}
+
+      {isLoadingRoots && marketplace !== "etsy" && (
+        <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16">
+          <div className="animate-spin h-8 w-8 border-3 border-[#0E8F5D] border-t-transparent rounded-full mx-auto" />
+          <Text size="body-sm" color="secondary" className="mt-3">
+            Loading category taxonomy…
+          </Text>
+        </Card>
+      )}
+
+      {/* All Marketplaces — one independently status-tagged root-category
+          summary per marketplace. Etsy's is real; every other marketplace
+          honestly reports NOT_IMPLEMENTED rather than a fabricated tree. */}
+      {marketplace === "all" && allMarketplaceResults && (
+        <div className="space-y-3">
+          {allMarketplaceResults.map((result) => (
+            <MarketplaceStatusCard
+              key={result.marketplace}
+              marketplace={result.marketplace}
+              status={result.status}
+              message={result.message}
+            >
+              {result.data && result.data.roots.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {result.data.roots.slice(0, 12).map((root) => (
+                    <span
+                      key={root.id}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-surface-muted text-ink border border-line-subtle"
+                    >
+                      {root.name}
+                    </span>
+                  ))}
+                  {result.data.roots.length > 12 && (
+                    <span className="px-2.5 py-1 text-xs text-ink-tertiary">
+                      +{result.data.roots.length - 12} more
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <Text size="body-sm" color="secondary">
+                  No root categories found on {MARKETPLACE_LABELS[result.marketplace] ?? result.marketplace}.
+                </Text>
+              )}
+            </MarketplaceStatusCard>
+          ))}
+        </div>
+      )}
+
       {/* Loading or Error State */}
-      {isLoadingProfile ? (
+      {marketplace === "etsy" && (isLoadingProfile ? (
         <Card padding="lg" className="border-line bg-white shadow-xs text-center py-20">
           <div className="animate-spin h-8 w-8 border-3 border-[#0E8F5D] border-t-transparent rounded-full mx-auto" />
           <Text size="body-sm" color="secondary" className="mt-3">
@@ -845,7 +985,7 @@ export function CategoryHuntingClient({
             </Card>
           )}
         </>
-      ) : null}
+      ) : null)}
     </div>
   );
 }

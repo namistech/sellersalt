@@ -87,7 +87,7 @@ export default async function BillingPage({
               )}
             </div>
             <Text size="meta" color="secondary" className="mt-1">
-              Includes full Opportunity Radar access, Etsy search scrapers, and daily competitor snapshots.
+              Includes full Opportunity Radar access, Etsy market search, and daily market research snapshots.
             </Text>
           </div>
 

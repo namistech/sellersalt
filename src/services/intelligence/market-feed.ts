@@ -42,7 +42,7 @@ export function getMarketIntelligenceFeed(): MarketSignalEvent[] {
       whatHappened: "Competitor moved up 2 organic ranking positions for search term 'laser cut desk organizer'.",
       whyItMatters: "Competitor is capturing demand in your target category without increasing review moat.",
       provenance: "ACTUAL_ETSY_DATA",
-      actionLabel: "Spy on Winning Listings",
+      actionLabel: "Research Winning Listings",
       actionHref: "/spy",
       urgency: "HIGH",
       timestamp: "2h ago",

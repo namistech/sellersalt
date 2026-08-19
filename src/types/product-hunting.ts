@@ -21,6 +21,9 @@ export interface EtsySearchFilters {
   limit?: number;
   offset?: number;
   page?: number;
+  /** Which marketplace to search — defaults to "etsy" server-side when
+   * omitted. See src/marketplaces/core/types.ts's MarketplaceId. */
+  marketplace?: string;
 }
 
 export interface NormalizedProductListing {

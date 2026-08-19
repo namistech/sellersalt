@@ -54,8 +54,8 @@ const GOALS = [
   },
   {
     id: "competitors",
-    title: "Spy on Competitor Shops",
-    description: "Track competitor sales spikes, review velocity, and winning catalogs.",
+    title: "Market Research",
+    description: "Track shop sales spikes, review velocity, and winning catalogs.",
     icon: Store,
     route: "/spy",
   },

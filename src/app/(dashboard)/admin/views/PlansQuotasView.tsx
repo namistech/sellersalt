@@ -315,7 +315,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxSearchConfigs", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Active keyword surveillance monitors.</span>
+                <span className="text-[10px] text-ink-tertiary">Active keyword research monitors.</span>
               </div>
 
               <div>
@@ -343,7 +343,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxTrackedShops", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Live radar surveillance slots.</span>
+                <span className="text-[10px] text-ink-tertiary">Live radar tracking slots.</span>
               </div>
 
               <div>

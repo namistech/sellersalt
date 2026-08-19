@@ -24,10 +24,15 @@ test("Batch 28: Agency & Operate Navigation Entitlements", async (t) => {
     };
 
     const nav = buildNavigation(agencyContext);
-    const operateGroup = nav.find((g) => g.id === "operate");
-    assert.ok(operateGroup, "Operate group should be present for Agency");
-    
-    const operateHrefs = operateGroup.items.map((i) => i.href);
+    // "Operate" was split into "My Business" (workspace/store/drafts/analytics)
+    // and "Marketplaces" (connected accounts) — both gated by the same
+    // operate:view capability the old single "Operate" group used.
+    const myBusinessGroup = nav.find((g) => g.id === "my-business");
+    const marketplacesGroup = nav.find((g) => g.id === "marketplaces");
+    assert.ok(myBusinessGroup, "My Business group should be present for Agency");
+    assert.ok(marketplacesGroup, "Marketplaces group should be present for Agency");
+
+    const operateHrefs = [...myBusinessGroup.items, ...marketplacesGroup.items].map((i) => i.href);
     assert.ok(operateHrefs.includes("/workspace"), "Should include /workspace");
     assert.ok(operateHrefs.includes("/store"), "Should include /store");
     assert.ok(operateHrefs.includes("/drafts"), "Should include /drafts");
@@ -50,8 +55,8 @@ test("Batch 28: Agency & Operate Navigation Entitlements", async (t) => {
     };
 
     const nav = buildNavigation(freeContext);
-    const operateGroup = nav.find((g) => g.id === "operate");
-    assert.equal(operateGroup, undefined, "Operate group must be hidden for Free users lacking operate:view");
+    assert.equal(nav.find((g) => g.id === "my-business"), undefined, "My Business group must be hidden for Free users lacking operate:view");
+    assert.equal(nav.find((g) => g.id === "marketplaces"), undefined, "Marketplaces group must be hidden for Free users lacking operate:view");
   });
 
   await t.test("Pro context has Operate navigation with store, drafts, and workspace", () => {
@@ -63,9 +68,9 @@ test("Batch 28: Agency & Operate Navigation Entitlements", async (t) => {
     };
 
     const nav = buildNavigation(proContext);
-    const operateGroup = nav.find((g) => g.id === "operate");
-    assert.ok(operateGroup, "Operate group should be visible for Pro users");
-    const operateHrefs = operateGroup.items.map((i) => i.href);
+    const myBusinessGroup = nav.find((g) => g.id === "my-business");
+    assert.ok(myBusinessGroup, "My Business group should be visible for Pro users");
+    const operateHrefs = myBusinessGroup.items.map((i) => i.href);
     assert.ok(operateHrefs.includes("/workspace"));
     assert.ok(operateHrefs.includes("/store"));
     assert.ok(operateHrefs.includes("/drafts"));

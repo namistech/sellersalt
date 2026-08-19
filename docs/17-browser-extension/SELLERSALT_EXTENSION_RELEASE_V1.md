@@ -1,3 +1,10 @@
+> **PARTIALLY SUPERSEDED (2026-08-19)** — the Etsy-page DOM read/write
+> bridge this document describes was removed entirely for Etsy compliance
+> reasons; see the notice at the top of
+> `docs/17-browser-extension/SELLERSALT_EXTENSION_SPEC.md` for details.
+> The extension also remains **unpublished** — do not treat this release
+> guide as evidence it shipped to the Chrome Web Store.
+
 # SellerSalt Browser Extension V1 — Release & Distribution Guide
 
 ## 1. Extension Architecture Overview

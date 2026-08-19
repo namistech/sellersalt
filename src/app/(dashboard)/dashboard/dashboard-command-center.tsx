@@ -216,7 +216,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
     },
     {
       id: "unf_3",
-      title: "Shop Surveillance: 3 Competitors Tracked",
+      title: "Market Research: 3 Shops Tracked",
       stage: "MONITORING",
       stageNumber: 10,
       href: "/spy/tracked",

@@ -1,3 +1,9 @@
+> **PARTIALLY SUPERSEDED (2026-08-19)** — the Etsy-page DOM read/write
+> bridge this document describes was removed entirely for Etsy compliance
+> reasons; see the notice at the top of
+> `docs/17-browser-extension/SELLERSALT_EXTENSION_SPEC.md` for details and
+> `docs/MARKETPLACE-INTEGRATION-MATRIX.md` for current state.
+
 # SellerSalt Browser Extension V1 — Architecture & Implementation Guide
 
 ## 1. Executive Summary

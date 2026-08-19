@@ -2,12 +2,6 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { MockBillingAdapter } from "../services/billing/billing-provider";
 import {
-  classifyEtsyUrl,
-  extractListingIdFromUrl,
-  extractShopNameFromUrl,
-  EtsyPageType,
-} from "../../extension/etsy/page-detector.js";
-import {
   PLAN_DEFINITIONS,
   getFeatureAccess,
 } from "../services/plans/plan-capabilities";
@@ -54,33 +48,8 @@ describe("Batch 18: Billing Provider Abstraction & Webhook Verification", () => 
   });
 });
 
-describe("Batch 18: Browser Extension Expanded URL Classifier", () => {
-  it("detects public Etsy listing page and extracts listing ID", () => {
-    const url = "https://www.etsy.com/listing/1429810482/custom-leather-journal";
-    const type = classifyEtsyUrl(url);
-    const id = extractListingIdFromUrl(url);
-
-    assert.strictEqual(type, EtsyPageType.ETSY_LISTING_PUBLIC);
-    assert.strictEqual(id, "1429810482");
-  });
-
-  it("detects public Etsy shop page and extracts shop name", () => {
-    const url = "https://www.etsy.com/shop/LayerSculpt3D?ref=search";
-    const type = classifyEtsyUrl(url);
-    const shopName = extractShopNameFromUrl(url);
-
-    assert.strictEqual(type, EtsyPageType.ETSY_SHOP_PUBLIC);
-    assert.strictEqual(shopName, "LayerSculpt3D");
-  });
-
-  it("detects search results and non-Etsy pages", () => {
-    assert.strictEqual(
-      classifyEtsyUrl("https://www.etsy.com/search?q=acrylic+calendar"),
-      EtsyPageType.ETSY_SEARCH_RESULTS
-    );
-    assert.strictEqual(
-      classifyEtsyUrl("https://www.amazon.com/dp/B08N5WRWNW"),
-      EtsyPageType.NOT_ETSY
-    );
-  });
-});
+// The Browser Extension URL Classifier suite that previously lived here
+// tested extension/etsy/page-detector.js, part of the Etsy-hosted content
+// script removed during the Etsy Commercial API compliance remediation
+// (see src/tests/etsy-commercial-compliance-remediation.test.ts). The
+// extension no longer reads or classifies any Etsy page DOM/URL content.

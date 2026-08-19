@@ -5,6 +5,17 @@ Decision State: Mixed — current-state sections are factual; Decisions 1–5 (b
 
 # SellerSalt — Master Blueprint
 
+> **NO LONGER THE ENTRY POINT (2026-08-19).** This predates the Etsy
+> compliance remediation, the `src/marketplaces/core/` abstraction, and
+> the canonical documentation set built on top of it. Start at root
+> `README.md` → `docs/SELLERSALT-HANDOFF.md` → `AGENTS.md` instead — those
+> reflect the current architecture and are kept in sync with the code.
+> Locked decisions below (Decisions 1–5) are still real product decisions
+> and remain accurate; product-layer/architecture sections describing
+> "Etsy-only, no marketplace abstraction" describe the pre-2026-08-19
+> state and are historical, not current. Retained for its founder-decision
+> history, not as a live reference.
+
 This is the entry point for the `docs/` tree. Read this first, then
 follow the links into the area you need. It exists so a future AI
 coding agent or engineer doesn't need months of chat history

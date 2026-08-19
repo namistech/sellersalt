@@ -138,11 +138,11 @@ export async function POST(req: Request) {
           provenance: "ESTIMATED",
           isSamplePreview: true,
           lockedFeatures: [
-            "Complete 46-Listing Catalog Surveillance",
-            "6-Hour Historical Sales Velocity Deltas",
-            "Competitor Tag Harvest & Keyword Mining",
-            "Review Moat Replication Timeline",
-            "Automated Surveillance Alerts",
+            "Complete 46-Listing Catalog Research",
+            "Historical Sales Velocity Deltas",
+            "Category Tag & Keyword Mining",
+            "Review Timeline Analysis",
+            "Automated Market Alerts",
           ],
         },
       });

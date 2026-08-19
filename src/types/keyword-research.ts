@@ -12,6 +12,10 @@ export interface KeywordSearchRequest {
   minPrice?: number;
   maxPrice?: number;
   limit?: number; // Default: 50
+  /** Which marketplace to research — defaults to "etsy" server-side when
+   * omitted; "all" fans out across every registered connector. See
+   * src/marketplaces/core/types.ts's MarketplaceId. */
+  marketplace?: string;
 }
 
 export type KeywordCompetitionRating = "VERY_LOW" | "LOW" | "MODERATE" | "HIGH" | "VERY_HIGH";

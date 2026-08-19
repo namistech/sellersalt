@@ -1,3 +1,18 @@
+> **SUPERSEDED (2026-08-19).** This is a historical snapshot from an
+> earlier development phase (predates the Etsy compliance remediation and
+> the marketplace abstraction). Two entries below are now factually
+> **wrong** if read as current: "Shop Optimization" and "Etsy Ads
+> Intelligence" cite `billing_r`/`shops_w` OAuth scopes as required — both
+> were deliberately removed from the app's OAuth request during compliance
+> remediation (`billing_r` turned out not to even be a real Etsy v3
+> scope), so any feature actually built now must not depend on them. The
+> "Browser Extension" row describes DOM read/write functionality that has
+> since been deleted entirely for compliance reasons. For current,
+> verified status, use `docs/MARKETPLACE-INTEGRATION-MATRIX.md` and
+> `AGENTS.md` instead. Retained here as a historical record of the
+> pre-marketplace-abstraction feature inventory, not as a current
+> reference.
+
 # SellerSalt — Product Capability Matrix
 
 - **Document Version:** 2.0.0

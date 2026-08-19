@@ -56,7 +56,7 @@ export const SCHEDULE_FREQUENCIES: Record<string, string | null> = {
   WEEKLY: "0 6 * * 1",
 };
 
-export async function triggerScrapeJob(
+export async function triggerMarketSearchJob(
   organizationId: string,
   searchConfigId: string,
   connectorId: string
@@ -85,6 +85,9 @@ export async function triggerScrapeJob(
 
   return job;
 }
+
+/** @deprecated Use triggerMarketSearchJob */
+export const triggerScrapeJob = triggerMarketSearchJob;
 
 export async function upsertSchedule(params: {
   searchConfigId: string;

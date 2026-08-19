@@ -43,7 +43,7 @@ export interface AnnouncementItem {
 const DEFAULT_WELCOME_ANNOUNCEMENT: AnnouncementItem = {
   id: "ann-welcome",
   title: "Welcome to SellerSalt Intelligence v1.8",
-  message: "Explore our upgraded competitor surveillance engine and new keyword discovery tools.",
+  message: "Explore our upgraded market research engine and new keyword discovery tools.",
   priority: "NORMAL",
   placement: "NOTIFICATIONS",
   audience: "ALL",

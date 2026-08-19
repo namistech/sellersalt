@@ -201,7 +201,16 @@ model Connector {
 
 enum ConnectorType {
   ETSY
-  // AMAZON, ALIEXPRESS, SHOPIFY_SOURCING, etc. added as phase 2 connectors ship
+  AMAZON
+  EBAY
+  TIKTOK_SHOP
+  SHOPIFY
+  WOOCOMMERCE
+  // Additive-only enum: these five have no live research connector behind
+  // them yet (see src/marketplaces/<id>/connector.ts — all NOT_IMPLEMENTED
+  // stubs except Etsy). Values exist now so a future platform-owned research
+  // Connector row can reference them without a further migration; nothing
+  // creates a row with these types until a real connector ships.
 }
 
 enum ConnectorStatus {
@@ -327,7 +336,7 @@ enum ProspectStatus {
   REJECTED
 }
 
-// ---------- Shop tracking ("Spy on Competitor") ----------
+// ---------- Shop tracking (Market Research & Trend Benchmarking) ----------
 // Independent of SearchConfig: a user can start tracking any shop they find in
 // Prospects, regardless of which search surfaced it. A repeatable BullMQ job
 // (one per ShopWatch) re-fetches just that shop's stats on a schedule and
@@ -806,6 +815,12 @@ enum SellerChannelPlatform {
   WOOCOMMERCE
   ETSY_SELLER
   EBAY_SELLER
+  AMAZON_SELLER
+  TIKTOK_SHOP_SELLER
+  // EBAY_SELLER already existed with no registered connector
+  // (src/seller-channels/registry.ts) until this change — see
+  // src/marketplaces/ebay/connector.ts. AMAZON_SELLER/TIKTOK_SHOP_SELLER are
+  // new, same additive-only, no-live-connector-yet status.
 }
 
 model SellerOrder {

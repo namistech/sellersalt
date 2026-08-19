@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       console.error("[RESOLVE_INITIAL_SNAPSHOT_ERROR]", snapErr);
     }
 
-    // Schedule 6-hour recurring surveillance
+    // Schedule periodic recurring market research refresh
     try {
       await startShopWatch({
         shopWatchId: watch.id,

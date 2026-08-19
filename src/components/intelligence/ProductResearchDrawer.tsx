@@ -387,7 +387,7 @@ export function ProductResearchDrawer({
               href={`/spy?shop=${encodeURIComponent(shop.shopName || shop.shopId)}`}
               className="text-xs text-ink-secondary hover:text-[#0E8F5D] font-medium"
             >
-              Spy on Shop →
+              Market Research →
             </Link>
           </div>
 

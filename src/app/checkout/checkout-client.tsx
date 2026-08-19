@@ -471,7 +471,7 @@ export function CheckoutClient({
                   <Zap className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-[#141B16]">Instant Access</strong>
-                    Full Opportunity Radar, competitor spy, and live Etsy scrapers unlock immediately.
+                    Full Opportunity Radar, market research, and live Etsy data feeds unlock immediately.
                   </div>
                 </div>
 

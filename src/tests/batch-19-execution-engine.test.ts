@@ -23,7 +23,6 @@ import { evaluatePublishedListing } from "@/services/intelligence/post-publish-m
 import { getOwnShopIntelligence } from "@/services/own-shop-intelligence";
 import { isTierSufficient, getFeatureAccess, PLAN_DEFINITIONS } from "@/services/plans/plan-capabilities";
 import { MARKETPLACE_DEFINITIONS } from "@/services/marketplaces/types";
-import { classifyEtsyUrl, extractListingIdFromUrl, extractShopNameFromUrl } from "../../extension/etsy/page-detector.js";
 
 test("Batch 19: Execution Engine & Operational State Machine", async (t) => {
   const orgId = `org_exec_test_${Date.now()}`;
@@ -309,33 +308,11 @@ test("Batch 19: Own Shop Operations & Optimization Queues", async (t) => {
   });
 });
 
-test("Batch 19: Extension MV3 Page Detector", async (t) => {
-  await t.test("classifies public Etsy listing URLs", () => {
-    const type = classifyEtsyUrl("https://www.etsy.com/listing/1429810482/handmade-leather-card-holder");
-    assert.equal(type, "ETSY_LISTING_PUBLIC");
-
-    const listingId = extractListingIdFromUrl("https://www.etsy.com/listing/1429810482/handmade-leather-card-holder");
-    assert.equal(listingId, "1429810482");
-  });
-
-  await t.test("classifies public Etsy shop URLs", () => {
-    const type = classifyEtsyUrl("https://www.etsy.com/shop/LayerSculpt3D");
-    assert.equal(type, "ETSY_SHOP_PUBLIC");
-
-    const shopName = extractShopNameFromUrl("https://www.etsy.com/shop/LayerSculpt3D");
-    assert.equal(shopName, "LayerSculpt3D");
-  });
-
-  await t.test("classifies Etsy search result URLs", () => {
-    const type = classifyEtsyUrl("https://www.etsy.com/search?q=leather+wallet");
-    assert.equal(type, "ETSY_SEARCH_RESULTS");
-  });
-
-  await t.test("classifies Etsy listing editor URLs", () => {
-    const type = classifyEtsyUrl("https://www.etsy.com/your/shops/me/listing-editor/edit/1429810482");
-    assert.equal(type, "ETSY_LISTING_EDITOR");
-  });
-});
+// The Extension MV3 Page Detector suite that previously lived here tested
+// extension/etsy/page-detector.js, part of the Etsy-hosted content script
+// removed during the Etsy Commercial API compliance remediation (see
+// src/tests/etsy-commercial-compliance-remediation.test.ts). The extension
+// no longer reads or classifies any Etsy page URL/DOM content.
 
 test("Batch 19: Plan Gating & Quota Consistency", async (t) => {
   await t.test("verifies Starter plan limits and capabilities", () => {

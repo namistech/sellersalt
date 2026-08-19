@@ -7,6 +7,7 @@ import {
   evaluateTrackingHealth,
 } from "@/services/tracking-engine";
 import { getOrgPackage } from "@/lib/plan-limits";
+import { getSnapshotRetentionCutoff } from "@/lib/data-retention";
 import type { TrackedListingSummary } from "@/types/tracking";
 
 export async function GET(req: NextRequest) {
@@ -144,6 +145,15 @@ export async function POST(req: NextRequest) {
           state: "active",
         },
       });
+
+      // Data minimization: prune history outside the widest tracking window
+      // any active plan actually sells (see src/lib/data-retention.ts).
+      const retentionCutoff = await getSnapshotRetentionCutoff();
+      await prisma.listingSnapshot
+        .deleteMany({
+          where: { listingWatchId: watch.id, capturedAt: { lt: retentionCutoff } },
+        })
+        .catch(() => {});
     }
 
     return NextResponse.json({ success: true, watch });

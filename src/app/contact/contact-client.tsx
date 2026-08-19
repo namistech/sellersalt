@@ -62,8 +62,8 @@ const FAQ_CATEGORIES: Array<{ category: string; contactSubject: string; items: F
     contactSubject: "Opportunity Research & Radar",
     items: [
       {
-        q: "What's the difference between Prospects, Opportunity Radar, and Spy on Competitor?",
-        a: "Prospects is keyword-driven product search across everything discovered. Opportunity Radar surfaces the highest-scoring finds automatically. Spy on Competitor takes a specific shop URL and pulls up its full Shop Intelligence profile — it works even for shops you haven't searched before.",
+        q: "What's the difference between Prospects, Opportunity Radar, and Market Research?",
+        a: "Prospects is keyword-driven product search across everything discovered. Opportunity Radar surfaces the highest-scoring finds automatically. Market Research takes a specific shop URL and pulls up its full Shop Intelligence profile — it works even for shops you haven't searched before.",
       },
       {
         q: "How is the Opportunity Score calculated?",

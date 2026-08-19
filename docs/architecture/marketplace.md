@@ -1,7 +1,21 @@
-Status: Draft
+> **SUPERSEDED (2026-08-19) — the direction below was implemented, and
+> since extended.** This was the pre-implementation technical plan. A
+> unified `src/marketplaces/core/` layer now sits on top of the two
+> connector systems described below (which still exist underneath,
+> exactly as this document anticipated) — see
+> `docs/SELLERSALT-MARKETPLACE-ARCHITECTURE.md` for the current interface,
+> registry API, and per-marketplace status, and
+> `docs/MARKETPLACE-INTEGRATION-MATRIX.md` for current capability details
+> (the "[VERIFY]" note below about an `EBAY_SELLER` connector is now
+> resolved — it's since been given an honest architecture-ready stub).
+> Retained as historical record of the original two-connector-system
+> analysis, which is still an accurate description of what
+> `src/connectors/` and `src/seller-channels/` do underneath the new layer.
+
+Status: Draft (historical — see notice above)
 Owner: [ASSUMPTION] Founder (Aliyan)
 Last Updated: 2026-08-14
-Decision State: Current-state (two-connector-system split) is factual. The normalization *architecture direction* is [LOCKED] (Decision 3, 2026-08-14). The concrete normalized-entity schema is explicitly [DEFERRED] until a second marketplace is selected — not a gap, a deliberate choice.
+Decision State: Current-state (two-connector-system split) is factual. The normalization *architecture direction* is [LOCKED] (Decision 3, 2026-08-14). The concrete normalized-entity schema is explicitly [DEFERRED] until a second marketplace is selected — not a gap, a deliberate choice. (This deferral has since been resolved — see notice above.)
 
 # Marketplace Architecture
 

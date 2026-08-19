@@ -111,9 +111,9 @@ export function AssistantDailyBriefing({
       metricLabel: "24h Velocity",
       interpretation: "Competitor listing moved up organic rank in personalized gifts category.",
       recommendation: "Inspect their listing tag slots and compare price corridor.",
-      actionLabel: "Spy on Competitor",
+      actionLabel: "Market Research",
       actionHref: "/spy",
-      icon: "👁️",
+      icon: "📊",
       priority: "HIGH",
     },
     {

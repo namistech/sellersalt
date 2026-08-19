@@ -11,8 +11,18 @@ export async function auditListing(params: {
   taxonomyId?: number;
   categoryPath?: string;
   save?: boolean;
-}): Promise<{ audit: CompleteListingSeoAudit }> {
-  return fetchJson<{ audit: CompleteListingSeoAudit }>("/api/seo/audit", {
+  /** Which marketplace's optimization rules to score against — defaults to
+   * "etsy" server-side when omitted. Ignored when `listingId` is set,
+   * since that mode always audits real fetched Etsy data. See
+   * src/marketplaces/core/optimization-rules.ts's getOptimizationRules(). */
+  marketplace?: string;
+  /** A connected SellerChannel id — when supplied, the server derives the
+   * marketplace from that channel's real platform instead of `marketplace`
+   * above (the connected store is authoritative). Ignored when `listingId`
+   * is set. */
+  sellerChannelId?: string;
+}): Promise<{ audit: CompleteListingSeoAudit; marketplace: string }> {
+  return fetchJson<{ audit: CompleteListingSeoAudit; marketplace: string }>("/api/seo/audit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),

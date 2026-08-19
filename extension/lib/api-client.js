@@ -41,39 +41,6 @@ export async function revokeExtensionSession(origin, token) {
   }
 }
 
-// Phase P3 — runs the existing SellerSalt SEO engine (src/services/seo-
-// engine.ts) against the title/tags/description extracted by the Etsy DOM
-// bridge. No scoring logic lives here or anywhere else in the extension —
-// this is a pure pass-through to the server's real audit.
-export async function requestSeoAudit(origin, token, input) {
-  const res = await fetch(`${origin}/api/extension/seo-audit`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || `SEO audit failed (${res.status}).`);
-  }
-  return data; // { audit: CompleteListingSeoAudit }
-}
-
-// Phase P4 — composes src/services/seo-engine.ts + src/services/keyword-
-// research.ts (both existing) into title/tag suggestions. No suggestion
-// or keyword logic lives in the extension itself.
-export async function requestSuggestions(origin, token, input) {
-  const res = await fetch(`${origin}/api/extension/suggestions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify(input),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || `Suggestions request failed (${res.status}).`);
-  }
-  return data;
-}
-
 // Batch 18 & 19 — Real-time Listing Opportunity Analysis
 export async function analyzeListing(origin, token, payload) {
   const res = await fetch(`${origin}/api/extension/analyze-listing`, {

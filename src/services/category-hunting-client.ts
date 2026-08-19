@@ -4,12 +4,34 @@ import type {
   CategorySearchResponse,
 } from "@/types/category-hunting";
 import type { EtsyRawTaxonomyNode, FlattenedTaxonomyNode } from "@/connectors/etsy/taxonomy";
+import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
 
-export async function fetchCategoryRoots(): Promise<{
-  roots: EtsyRawTaxonomyNode[];
-  totalNodes: number;
+interface MarketplaceFanOutResult<T> {
+  marketplace: string;
+  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
+  data?: T;
+  message?: string;
+}
+
+/** Single-marketplace category tree. Defaults to "etsy" server-side when
+ * `marketplace` is omitted. When the marketplace/capability isn't wired up
+ * yet, the API returns a structured CapabilityUnavailable instead of an
+ * empty tree — callers must check for that shape. */
+export async function fetchCategoryRoots(marketplace?: string): Promise<
+  | { roots: EtsyRawTaxonomyNode[]; totalNodes: number }
+  | CapabilityUnavailable
+> {
+  const qs = marketplace ? `?marketplace=${encodeURIComponent(marketplace)}` : "";
+  return fetchJson(`/api/categories${qs}`);
+}
+
+/** "All Marketplaces" fan-out — one status-tagged category tree per
+ * registered connector, via the same /api/categories route
+ * (marketplace=all branches server-side into fetchAllMarketplaceCategoryTree). */
+export async function fetchAllMarketplaceCategoryRoots(): Promise<{
+  results: MarketplaceFanOutResult<{ roots: EtsyRawTaxonomyNode[]; totalNodes: number }>[];
 }> {
-  return fetchJson("/api/categories");
+  return fetchJson("/api/categories?marketplace=all");
 }
 
 export async function searchCategoryTaxonomy(

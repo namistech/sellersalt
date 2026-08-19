@@ -29,13 +29,16 @@ import {
   IntelligenceCard,
   ViewSwitch,
   CountrySelector,
-  MarketplaceSelector,
+  Alert,
   HowItWorksGuide,
   HowItWorksToggle,
   type ViewMode,
 } from "@/components/ui";
+import { MarketplaceSelector, type MarketplaceSelectValue } from "@/components/ui/MarketplaceSelector";
+import { MarketplaceStatusCard, MARKETPLACE_LABELS, type MarketplaceResultStatus } from "@/components/intelligence/MarketplaceStatusCard";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { BarChart, HorizontalBarChart } from "@/components/data/charts";
+import { fetchJson } from "@/services/http";
 import {
   searchStandaloneKeywords,
   savePlannedKeyword,
@@ -49,6 +52,21 @@ import type {
   KeywordIntentClassification,
 } from "@/types/keyword-research";
 import { useResearchState } from "@/lib/research-persistence";
+
+/** True when the API returned a structured "this marketplace can't do this
+ * yet" response (src/marketplaces/core/availability.ts's
+ * CapabilityUnavailable) instead of real keyword results — never rendered
+ * as a zero-results search. */
+function isCapabilityUnavailable(res: unknown): res is { available: false; message: string } {
+  return typeof res === "object" && res !== null && (res as any).available === false;
+}
+
+interface KeywordMarketplaceFanOutResult {
+  marketplace: string;
+  status: MarketplaceResultStatus;
+  data?: KeywordSearchResponse;
+  message?: string;
+}
 
 type MatchMode = "contains" | "exact" | "starts" | "ends";
 type WordFilter = "all" | "1" | "2" | "3" | "4plus";
@@ -77,7 +95,10 @@ export default function KeywordResearchPage() {
   const [viewMode, setViewMode] = useResearchState<ViewMode>("kw_view_mode", "grid");
 
   // State
+  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("etsy");
   const [searchResponse, setSearchResponse] = useState<KeywordSearchResponse | null>(null);
+  const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
+  const [allMarketplaceResults, setAllMarketplaceResults] = useState<KeywordMarketplaceFanOutResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
@@ -144,17 +165,53 @@ export default function KeywordResearchPage() {
     setLoading(true);
     setError(null);
     setSearched(true);
+    setUnavailableMessage(null);
+    setSearchResponse(null);
+    setAllMarketplaceResults(null);
+
+    if (targetQuery) {
+      setQuery(targetQuery);
+    }
+
+    // "All Marketplaces" fans the same query out across every registered
+    // connector via the existing POST /api/keywords/search contract (the
+    // route branches on marketplace === "all" into
+    // fetchAllMarketplaceKeywordResearch) — same endpoint, a different
+    // request/response shape, not a second implementation.
+    if (marketplace === "all") {
+      try {
+        const data = await fetchJson<{ results: KeywordMarketplaceFanOutResult[] }>("/api/keywords/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: q,
+            minPrice: minPrice ? parseFloat(minPrice) : undefined,
+            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+            marketplace: "all",
+          }),
+        });
+        setAllMarketplaceResults(data.results);
+      } catch (err: any) {
+        setError(err.message || "Failed to research keyword across marketplaces.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await searchStandaloneKeywords({
         query: q,
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+        marketplace,
       });
-      setSearchResponse(response);
-      if (targetQuery) {
-        setQuery(targetQuery);
+      if (isCapabilityUnavailable(response)) {
+        setUnavailableMessage(response.message);
+        setSearchResponse(null);
+        return;
       }
+      setSearchResponse(response);
     } catch (err: any) {
       setError(err.message || "Failed to execute keyword research.");
       setSearchResponse(null);
@@ -269,18 +326,22 @@ export default function KeywordResearchPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
         title="Standalone Keyword Research"
-        description="Harvest high-ranking tags, long-tail search phrases, and competitor keywords cold across Etsy's live marketplace."
+        description={
+          marketplace === "all"
+            ? "Harvest high-ranking tags and long-tail search phrases across every connected marketplace at once."
+            : `Harvest high-ranking tags, long-tail search phrases, and competitor keywords cold across ${MARKETPLACE_LABELS[marketplace] ?? marketplace}'s live marketplace.`
+        }
         primaryAction={
           <div className="flex items-center gap-2.5">
             <CountrySelector size="sm" />
             <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
-            <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+            {marketplace === "etsy" && <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />}
           </div>
         }
       />
 
       {/* Multi-Marketplace Selector */}
-      <MarketplaceSelector className="w-fit" />
+      <MarketplaceSelector className="w-fit" selectedId={marketplace} onChange={(id) => setMarketplace(id)} />
 
       <HowItWorksGuide
         isOpen={showGuide}
@@ -368,6 +429,52 @@ export default function KeywordResearchPage() {
           </div>
           <p className="text-xs">{error}</p>
         </Card>
+      )}
+
+      {/* Capability-Unavailable State (single marketplace, not yet wired up) */}
+      {unavailableMessage && (
+        <Alert variant="info" title="Not available for this marketplace yet">
+          {unavailableMessage}
+        </Alert>
+      )}
+
+      {/* All Marketplaces Results — one independently status-tagged card per
+          marketplace (AVAILABLE / PARTIAL / UNAVAILABLE / NOT_IMPLEMENTED).
+          One connector failing never hides the marketplaces that succeeded. */}
+      {allMarketplaceResults && (
+        <div className="space-y-3">
+          {allMarketplaceResults.map((result) => (
+            <MarketplaceStatusCard
+              key={result.marketplace}
+              marketplace={result.marketplace}
+              status={result.status}
+              message={result.message}
+            >
+              {result.data && result.data.keywords.length > 0 ? (
+                <div className="space-y-2">
+                  <Text size="body-sm" color="secondary">
+                    {result.data.keywords.length} keyword{result.data.keywords.length === 1 ? "" : "s"} harvested ·{" "}
+                    {result.data.summary.competitionLevel.replace("_", " ")} competition
+                  </Text>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.data.keywords.slice(0, 12).map((k) => (
+                      <span
+                        key={k.term}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${COMPETITION_COLORS[k.competitionLevel]}`}
+                      >
+                        {k.term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Text size="body-sm" color="secondary">
+                  No keywords harvested for &quot;{query}&quot; on {MARKETPLACE_LABELS[result.marketplace] ?? result.marketplace}.
+                </Text>
+              )}
+            </MarketplaceStatusCard>
+          ))}
+        </div>
       )}
 
       {/* Results View */}
@@ -1009,7 +1116,7 @@ export default function KeywordResearchPage() {
       )}
 
       {/* Empty Initial State */}
-      {!searchResponse && !loading && !error && (
+      {!searchResponse && !allMarketplaceResults && !loading && !error && !unavailableMessage && (
         <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16 space-y-3">
           <Tag className="h-10 w-10 text-ink-tertiary mx-auto" />
           <Heading as="h3" size="h4">

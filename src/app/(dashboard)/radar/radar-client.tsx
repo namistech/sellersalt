@@ -472,7 +472,7 @@ export function RadarClient({
             className="gap-1.5 shadow-xs"
           >
             <Eye className="h-4 w-4" />
-            Spy on Shop
+            Market Research
           </Button>
           <Button
             variant="primary"

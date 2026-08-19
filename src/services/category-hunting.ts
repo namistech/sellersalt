@@ -8,6 +8,10 @@
 
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient, etsyCache, ETSY_CACHE_TTL } from "@/connectors/etsy";
+import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
+import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
+import type { MarketplaceId } from "@/marketplaces/core/types";
+import { fanOutMarketplaceRequest, type MarketplaceFanOutResult } from "@/marketplaces/core/research-pipeline";
 import {
   type EtsyRawTaxonomyNode,
   type FlattenedTaxonomyNode,
@@ -199,6 +203,54 @@ export function computeCategoryStrategicAdvice(
 // --------------------------------------------------------------------------
 // Core Taxonomy Traversal & Intelligence Engine
 // --------------------------------------------------------------------------
+
+/** Marketplace-aware entry point — checks the registry's `categoryTaxonomy`
+ * capability first. `fetchCategoryTree`/`searchCategories` below keep their
+ * original signatures unchanged since they're also called directly by
+ * src/app/(dashboard)/categories/page.tsx and
+ * src/services/assistant/tool-registry.ts. */
+export async function fetchMarketplaceCategoryTree(
+  marketplace: MarketplaceId,
+  organizationId: string
+): Promise<
+  | { roots: EtsyRawTaxonomyNode[]; totalNodes: number; flattenedMap: Map<number, FlattenedTaxonomyNode> }
+  | CapabilityUnavailable
+> {
+  const unavailable = checkMarketplaceCapability(marketplace, "categoryTaxonomy");
+  if (unavailable) return unavailable;
+
+  if (marketplace !== "etsy") {
+    return {
+      available: false,
+      marketplace,
+      capability: "categoryTaxonomy",
+      reason: "CONNECTOR_NOT_IMPLEMENTED",
+      message: `${marketplace} category taxonomy has no implementation wired up yet.`,
+    };
+  }
+
+  return fetchCategoryTree(organizationId);
+}
+
+/** "All Marketplaces" fan-out — reuses the same generic helper the product
+ * research pipeline established
+ * (src/marketplaces/core/research-pipeline.ts's `fanOutMarketplaceRequest`).
+ * Strips `flattenedMap` (a `Map`, not JSON-serializable) down to a plain
+ * `{ roots, totalNodes }` payload — the same shape the single-marketplace
+ * `/api/categories` route already returns to the client. */
+export async function fetchAllMarketplaceCategoryTree(
+  marketplaces: MarketplaceId[],
+  organizationId: string
+): Promise<MarketplaceFanOutResult<{ roots: EtsyRawTaxonomyNode[]; totalNodes: number }>[]> {
+  return fanOutMarketplaceRequest<{ roots: EtsyRawTaxonomyNode[]; totalNodes: number }>(
+    marketplaces,
+    async (marketplace) => {
+      const result = await fetchMarketplaceCategoryTree(marketplace, organizationId);
+      if (!("roots" in result)) return result;
+      return { roots: result.roots, totalNodes: result.totalNodes };
+    }
+  );
+}
 
 export async function fetchCategoryTree(organizationId: string): Promise<{
   roots: EtsyRawTaxonomyNode[];

@@ -434,7 +434,7 @@ export function getPublishedListingNextAction(inputs: PublishedListingActionInpu
 
   const signal = `Published listing performing within projected velocity parameters.`;
   const interpretation = `Search placement is healthy with steady organic impression retention.`;
-  const whyYouShouldCare = `Ongoing surveillance ensures immediate notification if competitor price shifts threaten listing rank.`;
+  const whyYouShouldCare = `Ongoing tracking ensures immediate notification if market price shifts threaten listing rank.`;
 
   return {
     id: "maintain-listing-monitoring",
@@ -444,7 +444,7 @@ export function getPublishedListingNextAction(inputs: PublishedListingActionInpu
     interpretation,
     whyYouShouldCare,
     rationale: `${signal} ${interpretation}`,
-    actionLabel: "View Surveillance",
+    actionLabel: "View Market Research",
     actionHref: "/spy/tracked",
     actionType: "NAVIGATE",
     urgency: "LOW",

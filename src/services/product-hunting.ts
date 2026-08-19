@@ -9,6 +9,9 @@
 import { prisma } from "@/lib/db";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient, etsyCache, ETSY_CACHE_TTL } from "@/connectors/etsy";
+import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
+import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
+import type { MarketplaceId } from "@/marketplaces/core/types";
 import type {
   EtsySearchFilters,
   NormalizedProductListing,
@@ -264,7 +267,40 @@ export function computeProductOpportunity(params: {
 
 // --------------------------------------------------------------------------
 // Public Marketplace Search Provider
+//
+// Entry point is `searchMarketplaceProducts(marketplace, ...)` — it checks
+// the marketplace registry's `research` capability first and returns a
+// structured CapabilityUnavailable for anything that isn't Etsy today,
+// rather than attempting Etsy-only logic against another marketplace. The
+// Etsy code path below (searchEtsyMarketplaceProducts) is completely
+// unchanged from before this migration — same raw Etsy client, same
+// caching, same scoring — this only adds a marketplace check in front of it.
 // --------------------------------------------------------------------------
+
+export async function searchMarketplaceProducts(
+  marketplace: MarketplaceId,
+  organizationId: string,
+  filters: EtsySearchFilters = {}
+): Promise<ProductHuntingSearchResponse | CapabilityUnavailable> {
+  const unavailable = checkMarketplaceCapability(marketplace, "research");
+  if (unavailable) return unavailable;
+
+  if (marketplace !== "etsy") {
+    // Defensive: a capability flag says available but no branch exists here
+    // yet. Should not happen (only Etsy's connector sets research: true
+    // today) — never silently fall through to Etsy-only logic for another
+    // marketplace's data.
+    return {
+      available: false,
+      marketplace,
+      capability: "research",
+      reason: "CONNECTOR_NOT_IMPLEMENTED",
+      message: `${marketplace} product search has no implementation wired up yet.`,
+    };
+  }
+
+  return searchEtsyMarketplaceProducts(organizationId, filters);
+}
 
 export async function searchEtsyMarketplaceProducts(
   organizationId: string,

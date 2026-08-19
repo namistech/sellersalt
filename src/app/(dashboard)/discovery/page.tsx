@@ -129,7 +129,7 @@ export default async function DiscoveryPage() {
                 Open <ArrowRight className="h-3 w-3" />
               </span>
             </div>
-            <div className="font-bold text-sm text-ink mb-1">Competitor Spy</div>
+            <div className="font-bold text-sm text-ink mb-1">Market Research</div>
             <Text size="body-sm" color="secondary">
               Daily sales velocity tracking, catalog yield auditing, and breakout shop alerts.
             </Text>

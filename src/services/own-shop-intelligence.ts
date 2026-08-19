@@ -156,7 +156,7 @@ export async function getOwnShopIntelligence(
     orderAnalytics: {
       state: hasTransactions ? "AVAILABLE" : "REQUIRES_PERMISSION",
       label: "Order & Financial Analytics",
-      details: "Requires transactions_r and billing_r OAuth permissions for direct receipt sync.",
+      details: "Requires transactions_r OAuth permission for direct receipt sync.",
     },
   };
 

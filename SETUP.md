@@ -1,3 +1,15 @@
+> **PARTIALLY SUPERSEDED (2026-08-19).** This document predates the
+> SellerSalt rebrand (still says `anadash-web`/`anadash.netdrix.com` —
+> the actual Coolify resources were renamed; see root `CLAUDE.md`'s
+> "Repo & deployment" section for the current resource names, UUIDs, and
+> domains) and predates the marketplace abstraction (its "Adding
+> marketplace #2" section describes the old `src/connectors/registry.ts`-
+> only pattern — see `docs/SELLERSALT-MARKETPLACE-ARCHITECTURE.md` "How
+> to add a new marketplace" for the current process instead). The general
+> Coolify deployment shape (Postgres + Redis + separate web/worker
+> resources, migrate-on-deploy) is still directionally correct. For
+> current infrastructure specifics, always defer to root `CLAUDE.md`.
+
 # Deploying SellerSalt on Coolify
 
 SellerSalt runs as **three Coolify resources** under one project, plus your Etsy API

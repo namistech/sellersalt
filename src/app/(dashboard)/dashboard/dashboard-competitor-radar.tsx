@@ -31,11 +31,11 @@ export function DashboardCompetitorRadar({ competitors }: DashboardCompetitorRad
           <div className="py-6">
             <EmptyState
               icon={<Radar />}
-              title="No competitor shops tracked yet"
-              description="Spy on any Etsy competitor URL to build a real historical sales & review trend over time."
+              title="No shops tracked yet"
+              description="Track any Etsy shop URL to build a real historical sales & review trend over time."
               action={
                 <Button variant="primary" size="compact" href="/spy">
-                  Spy on a shop
+                  Track a shop
                 </Button>
               }
             />

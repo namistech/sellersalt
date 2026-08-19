@@ -1,10 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
-  classifyEtsyUrl,
-  extractListingIdFromUrl,
-  extractShopNameFromUrl,
-} from "../../extension/etsy/page-detector.js";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 import { auditListingSeo } from "@/services/seo-engine";
 import {
@@ -17,31 +12,11 @@ import { getFeatureAccess, PLAN_DEFINITIONS } from "@/services/plans/plan-capabi
 import { MARKETPLACE_DEFINITIONS } from "@/services/marketplaces/types";
 import type { ExtensionAnalyzeListingRequest } from "@/services/extension/contract";
 
-test("Batch 20: Extension Page Classification & Extraction", async (t) => {
-  await t.test("classifies public listing URLs and extracts numeric ID", () => {
-    const url = "https://www.etsy.com/listing/1429810482/handmade-leather-card-holder?click_key=abc&click_sum=xyz";
-    assert.equal(classifyEtsyUrl(url), "ETSY_LISTING_PUBLIC");
-    assert.equal(extractListingIdFromUrl(url), "1429810482");
-  });
-
-  await t.test("classifies public shop URLs and extracts shop name", () => {
-    const url = "https://www.etsy.com/shop/LayerSculpt3D?ref=simple-shop-header";
-    assert.equal(classifyEtsyUrl(url), "ETSY_SHOP_PUBLIC");
-    assert.equal(extractShopNameFromUrl(url), "LayerSculpt3D");
-  });
-
-  await t.test("classifies search result pages and category exploration", () => {
-    assert.equal(classifyEtsyUrl("https://www.etsy.com/search?q=ceramic+mug"), "ETSY_SEARCH_RESULTS");
-    assert.equal(classifyEtsyUrl("https://www.etsy.com/c/home-and-living"), "ETSY_SEARCH_RESULTS");
-  });
-
-  await t.test("classifies listing editor in Etsy Shop Manager", () => {
-    assert.equal(
-      classifyEtsyUrl("https://www.etsy.com/your/shops/me/listing-editor/edit/1429810482"),
-      "ETSY_LISTING_EDITOR"
-    );
-  });
-});
+// The Extension Page Classification & Extraction suite that previously
+// lived here tested extension/etsy/page-detector.js, part of the
+// Etsy-hosted content script removed during the Etsy Commercial API
+// compliance remediation (see
+// src/tests/etsy-commercial-compliance-remediation.test.ts).
 
 test("Batch 20: SEO Audit Input Parser Robustness & Shop Redirection", async (t) => {
   await t.test("parses numeric listing ID cleanly", () => {

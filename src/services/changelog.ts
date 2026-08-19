@@ -19,12 +19,12 @@ export const RELEASES: ReleaseEntry[] = [
   {
     version: "v1.7.0",
     date: "August 16, 2026",
-    headline: "Competitor Surveillance 6-Hour Engine & Research Dossiers",
-    summary: "Complete redesign of competitor surveillance with automated 6-hour snapshot capture, robust image pipeline with SVG fallbacks, universal scoring engine, and public roadmap.",
+    headline: "Market Research Engine & Research Dossiers",
+    summary: "Complete redesign of the market research engine with automated periodic snapshot capture, robust image pipeline with SVG fallbacks, universal scoring engine, and public roadmap.",
     changes: [
       {
         type: "NEW",
-        text: "Automated 6-Hour Longitudinal Surveillance for competitor shops and high-velocity listings.",
+        text: "Automated longitudinal market research tracking for Etsy shops and high-velocity listings.",
       },
       {
         type: "NEW",
@@ -44,7 +44,7 @@ export const RELEASES: ReleaseEntry[] = [
       },
       {
         type: "FIXED",
-        text: "Fixed Surveillance Engine 500 error on competitor links by adding resilient shop name resolution and graceful quota fallbacks.",
+        text: "Fixed Market Research Engine 500 error on shop links by adding resilient shop name resolution and graceful quota fallbacks.",
       },
       {
         type: "FIXED",

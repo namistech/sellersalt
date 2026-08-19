@@ -99,7 +99,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
       }
     }
 
-    // Schedule 6-hour recurring surveillance
+    // Schedule periodic research refresh
     try {
       await startShopWatch({
         shopWatchId: watch.id,
@@ -115,7 +115,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ shopEx
       ok: true,
       success: true,
       watch,
-      message: `Started 6-hour competitor surveillance for ${shopName}.`,
+      message: `Started market research tracking for ${shopName}.`,
     });
   } catch (err: any) {
     console.error("[SHOP_TRACK_POST_ERROR]", err);

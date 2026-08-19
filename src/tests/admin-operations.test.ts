@@ -4,6 +4,8 @@ import { isAdminEmail } from "../lib/is-admin";
 
 test("Task 1 & Security: Admin Authorization & Gatekeeper", async (t) => {
   const originalAdminEmail = process.env.ADMIN_EMAIL;
+  const originalAdminEmails = process.env.ADMIN_EMAILS;
+  process.env.ADMIN_EMAILS = "owner@sellersalt.com,admin@sellersalt.com";
   process.env.ADMIN_EMAIL = "owner@sellersalt.com,admin@sellersalt.com";
 
   await t.test("allows authorized admin emails", () => {
@@ -21,6 +23,7 @@ test("Task 1 & Security: Admin Authorization & Gatekeeper", async (t) => {
   });
 
   process.env.ADMIN_EMAIL = originalAdminEmail;
+  process.env.ADMIN_EMAILS = originalAdminEmails;
 });
 
 test("Task 1 & 2: Telemetry & Metric Math Consistency", async (t) => {

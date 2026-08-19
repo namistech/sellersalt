@@ -23,8 +23,12 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/shell";
 import { Card, Input, Button, Heading, Text, Badge } from "@/components/ui";
+import { MarketplaceSelector, type MarketplaceSelectValue } from "@/components/ui/MarketplaceSelector";
+import { MARKETPLACE_LABELS } from "@/components/intelligence/MarketplaceStatusCard";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { auditListing, auditShopSeo, addSeoAuditToPlanner } from "@/services/seo-engine-client";
+import { getOptimizationRules } from "@/marketplaces/core/optimization-rules";
+import { marketplaceFromSellerChannelPlatform, type MarketplaceId } from "@/marketplaces/core/types";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 import { parseEtsyShopInput } from "@/lib/etsy-url-parser";
 import type { CompleteListingSeoAudit, SeoIssueSeverity, SeoGrade } from "@/types/seo";
@@ -68,9 +72,46 @@ function SeoAuditContent() {
   const [draftDescription, setDraftDescription] = useState("");
   const [draftMaterialsString, setDraftMaterialsString] = useState("");
   const [draftTaxonomyId, setDraftTaxonomyId] = useState("");
+  // Which marketplace's title/tag rules to score the draft against — a
+  // single draft, not a fan-out, so "All Marketplaces" isn't offered here.
+  // See src/marketplaces/core/optimization-rules.ts's getOptimizationRules().
+  const [draftMarketplace, setDraftMarketplace] = useState<MarketplaceSelectValue>("etsy");
+  // A connected seller channel, when picked, is authoritative over the
+  // manual MarketplaceSelector above — the draft is being scored for a real
+  // store, so its real platform decides the marketplace, not a guess.
+  const [connectedChannels, setConnectedChannels] = useState<
+    { id: string; platform: string; label: string; storeUrl: string }[]
+  >([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>("");
+  const effectiveDraftMarketplace: MarketplaceId = (() => {
+    if (selectedChannelId) {
+      const channel = connectedChannels.find((c) => c.id === selectedChannelId);
+      const fromChannel = channel && marketplaceFromSellerChannelPlatform(channel.platform);
+      if (fromChannel) return fromChannel;
+    }
+    return (draftMarketplace === "all" ? "etsy" : draftMarketplace) as MarketplaceId;
+  })();
+  const draftRules = getOptimizationRules(effectiveDraftMarketplace);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/seller-channels")
+      .then((res) => res.json())
+      .then((data: { channels?: { id: string; platform: string; label: string; storeUrl: string }[] }) => {
+        if (!cancelled) setConnectedChannels(data.channels || []);
+      })
+      .catch(() => {
+        // Fail closed to "no connected stores" rather than blocking the
+        // Draft Playground's manual marketplace picker.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Audit States
   const [auditResult, setAuditResult] = useState<CompleteListingSeoAudit | null>(null);
+  const [resultMarketplace, setResultMarketplace] = useState<MarketplaceId>("etsy");
   const [shopAuditResult, setShopAuditResult] = useState<CompleteShopSeoAudit | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +130,7 @@ function SeoAuditContent() {
     try {
       const res = await auditListing({ listingId: String(id) });
       setAuditResult(res.audit);
+      setResultMarketplace((res.marketplace as MarketplaceId) || "etsy");
       setShopAuditResult(null);
     } catch (err: any) {
       setError(err.message || "Failed to audit Etsy listing.");
@@ -181,8 +223,14 @@ function SeoAuditContent() {
         description: draftDescription,
         materials,
         taxonomyId: draftTaxonomyId ? Number(draftTaxonomyId) : undefined,
+        // A selected connected store is authoritative server-side too (the
+        // route re-resolves it from sellerChannelId) — sending marketplace
+        // as well just keeps a sane fallback if the channel lookup misses.
+        sellerChannelId: selectedChannelId || undefined,
+        marketplace: draftMarketplace === "all" ? "etsy" : draftMarketplace,
       });
       setAuditResult(res.audit);
+      setResultMarketplace((res.marketplace as MarketplaceId) || "etsy");
       setShopAuditResult(null);
     } catch (err: any) {
       setError(err.message || "Failed to audit draft.");
@@ -208,8 +256,8 @@ function SeoAuditContent() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       <PageHeader
-        title="SEO Research & Audit Engine"
-        description="Run deterministic 0–100 algorithmic audits on active Etsy listings, drafts, or whole shops based on Etsy search ranking factors."
+        title="Listing Optimization & SEO Audit"
+        description="Run deterministic 0–100 algorithmic listing-optimization audits on active listings, drafts, or whole shops — scored against each marketplace's real ranking rules (Etsy's are fully live today; the Draft Playground supports scoring against any registered marketplace)."
       />
 
       {/* Bespoke Dark Surface Composition for SEO Audit Section (Part 22) */}
@@ -221,26 +269,48 @@ function SeoAuditContent() {
                 <ShieldCheck className="h-3.5 w-3.5" />
               </span>
               <span className="text-xs font-bold uppercase tracking-wider text-[#16C784]">
-                Etsy Algorithmic Ranking Rubric
+                {activeTab === "DRAFT_PLAYGROUND"
+                  ? `${MARKETPLACE_LABELS[effectiveDraftMarketplace] ?? effectiveDraftMarketplace} Listing Optimization Rubric`
+                  : "Etsy Algorithmic Ranking Rubric"}
               </span>
               <DataProvenanceBadge type="SELLERSALT_SCORE" />
             </div>
             <h2 className="text-xl font-bold text-white tracking-tight">
-              Deterministic 6-Pillar SEO Quality Breakdown
+              Deterministic 6-Pillar Listing Quality Breakdown
             </h2>
             <p className="text-xs text-[#D1DCD2] leading-relaxed">
-              Audits title character utilization (140 max), 13-tag completeness, tag-to-title synergy, keyword density, and shop-level merchandising.
+              {activeTab === "DRAFT_PLAYGROUND" ? (
+                <>
+                  Audits title character utilization
+                  {draftRules.titleMaxLength !== null ? ` (${draftRules.titleMaxLength} max)` : ""}
+                  {draftRules.tagCount !== null ? `, ${draftRules.tagCount}-tag completeness` : ", tag completeness"},
+                  tag-to-title synergy, and keyword density
+                  {draftRules.titleMaxLength === null && draftRules.tagCount === null
+                    ? ` — ${MARKETPLACE_LABELS[effectiveDraftMarketplace] ?? effectiveDraftMarketplace} has no published title/tag limits yet, so those checks are skipped rather than guessed.`
+                    : "."}
+                </>
+              ) : (
+                "Audits title character utilization (140 max), 13-tag completeness, tag-to-title synergy, keyword density, and shop-level merchandising."
+              )}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
               <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Tag Target</div>
-              <div className="text-lg font-mono font-extrabold text-[#16C784]">13/13</div>
+              <div className="text-lg font-mono font-extrabold text-[#16C784]">
+                {activeTab === "DRAFT_PLAYGROUND" ? (draftRules.tagCount !== null ? `${draftRules.tagCount}/${draftRules.tagCount}` : "N/A") : "13/13"}
+              </div>
             </div>
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
               <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Title Target</div>
-              <div className="text-lg font-mono font-extrabold text-white">120–140c</div>
+              <div className="text-lg font-mono font-extrabold text-white">
+                {activeTab === "DRAFT_PLAYGROUND"
+                  ? draftRules.titleMinRecommended !== null && draftRules.titleMaxLength !== null
+                    ? `${draftRules.titleMinRecommended}–${draftRules.titleMaxLength}c`
+                    : "N/A"
+                  : "120–140c"}
+              </div>
             </div>
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
               <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Synergy</div>
@@ -352,11 +422,52 @@ function SeoAuditContent() {
         {/* Tab 3: Draft Playground */}
         {activeTab === "DRAFT_PLAYGROUND" && (
           <form onSubmit={handleAuditDraft} className="space-y-4">
+            {connectedChannels.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="font-bold text-xs text-ink">Connected Store (optional)</label>
+                <select
+                  value={selectedChannelId}
+                  onChange={(e) => setSelectedChannelId(e.target.value)}
+                  className="w-full sm:w-auto bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-2 text-xs font-medium text-ink"
+                >
+                  <option value="">— Manual marketplace (below) —</option>
+                  {connectedChannels.map((c) => {
+                    const mp = marketplaceFromSellerChannelPlatform(c.platform);
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.label} ({mp ? MARKETPLACE_LABELS[mp] ?? mp : c.platform})
+                      </option>
+                    );
+                  })}
+                </select>
+                {selectedChannelId && (
+                  <p className="text-[11px] text-ink-tertiary">
+                    Scoring against {MARKETPLACE_LABELS[effectiveDraftMarketplace] ?? effectiveDraftMarketplace}'s real rules —
+                    determined by this connected store, not the marketplace picker below.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className={`space-y-1.5 ${selectedChannelId ? "opacity-50 pointer-events-none" : ""}`}>
+              <label className="font-bold text-xs text-ink">Score Draft Against</label>
+              <MarketplaceSelector
+                className="w-fit"
+                selectedId={draftMarketplace}
+                onChange={(id) => setDraftMarketplace(id)}
+                allowAll={false}
+              />
+            </div>
+
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <label className="font-bold text-ink">Listing Title ({draftTitle.length}/140 chars)</label>
-                <span className={`font-mono text-[11px] ${draftTitle.length > 140 ? "text-red-600 font-bold" : "text-ink-tertiary"}`}>
-                  {140 - draftTitle.length} chars left
+                <label className="font-bold text-ink">
+                  Listing Title {draftRules.titleMaxLength !== null ? `(${draftTitle.length}/${draftRules.titleMaxLength} chars)` : `(${draftTitle.length} chars)`}
+                </label>
+                <span className={`font-mono text-[11px] ${draftRules.titleMaxLength !== null && draftTitle.length > draftRules.titleMaxLength ? "text-red-600 font-bold" : "text-ink-tertiary"}`}>
+                  {draftRules.titleMaxLength !== null
+                    ? `${draftRules.titleMaxLength - draftTitle.length} chars left`
+                    : `No published limit yet for ${MARKETPLACE_LABELS[draftRules.marketplace] ?? draftRules.marketplace}`}
                 </span>
               </div>
               <Input
@@ -370,7 +481,9 @@ function SeoAuditContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="font-bold text-xs text-ink">
-                  Etsy Tags (Comma or line separated, up to 13 tags)
+                  {draftRules.tagCount !== null
+                    ? `Tags (Comma or line separated, up to ${draftRules.tagCount} tags)`
+                    : "Tags (Comma or line separated)"}
                 </label>
                 <textarea
                   rows={3}
@@ -678,6 +791,7 @@ function SeoAuditContent() {
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${GRADE_COLORS[auditResult.grade]}`}>
                     Grade {auditResult.grade}
                   </span>
+                  <Badge variant="neutral">{MARKETPLACE_LABELS[resultMarketplace] ?? resultMarketplace}</Badge>
                   <DataProvenanceBadge type="SELLERSALT_SCORE" />
                   {auditResult.listingId && (
                     <span className="text-xs text-ink-tertiary font-mono">
@@ -822,7 +936,7 @@ function SeoAuditContent() {
                   <Check className="h-4 w-4 text-[#0E8F5D]" /> Matching Phrases in Title & Tags ({auditResult.synergyAnalysis.matchingPhrases.length})
                 </div>
                 <p className="text-[11px] text-ink-secondary">
-                  Exact keywords appearing in both title and tags maximize Etsy ranking power.
+                  Exact keywords appearing in both title and tags maximize ranking power on {MARKETPLACE_LABELS[resultMarketplace] ?? resultMarketplace}.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {auditResult.synergyAnalysis.matchingPhrases.map((p) => (
@@ -893,10 +1007,10 @@ function SeoAuditContent() {
         <Card padding="lg" className="border-line bg-white shadow-xs text-center py-16 space-y-3">
           <ShieldCheck className="h-10 w-10 text-ink-tertiary mx-auto" />
           <Heading as="h3" size="h4">
-            Audit Any Etsy Listing, Draft, or Entire Shop
+            Audit Any Listing, Draft, or Shop
           </Heading>
           <Text size="body-sm" color="secondary" className="max-w-md mx-auto">
-            Paste any active Etsy Listing ID, URL, or Shop Name above to evaluate character utilization, 13-tag slots, keyword density, and visual merchandising.
+            Paste an active Etsy Listing ID, URL, or Shop Name above to pull live data — or use Draft Playground to score listing content against any registered marketplace's optimization rules.
           </Text>
         </Card>
       )}

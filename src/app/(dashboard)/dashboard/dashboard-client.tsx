@@ -50,7 +50,7 @@ export function DashboardClient({ initialData, connectors, userName, organizatio
         primaryAction={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" leadingIcon={<Radar className="h-4 w-4 text-accent" />} href="/spy">
-              Spy on Competitor
+              Market Research
             </Button>
             <Button variant="primary" leadingIcon={<Plus className="h-4 w-4" />} onClick={() => setDrawerOpen(true)}>
               New search
@@ -94,7 +94,7 @@ export function DashboardClient({ initialData, connectors, userName, organizatio
             href="/spy"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
           >
-            <span>👁️</span> Spy on Competitor
+            <span>📊</span> Market Research
           </Link>
           <Link
             href="/planner"

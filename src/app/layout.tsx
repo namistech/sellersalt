@@ -4,9 +4,9 @@ import { Providers } from "./providers";
 import { getSettings } from "@/lib/app-settings";
 
 const BASE_URL = process.env.NEXTAUTH_URL || process.env.APP_URL || "https://sellersalt.com";
-const DEFAULT_TITLE = "SellerSalt — Etsy Competitor Intelligence & Opportunity Radar";
+const DEFAULT_TITLE = "SellerSalt — Etsy Listing Studio, SEO Auditing & Market Research";
 const DEFAULT_DESCRIPTION =
-  "First-principles Etsy seller intelligence. Discover winning products, audit 13-tag SEO health, track competitor sales velocity, and bridge research into Etsy listing execution.";
+  "Etsy seller listing optimization and productivity platform. Create approved listing drafts, audit 13-tag SEO taxonomy compliance, synchronize order receipts, and discover marketplace product opportunities.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings(["seo_default_title", "seo_default_description", "seo_og_image_url", "app_favicon_url"]);
@@ -25,11 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: [
       "Etsy SEO tool",
       "Etsy keyword research",
-      "Etsy competitor analysis",
-      "Etsy shop tracker",
-      "Etsy opportunity radar",
+      "Etsy listing studio",
+      "Etsy taxonomy audit",
+      "Etsy market research",
       "Etsy listing generator",
-      "Etsy sales estimator",
+      "Etsy order sync",
     ],
     authors: [{ name: "SellerSalt" }],
     creator: "SellerSalt",
@@ -76,7 +76,7 @@ const STRUCTURED_DATA = {
       "name": "SellerSalt",
       "url": "https://sellersalt.com",
       "logo": "https://sellersalt.com/icon.png",
-      "description": "Etsy e-commerce market intelligence and competitor opportunity surveillance platform.",
+      "description": "Etsy seller listing optimization, SEO taxonomy auditing, and marketplace research platform.",
       "sameAs": ["https://twitter.com/sellersalt"],
     },
     {

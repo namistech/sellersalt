@@ -10,6 +10,11 @@ import { prisma } from "@/lib/db";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
 import { normalizeTerm } from "@/services/keyword-research";
+import {
+  ETSY_OPTIMIZATION_RULES,
+  type MarketplaceOptimizationRules,
+} from "@/marketplaces/core/optimization-rules";
+import { marketplaceFromSellerChannelPlatform, type MarketplaceId } from "@/marketplaces/core/types";
 import type {
   CompleteListingSeoAudit,
   ListingSeoAuditInput,
@@ -29,25 +34,39 @@ import type {
 // Core Deterministic SEO Audit Engine
 // --------------------------------------------------------------------------
 
-export function auditListingSeo(input: {
-  title?: string;
-  tags?: string[];
-  description?: string;
-  materials?: string[];
-  taxonomyId?: number;
-  categoryPath?: string;
-  attributes?: Record<string, any>;
-  imageUrl?: string | null;
-  listingUrl?: string;
-  shopName?: string;
-  price?: number;
-  listingId?: string;
-}): CompleteListingSeoAudit {
+export function auditListingSeo(
+  input: {
+    title?: string;
+    tags?: string[];
+    description?: string;
+    materials?: string[];
+    taxonomyId?: number;
+    categoryPath?: string;
+    attributes?: Record<string, any>;
+    imageUrl?: string | null;
+    listingUrl?: string;
+    shopName?: string;
+    price?: number;
+    listingId?: string;
+  },
+  rules: MarketplaceOptimizationRules = ETSY_OPTIMIZATION_RULES
+): CompleteListingSeoAudit {
   const rawTitle = (input.title || "").trim();
   const rawTags = Array.isArray(input.tags) ? input.tags.map((t) => String(t).trim()).filter(Boolean) : [];
   const rawDesc = (input.description || "").trim();
   const rawMaterials = Array.isArray(input.materials) ? input.materials.map((m) => String(m).trim()).filter(Boolean) : [];
   const taxonomyId = input.taxonomyId ? Number(input.taxonomyId) : undefined;
+
+  // Marketplace-neutral thresholds — default (ETSY_OPTIMIZATION_RULES)
+  // reduces to exactly 140/120/80/70 and 13/10/20, identical to this
+  // engine's original hardcoded Etsy behavior. A marketplace with unknown
+  // rules (titleMaxLength/tagCount: null) skips the length/count-dependent
+  // checks entirely rather than scoring against a guessed limit.
+  const marketplaceLabel = rules.marketplace.charAt(0).toUpperCase() + rules.marketplace.slice(1);
+  const titleMax = rules.titleMaxLength;
+  const titleOptimalMin = titleMax !== null ? Math.round(titleMax * (120 / 140)) : null;
+  const titlePartialMin = titleMax !== null ? Math.round(titleMax * (80 / 140)) : null;
+  const titleTooShortMax = titleMax !== null ? Math.round(titleMax * (70 / 140)) : null;
 
   const diagnostics: SeoDiagnostic[] = [];
   const recommendations: SeoRecommendation[] = [];
@@ -59,20 +78,23 @@ export function auditListingSeo(input: {
   let titleScore = 0;
   const titleDiagnostics: SeoDiagnostic[] = [];
 
-  // Title Length Check (10 pts)
+  // Title Length Check (10 pts) — skipped (0 pts, no diagnostic) when this
+  // marketplace's title limit isn't known yet.
   let isOptimalLength = false;
-  if (titleLength >= 120 && titleLength <= 140) {
+  if (titleMax === null || titleOptimalMin === null || titlePartialMin === null || titleTooShortMax === null) {
+    // Unknown rules for this marketplace — do not score or fabricate a limit.
+  } else if (titleLength >= titleOptimalMin && titleLength <= titleMax) {
     titleScore += 10;
     isOptimalLength = true;
-  } else if (titleLength >= 80 && titleLength <= 119) {
+  } else if (titleLength >= titlePartialMin && titleLength < titleOptimalMin) {
     titleScore += 5;
-  } else if (titleLength > 140) {
+  } else if (titleLength > titleMax) {
     const diag: SeoDiagnostic = {
       code: "TITLE_TOO_LONG",
       severity: "CRITICAL",
-      title: "Title Exceeds Etsy Limit (140 Characters)",
-      message: `Your title is ${titleLength} characters. Etsy strictly enforces a 140-character maximum.`,
-      recommendation: "Trim title to under 140 characters to prevent Etsy API write rejection.",
+      title: `Title Exceeds ${marketplaceLabel} Limit (${titleMax} Characters)`,
+      message: `Your title is ${titleLength} characters. ${marketplaceLabel} strictly enforces a ${titleMax}-character maximum.`,
+      recommendation: `Trim title to under ${titleMax} characters to prevent a write rejection.`,
       pointsDeducted: 15,
     };
     titleDiagnostics.push(diag);
@@ -80,18 +102,18 @@ export function auditListingSeo(input: {
     recommendations.push({
       id: "rec-title-length",
       category: "TITLE",
-      title: "Shorten title to <= 140 characters",
-      action: "Remove redundant filler words to fit within Etsy's 140-character ceiling.",
+      title: `Shorten title to <= ${titleMax} characters`,
+      action: `Remove redundant filler words to fit within ${marketplaceLabel}'s ${titleMax}-character ceiling.`,
       impactScore: 15,
       isAutomatedFixAvailable: true,
     });
-  } else if (titleLength < 70) {
+  } else if (titleLength < titleTooShortMax) {
     const diag: SeoDiagnostic = {
       code: "TITLE_TOO_SHORT",
       severity: "HIGH",
-      title: "Title is Underutilized (< 70 Characters)",
-      message: `Your title is only ${titleLength} characters. Etsy search allows up to 140 characters for keyword matching.`,
-      recommendation: "Expand title to 120–140 characters by adding 2–3 relevant long-tail keyword phrases.",
+      title: `Title is Underutilized (< ${titleTooShortMax} Characters)`,
+      message: `Your title is only ${titleLength} characters. ${marketplaceLabel} search allows up to ${titleMax} characters for keyword matching.`,
+      recommendation: `Expand title to ${titleOptimalMin}–${titleMax} characters by adding 2–3 relevant long-tail keyword phrases.`,
       pointsDeducted: 10,
     };
     titleDiagnostics.push(diag);
@@ -166,19 +188,25 @@ export function auditListingSeo(input: {
   let tagScore = 0;
   const tagDiagnostics: SeoDiagnostic[] = [];
   const tagCount = rawTags.length;
-  const isComplete = tagCount === 13;
+  const tagTarget = rules.supportsTags ? rules.tagCount : null;
+  const tagPartialMin = tagTarget !== null ? Math.round(tagTarget * (10 / 13)) : null;
+  const tagMaxLen = rules.supportsTags ? rules.tagMaxLength : null;
+  const isComplete = tagTarget !== null && tagCount === tagTarget;
 
-  // Tag count score (15 pts)
-  if (tagCount === 13) {
+  // Tag count score (15 pts) — skipped when this marketplace doesn't
+  // support tags at all, or its tag count isn't known yet.
+  if (tagTarget === null || tagPartialMin === null) {
+    // No fabricated target — e.g. a marketplace with supportsTags: false.
+  } else if (tagCount === tagTarget) {
     tagScore += 15;
-  } else if (tagCount >= 10) {
+  } else if (tagCount >= tagPartialMin) {
     tagScore += 8;
     const diag: SeoDiagnostic = {
       code: "UNUSED_TAGS",
       severity: "HIGH",
       title: "Missing Available Tag Slots",
-      message: `You are only using ${tagCount} of 13 available Etsy tags.`,
-      recommendation: `Add ${13 - tagCount} more long-tail tags to utilize all 13 slots and expand search visibility.`,
+      message: `You are only using ${tagCount} of ${tagTarget} available ${marketplaceLabel} tags.`,
+      recommendation: `Add ${tagTarget - tagCount} more long-tail tags to utilize all ${tagTarget} slots and expand search visibility.`,
       pointsDeducted: 7,
     };
     tagDiagnostics.push(diag);
@@ -186,7 +214,7 @@ export function auditListingSeo(input: {
     recommendations.push({
       id: "rec-fill-tags",
       category: "TAGS",
-      title: `Fill all 13 tag slots (+${13 - tagCount} tags)`,
+      title: `Fill all ${tagTarget} tag slots (+${tagTarget - tagCount} tags)`,
       action: "Every unused tag is a lost search opportunity. Add relevant multi-word search phrases.",
       impactScore: 7,
       isAutomatedFixAvailable: true,
@@ -195,9 +223,9 @@ export function auditListingSeo(input: {
     const diag: SeoDiagnostic = {
       code: "UNUSED_TAGS",
       severity: "HIGH",
-      title: "Critical Missing Tags (< 10 Tags Used)",
-      message: `You are only using ${tagCount} of 13 available tags. Etsy heavily relies on all 13 tags for query matching.`,
-      recommendation: `Add ${13 - tagCount} more tags to utilize all 13 slots.`,
+      title: `Critical Missing Tags (< ${tagPartialMin} Tags Used)`,
+      message: `You are only using ${tagCount} of ${tagTarget} available tags. ${marketplaceLabel} heavily relies on all ${tagTarget} tags for query matching.`,
+      recommendation: `Add ${tagTarget - tagCount} more tags to utilize all ${tagTarget} slots.`,
       pointsDeducted: 15,
     };
     tagDiagnostics.push(diag);
@@ -205,8 +233,8 @@ export function auditListingSeo(input: {
     recommendations.push({
       id: "rec-fill-tags-critical",
       category: "TAGS",
-      title: "Add missing tags to reach 13 tags",
-      action: "Fill all 13 slots with 2–3 word long-tail tags.",
+      title: `Add missing tags to reach ${tagTarget} tags`,
+      action: `Fill all ${tagTarget} slots with 2–3 word long-tail tags.`,
       impactScore: 15,
       isAutomatedFixAvailable: true,
     });
@@ -222,7 +250,7 @@ export function auditListingSeo(input: {
 
   for (const t of rawTags) {
     const charCount = t.length;
-    const isCompliant = charCount <= 20;
+    const isCompliant = tagMaxLen === null || charCount <= tagMaxLen;
     const words = t.split(/\s+/).filter(Boolean);
     const wordCount = words.length;
     const cleanTag = normalizeTerm(t);
@@ -249,9 +277,9 @@ export function auditListingSeo(input: {
     const diag: SeoDiagnostic = {
       code: "TAG_OVER_LENGTH",
       severity: "CRITICAL",
-      title: "Tags Exceed 20-Character Limit",
-      message: `${overLengthCount} tag(s) exceed Etsy's 20-character limit and cannot be published.`,
-      recommendation: "Shorten tags to 20 characters or fewer.",
+      title: `Tags Exceed ${tagMaxLen}-Character Limit`,
+      message: `${overLengthCount} tag(s) exceed ${marketplaceLabel}'s ${tagMaxLen}-character limit and cannot be published.`,
+      recommendation: `Shorten tags to ${tagMaxLen} characters or fewer.`,
       pointsDeducted: 10,
     };
     tagDiagnostics.push(diag);
@@ -260,7 +288,7 @@ export function auditListingSeo(input: {
       id: "rec-fix-tag-length",
       category: "TAGS",
       title: "Shorten over-length tags",
-      action: "Trim tags exceeding 20 characters to comply with Etsy's tag constraints.",
+      action: `Trim tags exceeding ${tagMaxLen} characters to comply with ${marketplaceLabel}'s tag constraints.`,
       impactScore: 10,
       isAutomatedFixAvailable: true,
     });
@@ -596,23 +624,50 @@ export async function fetchAndAuditEtsyListing(
   });
 }
 
+/** A connected seller channel is the authoritative source for "which
+ * marketplace" an audit belongs to — a draft/listing tied to a real store
+ * shouldn't be scored against a marketplace picked by hand that disagrees
+ * with where it's actually going. `organizationId`-scoped so an id from
+ * another tenant can never leak a marketplace decision across orgs. Falls
+ * back to `fallback` when no channel id is given, or it doesn't resolve to
+ * one this org owns. */
+export async function resolveMarketplaceForAudit(
+  organizationId: string,
+  sellerChannelId: string | undefined | null,
+  fallback: MarketplaceId
+): Promise<MarketplaceId> {
+  if (sellerChannelId) {
+    const channel = await prisma.sellerChannel.findFirst({
+      where: { id: sellerChannelId, organizationId },
+      select: { platform: true },
+    });
+    const fromChannel = channel && marketplaceFromSellerChannelPlatform(channel.platform);
+    if (fromChannel) return fromChannel;
+  }
+  return fallback;
+}
+
 export async function saveListingSeoAuditRecord(
   organizationId: string,
-  input: ListingSeoAuditInput
+  input: ListingSeoAuditInput,
+  rules: MarketplaceOptimizationRules = ETSY_OPTIMIZATION_RULES
 ): Promise<CompleteListingSeoAudit> {
-  const audit = auditListingSeo({
-    title: input.title,
-    tags: input.tags,
-    description: input.description,
-    materials: input.materials,
-    taxonomyId: input.taxonomyId,
-    attributes: input.attributes,
-    imageUrl: input.imageUrl,
-    listingUrl: input.listingUrl,
-    shopName: input.shopName,
-    price: input.price,
-    listingId: input.externalListingId,
-  });
+  const audit = auditListingSeo(
+    {
+      title: input.title,
+      tags: input.tags,
+      description: input.description,
+      materials: input.materials,
+      taxonomyId: input.taxonomyId,
+      attributes: input.attributes,
+      imageUrl: input.imageUrl,
+      listingUrl: input.listingUrl,
+      shopName: input.shopName,
+      price: input.price,
+      listingId: input.externalListingId,
+    },
+    rules
+  );
 
   const record = await prisma.listingSeoAudit.create({
     data: {

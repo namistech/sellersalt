@@ -1,3 +1,20 @@
+> **PARTIALLY SUPERSEDED (2026-08-19).** The Etsy Shop Manager in-editor
+> real-time SEO scoring / tag-suggestion-injection functionality this
+> document describes (§2.1, and the "Implementation Status" note below)
+> was **removed entirely** during Etsy compliance remediation — the
+> content script, DOM selectors, and background-worker message handlers
+> for it were deleted outright, not disabled. Etsy's API Terms restrict
+> browser extensions from accessing/analyzing/scraping Etsy's site without
+> written authorization; this was never obtained. The extension today has
+> no Etsy host permissions and no Etsy content script at all — see
+> `docs/MARKETPLACE-INTEGRATION-MATRIX.md`'s "Browser extension" section
+> and `AGENTS.md` §11 for current, accurate state. The extension's
+> remaining panels (calling SellerSalt's own backend only) are unaffected
+> and still work as described elsewhere in this document. If in-editor
+> Etsy DOM assistance is wanted again, it requires Etsy's written
+> authorization first — a product/business decision, not an engineering
+> task.
+
 # SellerSalt — Browser Extension Specification
 **Companion In-Context Assistant for Etsy Sellers**
 

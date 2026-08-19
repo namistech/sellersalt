@@ -8,6 +8,10 @@
 
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
+import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
+import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
+import type { MarketplaceId } from "@/marketplaces/core/types";
+import { fanOutMarketplaceRequest, type MarketplaceFanOutResult } from "@/marketplaces/core/research-pipeline";
 import type {
   KeywordSearchRequest,
   KeywordSearchResponse,
@@ -224,7 +228,51 @@ export function harvestTagsAndNgrams(
 
 // --------------------------------------------------------------------------
 // Core Standalone Keyword Research Orchestrator
+//
+// `fetchMarketplaceKeywordResearch(marketplace, ...)` is the marketplace-
+// aware entry point — checks the registry's `keywordResearch` capability and
+// returns a structured CapabilityUnavailable for anything but Etsy today.
+// `fetchStandaloneKeywordResearch` below is unchanged (same signature, same
+// behavior) since it's also called directly, internally, by
+// src/services/assistant/tool-registry.ts and
+// src/app/api/extension/suggestions/route.ts — neither of which needs to
+// become marketplace-aware yet, so their call sites are untouched.
 // --------------------------------------------------------------------------
+
+export async function fetchMarketplaceKeywordResearch(
+  marketplace: MarketplaceId,
+  organizationId: string,
+  request: KeywordSearchRequest
+): Promise<KeywordSearchResponse | CapabilityUnavailable> {
+  const unavailable = checkMarketplaceCapability(marketplace, "keywordResearch");
+  if (unavailable) return unavailable;
+
+  if (marketplace !== "etsy") {
+    return {
+      available: false,
+      marketplace,
+      capability: "keywordResearch",
+      reason: "CONNECTOR_NOT_IMPLEMENTED",
+      message: `${marketplace} keyword research has no implementation wired up yet.`,
+    };
+  }
+
+  return fetchStandaloneKeywordResearch(organizationId, request);
+}
+
+/** "All Marketplaces" fan-out — reuses the same generic helper the product
+ * research pipeline established (src/marketplaces/core/research-pipeline.ts's
+ * `fanOutMarketplaceRequest`) rather than reimplementing per-marketplace
+ * error isolation here. */
+export async function fetchAllMarketplaceKeywordResearch(
+  marketplaces: MarketplaceId[],
+  organizationId: string,
+  request: KeywordSearchRequest
+): Promise<MarketplaceFanOutResult<KeywordSearchResponse>[]> {
+  return fanOutMarketplaceRequest<KeywordSearchResponse>(marketplaces, (marketplace) =>
+    fetchMarketplaceKeywordResearch(marketplace, organizationId, request)
+  );
+}
 
 export async function fetchStandaloneKeywordResearch(
   organizationId: string,

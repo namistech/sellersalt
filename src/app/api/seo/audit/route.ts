@@ -5,9 +5,18 @@ import {
   auditListingSeo,
   fetchAndAuditEtsyListing,
   saveListingSeoAuditRecord,
+  resolveMarketplaceForAudit,
 } from "@/services/seo-engine";
+import { getOptimizationRules } from "@/marketplaces/core/optimization-rules";
+import type { MarketplaceId } from "@/marketplaces/core/types";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 import { mapConnectorError } from "@/services/connector-diagnostics";
+
+const SUPPORTED: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
+
+function resolveMarketplace(raw: unknown): MarketplaceId {
+  return SUPPORTED.includes(raw as MarketplaceId) ? (raw as MarketplaceId) : "etsy";
+}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -18,6 +27,15 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    // Mode A always audits real fetched Etsy data, so it's intentionally
+    // pinned to Etsy's rules regardless of `body.marketplace`/sellerChannelId
+    // — only Mode B (a supplied draft payload) reflects the resolved
+    // marketplace's rules.
+    const marketplace = body.listingId
+      ? ("etsy" as const)
+      : await resolveMarketplaceForAudit(organizationId, body.sellerChannelId, resolveMarketplace(body.marketplace));
+    const rules = getOptimizationRules(marketplace);
 
     // Mode A: Audit an existing live Etsy listing by ID or URL
     if (body.listingId) {
@@ -56,7 +74,7 @@ export async function POST(req: Request) {
           price: audit.price,
         });
       }
-      return NextResponse.json({ audit });
+      return NextResponse.json({ audit, marketplace });
     }
 
     // Mode B: Audit a supplied payload / draft
@@ -68,41 +86,48 @@ export async function POST(req: Request) {
     }
 
     if (body.save) {
-      const savedAudit = await saveListingSeoAuditRecord(organizationId, {
+      const savedAudit = await saveListingSeoAuditRecord(
         organizationId,
+        {
+          organizationId,
+          title: body.title || "",
+          tags: Array.isArray(body.tags) ? body.tags : [],
+          description: body.description || "",
+          materials: Array.isArray(body.materials) ? body.materials : [],
+          taxonomyId: body.taxonomyId,
+          attributes: body.attributes,
+          plannerItemId: body.plannerItemId,
+          listingDraftId: body.listingDraftId,
+          sellerChannelId: body.sellerChannelId,
+          imageUrl: body.imageUrl,
+          listingUrl: body.listingUrl,
+          shopName: body.shopName,
+          price: body.price,
+        },
+        rules
+      );
+      return NextResponse.json({ audit: savedAudit, marketplace });
+    }
+
+    const audit = auditListingSeo(
+      {
         title: body.title || "",
         tags: Array.isArray(body.tags) ? body.tags : [],
         description: body.description || "",
         materials: Array.isArray(body.materials) ? body.materials : [],
         taxonomyId: body.taxonomyId,
+        categoryPath: body.categoryPath,
         attributes: body.attributes,
-        plannerItemId: body.plannerItemId,
-        listingDraftId: body.listingDraftId,
-        sellerChannelId: body.sellerChannelId,
         imageUrl: body.imageUrl,
         listingUrl: body.listingUrl,
         shopName: body.shopName,
         price: body.price,
-      });
-      return NextResponse.json({ audit: savedAudit });
-    }
+        listingId: body.externalListingId,
+      },
+      rules
+    );
 
-    const audit = auditListingSeo({
-      title: body.title || "",
-      tags: Array.isArray(body.tags) ? body.tags : [],
-      description: body.description || "",
-      materials: Array.isArray(body.materials) ? body.materials : [],
-      taxonomyId: body.taxonomyId,
-      categoryPath: body.categoryPath,
-      attributes: body.attributes,
-      imageUrl: body.imageUrl,
-      listingUrl: body.listingUrl,
-      shopName: body.shopName,
-      price: body.price,
-      listingId: body.externalListingId,
-    });
-
-    return NextResponse.json({ audit });
+    return NextResponse.json({ audit, marketplace });
   } catch (err: any) {
     console.error("SEO audit failed:", err);
     const diagnostic = mapConnectorError(err);

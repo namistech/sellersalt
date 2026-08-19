@@ -73,7 +73,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateKey, EmailTemplateDefinition> 
          <p>Your workspace is ready. Here are three high-leverage workflows to get started today:</p>
          <ol style="padding-left: 20px; line-height: 1.8;">
            <li><strong>Opportunity Radar:</strong> Scan high-demand, low-competition keywords in your niche.</li>
-           <li><strong>Competitor Spy:</strong> Audit top-selling Etsy stores and track their daily transaction velocity.</li>
+           <li><strong>Market Research:</strong> Audit top-selling Etsy stores and track their daily transaction velocity.</li>
            <li><strong>Personal Assistant:</strong> Ask the assistant copilot to uncover untapped breakout niches.</li>
          </ol>
          <div style="text-align: center; margin: 24px 0;">
@@ -186,7 +186,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateKey, EmailTemplateDefinition> 
         "Subscription Active",
         `<h2 style="margin-top:0; color:#141B16;">Your subscription is active! 🚀</h2>
          <p>Hi ${vars.name || "there"},</p>
-         <p>Thank you for subscribing to <strong>${vars.planName || "SellerSalt Pro"}</strong>. You now have full access to Opportunity Radar, Competitor Spy, and the AI Assistant.</p>`
+         <p>Thank you for subscribing to <strong>${vars.planName || "SellerSalt Pro"}</strong>. You now have full access to Opportunity Radar, Market Research, and the AI Assistant.</p>`
       ),
     generateText: (vars) => `Your subscription to ${vars.planName} is active!`,
   },

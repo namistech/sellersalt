@@ -14,7 +14,7 @@ export default async function UniversityPage() {
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
       <PageHeader
         title="SellerSalt University"
-        description="Master Etsy keyword intelligence, competitor surveillance, and high-velocity listing strategies."
+        description="Master Etsy keyword intelligence, market research, and high-velocity listing strategies."
         primaryAction={
           universityUrl ? (
             <a href={universityUrl} target="_blank" rel="noopener noreferrer">
@@ -57,10 +57,10 @@ export default async function UniversityPage() {
 
           <div className="p-4 rounded-xl bg-surface border border-line space-y-2">
             <div className="flex items-center gap-2 font-bold text-sm text-ink">
-              <Compass className="h-4 w-4 text-[#0E8F5D]" /> Module 2: Surveillance Tactics
+              <Compass className="h-4 w-4 text-[#0E8F5D]" /> Module 2: Market Research Tactics
             </div>
             <p className="text-xs text-ink-tertiary">
-              Using 6-hour snapshot surveillance to track competitor stock movements, price changes, and review momentum.
+              Using periodic snapshot tracking to follow shop stock movements, price changes, and review momentum.
             </p>
           </div>
 

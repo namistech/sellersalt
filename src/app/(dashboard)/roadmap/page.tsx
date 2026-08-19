@@ -258,7 +258,7 @@ export default function RoadmapPage() {
                       : "bg-surface text-ink-secondary border-line hover:text-ink"
                   }`}
                 >
-                  {cat === "ALL" ? "All Areas" : cat.replace("_", " ")}
+                  {cat === "ALL" ? "All Areas" : cat === "SURVEILLANCE" ? "Market Research" : cat.replace("_", " ")}
                 </button>
               )
             )}
@@ -394,7 +394,7 @@ export default function RoadmapPage() {
               onChange={(e) => setCategory(e.target.value as any)}
               className="w-full text-xs py-2 px-3 rounded-lg border border-line bg-surface font-semibold text-ink"
             >
-              <option value="SURVEILLANCE">Competitor Surveillance</option>
+              <option value="SURVEILLANCE">Market Research</option>
               <option value="SEO_STUDIO">Listing SEO Studio</option>
               <option value="PRODUCT_HUNTING">Product Hunting</option>
               <option value="SHOP_RESEARCH">Shop Research</option>

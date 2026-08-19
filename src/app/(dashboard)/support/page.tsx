@@ -37,9 +37,9 @@ import type {
 
 const FAQS = [
   {
-    question: "How frequently does the Competitor Surveillance engine refresh?",
+    question: "How frequently does the Market Research engine refresh?",
     answer:
-      "SellerSalt background workers capture competitor shop snapshots every 6 hours. When you click 'Spy on This Competitor', the first snapshot is captured immediately.",
+      "SellerSalt background workers capture shop snapshots periodically. When you start tracking a shop from Market Research, the first snapshot is captured immediately.",
   },
   {
     question: "Do I need to connect my own Etsy shop to research competitors?",
@@ -177,7 +177,7 @@ export default function SupportPage() {
       {/* Contextual Guide */}
       <HowItWorksGuide
         title="How SellerSalt Support Works"
-        description="Our technical support engineers respond to all inquiries within 4 business hours to assist with Etsy API syncing, surveillance, and billing."
+        description="Our technical support engineers respond to all inquiries within 4 business hours to assist with Etsy API syncing, market research, and billing."
         steps={[
           {
             title: "1. Open a Support Ticket",
@@ -199,7 +199,7 @@ export default function SupportPage() {
 
       <PageHeader
         title="Customer Support &amp; Help Desk"
-        description="Get fast assistance with your account, competitor surveillance, and marketplace integrations."
+        description="Get fast assistance with your account, market research, and marketplace integrations."
         primaryAction={
           <Button
             variant="primary"
@@ -422,7 +422,7 @@ export default function SupportPage() {
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink">Subject</label>
             <Input
-              placeholder="e.g. Question about Etsy shop surveillance refresh"
+              placeholder="e.g. Question about Etsy shop research refresh"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
@@ -439,7 +439,7 @@ export default function SupportPage() {
                 className="w-full text-xs py-2 px-3 rounded-lg border border-line bg-surface font-semibold text-ink"
               >
                 <option value="GENERAL">General Inquiries</option>
-                <option value="SURVEILLANCE">Competitor Surveillance</option>
+                <option value="SURVEILLANCE">Market Research</option>
                 <option value="ETSY_API">Etsy API &amp; Connectors</option>
                 <option value="BILLING">Billing &amp; Subscription</option>
                 <option value="BUG_REPORT">Bug Report</option>

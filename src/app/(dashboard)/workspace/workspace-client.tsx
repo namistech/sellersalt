@@ -100,7 +100,7 @@ export function WorkspaceClient({
         steps={[
           {
             title: "1. Unified Opportunity Inbox",
-            description: "Review, shortlist, and action high-potential discoveries gathered from Product Research, Keywords, Competitor Spy, and the Browser Extension.",
+            description: "Review, shortlist, and action high-potential discoveries gathered from Product Research, Keywords, Market Research, and the Browser Extension.",
             badge: "Inbox Queue",
           },
           {

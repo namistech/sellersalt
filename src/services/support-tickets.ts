@@ -49,7 +49,7 @@ let TICKETS_STORE: SupportTicketItem[] = [
     userId: "system",
     authorName: "SellerSalt Support",
     subject: "Welcome to SellerSalt Customer Support",
-    message: "If you have any questions regarding Etsy connector syncing, competitor surveillance snapshots, or plan quotas, our engineering team is here to assist.",
+    message: "If you have any questions regarding Etsy connector syncing, market research snapshots, or plan quotas, our engineering team is here to assist.",
     category: "GENERAL",
     priority: "NORMAL",
     status: "RESOLVED",

@@ -170,7 +170,7 @@ export function IntegrationsView({
           placeholder: "listings_w listings_r shops_r transactions_r",
           value: getVal("etsy_oauth_scopes"),
           hasValue: hasVal("etsy_oauth_scopes"),
-          instructions: "Default scopes: listings_w listings_r shops_r transactions_r billing_r.",
+          instructions: "Default scopes: listings_w listings_r shops_r transactions_r.",
         },
       ],
       onTestConnection: async () => {
@@ -330,7 +330,7 @@ export function IntegrationsView({
       category: "Marketplace",
       name: "eBay REST API",
       description:
-        "eBay Developer Program integration for cross-marketplace listing sync and price surveillance.",
+        "eBay Developer Program integration for cross-marketplace listing sync and price benchmarking.",
       icon: "🏷️",
       status: hasVal("ebay_app_id") && hasVal("ebay_cert_id") ? "CONFIGURED" : "NOT_CONFIGURED",
       documentationUrl: "https://developer.ebay.com",
@@ -414,7 +414,7 @@ export function IntegrationsView({
       category: "Marketplace",
       name: "Walmart Marketplace API",
       description:
-        "Walmart Developer Portal connector for cross-listing and marketplace surveillance.",
+        "Walmart Developer Portal connector for cross-listing and marketplace catalog research.",
       icon: "⭐",
       status: hasVal("walmart_client_id") && hasVal("walmart_client_secret") ? "CONFIGURED" : "NOT_CONFIGURED",
       documentationUrl: "https://developer.walmart.com",
@@ -445,7 +445,7 @@ export function IntegrationsView({
       category: "Productivity",
       name: "Google Sheets Export",
       description:
-        "Direct export of keyword surveillance tables, shop dossiers, and SEO audits into Google Sheets.",
+        "Direct export of keyword research tables, shop reports, and SEO audits into Google Sheets.",
       icon: "📊",
       status: hasVal("google_sheets_client_id") ? "CONFIGURED" : "NOT_CONFIGURED",
       documentationUrl: "https://developers.google.com/sheets/api",
@@ -536,7 +536,7 @@ export function IntegrationsView({
       category: "Productivity",
       name: "Slack Notifications & Bot",
       description:
-        "Broadcast competitor surveillance alerts, daily shop summaries, and sales spikes directly to Slack channels.",
+        "Broadcast market research alerts, daily shop summaries, and sales spikes directly to Slack channels.",
       icon: "💬",
       status: hasVal("slack_webhook_url") || hasVal("slack_bot_token") ? "CONFIGURED" : "NOT_CONFIGURED",
       documentationUrl: "https://api.slack.com/apps",

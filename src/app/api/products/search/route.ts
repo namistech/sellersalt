@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { searchEtsyMarketplaceProducts } from "@/services/product-hunting";
+import { searchMarketplaceProducts } from "@/services/product-hunting";
 import type { EtsySearchFilters } from "@/types/product-hunting";
+import type { MarketplaceId } from "@/marketplaces/core/types";
+
+function resolveMarketplace(raw: string | null): MarketplaceId {
+  const supported: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
+  return supported.includes(raw as MarketplaceId) ? (raw as MarketplaceId) : "etsy";
+}
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +33,8 @@ export async function POST(req: Request) {
       page: typeof body.page === "number" ? Math.max(1, body.page) : 1,
     };
 
-    const response = await searchEtsyMarketplaceProducts(organizationId, filters);
+    const marketplace = resolveMarketplace(body.marketplace ?? null);
+    const response = await searchMarketplaceProducts(marketplace, organizationId, filters);
 
     return NextResponse.json(response);
   } catch (error: any) {
@@ -66,7 +73,8 @@ export async function GET(req: Request) {
       page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,
     };
 
-    const response = await searchEtsyMarketplaceProducts(organizationId, filters);
+    const marketplace = resolveMarketplace(searchParams.get("marketplace"));
+    const response = await searchMarketplaceProducts(marketplace, organizationId, filters);
 
     return NextResponse.json(response);
   } catch (error: any) {

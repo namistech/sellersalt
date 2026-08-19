@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
+import axios from "axios";
 import { prisma } from "./db";
 import { encrypt } from "./encryption";
 import { resolveEtsyShopId } from "@/seller-channels/etsy-seller";
@@ -62,7 +63,23 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           },
         },
         token: "https://api.etsy.com/v3/public/oauth/token",
-        userinfo: "https://openapi.etsy.com/v3/application/users/me",
+        userinfo: {
+          async request({ tokens, provider }: any) {
+            const accessToken = tokens.access_token;
+            if (!accessToken) return {};
+            const userId = accessToken.split(".")[0];
+            const apiKey = provider.clientId;
+            try {
+              const res = await axios.get(`https://openapi.etsy.com/v3/application/users/${userId}`, {
+                headers: { Authorization: `Bearer ${accessToken}`, "x-api-key": apiKey },
+                timeout: 10000,
+              });
+              return res.data;
+            } catch {
+              return { user_id: userId };
+            }
+          },
+        },
         clientId: effectiveEtsyId,
         clientSecret: effectiveEtsySecret,
         profile(profile: any) {
@@ -95,11 +112,6 @@ export const authOptions: NextAuthOptions = {
       name: "Etsy",
       type: "oauth",
       version: "2.0",
-      // Etsy's Open API v3 mandates PKCE on every authorization-code grant,
-      // confidential or not. Without checks: ["pkce"], NextAuth never
-      // generates/attaches a code_verifier, so the code_challenge_method
-      // param below was previously sent with no matching code_challenge —
-      // a malformed request Etsy could legitimately reject.
       checks: ["pkce", "state"],
       authorization: {
         url: "https://www.etsy.com/oauth/connect",
@@ -110,7 +122,23 @@ export const authOptions: NextAuthOptions = {
         },
       },
       token: "https://api.etsy.com/v3/public/oauth/token",
-      userinfo: "https://openapi.etsy.com/v3/application/users/me",
+      userinfo: {
+        async request({ tokens, provider }: any) {
+          const accessToken = tokens.access_token;
+          if (!accessToken) return {};
+          const userId = accessToken.split(".")[0];
+          const apiKey = provider.clientId;
+          try {
+            const res = await axios.get(`https://openapi.etsy.com/v3/application/users/${userId}`, {
+              headers: { Authorization: `Bearer ${accessToken}`, "x-api-key": apiKey },
+              timeout: 10000,
+            });
+            return res.data;
+          } catch {
+            return { user_id: userId };
+          }
+        },
+      },
       clientId: process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "",
       clientSecret: process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "",
       profile(profile: any) {

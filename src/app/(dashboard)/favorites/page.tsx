@@ -334,7 +334,7 @@ export default function FavoritesPage() {
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-ink">No favorite shops saved yet</h4>
                 <p className="text-xs text-ink-secondary leading-relaxed">
-                  Search any Etsy shop with Spy on Competitor and star them to keep track of their catalog additions and revenue growth.
+                  Search any Etsy shop with Market Research and star them to keep track of their catalog additions and revenue growth.
                 </p>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 pt-1">

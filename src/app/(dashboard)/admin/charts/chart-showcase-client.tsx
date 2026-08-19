@@ -158,7 +158,7 @@ export function ChartShowcaseClient() {
             accessibleSummary="Line chart comparing search volume to baseline"
           />
           <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
-            <strong>Used in:</strong> Keyword Research (`/keyword-research`), Surveillance (`/spy/tracked`).
+            <strong>Used in:</strong> Keyword Research (`/keyword-research`), Market Research (`/spy/tracked`).
           </div>
         </Card>
 
@@ -326,7 +326,7 @@ export function ChartShowcaseClient() {
             accessibleSummary="Multi-line chart comparing competitor performance"
           />
           <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
-            <strong>Used in:</strong> Competitor Tracking (`/spy/tracked`), Shop Comparison.
+            <strong>Used in:</strong> Shop Tracking (`/spy/tracked`), Shop Comparison.
           </div>
         </Card>
 
@@ -386,7 +386,7 @@ export function ChartShowcaseClient() {
             </table>
           </div>
           <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
-            <strong>Used in:</strong> Opportunity Radar Table (`/radar`), Competitor List (`/spy/tracked`).
+            <strong>Used in:</strong> Opportunity Radar Table (`/radar`), Tracked Shops List (`/spy/tracked`).
           </div>
         </Card>
 

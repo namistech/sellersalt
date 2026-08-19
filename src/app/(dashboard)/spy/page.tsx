@@ -218,10 +218,10 @@ export default function SpyOnCompetitorPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-line pb-4">
         <div>
           <Heading as="h1" size="h2">
-            Competitor Shop Surveillance &amp; Tracking
+            Market Research &amp; Shop Radar
           </Heading>
           <Text size="body-sm" color="secondary" className="mt-1">
-            Monitor verified competitor sales deltas, catalog additions, and review velocity captured every 6 hours.
+            Analyze verified public sales deltas, catalog additions, and review velocity across market segments.
           </Text>
         </div>
 
@@ -240,7 +240,7 @@ export default function SpyOnCompetitorPage() {
       </div>
 
       {error && (
-        <Alert variant="danger" title="Surveillance Engine Notice">
+        <Alert variant="danger" title="Market Research Notice">
           {error}
         </Alert>
       )}
@@ -249,8 +249,8 @@ export default function SpyOnCompetitorPage() {
       <HowItWorksGuide
         isOpen={showGuide}
         onToggle={() => setShowGuide(!showGuide)}
-        title="How Competitor Surveillance Works"
-        description="SellerSalt captures historical marketplace records for any Etsy shop to reveal real daily transaction deltas, catalog additions, and review velocity."
+        title="How Market Research Radar Works"
+        description="SellerSalt analyzes public marketplace benchmarks for Etsy shops to reveal real daily transaction deltas, catalog additions, and review velocity."
         steps={[
           {
             title: "1. Paste Shop Link",
@@ -263,9 +263,9 @@ export default function SpyOnCompetitorPage() {
             badge: "Immediate",
           },
           {
-            title: "3. 6-Hour Surveillance",
-            description: "Our background engine monitors the shop every 6 hours to detect breakouts, sales spikes, and inventory drops.",
-            badge: "Every 6h",
+            title: "3. Periodic Benchmark Refresh",
+            description: "Our background engine checks public benchmarks periodically to detect breakouts, sales spikes, and inventory trends.",
+            badge: "Periodic",
           },
         ]}
       />
@@ -276,12 +276,12 @@ export default function SpyOnCompetitorPage() {
       {totalTracked > 0 ? (
         <IntelligenceCard
           contextTheme="shop"
-          badgeText="COMPETITOR SURVEILLANCE INTELLIGENCE"
+          badgeText="MARKET RESEARCH INTELLIGENCE"
           badgeIcon={<Radar className="h-3.5 w-3.5 text-[#FBBF24]" />}
           title={
             topGainer && (topGainer.deltas.salesDelta7d ?? 0) > 0
-              ? `Which competitor is accelerating fastest? (${topGainer.shopName} +${topGainer.deltas.salesDelta7d} orders/7d)`
-              : "Competitor Portfolio Surveillance Overview"
+              ? `Which shop is accelerating fastest? (${topGainer.shopName} +${topGainer.deltas.salesDelta7d} orders/7d)`
+              : "Market Portfolio Benchmarks Overview"
           }
           score={fastestVelocity ? Math.min(99, Math.max(50, Math.round(fastestVelocity.velocity.estDailySales * 12))) : 82}
           scoreMax={100}
@@ -290,15 +290,15 @@ export default function SpyOnCompetitorPage() {
               ? `⚡ ${topGainer.shopName} — Breakout Spike`
               : topGainer
               ? `${topGainer.shopName} — Momentum Leader`
-              : "Surveillance Active"
+              : "Tracking Active"
           }
           verdictVariant={topGainer?.velocity.isSpike ? "warning" : "success"}
           provenance="ACTUAL_ETSY_DATA"
-          description={`Currently monitoring ${totalTracked} competitor store${totalTracked === 1 ? "" : "s"}. Average 7-day sales growth across your portfolio is +${avg7dSales} orders. Snapshots are recorded automatically every 6 hours.`}
+          description={`Currently analyzing ${totalTracked} research benchmark store${totalTracked === 1 ? "" : "s"}. Average 7-day sales growth across your portfolio is +${avg7dSales} orders. Snapshots are recorded automatically to reveal demand patterns.`}
           sidePanel={
             <div className="space-y-3">
               <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
-                Surveillance Benchmarks
+                Market Benchmarks
               </div>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
@@ -306,7 +306,7 @@ export default function SpyOnCompetitorPage() {
                   <span className="font-bold text-white tabular-nums">{totalTracked}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#9EAA9F]">Fastest Growing Competitor:</span>
+                  <span className="text-[#9EAA9F]">Fastest Growing Benchmark:</span>
                   <span className="font-bold text-[#16C784] truncate max-w-[140px]">
                     {topGainer?.shopName ?? "—"}
                   </span>
@@ -369,13 +369,13 @@ export default function SpyOnCompetitorPage() {
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1C261F] border border-[#2A362D] text-xs font-bold text-[#FBBF24]">
-                <Radar className="h-3.5 w-3.5" /> Start Competitor Surveillance
+                <Radar className="h-3.5 w-3.5" /> Start Market Research
               </div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Start spying on a competitor shop
+                Track a shop for research benchmarks
               </h2>
               <p className="text-xs sm:text-sm text-[#9EAA9F] leading-relaxed">
-                Paste an Etsy shop link below and SellerSalt will capture the latest verified shop data immediately, then continue monitoring sales, inventory, and review changes every 6 hours.
+                Paste an Etsy shop link below and SellerSalt will capture the latest verified shop data immediately, then continue monitoring sales, inventory, and review changes periodically.
               </p>
               <div className="text-xs text-[#16C784] font-semibold pt-1 flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5" /> We&apos;ll capture your first snapshot immediately.
@@ -387,7 +387,7 @@ export default function SpyOnCompetitorPage() {
                 href="#add-competitor-form"
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] font-bold text-sm shadow-md transition-all w-full sm:w-auto"
               >
-                <Plus className="h-4 w-4" /> Start Spying on a Competitor
+                <Plus className="h-4 w-4" /> Track a Shop for Research
               </a>
             </div>
           </div>
@@ -440,10 +440,10 @@ export default function SpyOnCompetitorPage() {
       <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
         <div>
           <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-            <Plus className="h-4 w-4 text-[#0E8F5D]" /> Add a Competitor Shop to Surveillance
+            <Plus className="h-4 w-4 text-[#0E8F5D]" /> Add a Shop to Research Benchmarks
           </h3>
           <p className="text-xs text-ink-tertiary mt-0.5">
-            SellerSalt will fetch the latest verified data immediately and continue monitoring sales &amp; catalog changes every 6 hours.
+            SellerSalt will fetch the latest verified public data immediately and track sales &amp; catalog momentum.
           </p>
         </div>
 
@@ -464,7 +464,7 @@ export default function SpyOnCompetitorPage() {
             disabled={submitting || !urlInput.trim()}
             className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-xs shrink-0"
           >
-            {submitting ? "Fetching Shop Data…" : "Start 6-Hour Tracking"}
+            {submitting ? "Fetching Shop Data…" : "Start Research Tracking"}
           </Button>
         </form>
 
@@ -479,10 +479,10 @@ export default function SpyOnCompetitorPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <Heading as="h2" size="h4">
-              Monitored Competitor Shops ({filteredShops.length})
+              Monitored Research Shops ({filteredShops.length})
             </Heading>
             <p className="text-xs text-ink-tertiary">
-              Continuous 6-hour snapshot records &amp; longitudinal delta tracking.
+              Continuous snapshot records &amp; longitudinal delta tracking.
             </p>
           </div>
 
@@ -504,7 +504,7 @@ export default function SpyOnCompetitorPage() {
         {loading ? (
           <div className="text-center py-16 text-xs text-ink-tertiary">
             <div className="animate-spin h-6 w-6 border-2 border-[#0E8F5D] border-t-transparent rounded-full mx-auto mb-2" />
-            Loading competitor surveillance records…
+            Loading market research records…
           </div>
         ) : filteredShops.length === 0 ? (
           <Card padding="lg" className="border-line bg-white shadow-xs text-center py-12 space-y-3">
@@ -753,7 +753,7 @@ export default function SpyOnCompetitorPage() {
         <Dialog
           open={Boolean(selectedHistory)}
           onClose={() => setSelectedHistory(null)}
-          title={`6-Hour Historical Surveillance — ${selectedHistory.shopName}`}
+          title={`Market Research Trends — ${selectedHistory.shopName}`}
           size="lg"
         >
           <div className="space-y-5 text-xs p-1">

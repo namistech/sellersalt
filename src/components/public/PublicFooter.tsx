@@ -38,7 +38,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <Link href="/#features" className="hover:text-[#141B16] transition-colors">
-                  Competitor Spy
+                  Market Research
                 </Link>
               </li>
               <li>

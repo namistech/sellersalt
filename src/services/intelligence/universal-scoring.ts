@@ -82,7 +82,16 @@ export function getScoreTier(score: number): {
 }
 
 /**
- * Universal Product Opportunity Scoring Engine
+ * Universal Product Opportunity Scoring Engine.
+ *
+ * `feeSchedule` defaults to Etsy's real fee structure (6.5% transaction +
+ * ~3% payment processing + $0.20 listing fee) so every existing caller —
+ * none of which pass it — sees identical output. Pass `feeSchedule: null`
+ * for a marketplace whose fee structure isn't configured yet
+ * (src/marketplaces/core/optimization-rules.ts) to drop the margin factor
+ * from scoring entirely (weight redistributed across the other three)
+ * rather than silently computing a margin number against the wrong
+ * marketplace's fees.
  */
 export function evaluateProductOpportunity(params: {
   price: number;
@@ -91,19 +100,28 @@ export function evaluateProductOpportunity(params: {
   listingAgeDays: number;
   numFavorers?: number;
   categoryMedianPrice?: number;
+  feeSchedule?: { percentageFee: number; flatFee: number } | null;
 }): UniversalScoreResult {
   const { price, estDailySales, shopReviewCount, listingAgeDays, numFavorers = 0 } = params;
+  const feeSchedule = params.feeSchedule === undefined
+    ? { percentageFee: 0.095, flatFee: 0.2 } // Etsy default — unchanged from prior hardcoded behavior
+    : params.feeSchedule;
 
-  // 1. Demand & Sales Velocity Factor (Weight: 35%)
+  // 1. Demand & Sales Velocity Factor (Weight: 35%, or 46.67% if margin is unscored)
   // 4+ daily sales is high velocity (100 pts), 1.5 is moderate (65 pts)
   const velocityScore = Math.min(100, Math.max(15, Math.round((estDailySales / 4.0) * 100)));
-  
-  // 2. Unit Economics & Profit Margin Factor (Weight: 25%)
-  // Etsy fee proxy: 6.5% transaction + 3% payment processing + $0.20 listing fee
-  const etsyFees = price * 0.095 + 0.20;
-  const netContribution = Math.max(0, price - etsyFees);
-  const marginPercent = price > 0 ? (netContribution / price) * 100 : 0;
-  const marginScore = Math.min(100, Math.max(20, Math.round(marginPercent * 1.1)));
+
+  // 2. Unit Economics & Profit Margin Factor (Weight: 25%) — only scored when
+  // a fee schedule is known for this marketplace.
+  let marginPercent = 0;
+  let marginScore = 0;
+  let marginFees = 0;
+  if (feeSchedule) {
+    marginFees = price * feeSchedule.percentageFee + feeSchedule.flatFee;
+    const netContribution = Math.max(0, price - marginFees);
+    marginPercent = price > 0 ? (netContribution / price) * 100 : 0;
+    marginScore = Math.min(100, Math.max(20, Math.round(marginPercent * 1.1)));
+  }
 
   // 3. Competitor Review Moat & Entry Barrier Factor (Weight: 20%)
   // <200 reviews is easy (95 pts), >2,000 is heavy incumbent barrier (30 pts)
@@ -121,35 +139,46 @@ export function evaluateProductOpportunity(params: {
   else if (listingAgeDays <= 365) freshnessScore = 70;
   else freshnessScore = 50;
 
+  // When no fee schedule is known for this marketplace, the margin factor is
+  // dropped entirely and its 25% weight is redistributed proportionally
+  // across the other three — never scored against a guessed/wrong fee.
+  const w = feeSchedule
+    ? { velocity: 0.35, margin: 0.25, competition: 0.2, freshness: 0.2 }
+    : { velocity: 0.35 / 0.75, margin: 0, competition: 0.2 / 0.75, freshness: 0.2 / 0.75 };
+
   const factors: ScoreFactorBreakdown[] = [
     {
       id: "velocity",
       name: "Sales Velocity & Buyer Demand",
-      weight: 0.35,
+      weight: w.velocity,
       score: velocityScore,
-      pointsContributed: Math.round(velocityScore * 0.35),
+      pointsContributed: Math.round(velocityScore * w.velocity),
       impactLabel: velocityScore >= 75 ? "Positive" : velocityScore >= 50 ? "Neutral" : "Negative",
       explanation: `Observed estimated velocity of ${estDailySales.toFixed(1)} sales/day indicates ${
         estDailySales >= 3 ? "strong consistent daily order volume." : "steady entry-level transaction volume."
       }`,
       rawMetric: `${estDailySales.toFixed(1)} sales/day`,
     },
-    {
-      id: "margin",
-      name: "Profit Margin & Take-Home",
-      weight: 0.25,
-      score: marginScore,
-      pointsContributed: Math.round(marginScore * 0.25),
-      impactLabel: marginScore >= 70 ? "Positive" : "Neutral",
-      explanation: `Estimated net margin of ${marginPercent.toFixed(1)}% after standard Etsy transaction fees ($${etsyFees.toFixed(2)}/order).`,
-      rawMetric: `${marginPercent.toFixed(1)}% net margin`,
-    },
+    ...(feeSchedule
+      ? [
+          {
+            id: "margin",
+            name: "Profit Margin & Take-Home",
+            weight: w.margin,
+            score: marginScore,
+            pointsContributed: Math.round(marginScore * w.margin),
+            impactLabel: (marginScore >= 70 ? "Positive" : "Neutral") as ScoreFactorBreakdown["impactLabel"],
+            explanation: `Estimated net margin of ${marginPercent.toFixed(1)}% after standard marketplace fees ($${marginFees.toFixed(2)}/order).`,
+            rawMetric: `${marginPercent.toFixed(1)}% net margin`,
+          },
+        ]
+      : []),
     {
       id: "competition",
       name: "Incumbent Review Threshold",
-      weight: 0.20,
+      weight: w.competition,
       score: reviewMoatScore,
-      pointsContributed: Math.round(reviewMoatScore * 0.20),
+      pointsContributed: Math.round(reviewMoatScore * w.competition),
       impactLabel: reviewMoatScore >= 70 ? "Positive" : reviewMoatScore >= 50 ? "Neutral" : "Negative",
       explanation: `Competitor store holds ${shopReviewCount.toLocaleString()} lifetime reviews, representing a ${
         shopReviewCount < 500 ? "reachable entry threshold." : "moderate incumbent review advantage."
@@ -159,9 +188,9 @@ export function evaluateProductOpportunity(params: {
     {
       id: "freshness",
       name: "Market Freshness & Momentum",
-      weight: 0.20,
+      weight: w.freshness,
       score: freshnessScore,
-      pointsContributed: Math.round(freshnessScore * 0.20),
+      pointsContributed: Math.round(freshnessScore * w.freshness),
       impactLabel: freshnessScore >= 80 ? "Positive" : "Neutral",
       explanation: `Listing has been active for ${listingAgeDays} days with ${numFavorers.toLocaleString()} customer favorites.`,
       rawMetric: `${listingAgeDays} days active`,
