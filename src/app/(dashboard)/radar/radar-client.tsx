@@ -79,6 +79,7 @@ export function RadarClient({
 
   // Cross-Marketplace Radar states
   const [crossResults, setCrossResults] = useState<any[] | null>(null);
+  const [crossComparison, setCrossComparison] = useState<any | null>(null);
   const [crossLoading, setCrossLoading] = useState(false);
   const [crossError, setCrossError] = useState<string | null>(null);
   const [crossQuery, setCrossQuery] = useState(searchQuery || "digital planner");
@@ -101,7 +102,7 @@ export function RadarClient({
     setCrossLoading(true);
     setCrossError(null);
     try {
-      const data = await fetchJson<{ results: any[] }>("/api/marketplaces/research", {
+      const data = await fetchJson<{ results: any[]; comparison?: any }>("/api/marketplaces/research", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -110,6 +111,7 @@ export function RadarClient({
         }),
       });
       setCrossResults(data.results);
+      setCrossComparison(data.comparison ?? null);
     } catch (err: any) {
       setCrossError(err.message || "Failed to fetch cross-marketplace opportunity radar data.");
     } finally {
@@ -587,7 +589,7 @@ export function RadarClient({
               </Text>
             </Card>
           ) : crossResults ? (
-            <AllMarketplacesResults results={crossResults} />
+            <AllMarketplacesResults results={crossResults} comparison={crossComparison} />
           ) : (
             <EmptyState
               icon={<Compass className="h-8 w-8 text-ink-tertiary" />}

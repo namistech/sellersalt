@@ -302,10 +302,28 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Etsy Data Acquisition Bugfix & Hardening**:
   - Fixed shop age calculation in `src/connectors/etsy/index.ts` to support both `shop.create_date` and `shop.created_timestamp`, preventing `NaN` month calculations.
   - Optimized image acquisition during search by reusing embedded `listing.images` from active listing search results before falling back to extra HTTP requests, avoiding unnecessary API calls against Etsy rate limits.
+## Cross-Marketplace Intelligence & Comparison Engine — Batch 7 (2026-08-19)
+
+**Why**: To establish the canonical multi-channel evaluation, ranking, and comparison engine that evaluates a product/niche across all registered commerce ecosystems, ranking only live channels, maintaining calibrated confidence, and enforcing zero fabrication of stub or unavailable marketplaces.
+
+**What changed**:
+- **Cross-Marketplace Domain Models**:
+  - Added `MarketplaceEvaluation`, `CrossMarketplaceRanking`, and `CrossMarketplaceComparison` to `src/marketplaces/core/types.ts`.
+- **Comparison Engine Service**:
+  - Created `src/services/intelligence/cross-marketplace-comparison.ts` (`buildCrossMarketplaceComparison`, `compareAllMarketplaceProducts`).
+  - Evaluates each marketplace independently from `ProductResearchResult`.
+  - Strictly ranks **only** live available marketplaces with real canonical opportunity scores (never ranks unavailable channels and never assigns them 0).
+  - Determines `bestAvailableMarketplace` and `highestConfidenceMarketplace`.
+  - Generates transparent, zero-fabrication system limitations explaining channel status and estimation proxies.
+- **API & UI Layer Integration**:
+  - `POST /api/marketplaces/research` returns both `{ results, comparison }`.
+  - Upgraded `src/components/intelligence/AllMarketplacesResults.tsx` with an Executive Cross-Marketplace Intelligence section, Best Available Channel spotlight, and Channel Verdict matrix.
+  - Wired `radar-client.tsx` and `live-search-tab.tsx` to pass cross-marketplace comparison data to `AllMarketplacesResults`.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-6-data-acquisition-audit.test.ts` (16 tests).
-  - Full test baseline: **786/786 passing across 114 suites**.
-  - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+  - Created `src/tests/batch-7-cross-marketplace-comparison.test.ts` (12 tests).
+  - Full test baseline: **798/798 passing across 118 suites**.
+  - TypeScript clean, Prisma valid (29 migrations), clean Next.js build (161/161 routes).
+
 
 
 

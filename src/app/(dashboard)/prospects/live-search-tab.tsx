@@ -76,6 +76,7 @@ export function LiveSearchTab() {
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const [searchResponse, setSearchResponse] = useState<ProductHuntingSearchResponse | null>(null);
   const [allMarketplaceResults, setAllMarketplaceResults] = useState<any[] | null>(null);
+  const [crossComparison, setCrossComparison] = useState<any | null>(null);
 
   // Selection & Modal States
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -97,6 +98,7 @@ export function LiveSearchTab() {
     setSelectedIds(new Set());
     setSearchResponse(null);
     setAllMarketplaceResults(null);
+    setCrossComparison(null);
 
     // "All Marketplaces" fans the same search out across every registered
     // connector via the existing POST /api/marketplaces/research contract —
@@ -108,7 +110,7 @@ export function LiveSearchTab() {
     // implementation of the underlying research.
     if (marketplace === "all") {
       try {
-        const data = await fetchJson<{ results: any[] }>("/api/marketplaces/research", {
+        const data = await fetchJson<{ results: any[]; comparison?: any }>("/api/marketplaces/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -119,6 +121,7 @@ export function LiveSearchTab() {
           }),
         });
         setAllMarketplaceResults(data.results);
+        setCrossComparison(data.comparison ?? null);
       } catch (err: any) {
         setError(err.message || "Failed to search across marketplaces.");
       } finally {
@@ -324,7 +327,7 @@ export function LiveSearchTab() {
           <Heading as="h2" size="h4">
             Results Across Marketplaces
           </Heading>
-          <AllMarketplacesResults results={allMarketplaceResults} />
+          <AllMarketplacesResults results={allMarketplaceResults} comparison={crossComparison} />
         </div>
       )}
 

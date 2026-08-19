@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { runAllMarketplaceProductResearch } from "@/marketplaces/core/research-pipeline";
+import { buildCrossMarketplaceComparison } from "@/services/intelligence/cross-marketplace-comparison";
 import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 
@@ -11,9 +12,9 @@ const ALL_MARKETPLACE_IDS: MarketplaceId[] = ["etsy", "amazon", "ebay", "tiktok_
  * "ALL MARKETPLACES" product research — fans a single search intent out
  * across every registered marketplace connector in parallel and returns one
  * independently status-tagged result per marketplace (AVAILABLE / PARTIAL /
- * UNAVAILABLE / NOT_IMPLEMENTED). Never fabricates results for a
- * marketplace whose connector can't serve the request — see
- * src/marketplaces/core/research-pipeline.ts's runAllMarketplaceProductResearch.
+ * UNAVAILABLE / NOT_IMPLEMENTED) plus canonical cross-marketplace comparisons.
+ * Never fabricates results for a marketplace whose connector can't serve the
+ * request — see src/marketplaces/core/research-pipeline.ts's runAllMarketplaceProductResearch.
  */
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -40,7 +41,9 @@ export async function POST(req: Request) {
       limit: typeof body.limit === "number" ? body.limit : 25,
     });
 
-    return NextResponse.json({ results });
+    const comparison = buildCrossMarketplaceComparison(keywords?.[0], results);
+
+    return NextResponse.json({ results, comparison });
   } catch (error: any) {
     console.error("[AllMarketplaceResearchError]", error);
     return NextResponse.json({ error: error.message || "Failed to run cross-marketplace research" }, { status: 500 });

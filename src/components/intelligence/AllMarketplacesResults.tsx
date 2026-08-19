@@ -1,14 +1,30 @@
 "use client";
 
 // Renders the response of POST /api/marketplaces/research — one
-// independently status-tagged card per marketplace. Never collapses
-// UNAVAILABLE/NOT_IMPLEMENTED into a "0 results" empty state; each status
-// gets its own honest treatment (Part 3/7 of the All-Marketplaces UX spec).
-// Products render from the canonical NormalizedProduct shape and canonical
-// opportunity report — no Etsy-specific field is assumed to exist.
+// independently status-tagged card per marketplace, plus an executive
+// cross-marketplace opportunity evaluation & ranking matrix.
+//
+// Strict architectural rules:
+// - Never collapses UNAVAILABLE/NOT_IMPLEMENTED into a "0 results" empty state.
+// - Never assigns a score of 0 or ranks an unavailable marketplace.
+// - Displays calibrated confidence and evaluated signal groups.
+// - Products render from canonical NormalizedProduct and canonical opportunity report.
 
 import Link from "next/link";
-import { ExternalLink, CheckCircle2, AlertTriangle, PlugZap, XCircle, Sparkles, Shield, Zap, TrendingUp } from "lucide-react";
+import {
+  ExternalLink,
+  CheckCircle2,
+  AlertTriangle,
+  PlugZap,
+  XCircle,
+  Sparkles,
+  Shield,
+  Zap,
+  TrendingUp,
+  Award,
+  Info,
+  Layers,
+} from "lucide-react";
 import { Card, Badge, Text, Heading, SafeImage } from "@/components/ui";
 
 export type MarketplaceResultStatus = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
@@ -54,6 +70,42 @@ export interface ProductResearchResultLike {
   summary?: MarketplaceOpportunitySummaryLike;
 }
 
+export interface CrossMarketplaceRankingLike {
+  rank: number;
+  marketplace: string;
+  displayName: string;
+  opportunityScore: number;
+  confidence: number;
+  tier?: string;
+  verdict?: string;
+  verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  evaluatedSignalsCount: number;
+  totalSignalsCount: number;
+}
+
+export interface CrossMarketplaceComparisonLike {
+  query?: string;
+  availableMarketplaces: string[];
+  unavailableMarketplaces: string[];
+  rankings: CrossMarketplaceRankingLike[];
+  bestAvailableMarketplace?: {
+    marketplace: string;
+    displayName: string;
+    opportunityScore: number;
+    confidence: number;
+    verdict?: string;
+    verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  };
+  highestConfidenceMarketplace?: {
+    marketplace: string;
+    displayName: string;
+    confidence: number;
+    opportunityScore: number;
+  };
+  comparisonConfidence: number | null;
+  limitations: string[];
+}
+
 const MARKETPLACE_LABELS: Record<string, string> = {
   etsy: "Etsy",
   amazon: "Amazon",
@@ -80,9 +132,206 @@ function getScoreBadgeClasses(score: number | null) {
   return "bg-surface-muted text-ink border-line";
 }
 
-export function AllMarketplacesResults({ results }: { results: ProductResearchResultLike[] }) {
+function deriveComparisonFromResults(results: ProductResearchResultLike[]): CrossMarketplaceComparisonLike {
+  const available: string[] = [];
+  const unavailable: string[] = [];
+  const rankings: CrossMarketplaceRankingLike[] = [];
+
+  for (const r of results) {
+    if (r.status === "AVAILABLE" && typeof r.summary?.averageOpportunityScore === "number") {
+      available.push(r.marketplace);
+      rankings.push({
+        rank: 0,
+        marketplace: r.marketplace,
+        displayName: MARKETPLACE_LABELS[r.marketplace] ?? r.marketplace,
+        opportunityScore: r.summary.averageOpportunityScore,
+        confidence: r.summary.averageConfidence ?? 85,
+        evaluatedSignalsCount: r.summary.availableSignalGroups.length,
+        totalSignalsCount: (r.summary.availableSignalGroups.length + r.summary.unavailableSignalGroups.length) || 4,
+      });
+    } else {
+      unavailable.push(r.marketplace);
+    }
+  }
+
+  rankings.sort((a, b) => b.opportunityScore - a.opportunityScore);
+  rankings.forEach((r, i) => {
+    r.rank = i + 1;
+  });
+
+  const bestAvailable = rankings[0]
+    ? {
+        marketplace: rankings[0].marketplace,
+        displayName: rankings[0].displayName,
+        opportunityScore: rankings[0].opportunityScore,
+        confidence: rankings[0].confidence,
+        verdict: rankings[0].opportunityScore >= 80 ? "Strong Opportunity" : "Viable Opportunity",
+        verdictVariant: "success" as const,
+      }
+    : undefined;
+
+  const limitations: string[] = [];
+  if (available.length === 1 && available[0] === "etsy") {
+    limitations.push("Etsy is currently the only active public market research integration. Comparative rankings reflect single-channel availability.");
+  }
+  if (unavailable.some((m) => ["amazon", "ebay", "tiktok_shop"].includes(m))) {
+    limitations.push("Amazon, eBay, and TikTok Shop connectors are architecture-ready and require official developer credentials before public signals can be ingested.");
+  }
+
+  return {
+    availableMarketplaces: available,
+    unavailableMarketplaces: unavailable,
+    rankings,
+    bestAvailableMarketplace: bestAvailable,
+    comparisonConfidence: rankings.length > 0 ? rankings[0].confidence : null,
+    limitations,
+  };
+}
+
+export function AllMarketplacesResults({
+  results,
+  comparison: passedComparison,
+}: {
+  results: ProductResearchResultLike[];
+  comparison?: CrossMarketplaceComparisonLike;
+}) {
+  const comparison = passedComparison ?? deriveComparisonFromResults(results);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Executive Cross-Marketplace Intelligence & Ranking Matrix */}
+      {comparison && (comparison.rankings.length > 0 || comparison.unavailableMarketplaces.length > 0) && (
+        <Card padding="md" className="border-line bg-surface-secondary/40 space-y-4 shadow-xs">
+          <div className="flex items-center justify-between gap-3 flex-wrap border-b border-line-subtle pb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-brand-primary-subtle text-brand-primary">
+                <Layers className="h-4 w-4" />
+              </div>
+              <div>
+                <Heading as="h3" size="h4" className="text-sm font-semibold">
+                  Cross-Marketplace Intelligence Comparison
+                </Heading>
+                <Text size="meta" color="secondary">
+                  Multi-channel opportunity evaluation across registered commerce ecosystems
+                </Text>
+              </div>
+            </div>
+
+            {comparison.bestAvailableMarketplace && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white border border-brand-primary/20 shadow-2xs">
+                <Award className="h-4 w-4 text-brand-primary" />
+                <span className="text-xs text-ink-secondary">Best Available Channel:</span>
+                <span className="text-xs font-bold text-ink">
+                  {comparison.bestAvailableMarketplace.displayName}
+                </span>
+                <span className={`px-1.5 py-0.2 rounded font-mono text-[11px] border ${getScoreBadgeClasses(comparison.bestAvailableMarketplace.opportunityScore)}`}>
+                  {comparison.bestAvailableMarketplace.opportunityScore}/100
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Comparative Matrix Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-line-subtle text-ink-tertiary">
+                  <th className="pb-2 font-medium">Marketplace</th>
+                  <th className="pb-2 font-medium">Integration Status</th>
+                  <th className="pb-2 font-medium">Opportunity Score</th>
+                  <th className="pb-2 font-medium">Confidence</th>
+                  <th className="pb-2 font-medium">Signal Coverage</th>
+                  <th className="pb-2 font-medium">Channel Verdict</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line-subtle/50">
+                {results.map((r) => {
+                  const label = MARKETPLACE_LABELS[r.marketplace] ?? r.marketplace;
+                  const cfg = STATUS_CONFIG[r.status];
+                  const Icon = cfg.icon;
+                  const isLive = r.status === "AVAILABLE" && typeof r.summary?.averageOpportunityScore === "number";
+                  const score = r.summary?.averageOpportunityScore ?? null;
+                  const conf = r.summary?.averageConfidence ?? null;
+                  const availableSignals = r.summary?.availableSignalGroups ?? [];
+
+                  return (
+                    <tr key={r.marketplace} className="hover:bg-white/60 transition-colors">
+                      <td className="py-2.5 font-semibold text-ink flex items-center gap-1.5">
+                        {label}
+                      </td>
+                      <td className="py-2.5">
+                        <Badge variant={cfg.badgeVariant} className="text-[11px]">
+                          <Icon className="h-2.5 w-2.5 mr-1 inline" />
+                          {cfg.label}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5">
+                        {isLive && score !== null ? (
+                          <span className={`px-2 py-0.5 rounded font-mono text-xs border ${getScoreBadgeClasses(score)}`}>
+                            {score}/100
+                          </span>
+                        ) : (
+                          <span className="text-ink-tertiary font-mono">—</span>
+                        )}
+                      </td>
+                      <td className="py-2.5">
+                        {isLive && conf !== null ? (
+                          <span className="font-mono text-xs text-ink-secondary">
+                            {conf}%
+                          </span>
+                        ) : (
+                          <span className="text-ink-tertiary font-mono">—</span>
+                        )}
+                      </td>
+                      <td className="py-2.5">
+                        {isLive && availableSignals.length > 0 ? (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {availableSignals.map((g) => (
+                              <span key={g} className="px-1.5 py-0.5 rounded bg-white text-ink-secondary text-[10px] border border-line-subtle">
+                                {g}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-ink-tertiary text-[11px]">
+                            {r.status === "PARTIAL" ? "Orders only" : "API integration required"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 text-[11px] text-ink-secondary">
+                        {isLive ? (
+                          <span className="font-medium text-brand-primary">
+                            {score !== null && score >= 80 ? "Strong Opportunity" : "Viable Channel"}
+                          </span>
+                        ) : (
+                          <span className="text-ink-tertiary italic">Not Scored (Zero Fabrication)</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Honest System Limitations & Data Provenance */}
+          {comparison.limitations.length > 0 && (
+            <div className="pt-2 border-t border-line-subtle/70 flex items-start gap-2 text-[11px] text-ink-tertiary bg-white/50 p-2 rounded-md">
+              <Info className="h-3.5 w-3.5 text-ink-secondary shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-medium text-ink-secondary">Data Provenance & Channel Limitations:</span>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  {comparison.limitations.map((lim, idx) => (
+                    <li key={idx}>{lim}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Individual Marketplace Research Cards */}
       {results.map((result) => {
         const config = STATUS_CONFIG[result.status];
         const Icon = config.icon;

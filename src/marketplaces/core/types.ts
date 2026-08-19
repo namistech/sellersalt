@@ -349,3 +349,74 @@ export interface SellerAnalytics {
   currency: string;
   orderCount: number;
 }
+
+/**
+ * Canonical evaluation of a product, niche, or search across a single marketplace.
+ */
+export interface MarketplaceEvaluation {
+  marketplace: MarketplaceId;
+  displayName: string;
+  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
+  products: NormalizedProduct[];
+  totalProductsCount: number;
+  scoredProductsCount: number;
+  opportunityScore: number | null;
+  confidence: number | null;
+  tier?: string;
+  verdict?: string;
+  verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  availableSignals: string[];
+  unavailableSignals: string[];
+  provenance: SignalProvenance;
+  message?: string;
+  evaluatedAt: Date;
+}
+
+/**
+ * Comparative ranking entry for a single marketplace that has valid, live data.
+ * NOTE: Unavailable or not implemented marketplaces are strictly excluded from ranking.
+ */
+export interface CrossMarketplaceRanking {
+  rank: number;
+  marketplace: MarketplaceId;
+  displayName: string;
+  opportunityScore: number;
+  confidence: number;
+  tier?: string;
+  verdict?: string;
+  verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  evaluatedSignalsCount: number;
+  totalSignalsCount: number;
+}
+
+/**
+ * Cross-marketplace intelligence comparison model.
+ * Evaluates how attractive a product/niche is across all requested channels,
+ * ranking ONLY marketplaces with real data, maintaining calibrated confidence,
+ * and listing honest system limitations.
+ */
+export interface CrossMarketplaceComparison {
+  query?: string;
+  evaluations: MarketplaceEvaluation[];
+  availableMarketplaces: MarketplaceId[];
+  unavailableMarketplaces: MarketplaceId[];
+  rankings: CrossMarketplaceRanking[];
+  bestAvailableMarketplace?: {
+    marketplace: MarketplaceId;
+    displayName: string;
+    opportunityScore: number;
+    confidence: number;
+    verdict?: string;
+    verdictVariant?: "success" | "warning" | "danger" | "info" | "neutral";
+  };
+  highestConfidenceMarketplace?: {
+    marketplace: MarketplaceId;
+    displayName: string;
+    confidence: number;
+    opportunityScore: number;
+  };
+  comparisonConfidence: number | null;
+  limitations: string[];
+  comparedAt: Date;
+}
+
