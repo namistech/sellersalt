@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { PlannerItemType, PlannerItemStatus } from "@prisma/client";
+import { checkQuota } from "@/services/plans/quota-enforcement";
 
 export async function POST(req: Request) {
   try {
@@ -42,6 +43,14 @@ export async function POST(req: Request) {
           message: "Item is already in your Planner.",
         });
       }
+    }
+
+    // Only gate the actual creation path — the idempotent "already saved"
+    // return above never creates a new row, so it must never be blocked by
+    // quota.
+    const quota = await checkQuota(organizationId, "PLANNER_ITEM");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
     }
 
     const validTypes = Object.values(PlannerItemType);

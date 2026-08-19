@@ -74,23 +74,82 @@ not decorative):
   dependency (developer-program applications), not something more code
   in this repo can resolve.
 
+**Plan-tier quota enforcement is now real** (2026-08-19, launch-blocker
+fix): `checkQuota()` (`src/services/plans/quota-enforcement.ts`) existed
+correctly but had zero live call sites — every plan's headline paid
+differentiators were unlimited for every tier including Free. Now wired
+into all 5 routes, gating before the expensive operation and after the
+existing auth check, using the existing `403 { error }` convention already
+used by `src/lib/plan-limits.ts`'s `checkLimit()`:
+
+| Route | Quota action |
+|---|---|
+| `POST /api/keywords/search` | `KEYWORD_SEARCH` |
+| `GET`/`POST /api/products/search` | `PRODUCT_RESEARCH` |
+| `POST /api/seo/audit` | `SEO_AUDIT` |
+| `POST /api/studio/generate` | `AI_GENERATION` |
+| `POST /api/planner/items` | `PLANNER_ITEM` (checked only on the real creation path — the pre-existing idempotent "already saved" return is never blocked) |
+
+Also two SaltBot tools fixed the same day (`src/services/assistant/
+tool-registry.ts` — `search_products`, `explore_category`,
+`search_keywords`): they used to silently return hardcoded fallback data
+tagged `ACTUAL_ETSY_DATA` on any upstream failure. Now they report a real
+`success: false` + error, matching every other tool in the registry.
+
+**Known caveat, not fixed this pass**: `checkQuota`'s `KEYWORD_SEARCH`/
+`PRODUCT_RESEARCH` "current usage" is counted from `Prospect` row
+creation dates — but neither `/api/keywords/search` nor `/api/products/
+search` actually creates `Prospect` rows (only the separate, async
+Prospects worker does). The blocking arithmetic is real and enforced, but
+for these two actions specifically it measures worker-collected research
+volume, not live per-search usage from these two routes. Flagged, not
+redesigned, per explicit scope for this pass.
+
+**Plan/usage visibility is now honest end-to-end** (2026-08-19, same-day
+follow-up): `PlanUsageCard` (`dashboard-client.tsx`) shows the org's real
+plan name and real usage/limits via a new `getPlanUsageSummary()`
+(`src/services/plans/quota-enforcement.ts`) — no default props, an
+explicit "unavailable" state when data can't load, never a fabricated
+number. `PLAN_DEFINITIONS` (`plan-capabilities.ts`) is now the single
+authoritative source for product-research quota everywhere a user can see
+it — pricing page, checkout page, marketing homepage, and the in-app
+billing page all previously showed independently-drifted numbers for
+this one metric (`Package.maxProspectsPerMonth`: 15/500/5000/50000 vs.
+`PLAN_DEFINITIONS.monthlyProductResearches`: 10/150/1000/10000, already
+publicly promised and the one now actually enforced) — all four now agree.
+`checkLimit`'s old `"prospectsThisMonth"` resource (display-only, never
+actually enforced) was removed rather than left to drift again.
+`trackedCompetitorShops`/`connectedEtsyStores` already agreed between both
+systems and were left as-is, now with a regression test guarding against
+future drift instead of a code restructure. Pricing page's feature
+comparison table (`pricing-client.tsx`) also had its own second, fully
+hardcoded copy of these same numbers a few hundred lines under the
+already-live plan cards — now derived from `PLAN_DEFINITIONS` too.
+
+**Onboarding activation flow & routing completed** (2026-08-19, launch-readiness pass):
+- Real `User` fields added (`onboardingCompletedAt`, `onboardingCategory`,
+  `onboardingGoal`, `onboardingNiche`).
+- `POST /api/onboarding/complete` persists real onboarding choices to the
+  `User` model with input validation and session auth.
+- `/onboarding` has a server-side guard bouncing completed users to
+  `/dashboard` (unauthenticated to `/login`).
+- `checkout-client.tsx` routes new free signups to `/onboarding` and
+  existing logins to `/dashboard`.
+- `dashboard/page.tsx` fetches onboarding state and `ListingDraft` count
+  server-side; `DashboardOnboardingGuide` computes checklist completion
+  from real props (`onboardingCategory`, `onboardingGoal`, `hasListingDraft`),
+  eliminating `localStorage` for business facts.
+
 **Validation baseline** (independently re-run for this checkpoint):
-- Tests: **685/685 passing** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **724/724 passing** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: clean (`npx tsc --noEmit`)
-- Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status`)
+- Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status` — 29 migrations)
 - Build: clean (`npx next build`)
 
-**Next engineering task**: migrate `handleShopWatchJob`
-(`src/workers/index.ts`, the Market Research shop-tracking worker —
-distinct from the Prospects worker, which already went through this
-migration) off the old `src/connectors/registry.ts` dispatcher onto
-`MarketplaceRegistry`. This is the one piece of already-flagged technical
-debt (see `AGENTS.md` §19) that is genuinely actionable right now — it
-doesn't require external credentials like the Amazon/eBay/TikTok Shop
-work does, and it closes the last known gap in "every research-adjacent
-code path goes through the new registry, not the old one," the same
-invariant this batch's tests just started enforcing for the newly
-migrated surfaces.
+**Next engineering task**: Amazon/eBay/TikTok Shop real API credential
+applications (Phase 7). `handleShopWatchJob`'s old-registry migration (see
+`AGENTS.md` §19) remains real, lower-priority technical debt — no
+user-facing/revenue impact.
 
 ## What is SellerSalt?
 
@@ -267,12 +326,12 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of the Keyword Research / Category Hunting / SEO Audit marketplace-context
-batch (2026-08-19), independently re-run (not copied from an earlier report):
+As of the Launch Readiness & Onboarding Completion batch (2026-08-19),
+independently re-run (not copied from an earlier report):
 
-- Tests: **685/685 passing** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **724/724 passing** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: clean (`npx tsc --noEmit`)
-- Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status`)
+- Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status` — 29 migrations)
 - Build: clean (`npx next build`)
 
 If these numbers differ when you run them yourself, trust your own run —

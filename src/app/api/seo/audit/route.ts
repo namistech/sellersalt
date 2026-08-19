@@ -11,6 +11,7 @@ import { getOptimizationRules } from "@/marketplaces/core/optimization-rules";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 import { parseEtsyListingInput } from "@/lib/etsy-listing-parser";
 import { mapConnectorError } from "@/services/connector-diagnostics";
+import { checkQuota } from "@/services/plans/quota-enforcement";
 
 const SUPPORTED: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
 
@@ -23,6 +24,11 @@ export async function POST(req: Request) {
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const quota = await checkQuota(organizationId, "SEO_AUDIT");
+  if (!quota.allowed) {
+    return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
   }
 
   try {

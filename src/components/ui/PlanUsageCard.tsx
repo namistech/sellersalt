@@ -2,26 +2,50 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck, Zap, AlertTriangle } from "lucide-react";
 import { Card, Badge, Button, Heading, Text } from "@/components/ui";
 
 export interface PlanUsageCardProps {
-  planName?: string;
-  keywordUsage?: { current: number; limit: number };
-  productUsage?: { current: number; limit: number };
-  seoUsage?: { current: number; limit: number };
-  competitorUsage?: { current: number; limit: number };
+  /** Real plan name + real usage/limit pairs — always the actual
+   * organization's data, sourced from getPlanUsageSummary()
+   * (src/services/plans/quota-enforcement.ts). Pass `null` (not omitted)
+   * when real data couldn't be loaded — this renders an explicit
+   * "unavailable" state instead of ever falling back to fabricated
+   * numbers. There is deliberately no default value for any of these. */
+  planName: string | null;
+  keywordUsage: { current: number; limit: number } | null;
+  productUsage: { current: number; limit: number } | null;
+  seoUsage: { current: number; limit: number } | null;
+  competitorUsage: { current: number; limit: number } | null;
   className?: string;
 }
 
 export function PlanUsageCard({
-  planName = "Starter Plan",
-  keywordUsage = { current: 42, limit: 250 },
-  productUsage = { current: 18, limit: 150 },
-  seoUsage = { current: 6, limit: 25 },
-  competitorUsage = { current: 3, limit: 10 },
+  planName,
+  keywordUsage,
+  productUsage,
+  seoUsage,
+  competitorUsage,
   className = "",
 }: PlanUsageCardProps) {
+  if (planName === null || keywordUsage === null || productUsage === null || seoUsage === null || competitorUsage === null) {
+    return (
+      <Card padding="md" className={`border-line bg-white shadow-xs space-y-2 ${className}`}>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-ink-tertiary" />
+          <Heading as="h3" size="h4">Subscription Plan &amp; Quota</Heading>
+        </div>
+        <Text size="body-sm" color="secondary">
+          Plan usage is currently unavailable. Try refreshing, or check{" "}
+          <Link href="/settings/billing" className="font-semibold text-[#0E8F5D] hover:underline">
+            Billing Settings
+          </Link>{" "}
+          directly.
+        </Text>
+      </Card>
+    );
+  }
+
   return (
     <Card padding="md" className={`border-line bg-white shadow-xs space-y-4 ${className}`}>
       <div className="flex items-center justify-between">

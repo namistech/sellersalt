@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateOriginalListingDraft } from "@/services/listing-generation";
 import { ListingDraftStatus, PlannerItemStatus } from "@prisma/client";
+import { checkQuota } from "@/services/plans/quota-enforcement";
 
 export async function POST(req: Request) {
   try {
@@ -60,6 +61,11 @@ export async function POST(req: Request) {
 
     if (!conceptTitle || typeof conceptTitle !== "string" || !conceptTitle.trim()) {
       return NextResponse.json({ error: "Concept title is required for listing generation." }, { status: 400 });
+    }
+
+    const quota = await checkQuota(organizationId, "AI_GENERATION");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
     }
 
     // Generate listing draft with AI routing, originality gate, and SEO audit

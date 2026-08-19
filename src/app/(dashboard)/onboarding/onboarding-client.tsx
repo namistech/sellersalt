@@ -84,6 +84,8 @@ export function OnboardingClient({ userName }: { userName: string }) {
   const [customNiche, setCustomNiche] = useState("Minimalist Desk Accessories");
   const [selectedGoal, setSelectedGoal] = useState("radar");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
 
   function handleCategorySelect(cat: string) {
     setSelectedCategory(cat);
@@ -105,16 +107,29 @@ export function OnboardingClient({ userName }: { userName: string }) {
     }
   }
 
-  function handleFinish() {
-    // Save preference to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("sellersalt_onboarding_completed", "true");
-      localStorage.setItem("sellersalt_user_category", selectedCategory);
-      localStorage.setItem("sellersalt_user_niche", customNiche);
-      localStorage.setItem("sellersalt_user_goal", selectedGoal);
+  async function handleFinish() {
+    // Real business fact — persisted server-side via the User row, not
+    // localStorage (a client-side value can't be trusted as a server-side
+    // fact; see dashboard-onboarding-guide.tsx, which reads this same data
+    // from real props, never localStorage).
+    setIsFinishing(true);
+    setFinishError(null);
+    try {
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: selectedCategory, niche: customNiche, goal: selectedGoal }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save onboarding preferences.");
+      }
+      const targetGoal = GOALS.find((g) => g.id === selectedGoal);
+      router.push(targetGoal ? targetGoal.route : "/workspace");
+    } catch (err: any) {
+      setIsFinishing(false);
+      setFinishError(err.message || "Something went wrong saving your preferences. Please try again.");
     }
-    const targetGoal = GOALS.find((g) => g.id === selectedGoal);
-    router.push(targetGoal ? targetGoal.route : "/workspace");
   }
 
   return (
@@ -386,10 +401,15 @@ export function OnboardingClient({ userName }: { userName: string }) {
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              {finishError && (
+                <p className="text-[11px] text-red-600 text-center">{finishError}</p>
+              )}
               <Button
                 variant="primary"
                 onClick={handleFinish}
+                loading={isFinishing}
+                disabled={isFinishing}
                 className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold py-3 shadow-sm flex items-center justify-center gap-2"
               >
                 <span>Launch First Intelligence Tool</span>

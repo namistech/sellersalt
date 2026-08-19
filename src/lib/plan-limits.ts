@@ -1,5 +1,15 @@
 import { prisma } from "./db";
 
+// `maxProspectsPerMonth` below is retained on the Package row for schema/
+// historical continuity but is no longer the enforced or displayed source
+// for product-research quota — it disagreed with the actually-enforced,
+// publicly-promised numbers (see PLAN_DEFINITIONS.monthlyProductResearches
+// in src/services/plans/plan-capabilities.ts) and was never itself wired to
+// a real blocking check (checkLimit's old "prospectsThisMonth" resource was
+// display-only, read from exactly one place, now removed). Product-research
+// quota is authoritative via checkQuota(orgId, "PRODUCT_RESEARCH") — see
+// src/services/plans/quota-enforcement.ts. Do not reintroduce a second,
+// independently-numbered product-research limit here.
 export const DEFAULT_PACKAGES = [
   {
     key: "FREE",
@@ -81,7 +91,6 @@ export type LimitResource =
   | "searchConfigs"
   | "scheduledSearches"
   | "trackedShops"
-  | "prospectsThisMonth"
   | "sellerChannels";
 
 export async function checkLimit(
@@ -110,14 +119,6 @@ export async function checkLimit(
       current = await prisma.shopWatch.count({ where: { organizationId, isActive: true } });
       limit = pkg.maxTrackedShops;
       break;
-    case "prospectsThisMonth": {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      current = await prisma.prospect.count({ where: { organizationId, createdAt: { gte: startOfMonth } } });
-      limit = pkg.maxProspectsPerMonth;
-      break;
-    }
     case "sellerChannels":
       current = await prisma.sellerChannel.count({ where: { organizationId, status: "ACTIVE" } });
       limit = pkg.maxSellerChannels;

@@ -32,34 +32,54 @@ interface FeatureComparisonRow {
   agency: string | boolean;
 }
 
-const COMPARISON_ROWS: FeatureComparisonRow[] = [
-  // 1. Research Engine
-  { name: "Monthly Keyword Searches", category: "Research Engine", free: "15 / mo", starter: "250 / mo", pro: "2,500 / mo", agency: "25,000 / mo" },
-  { name: "Monthly Product Researches", category: "Research Engine", free: "10 / mo", starter: "150 / mo", pro: "1,000 / mo", agency: "10,000 / mo" },
-  { name: "Opportunity Radar Access", category: "Research Engine", free: "Sample Only", starter: true, pro: true, agency: true },
-  { name: "Category Hunting & Taxonomy Mining", category: "Research Engine", free: "Top 3 Branches", starter: true, pro: true, agency: true },
-  { name: "SEO Audit Diagnostics", category: "Research Engine", free: "3 / mo", starter: "25 / mo", pro: "150 / mo", agency: "1,000 / mo" },
+// Every cell below that corresponds to a real PLAN_DEFINITIONS quota field
+// is derived live from it, not re-typed as a second, independently-drifting
+// literal — this table sits a few hundred pixels under the plan cards
+// above, which already read PLAN_DEFINITIONS directly, so a hand-typed
+// number here would silently disagree the moment PLAN_DEFINITIONS changes.
+// Only genuinely editorial/qualitative cells (no numeric counterpart in
+// PLAN_DEFINITIONS — e.g. "Full Unit Economics", team seats) stay hardcoded.
+function perMo(n: number): string {
+  return `${n.toLocaleString()} / mo`;
+}
+function count(n: number, noun: string): string {
+  return `${n.toLocaleString()} ${noun}${n === 1 ? "" : "s"}`;
+}
 
-  // 2. Intelligence & Strategy
-  { name: "Composite Opportunity Scoring (0-100)", category: "Intelligence & Strategy", free: "Basic Score", starter: "Explainable Inputs", pro: "Full Unit Economics", agency: "Full Unit Economics" },
-  { name: "Tracked Competitor Shops", category: "Intelligence & Strategy", free: "1 Shop", starter: "10 Shops", pro: "50 Shops", agency: "250 Shops" },
-  { name: "Longitudinal 6h / 24h / 7d Deltas", category: "Intelligence & Strategy", free: false, starter: true, pro: true, agency: true },
-  { name: "Market Intelligence Live Signals Feed", category: "Intelligence & Strategy", free: "Sample", starter: true, pro: true, agency: true },
-  { name: "Seller Health Score & Factor Diagnostics", category: "Intelligence & Strategy", free: "Basic", starter: true, pro: true, agency: true },
+function buildComparisonRows(): FeatureComparisonRow[] {
+  const { FREE, STARTED, PRO, AGENCY } = PLAN_DEFINITIONS;
 
-  // 3. Execution & Drafts
-  { name: "Workspace Planner Capacity", category: "Execution & Drafts", free: "3 Items", starter: "25 Items", pro: "150 Items", agency: "1,000 Items" },
-  { name: "6-Pillar Listing Strategy Blueprint", category: "Execution & Drafts", free: false, starter: true, pro: true, agency: true },
-  { name: "13-Tag Keyword Cluster Builder", category: "Execution & Drafts", free: "Sample", starter: true, pro: true, agency: true },
-  { name: "Listing Content Assistant (10-Part Desc)", category: "Execution & Drafts", free: "2 / mo", starter: "20 / mo", pro: "100 / mo", agency: "1,000 / mo" },
-  { name: "Etsy Draft Creation & Review Gate (Rule 9)", category: "Execution & Drafts", free: false, starter: "1 Store", pro: "5 Stores", agency: "25 Stores" },
+  return [
+    // 1. Research Engine
+    { name: "Monthly Keyword Searches", category: "Research Engine", free: perMo(FREE.limits.monthlyKeywordSearches), starter: perMo(STARTED.limits.monthlyKeywordSearches), pro: perMo(PRO.limits.monthlyKeywordSearches), agency: perMo(AGENCY.limits.monthlyKeywordSearches) },
+    { name: "Monthly Product Researches", category: "Research Engine", free: perMo(FREE.limits.monthlyProductResearches), starter: perMo(STARTED.limits.monthlyProductResearches), pro: perMo(PRO.limits.monthlyProductResearches), agency: perMo(AGENCY.limits.monthlyProductResearches) },
+    { name: "Opportunity Radar Access", category: "Research Engine", free: "Sample Only", starter: true, pro: true, agency: true },
+    { name: "Category Hunting & Taxonomy Mining", category: "Research Engine", free: "Top 3 Branches", starter: true, pro: true, agency: true },
+    { name: "SEO Audit Diagnostics", category: "Research Engine", free: perMo(FREE.limits.monthlySeoAudits), starter: perMo(STARTED.limits.monthlySeoAudits), pro: perMo(PRO.limits.monthlySeoAudits), agency: perMo(AGENCY.limits.monthlySeoAudits) },
 
-  // 4. Store Operations & Scale
-  { name: "Connected Etsy Storefronts", category: "Store Operations & Scale", free: "0 Stores", starter: "1 Store", pro: "5 Stores", agency: "25 Stores" },
-  { name: "Post-Publish Listing Intelligence & Drift", category: "Store Operations & Scale", free: false, starter: "Basic", pro: "Automated Alerts", agency: "Priority Multi-Store" },
-  { name: "Data Export (CSV & JSON)", category: "Store Operations & Scale", free: false, starter: true, pro: true, agency: true },
-  { name: "Team Seats & Multi-User Access", category: "Store Operations & Scale", free: "1 User", starter: "1 User", pro: "3 Users", agency: "15 Users" },
-];
+    // 2. Intelligence & Strategy
+    { name: "Composite Opportunity Scoring (0-100)", category: "Intelligence & Strategy", free: "Basic Score", starter: "Explainable Inputs", pro: "Full Unit Economics", agency: "Full Unit Economics" },
+    { name: "Tracked Competitor Shops", category: "Intelligence & Strategy", free: count(FREE.limits.trackedCompetitorShops, "Shop"), starter: count(STARTED.limits.trackedCompetitorShops, "Shop"), pro: count(PRO.limits.trackedCompetitorShops, "Shop"), agency: count(AGENCY.limits.trackedCompetitorShops, "Shop") },
+    { name: "Longitudinal 6h / 24h / 7d Deltas", category: "Intelligence & Strategy", free: false, starter: true, pro: true, agency: true },
+    { name: "Market Intelligence Live Signals Feed", category: "Intelligence & Strategy", free: "Sample", starter: true, pro: true, agency: true },
+    { name: "Seller Health Score & Factor Diagnostics", category: "Intelligence & Strategy", free: "Basic", starter: true, pro: true, agency: true },
+
+    // 3. Execution & Drafts
+    { name: "Workspace Planner Capacity", category: "Execution & Drafts", free: count(FREE.limits.activePlannerItems, "Item"), starter: count(STARTED.limits.activePlannerItems, "Item"), pro: count(PRO.limits.activePlannerItems, "Item"), agency: count(AGENCY.limits.activePlannerItems, "Item") },
+    { name: "6-Pillar Listing Strategy Blueprint", category: "Execution & Drafts", free: false, starter: true, pro: true, agency: true },
+    { name: "13-Tag Keyword Cluster Builder", category: "Execution & Drafts", free: "Sample", starter: true, pro: true, agency: true },
+    { name: "Listing Content Assistant (10-Part Desc)", category: "Execution & Drafts", free: perMo(FREE.limits.monthlyAiListingGenerations), starter: perMo(STARTED.limits.monthlyAiListingGenerations), pro: perMo(PRO.limits.monthlyAiListingGenerations), agency: perMo(AGENCY.limits.monthlyAiListingGenerations) },
+    { name: "Etsy Draft Creation & Review Gate (Rule 9)", category: "Execution & Drafts", free: false, starter: count(STARTED.limits.connectedEtsyStores, "Store"), pro: count(PRO.limits.connectedEtsyStores, "Store"), agency: count(AGENCY.limits.connectedEtsyStores, "Store") },
+
+    // 4. Store Operations & Scale
+    { name: "Connected Etsy Storefronts", category: "Store Operations & Scale", free: count(FREE.limits.connectedEtsyStores, "Store"), starter: count(STARTED.limits.connectedEtsyStores, "Store"), pro: count(PRO.limits.connectedEtsyStores, "Store"), agency: count(AGENCY.limits.connectedEtsyStores, "Store") },
+    { name: "Post-Publish Listing Intelligence & Drift", category: "Store Operations & Scale", free: false, starter: "Basic", pro: "Automated Alerts", agency: "Priority Multi-Store" },
+    { name: "Data Export (CSV & JSON)", category: "Store Operations & Scale", free: FREE.limits.exportEnabled, starter: STARTED.limits.exportEnabled, pro: PRO.limits.exportEnabled, agency: AGENCY.limits.exportEnabled },
+    { name: "Team Seats & Multi-User Access", category: "Store Operations & Scale", free: "1 User", starter: "1 User", pro: "3 Users", agency: "15 Users" },
+  ];
+}
+
+const COMPARISON_ROWS: FeatureComparisonRow[] = buildComparisonRows();
 
 export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
   const [billingPeriod, setBillingPeriod] = useState<"MONTHLY" | "ANNUAL">("ANNUAL");

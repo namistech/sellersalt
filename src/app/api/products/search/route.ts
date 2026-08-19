@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { searchMarketplaceProducts } from "@/services/product-hunting";
 import type { EtsySearchFilters } from "@/types/product-hunting";
 import type { MarketplaceId } from "@/marketplaces/core/types";
+import { checkQuota } from "@/services/plans/quota-enforcement";
 
 function resolveMarketplace(raw: string | null): MarketplaceId {
   const supported: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
@@ -17,6 +18,11 @@ export async function POST(req: Request) {
 
     if (!organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const quota = await checkQuota(organizationId, "PRODUCT_RESEARCH");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
     }
 
     const body = await req.json().catch(() => ({}));
@@ -57,6 +63,11 @@ export async function GET(req: Request) {
 
     if (!organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const quota = await checkQuota(organizationId, "PRODUCT_RESEARCH");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

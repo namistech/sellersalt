@@ -113,3 +113,30 @@ export async function checkQuota(
     upgradeMessage,
   };
 }
+
+export interface PlanUsageSummary {
+  planKey: PlanTierKey;
+  planName: string;
+  keywordSearch: QuotaCheckResult;
+  productResearch: QuotaCheckResult;
+  seoAudit: QuotaCheckResult;
+  trackedShop: QuotaCheckResult;
+}
+
+/** The single real-data source for any UI that shows "your plan + current
+ * usage" (dashboard, billing page, etc.) — never hand-roll a second query
+ * against Prospect/ListingSeoAudit/ShopWatch counts or a second plan-name
+ * lookup; call this instead so every surface agrees. */
+export async function getPlanUsageSummary(organizationId: string): Promise<PlanUsageSummary> {
+  const [keywordSearch, productResearch, seoAudit, trackedShop] = await Promise.all([
+    checkQuota(organizationId, "KEYWORD_SEARCH"),
+    checkQuota(organizationId, "PRODUCT_RESEARCH"),
+    checkQuota(organizationId, "SEO_AUDIT"),
+    checkQuota(organizationId, "TRACK_SHOP"),
+  ]);
+
+  const planKey = keywordSearch.tier;
+  const planName = PLAN_DEFINITIONS[planKey]?.name ?? PLAN_DEFINITIONS.STARTED.name;
+
+  return { planKey, planName, keywordSearch, productResearch, seoAudit, trackedShop };
+}

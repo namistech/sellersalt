@@ -5,6 +5,7 @@ import { fetchMarketplaceKeywordResearch, fetchAllMarketplaceKeywordResearch } f
 import type { KeywordSearchRequest } from "@/types/keyword-research";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
+import { checkQuota } from "@/services/plans/quota-enforcement";
 
 const SUPPORTED: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
 
@@ -24,6 +25,11 @@ export async function POST(req: Request) {
 
     if (!body.query || typeof body.query !== "string" || !body.query.trim()) {
       return NextResponse.json({ error: "Query keyword is required." }, { status: 400 });
+    }
+
+    const quota = await checkQuota(organizationId, "KEYWORD_SEARCH");
+    if (!quota.allowed) {
+      return NextResponse.json({ error: quota.upgradeMessage }, { status: 403 });
     }
 
     const rawMarketplace = (body as any).marketplace;

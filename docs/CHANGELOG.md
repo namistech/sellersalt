@@ -181,20 +181,18 @@ superseded-style notice — content otherwise untouched.
 historical documents were deliberately left as-is; they're accurate
 snapshots of their own moment in time, not claims about current state.
 
-## Documentation synchronization (2026-08-19)
+## Launch Readiness, Quota Enforcement & Onboarding Activation (2026-08-19)
 
-**Why**: development is transitioning to a different coding agent
-(Google Antigravity). The architecture had evolved substantially across
-the sessions above; the existing documentation (60+ files under `docs/`,
-plus `AGENTS.md`/`GEMINI.md`/`CLAUDE.md`) had not kept pace — some of it
-(`docs/25-roadmap/SELLERSALT_CAPABILITY_MATRIX.md`,
-`docs/marketplace/marketplace-abstraction.md`, `SETUP.md`) actively
-described a pre-marketplace-abstraction or pre-compliance-remediation
-state that no longer matches the code, which risks misleading a fresh
-agent working from documentation alone. This pass built the canonical
-document set (`docs/SELLERSALT-ARCHITECTURE.md`,
-`docs/SELLERSALT-HANDOFF.md`, this changelog, the refreshed roadmap and
-matrix, a rewritten `AGENTS.md`) and added superseded-notices to the
-specific legacy documents found to be actively stale, without deleting
-any of them — see the documentation inventory in this session's final
-report for the full classification.
+**Why**: Launch audit identified four critical gaps in SaaS operational readiness:
+1. SaltBot fallback paths returned fabricated demo listings/categories tagged `ACTUAL_ETSY_DATA`.
+2. `checkQuota()` existed but had zero call sites, allowing unlimited usage on free tiers.
+3. PlanUsageCard and pricing pages had drifted quota numbers and fabricated defaults.
+4. The onboarding wizard was orphaned from checkout, and dashboard activation relied on client-side `localStorage`.
+
+**What changed**:
+- **SaltBot Data Integrity**: Fabricated fallback responses physically removed from `search_products`, `explore_category`, and `search_keywords` in `src/services/assistant/tool-registry.ts`. Failed upstream calls now return honest `success: false` errors.
+- **Real Plan Quota Enforcement**: Wired `checkQuota()` into all 5 paid-action routes (`/api/keywords/search`, `/api/products/search`, `/api/seo/audit`, `/api/studio/generate`, `/api/planner/items`) after authentication and before expensive operations. Idempotency is preserved on Planner items before quota checks.
+- **Pricing & Quota Single Source of Truth**: Removed stale `prospectsThisMonth` resource. `PLAN_DEFINITIONS` is now the single authority across pricing, checkout, marketing homepage, in-app billing, and `PlanUsageCard`. `PlanUsageCard` renders an honest unavailable state when data cannot be retrieved.
+- **Onboarding Activation Flow**: Added `onboardingCompletedAt`, `onboardingCategory`, `onboardingGoal`, and `onboardingNiche` to `User` model. `POST /api/onboarding/complete` persists real choices with input validation. `/onboarding` features a server-side guard bouncing completed users to `/dashboard`. `checkout-client.tsx` routes new free signups to `/onboarding` and existing logins to `/dashboard`. `DashboardOnboardingGuide` calculates checklist completion from real server props, eliminating `localStorage` for business facts.
+- **Regression Test Coverage**: Added dedicated test suites (`saltbot-no-fabricated-data.test.ts`, `quota-enforcement.test.ts`, `plan-usage-consistency.test.ts`, `onboarding-activation-and-routing.test.ts`). Full test baseline reaches 724/724 passing.
+

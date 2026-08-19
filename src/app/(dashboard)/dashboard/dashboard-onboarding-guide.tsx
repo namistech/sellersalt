@@ -23,22 +23,34 @@ interface DashboardOnboardingGuideProps {
   hasActiveSearches: boolean;
   hasTrackedShops: boolean;
   hasProspects: boolean;
+  /** Real, server-derived — from User.onboardingCategory/onboardingGoal
+   * (set only by POST /api/onboarding/complete). Never localStorage: a
+   * client-side value can't be trusted as a server-side business fact. */
+  onboardingCategory: string | null;
+  onboardingGoal: string | null;
+  /** Real, server-derived — whether this org has ever created a listing
+   * draft (any status), i.e. actually used Studio at least once. */
+  hasListingDraft: boolean;
 }
 
 export function DashboardOnboardingGuide({
   hasActiveSearches,
   hasTrackedShops,
   hasProspects,
+  onboardingCategory,
+  onboardingGoal,
+  hasListingDraft,
 }: DashboardOnboardingGuideProps) {
   const [dismissed, setDismissed] = useState<boolean>(true);
   const [mounted, setMounted] = useState(false);
-  const [userCategory, setUserCategory] = useState<string | null>(null);
 
+  // "Dismissed" is genuinely client-only UI state (which device/browser
+  // hid the banner) — no server-side meaning, so localStorage is the
+  // correct, honest place for it. Unlike category/goal, it's never read as
+  // a completion fact.
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem("sellersalt_onboarding_dismissed");
-    const category = localStorage.getItem("sellersalt_user_category");
-    setUserCategory(category);
 
     if (!saved && (!hasActiveSearches || !hasTrackedShops || !hasProspects)) {
       setDismissed(false);
@@ -74,11 +86,11 @@ export function DashboardOnboardingGuide({
   // 6-step Activation Checklist
   const activationSteps = [
     { title: "Account created", completed: true },
-    { title: "Niche & market selected", completed: Boolean(userCategory) },
-    { title: "Goal defined", completed: Boolean(userCategory) },
+    { title: "Niche & market selected", completed: Boolean(onboardingCategory) },
+    { title: "Goal defined", completed: Boolean(onboardingGoal) },
     { title: "Run first research", completed: hasActiveSearches || hasProspects, href: "/radar" },
     { title: "Save first opportunity", completed: hasProspects, href: "/prospects" },
-    { title: "Build listing strategy", completed: false, href: "/studio" },
+    { title: "Build listing strategy", completed: hasListingDraft, href: "/studio" },
   ];
 
   const completedCount = activationSteps.filter((s) => s.completed).length;
@@ -142,7 +154,7 @@ export function DashboardOnboardingGuide({
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-[#0E8F5D] animate-pulse" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#0E8F5D]">
-              Seller Activation Guide {userCategory ? `· Focus: ${userCategory}` : ""}
+              Seller Activation Guide {onboardingCategory ? `· Focus: ${onboardingCategory}` : ""}
             </span>
           </div>
           <h2 className="text-xl font-bold tracking-tight text-white">

@@ -333,10 +333,10 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:    685/685 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts)
-TypeScript: clean          (npx tsc --noEmit)
-Prisma:    valid, up to date (npx prisma validate && npx prisma migrate status)
-Build:     clean            (npx next build)
+Tests:      724/724 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts)
+TypeScript: clean            (npx tsc --noEmit)
+Prisma:     valid, up to date (npx prisma validate && npx prisma migrate status — 29 migrations)
+Build:      clean            (npx next build)
 ```
 
 ## 19. Known Technical Debt

@@ -150,17 +150,12 @@ export async function markAllAnnouncementsRead(userId: string): Promise<void> {
     select: { id: true },
   }).catch(() => []);
 
-  const activeIds = active.length > 0 ? active.map((a) => a.id) : ["ann-welcome"];
+  if (active.length === 0) return;
 
-  await prisma.$transaction(
-    activeIds.map((announcementId) =>
-      prisma.announcementRead.upsert({
-        where: { userId_announcementId: { userId, announcementId } },
-        create: { userId, announcementId },
-        update: {},
-      })
-    )
-  ).catch(() => {});
+  await prisma.announcementRead.createMany({
+    data: active.map((a) => ({ userId, announcementId: a.id })),
+    skipDuplicates: true,
+  }).catch(() => {});
 }
 
 export async function adminCreateAnnouncement(params: {

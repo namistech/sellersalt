@@ -71,14 +71,24 @@ test("Phase M: Tool Execution & Provenance Preservation", async (t) => {
     userRole: "OWNER",
   };
 
-  await t.test("executes keyword research tool and preserves ACTUAL and ESTIMATED provenance", async () => {
+  await t.test("executes keyword research tool: real success preserves ACTUAL/ESTIMATED provenance, real failure is honest (never fabricated)", async () => {
     const result = await TOOL_REGISTRY.search_keywords.handler({ keyword: "desk planner" }, testContext);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.provenance, "ACTUAL_ETSY_DATA");
-    assert.ok(result.summary.includes("[ACTUAL ETSY DATA]"));
-    assert.ok(result.summary.includes("[SELLERSALT SCORE]"));
-    assert.ok(Array.isArray(result.cards));
+    // This tool depends on live Etsy connectivity, which this environment
+    // isn't guaranteed to have (see src/tests/saltbot-no-fabricated-data.test.ts
+    // for why a real upstream failure must never be silently swallowed into
+    // fabricated data). Assert real behavior in either case, not a fixed
+    // "success" that a fabricated fallback could satisfy just as easily.
+    if (result.success) {
+      assert.strictEqual(result.provenance, "ACTUAL_ETSY_DATA");
+      assert.ok(result.summary.includes("[ACTUAL ETSY DATA]"));
+      assert.ok(result.summary.includes("[SELLERSALT SCORE]"));
+      assert.ok(Array.isArray(result.cards));
+    } else {
+      assert.equal(result.data, undefined);
+      assert.equal(result.cards, undefined);
+      assert.ok(result.error && result.error.length > 0, "a failed call must carry a real, non-empty error message");
+    }
   });
 
   await t.test("executes SEO audit tool with 0-100 deterministic score and rubric breakdown", async () => {
@@ -96,12 +106,16 @@ test("Phase M: Tool Execution & Provenance Preservation", async (t) => {
     assert.ok(result.summary.includes("[SELLERSALT SCORE]"));
   });
 
-  await t.test("executes category exploration tool and returns taxonomy roots", async () => {
+  await t.test("executes category exploration tool: real success returns taxonomy roots, real failure is honest (never fabricated sample roots)", async () => {
     const result = await TOOL_REGISTRY.explore_category.handler({}, testContext);
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.provenance, "ACTUAL_ETSY_DATA");
-    assert.ok(result.summary.includes("Etsy Buyer Taxonomy"));
+    if (result.success) {
+      assert.strictEqual(result.provenance, "ACTUAL_ETSY_DATA");
+      assert.ok(result.summary.includes("Etsy Buyer Taxonomy"));
+    } else {
+      assert.equal(result.data, undefined);
+      assert.ok(result.error && result.error.length > 0, "a failed call must carry a real, non-empty error message");
+    }
   });
 });
 

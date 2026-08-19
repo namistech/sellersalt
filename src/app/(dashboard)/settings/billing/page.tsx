@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getOrgPackage, checkLimit } from "@/lib/plan-limits";
+import { checkQuota } from "@/services/plans/quota-enforcement";
+import { PLAN_DEFINITIONS, type PlanTierKey } from "@/services/plans/plan-capabilities";
 import { Card, Heading, Text, Badge, Alert, Button } from "@/components/ui";
 import { CheckoutButtons } from "./checkout-buttons";
 import { CancelSubscriptionButton, ResumeSubscriptionButton } from "./cancel-subscription-button";
@@ -34,7 +36,10 @@ export default async function BillingPage({
     checkLimit(organizationId, "searchConfigs"),
     checkLimit(organizationId, "scheduledSearches"),
     checkLimit(organizationId, "trackedShops"),
-    checkLimit(organizationId, "prospectsThisMonth"),
+    // Product-research quota is authoritative via checkQuota (see
+    // src/services/plans/quota-enforcement.ts) — Package.maxProspectsPerMonth
+    // was display-only and disagreed with the actually-enforced number.
+    checkQuota(organizationId, "PRODUCT_RESEARCH"),
     prisma.paymentProvider.findMany({ where: { isActive: true }, select: { provider: true, label: true } }),
   ]);
 
@@ -46,7 +51,7 @@ export default async function BillingPage({
     { label: "Active Saved Searches", ...searchConfigs },
     { label: "Scheduled Searches", ...scheduledSearches },
     { label: "Tracked Competitor Shops", ...trackedShops },
-    { label: "Prospects Discovered This Month", ...prospects },
+    { label: "Product Researches This Month", ...prospects },
     { label: "Marketplace Connectors", ...connectors },
   ];
 
@@ -153,6 +158,12 @@ export default async function BillingPage({
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           {allPackages.map((pkg) => {
             const isCurrent = pkg.id === currentPackage.id;
+            // Product-research quota shown here must match what's actually
+            // enforced (checkQuota) and publicly promised on /pricing — not
+            // Package.maxProspectsPerMonth, which was never enforced and
+            // disagreed with both.
+            const productResearchLimit =
+              PLAN_DEFINITIONS[pkg.key as PlanTierKey]?.limits.monthlyProductResearches ?? pkg.maxProspectsPerMonth;
             return (
               <Card
                 key={pkg.id}
@@ -187,7 +198,7 @@ export default async function BillingPage({
                       <span className="text-brand-primary font-bold">✓</span> {pkg.maxTrackedShops} Tracked Shops
                     </li>
                     <li className="flex items-center gap-1.5">
-                      <span className="text-brand-primary font-bold">✓</span> {pkg.maxProspectsPerMonth.toLocaleString()} Prospects/mo
+                      <span className="text-brand-primary font-bold">✓</span> {productResearchLimit.toLocaleString()} Product Researches/mo
                     </li>
                     <li className="flex items-center gap-1.5">
                       <span className="text-brand-primary font-bold">✓</span> Opportunity Radar Access

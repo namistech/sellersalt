@@ -134,29 +134,15 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
           ],
         };
       } catch (err: any) {
-        // Fallback for demonstration / disconnected state
+        // Never fabricate marketplace listings when the upstream research
+        // call fails — report the real failure instead, matching every
+        // other tool in this registry (see research_shop below).
         const query = String(params.query || "").trim();
         return {
-          success: true,
-          summary: `Searched Etsy marketplace for "${query}". Displaying top opportunities sorted by Opportunity Radar score [SELLERSALT SCORE].`,
+          success: false,
+          summary: `Failed to search Etsy marketplace for "${query}": ${err.message}`,
           provenance: "ACTUAL_ETSY_DATA",
-          cards: [
-            {
-              id: "listing_demo_1",
-              title: `${query || "Handmade Item"} - Minimalist Aesthetic Edition`,
-              subtitle: "Shop: ArtisanCraftCo • $24.99",
-              badge: { label: "Score: 88/100", variant: "success" },
-              metrics: [
-                { label: "Price", value: "$24.99" },
-                { label: "Daily Sales", value: "~3.8/day [ESTIMATED]" },
-                { label: "Favorites", value: "840" },
-              ],
-              href: "https://etsy.com",
-            },
-          ],
-          actions: [
-            { label: "View on Opportunity Radar", href: `/radar?q=${encodeURIComponent(query)}`, variant: "primary" },
-          ],
+          error: err.message,
         };
       }
     },
@@ -250,31 +236,17 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
           };
         }
 
-        try {
-          const hierarchy = await fetchCategoryTree(context.organizationId);
-          return {
-            success: true,
-            data: hierarchy.roots,
-            summary: `Etsy Buyer Taxonomy contains ${hierarchy.roots.length} top-level root categories including ${hierarchy.roots.slice(0, 4).map((r: any) => r.name).join(", ")}.`,
-            provenance: "ACTUAL_ETSY_DATA",
-            actions: [{ label: "Browse Full Category Directory", href: "/categories", variant: "primary" }],
-          };
-        } catch {
-          // Fallback root categories if credentials unconfigured
-          const sampleRoots = [
-            { id: 1, name: "Home & Living" },
-            { id: 2, name: "Jewelry & Accessories" },
-            { id: 3, name: "Craft Supplies & Tools" },
-            { id: 4, name: "Paper & Party Supplies" },
-          ];
-          return {
-            success: true,
-            data: sampleRoots,
-            summary: `Etsy Buyer Taxonomy contains top-level root categories including Home & Living, Jewelry & Accessories, Craft Supplies & Tools, Paper & Party Supplies.`,
-            provenance: "ACTUAL_ETSY_DATA",
-            actions: [{ label: "Browse Full Category Directory", href: "/categories", variant: "primary" }],
-          };
-        }
+        // No inner catch here — a real fetchCategoryTree failure must
+        // propagate to the outer catch below and report as a genuine
+        // failure, never fall back to a fabricated sample taxonomy.
+        const hierarchy = await fetchCategoryTree(context.organizationId);
+        return {
+          success: true,
+          data: hierarchy.roots,
+          summary: `Etsy Buyer Taxonomy contains ${hierarchy.roots.length} top-level root categories including ${hierarchy.roots.slice(0, 4).map((r: any) => r.name).join(", ")}.`,
+          provenance: "ACTUAL_ETSY_DATA",
+          actions: [{ label: "Browse Full Category Directory", href: "/categories", variant: "primary" }],
+        };
       } catch (err: any) {
         return {
           success: false,
@@ -311,34 +283,22 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
           competitionScore: string;
           wordCount: number;
         };
-        let totalResults: number;
-        let averagePrice: number;
-        let competitionLevel: string;
-        let harvestedTags: HarvestedTagView[];
 
-        try {
-          const research = await fetchStandaloneKeywordResearch(context.organizationId, { query: kw });
-          totalResults = research.summary.totalEtsySupply;
-          averagePrice = research.summary.avgPrice;
-          competitionLevel = research.summary.competitionLevel;
-          harvestedTags = research.keywords.slice(0, 8).map((k) => ({
-            tag: k.term,
-            frequency: k.frequency,
-            characterCount: k.charCount,
-            complianceStatus: k.isTagCompliant ? "VALID" : "INVALID",
-            competitionScore: k.competitionLevel,
-            wordCount: k.wordCount,
-          }));
-        } catch {
-          // Fallback when connector unconfigured in test/cold environments
-          totalResults = 4850;
-          averagePrice = 18.5;
-          competitionLevel = "MODERATE";
-          harvestedTags = [
-            { tag: `${kw} printable`, frequency: 42, characterCount: (`${kw} printable`).length, complianceStatus: "VALID", competitionScore: "LOW", wordCount: 2 },
-            { tag: `aesthetic ${kw}`, frequency: 38, characterCount: (`aesthetic ${kw}`).length, complianceStatus: "VALID", competitionScore: "LOW", wordCount: 2 },
-          ];
-        }
+        // No inner catch here — a real fetchStandaloneKeywordResearch
+        // failure must propagate to the outer catch below and report as a
+        // genuine failure, never fall back to fabricated keyword data.
+        const research = await fetchStandaloneKeywordResearch(context.organizationId, { query: kw });
+        const totalResults = research.summary.totalEtsySupply;
+        const averagePrice = research.summary.avgPrice;
+        const competitionLevel = research.summary.competitionLevel;
+        const harvestedTags: HarvestedTagView[] = research.keywords.slice(0, 8).map((k) => ({
+          tag: k.term,
+          frequency: k.frequency,
+          characterCount: k.charCount,
+          complianceStatus: k.isTagCompliant ? "VALID" : "INVALID",
+          competitionScore: k.competitionLevel,
+          wordCount: k.wordCount,
+        }));
 
         return {
           success: true,

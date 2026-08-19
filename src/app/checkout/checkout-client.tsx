@@ -16,6 +16,7 @@ import {
   Divider,
 } from "@/components/ui";
 import { checkPasswordStrength } from "@/lib/password-policy";
+import { PLAN_DEFINITIONS, type PlanTierKey } from "@/services/plans/plan-capabilities";
 
 export interface PackageData {
   key: string;
@@ -168,7 +169,13 @@ export function CheckoutClient({
     await updateSession();
 
     if (isFreePlan) {
-      router.push("/dashboard");
+      // A brand-new account has no onboarding history yet — send them
+      // through the real activation flow. An existing user just signing
+      // back in (accountMode === "login", e.g. to upgrade) already has
+      // whatever onboarding state they have; never force them through it
+      // again here — /onboarding's own server-side guard would bounce
+      // them straight back to /dashboard anyway if already completed.
+      router.push(accountMode === "signup" ? "/onboarding" : "/dashboard");
     }
   }
 
@@ -636,7 +643,15 @@ export function CheckoutClient({
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
-                    <span><strong>{selected.maxProspectsPerMonth.toLocaleString()}</strong> Prospect Lookups / month</span>
+                    {/* Sourced from PLAN_DEFINITIONS, not Package.maxProspectsPerMonth —
+                        the latter is display-only and no longer matches what's actually
+                        enforced (checkQuota) or promised on /pricing. */}
+                    <span>
+                      <strong>
+                        {(PLAN_DEFINITIONS[selected.key as PlanTierKey]?.limits.monthlyProductResearches ?? selected.maxProspectsPerMonth).toLocaleString()}
+                      </strong>{" "}
+                      Product Researches / month
+                    </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
@@ -664,7 +679,13 @@ export function CheckoutClient({
                     variant="primary"
                     size="default"
                     fullWidth
-                    onClick={() => router.push("/dashboard")}
+                    // Covers OAuth (Google/Etsy) sign-ins landing back on
+                    // /checkout already authenticated, with no accountMode
+                    // signal — /onboarding's own server-side guard bounces
+                    // an already-completed user straight back to
+                    // /dashboard, so this is safe for existing users too,
+                    // never a loop.
+                    onClick={() => router.push("/onboarding")}
                     className="!py-3.5 text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-sm"
                   >
                     Go to Your Free Workspace →

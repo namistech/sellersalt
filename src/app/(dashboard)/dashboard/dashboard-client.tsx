@@ -9,6 +9,7 @@ import { NewSearchDrawer } from "../new-search-drawer";
 import { createSearchConfig, type CreateSearchConfigInput } from "@/services/searchConfigs";
 import type { ConnectorSummary } from "@/services/connectors";
 import type { DashboardData } from "@/services/dashboard";
+import type { PlanUsageSummary } from "@/services/plans/quota-enforcement";
 import { DashboardPulse } from "./dashboard-pulse";
 import { DashboardOpportunities } from "./dashboard-opportunities";
 import { DashboardCompetitorRadar } from "./dashboard-competitor-radar";
@@ -23,9 +24,25 @@ interface DashboardClientProps {
   connectors: ConnectorSummary[];
   userName: string;
   organizationId?: string;
+  planUsage: PlanUsageSummary | null;
+  /** Real, server-derived onboarding activation state — see
+   * src/app/(dashboard)/dashboard/page.tsx (User.onboarding* fields +
+   * a real ListingDraft count). Never localStorage. */
+  onboardingCategory: string | null;
+  onboardingGoal: string | null;
+  hasListingDraft: boolean;
 }
 
-export function DashboardClient({ initialData, connectors, userName, organizationId = "org_default" }: DashboardClientProps) {
+export function DashboardClient({
+  initialData,
+  connectors,
+  userName,
+  organizationId = "org_default",
+  planUsage,
+  onboardingCategory,
+  onboardingGoal,
+  hasListingDraft,
+}: DashboardClientProps) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -64,6 +81,9 @@ export function DashboardClient({ initialData, connectors, userName, organizatio
         hasActiveSearches={pulse.activeSearches > 0}
         hasTrackedShops={data.competitorRadar.length > 0}
         hasProspects={pulse.totalProspects > 0 || data.topOpportunities.length > 0}
+        onboardingCategory={onboardingCategory}
+        onboardingGoal={onboardingGoal}
+        hasListingDraft={hasListingDraft}
       />
 
       {/* Quick Actions Command Center Bar */}
@@ -119,13 +139,14 @@ export function DashboardClient({ initialData, connectors, userName, organizatio
       {/* Row 1: Research Pulse */}
       <DashboardPulse pulse={pulse} />
 
-      {/* Row 1.5: Plan & Usage Quota */}
+      {/* Row 1.5: Plan & Usage Quota — real data from getPlanUsageSummary()
+          server-side, or null (renders an honest unavailable state). */}
       <PlanUsageCard
-        planName="Starter Tier"
-        keywordUsage={{ current: pulse.activeSearches * 25 + 12, limit: 250 }}
-        productUsage={{ current: pulse.totalProspects, limit: 150 }}
-        seoUsage={{ current: 6, limit: 25 }}
-        competitorUsage={{ current: pulse.trackedShops, limit: pulse.maxTrackedShops || 10 }}
+        planName={planUsage?.planName ?? null}
+        keywordUsage={planUsage ? { current: planUsage.keywordSearch.current, limit: planUsage.keywordSearch.limit } : null}
+        productUsage={planUsage ? { current: planUsage.productResearch.current, limit: planUsage.productResearch.limit } : null}
+        seoUsage={planUsage ? { current: planUsage.seoAudit.current, limit: planUsage.seoAudit.limit } : null}
+        competitorUsage={planUsage ? { current: planUsage.trackedShop.current, limit: planUsage.trackedShop.limit } : null}
       />
 
       {/* Row 2: Actionable Intelligence (Top Opportunities + Competitor Radar) */}

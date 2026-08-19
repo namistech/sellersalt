@@ -13,4 +13,5 @@ dist/
 # production, never meant to be committed.
 public/uploads/
 backups/
+.vscode/
 

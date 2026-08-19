@@ -76,6 +76,19 @@ model User {
   // record of "how has this person signed in" for the admin Users table.
   authMethods   String[] @default([])
   lastLoginAt   DateTime?
+  // Null = never completed the real /onboarding flow. Set by
+  // POST /api/onboarding/complete, the single real write path (never set
+  // from client-side localStorage, which cannot be trusted for a
+  // server-side business fact — see dashboard-onboarding-guide.tsx).
+  // Deliberately NOT backfilled for pre-existing accounts: nothing in the
+  // app gates on this field being set, it only drives whether the
+  // dashboard's activation checklist can show these two steps complete —
+  // an existing user with it null is simply shown an honest, still-skippable
+  // checklist, never redirected or blocked.
+  onboardingCompletedAt DateTime?
+  onboardingCategory    String?
+  onboardingGoal        String?
+  onboardingNiche       String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

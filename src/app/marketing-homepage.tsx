@@ -26,6 +26,7 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import "./marketing.css";
+import { PLAN_DEFINITIONS } from "@/services/plans/plan-capabilities";
 
 interface PackageData {
   key: string;
@@ -1177,7 +1178,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               <ul className="pricing-features">
                 <li><Check className="h-4 w-4" /> {started?.maxSearchConfigs ?? 3} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {started?.maxTrackedShops ?? 5} Tracked Competitor Shops</li>
-                <li><Check className="h-4 w-4" /> {started?.maxProspectsPerMonth ?? 200} Product Discoveries / mo</li>
+                <li><Check className="h-4 w-4" /> {PLAN_DEFINITIONS.STARTED.limits.monthlyProductResearches.toLocaleString()} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Full Opportunity Radar Access</li>
                 <li><Check className="h-4 w-4" /> Category &amp; Keyword Research</li>
                 <li><Check className="h-4 w-4" /> Workspace Planner Access</li>
@@ -1206,7 +1207,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               <ul className="pricing-features">
                 <li><Check className="h-4 w-4" /> {pro?.maxSearchConfigs ?? 10} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {pro?.maxTrackedShops ?? 25} Tracked Competitor Shops</li>
-                <li><Check className="h-4 w-4" /> {pro?.maxProspectsPerMonth ?? 1000} Product Discoveries / mo</li>
+                <li><Check className="h-4 w-4" /> {PLAN_DEFINITIONS.PRO.limits.monthlyProductResearches.toLocaleString()} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Strategic Competition Verdicts</li>
                 <li><Check className="h-4 w-4" /> Keyword &amp; Tag Cluster Mining</li>
                 <li><Check className="h-4 w-4" /> Revenue &amp; Profit Intelligence</li>
@@ -1235,7 +1236,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               <ul className="pricing-features">
                 <li><Check className="h-4 w-4" /> {agency?.maxSearchConfigs ?? 50} Active Saved Searches</li>
                 <li><Check className="h-4 w-4" /> {agency?.maxTrackedShops ?? 100} Tracked Competitor Shops</li>
-                <li><Check className="h-4 w-4" /> {agency?.maxProspectsPerMonth ?? 5000} Product Discoveries / mo</li>
+                <li><Check className="h-4 w-4" /> {PLAN_DEFINITIONS.AGENCY.limits.monthlyProductResearches.toLocaleString()} Product Discoveries / mo</li>
                 <li><Check className="h-4 w-4" /> Multi-Seat Team Workspace Access</li>
                 <li><Check className="h-4 w-4" /> Dedicated Research Query Capacity</li>
                 <li><Check className="h-4 w-4" /> Full Revenue &amp; Fee Audit Engine</li>
