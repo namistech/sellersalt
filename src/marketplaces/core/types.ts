@@ -420,3 +420,108 @@ export interface CrossMarketplaceComparison {
   comparedAt: Date;
 }
 
+/**
+ * Aggregated demand signal for a specific niche / category cluster.
+ */
+export interface NicheDemandSignal {
+  strength: "VERY_HIGH" | "HIGH" | "MODERATE" | "LOW" | "UNAVAILABLE";
+  score: number | null; // 0-100 normalized demand proxy score
+  observedDailyVelocity: number | null;
+  observedFavoritesTotal: number | null;
+  catalogYieldAverage: number | null;
+  provenance: SignalProvenance;
+  confidence: number;
+  explanation: string;
+}
+
+/**
+ * Aggregated competition barrier signal for a specific niche / category cluster.
+ */
+export interface NicheCompetitionSignal {
+  intensity: "LOW" | "MODERATE" | "HIGH" | "VERY_HIGH" | "UNAVAILABLE";
+  score: number | null; // 0-100 competition barrier score
+  averageReviewThreshold: number | null;
+  topShopConcentration: number | null; // % of products from top 3 shops (0-100)
+  incumbentDominance: "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
+  provenance: SignalProvenance;
+  confidence: number;
+  explanation: string;
+}
+
+/**
+ * Observed trajectory & listing freshness signal for a niche.
+ * NOTE: Historical growth is ONLY populated when genuine multi-window snapshots exist;
+ * otherwise growthRatePercent remains null and direction derives from freshness.
+ */
+export interface NicheMomentumSignal {
+  direction: "RISING" | "STABLE" | "DECLINING" | "UNAVAILABLE";
+  growthRatePercent: number | null;
+  observationWindowDays: number | null;
+  snapshotCount: number;
+  isHistorical: boolean;
+  freshnessRatio: number | null; // % of listings created within 90 days (0-100)
+  provenance: SignalProvenance;
+  confidence: number;
+  explanation: string;
+}
+
+export interface NicheSubcategory {
+  name: string;
+  productCount: number;
+  averageScore: number | null;
+}
+
+export interface NicheKeywordCluster {
+  clusterName: string;
+  keywords: string[];
+  frequency: number;
+}
+
+/**
+ * Canonical Niche Opportunity evaluation.
+ * Aggregates product observations into a coherent niche intelligence profile.
+ */
+export interface NicheOpportunity {
+  id: string;
+  nicheName: string;
+  marketplace: MarketplaceId;
+  status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
+  opportunityScore: number | null;
+  confidence: number;
+  tier: string;
+  verdict: string;
+  verdictVariant: "success" | "warning" | "danger" | "info" | "neutral";
+
+  observedProductCount: number;
+  averagePrice: number | null;
+  priceRange: { min: number; max: number } | null;
+
+  demand: NicheDemandSignal;
+  competition: NicheCompetitionSignal;
+  momentum: NicheMomentumSignal;
+
+  topSubcategories: NicheSubcategory[];
+  topKeywordClusters: NicheKeywordCluster[];
+  sampleProducts: NormalizedProduct[];
+
+  availableSignalGroups: string[];
+  unavailableSignalGroups: string[];
+  provenance: SignalProvenance;
+  limitations: string[];
+  evaluatedAt: Date;
+}
+
+/**
+ * Discovery summary envelope for a set of discovered niches.
+ */
+export interface NicheDiscoverySummary {
+  query?: string;
+  marketplace: MarketplaceId;
+  totalNichesFound: number;
+  niches: NicheOpportunity[];
+  topNiche?: NicheOpportunity;
+  marketLimitations: string[];
+  generatedAt: Date;
+}
+
+

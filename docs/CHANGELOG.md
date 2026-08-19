@@ -319,10 +319,28 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - `POST /api/marketplaces/research` returns both `{ results, comparison }`.
   - Upgraded `src/components/intelligence/AllMarketplacesResults.tsx` with an Executive Cross-Marketplace Intelligence section, Best Available Channel spotlight, and Channel Verdict matrix.
   - Wired `radar-client.tsx` and `live-search-tab.tsx` to pass cross-marketplace comparison data to `AllMarketplacesResults`.
+## Niche Discovery & Demand Signal Aggregation — Batch 8 (2026-08-19)
+
+**Why**: To turn individual product, keyword, shop, and taxonomy observations into a coherent Niche Discovery and Demand Signal Aggregation layer, providing aggregated niche opportunity scores, demand strength gauges, competition barrier metrics, and listing freshness signals without manufacturing search volume or multi-month historical momentum.
+
+**What changed**:
+- **Niche Domain Models**:
+  - Added `NicheDemandSignal`, `NicheCompetitionSignal`, `NicheMomentumSignal`, `NicheSubcategory`, `NicheKeywordCluster`, `NicheOpportunity`, and `NicheDiscoverySummary` to `src/marketplaces/core/types.ts`.
+- **Niche Discovery Service**:
+  - Created `src/services/intelligence/niche-discovery.ts` (`discoverNichesFromProducts`, `discoverNichesFromDatabase`, `discoverLiveMarketplaceNiches`).
+  - Clusters normalized products by taxonomy/category paths and keyword stems.
+  - Reuses canonical opportunity scoring (`evaluateCanonicalOpportunity`) across each product.
+  - Aggregates demand proxy signals (observed daily velocity, favorites count, catalog sales yield).
+  - Aggregates competition signals (review thresholds, top shop concentration, incumbent dominance).
+  - Evaluates listing freshness velocity while strictly keeping historical momentum growth percentage `null` when multi-window snapshots are not present.
+- **API & UI Layer Integration**:
+  - Added API route `src/app/api/niches/discover/route.ts` supporting both live marketplace search and organization prospect aggregation.
+  - Upgraded Discovery Hub (`src/app/(dashboard)/discovery/page.tsx` and `src/app/(dashboard)/discovery/discovery-client.tsx`) with an interactive Niche Explorer, Score Badges, 3-Pill Signal Cards, Sub-branch breakdown, and Data Provenance notes.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-7-cross-marketplace-comparison.test.ts` (12 tests).
-  - Full test baseline: **798/798 passing across 118 suites**.
-  - TypeScript clean, Prisma valid (29 migrations), clean Next.js build (161/161 routes).
+  - Created `src/tests/batch-8-niche-discovery.test.ts` (12 tests).
+  - Full test baseline: **810/810 passing across 123 suites**.
+  - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
 
