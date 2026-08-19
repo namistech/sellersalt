@@ -8,9 +8,10 @@ import type { MarketplaceConnector, ProspectResult, SearchConfigInput, ShopStats
 // computed directly from it, not from reviews. reviewRatio/reviewVelocity are kept
 // as secondary signals (engagement rate), not the primary metric anymore.
 
-function computeShopAgeMonths(createdTimestamp: number): number {
+function computeShopAgeMonths(createdTimestamp?: number | null): number {
+  if (!createdTimestamp || isNaN(createdTimestamp)) return 12;
   const diffMs = Date.now() - createdTimestamp * 1000;
-  return Math.round((diffMs / (30.44 * 24 * 60 * 60 * 1000)) * 10) / 10;
+  return Math.max(0.1, Math.round((diffMs / (30.44 * 24 * 60 * 60 * 1000)) * 10) / 10);
 }
 
 function computeReviewRatio(reviewCount: number, activeListings: number): number {
@@ -48,7 +49,7 @@ function mapShopToStats(shop: any): ShopStats {
     shopUrl: shop.url || `https://www.etsy.com/shop/${shop.shop_name}`,
     shopIconUrl: shop.icon_url_fullxfull ?? undefined,
     shopBannerUrl: shop.image_url_760x100 ?? undefined,
-    shopAgeMonths: computeShopAgeMonths(shop.created_timestamp),
+    shopAgeMonths: computeShopAgeMonths(shop.create_date ?? shop.created_timestamp),
     totalSales: shop.transaction_sold_count ?? undefined,
     reviewCount: shop.review_count ?? 0,
     reviewAverage: shop.review_average ?? undefined,
@@ -104,7 +105,8 @@ export const etsyConnector: MarketplaceConnector = {
         }
         if (!shop) continue;
 
-        const shopAgeMonths = computeShopAgeMonths(shop.created_timestamp);
+        const shopCreatedTimestamp = shop.create_date ?? shop.created_timestamp;
+        const shopAgeMonths = computeShopAgeMonths(shopCreatedTimestamp);
         const reviewCount = shop.review_count ?? 0;
         const activeListings = shop.listing_active_count ?? 0;
         const totalSales = shop.transaction_sold_count ?? 0;
@@ -116,11 +118,20 @@ export const etsyConnector: MarketplaceConnector = {
         if (price === null || price < config.minPrice || price > config.maxPrice) continue;
 
         let listingImageUrl: string | undefined;
-        try {
-          const imgData = await client.getListingImages(listing.listing_id);
-          listingImageUrl = imgData?.results?.[0]?.url_170x135;
-        } catch {
-          listingImageUrl = undefined;
+        if (Array.isArray(listing.images) && listing.images.length > 0) {
+          const firstImg = listing.images[0];
+          listingImageUrl = firstImg?.url_570xN || firstImg?.url_fullxfull || firstImg?.url_170x135 || firstImg?.url_75x75;
+        } else if (Array.isArray(listing.Images) && listing.Images.length > 0) {
+          const firstImg = listing.Images[0];
+          listingImageUrl = firstImg?.url_570xN || firstImg?.url_fullxfull || firstImg?.url_170x135 || firstImg?.url_75x75;
+        } else {
+          try {
+            const imgData = await client.getListingImages(listing.listing_id);
+            const firstImg = imgData?.results?.[0];
+            listingImageUrl = firstImg?.url_570xN || firstImg?.url_fullxfull || firstImg?.url_170x135 || firstImg?.url_75x75;
+          } catch {
+            listingImageUrl = undefined;
+          }
         }
 
         results.push({

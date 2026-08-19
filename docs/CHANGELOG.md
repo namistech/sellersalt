@@ -287,8 +287,25 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - `buildOpportunityPackage` in `src/services/listing-strategy.ts` parameterized by `MarketplaceOptimizationRules` (default `ETSY_OPTIMIZATION_RULES`), computing fee schedules dynamically and eliminating hardcoded fallback constants.
   - `calculateJaccardSimilarity` in `src/services/listing-assistant.ts` delegates to `src/services/originality-engine.ts`.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-5-intelligence-consolidation.test.ts` (10 tests).
-  - Full test baseline: **770/770 passing across 109 suites**.
-  - TypeScript clean, Prisma valid (29 migrations), clean Next.js build (161/161 routes).
+## Data Acquisition & Intelligence Pipeline Audit — Batch 6 (2026-08-19)
+
+**Why**: To provide an exhaustive architectural trace and empirical verification of where SellerSalt obtains data across all 10 intelligence features, separate Connected Seller Data (Domain A) from Market Intelligence (Domain B), audit all marketplace connector capabilities, and harden data acquisition pipelines against rate limits and timestamp edge cases.
+
+**What changed**:
+- **Data Supply Chain Audit**:
+  - Traced UI → API → Service → Pipeline → Connector → External API → Normalized Model → Intelligence Engine → PostgreSQL/Redis → UI for all 10 intelligence features (Product Research, Keyword Research, Category Hunting, Shop Research, Product Detail, Shop Intelligence, Opportunity Radar, Listing Optimization, Market Research / Shop Watch, SaltBot).
+  - Explicitly classified each metric as `OBSERVED`, `ESTIMATED`, `DERIVED`, or `UNAVAILABLE`.
+- **Connector Capability Matrix Verification**:
+  - Verified `src/marketplaces/core/registry/index.ts` against `docs/MARKETPLACE-INTEGRATION-MATRIX.md`: Etsy is the single `IMPLEMENTED` research marketplace; Shopify and WooCommerce are `PARTIAL` (account auth + order sync only); Amazon, eBay, and TikTok Shop are `ARCHITECTURE READY` with zero live credentials and all capability flags `false`.
+- **Domain Separation Guard**:
+  - Proved Connected Seller Data (`SellerChannel`, `SellerOrder`, `syncSellerChannel`) is completely isolated from Market Intelligence (`Connector`, `Prospect`, `ShopSnapshot`, `ListingSnapshot`).
+- **Etsy Data Acquisition Bugfix & Hardening**:
+  - Fixed shop age calculation in `src/connectors/etsy/index.ts` to support both `shop.create_date` and `shop.created_timestamp`, preventing `NaN` month calculations.
+  - Optimized image acquisition during search by reusing embedded `listing.images` from active listing search results before falling back to extra HTTP requests, avoiding unnecessary API calls against Etsy rate limits.
+- **Regression Test Coverage & Baseline**:
+  - Created `src/tests/batch-6-data-acquisition-audit.test.ts` (16 tests).
+  - Full test baseline: **786/786 passing across 114 suites**.
+  - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
