@@ -79,11 +79,20 @@ export async function GET(req: Request) {
   const results = Array.from(byKeyword.entries())
     .map(([keyword, listings]) => {
       const n = listings.length;
-      const avgPrice = listings.reduce((s, l) => s + l.price, 0) / n;
-      const avgReviewCount = listings.reduce((s, l) => s + l.reviewCount, 0) / n;
-      const avgTotalSales = listings.reduce((s, l) => s + (l.totalSales ?? 0), 0) / n;
-      const avgEstDaily = listings.reduce((s, l) => s + (l.estDailySales ?? 0), 0) / n;
-      const avgFavorers = listings.reduce((s, l) => s + (l.numFavorers ?? 0), 0) / n;
+      const priceListings = listings.filter((l) => typeof l.price === "number");
+      const avgPrice = priceListings.length > 0 ? priceListings.reduce((s, l) => s + l.price, 0) / priceListings.length : 0;
+
+      const reviewListings = listings.filter((l) => typeof l.reviewCount === "number");
+      const avgReviewCount = reviewListings.length > 0 ? reviewListings.reduce((s, l) => s + l.reviewCount, 0) / reviewListings.length : 0;
+
+      const salesListings = listings.filter((l) => typeof l.totalSales === "number");
+      const avgTotalSales = salesListings.length > 0 ? salesListings.reduce((s, l) => s + l.totalSales!, 0) / salesListings.length : 0;
+
+      const dailyListings = listings.filter((l) => typeof l.estDailySales === "number");
+      const avgEstDaily = dailyListings.length > 0 ? dailyListings.reduce((s, l) => s + l.estDailySales!, 0) / dailyListings.length : 0;
+
+      const favorerListings = listings.filter((l) => typeof l.numFavorers === "number");
+      const avgFavorers = favorerListings.length > 0 ? favorerListings.reduce((s, l) => s + l.numFavorers!, 0) / favorerListings.length : 0;
 
       const competitionLevel = overallCompetitionRating([
         scoreTotalSales(avgTotalSales),

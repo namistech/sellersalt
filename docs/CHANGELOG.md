@@ -336,10 +336,26 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **API & UI Layer Integration**:
   - Added API route `src/app/api/niches/discover/route.ts` supporting both live marketplace search and organization prospect aggregation.
   - Upgraded Discovery Hub (`src/app/(dashboard)/discovery/page.tsx` and `src/app/(dashboard)/discovery/discovery-client.tsx`) with an interactive Niche Explorer, Score Badges, 3-Pill Signal Cards, Sub-branch breakdown, and Data Provenance notes.
+## Data Acquisition & Research Pipeline Deep Audit & Hardening (2026-08-20)
+
+**Why**: To perform an exhaustive technical audit of SellerSalt's data acquisition and research pipelines across all 10 intelligence capabilities, verify empirical connector reality vs. architecture-ready stubs, harden average calculations against null-coercion bugs, and guarantee honest zero-fabrication labeling across user-facing surfaces.
+
+**What changed**:
+- **Data Supply Chain Audit**:
+  - Traced Query → Connector → Normalizer → Intelligence Engine → Persistence → UI for all 10 features (Product Research, Keyword Research, Shop Intelligence, Category Hunting, Niche Discovery, Opportunity Radar, Live Search, Shop Watch, Product Detail, AI Listing Studio).
+  - Explicitly classified all data points into `OBSERVED`, `ESTIMATED`, `DERIVED`, or `UNAVAILABLE`.
+- **Connector Reality Matrix Verification**:
+  - Verified `src/marketplaces/core/registry/index.ts`: Etsy is the single `LIVE / IMPLEMENTED` public research connector; Shopify and WooCommerce are `PARTIAL` (account connect + order sync); Amazon, eBay, and TikTok Shop are `ARCHITECTURE READY` with all capabilities `false`.
+- **Keyword Research Aggregation Bugfix**:
+  - Fixed average calculations in `src/app/api/keyword-research/route.ts` to filter out `null` metrics before averaging instead of coercing missing values to 0 with `?? 0`, preventing artificial downward skewing of price, review, and sales yields.
+- **Zero-Fabrication & Honest Terminology Verification**:
+  - Verified absence of hardcoded fallback constants (e.g. 4,850 searches/mo) across all tool registries and services.
+  - Confirmed keyword demand is transparently branded as "Demand Proxy / Estimated Demand Signal (Avg Favorites)" rather than exact search volume.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-8-niche-discovery.test.ts` (12 tests).
-  - Full test baseline: **810/810 passing across 123 suites**.
+  - Created `src/tests/data-acquisition-pipeline-audit.test.ts` (11 tests).
+  - Full test baseline: **821/821 passing across 127 suites**.
   - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
 
