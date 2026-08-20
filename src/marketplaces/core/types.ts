@@ -240,6 +240,26 @@ export interface KeywordSignal {
   provenance: SignalProvenance;
 }
 
+export interface FieldProvenanceRecord<T = any> {
+  value: T;
+  provenance: SignalProvenance;
+  source: DataSourceType;
+  observedAt: Date;
+  methodology?: string;
+}
+
+export interface ProductFieldLineage {
+  title?: FieldProvenanceRecord<string>;
+  price?: FieldProvenanceRecord<number | null>;
+  rating?: FieldProvenanceRecord<number | null>;
+  reviewCount?: FieldProvenanceRecord<number | null>;
+  salesCount?: FieldProvenanceRecord<number | null>;
+  favoritesCount?: FieldProvenanceRecord<number | null>;
+  estimatedDemand?: FieldProvenanceRecord<number | null>;
+  shop?: FieldProvenanceRecord<any>;
+  category?: FieldProvenanceRecord<any>;
+}
+
 /**
  * Canonical, marketplace-neutral product research record — the shape a
  * connector's product-search method normalizes into. Deliberately richer
@@ -285,6 +305,7 @@ export interface NormalizedProduct extends MarketplaceRef {
   acquisitionMethod?: DataSourceType;
   observedAt?: Date;
   isHistorical?: boolean;
+  fieldLineage?: ProductFieldLineage;
 
   rating?: number | null;
   reviewCount?: number | null;

@@ -70,6 +70,8 @@ export interface PageFetchOptions {
   headers?: Record<string, string>;
   bypassCache?: boolean;
   maxRetries?: number;
+  maxRedirects?: number;
+  marketplace?: MarketplaceId;
 }
 
 export interface PageFetchResponse {
@@ -78,6 +80,9 @@ export interface PageFetchResponse {
   html: string;
   headers: Record<string, string>;
   isCached: boolean;
+  redirectsFollowed?: number;
+  failureReason?: AcquisitionFailureReason;
+  errorMessage?: string;
   fetchedAt: Date;
 }
 
@@ -118,6 +123,10 @@ export interface ParsedListingCard {
   currency?: string;
   shopName?: string;
   shopUrl?: string;
+  shop?: {
+    name?: string;
+    url?: string;
+  };
   rating?: number;
   reviewCount?: number;
   favoritesCount?: number;

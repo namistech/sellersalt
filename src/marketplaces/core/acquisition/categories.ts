@@ -33,6 +33,7 @@ export interface PublicCategoryIntelligenceResult {
   categoryName: string;
   marketplace: MarketplaceId;
   observedCatalogCount: number;
+  totalListings: number;
   priceDistribution: CategoryPriceDistribution;
   opportunityDistribution: CategoryOpportunityDistribution;
   topProducts: NormalizedProduct[];
@@ -53,59 +54,84 @@ function calculatePercentile(sortedValues: number[], percentile: number): number
   return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
 }
 
-export async function aggregatePublicCategoryIntelligence(params: {
-  categoryName: string;
-  marketplace: MarketplaceId;
-  limit?: number;
-}): Promise<PublicCategoryIntelligenceResult | { available: false; message: string }> {
-  const { categoryName, marketplace, limit = 30 } = params;
-  registerAllConnectors();
-  const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(marketplace);
+export async function aggregatePublicCategoryIntelligence(
+  paramsOrName: { categoryName: string; marketplace: MarketplaceId; limit?: number; products?: NormalizedProduct[] } | string,
+  marketplaceArg?: MarketplaceId,
+  productsArg?: NormalizedProduct[]
+): Promise<PublicCategoryIntelligenceResult | { available: false; message: string }> {
+  let categoryName: string;
+  let marketplace: MarketplaceId;
+  let limit: number = 30;
+  let directProducts: NormalizedProduct[] | undefined;
 
-  if (!adapter || !adapter.capabilities.productSearch) {
-    return {
-      available: false,
-      message: `${marketplace} category research adapter is not available yet.`,
-    };
+  if (typeof paramsOrName === "string") {
+    categoryName = paramsOrName;
+    marketplace = marketplaceArg || "etsy";
+    directProducts = productsArg;
+  } else {
+    categoryName = paramsOrName.categoryName;
+    marketplace = paramsOrName.marketplace;
+    limit = paramsOrName.limit ?? 30;
+    directProducts = paramsOrName.products;
   }
 
-  const searchRes = await adapter.searchPublicProducts({
-    query: categoryName,
-    limit,
-  });
+  let products: NormalizedProduct[] = [];
+  let freshness: FreshnessEvaluation = evaluateFreshness(new Date(), "taxonomy");
+  let provenance: SignalProvenance = "ACTUAL_DATA";
 
-  const freshness = evaluateFreshness(searchRes.fetchedAt, "taxonomy");
+  if (directProducts && directProducts.length > 0) {
+    products = directProducts;
+  } else {
+    registerAllConnectors();
+    const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(marketplace);
 
-  if (!searchRes.success || searchRes.items.length === 0) {
-    return {
-      categoryName,
-      marketplace,
-      observedCatalogCount: 0,
-      priceDistribution: {
-        min: null,
-        max: null,
-        median: null,
-        average: null,
-        percentile10: null,
-        percentile90: null,
-      },
-      opportunityDistribution: {
-        highOpportunityCount: 0,
-        moderateOpportunityCount: 0,
-        competitiveCount: 0,
-        averageScore: null,
-      },
-      topProducts: [],
-      recurringThemes: [],
-      freshness,
-      provenance: searchRes.provenance || "UNAVAILABLE",
-      limitations: [
-        searchRes.error || `No public observations found for category "${categoryName}".`,
-      ],
-    };
+    if (!adapter || !adapter.capabilities.productSearch) {
+      return {
+        available: false,
+        message: `${marketplace} category research adapter is not available yet.`,
+      };
+    }
+
+    const searchRes = await adapter.searchPublicProducts({
+      query: categoryName,
+      limit,
+    });
+
+    freshness = evaluateFreshness(searchRes.fetchedAt, "taxonomy");
+    provenance = searchRes.provenance || "UNAVAILABLE";
+
+    if (!searchRes.success || searchRes.items.length === 0) {
+      return {
+        categoryName,
+        marketplace,
+        observedCatalogCount: 0,
+        totalListings: 0,
+        priceDistribution: {
+          min: null,
+          max: null,
+          median: null,
+          average: null,
+          percentile10: null,
+          percentile90: null,
+        },
+        opportunityDistribution: {
+          highOpportunityCount: 0,
+          moderateOpportunityCount: 0,
+          competitiveCount: 0,
+          averageScore: null,
+        },
+        topProducts: [],
+        recurringThemes: [],
+        freshness,
+        provenance,
+        limitations: [
+          searchRes.error || `No public observations found for category "${categoryName}".`,
+        ],
+      };
+    }
+
+    products = searchRes.items;
   }
-
-  const products = searchRes.items;
 
   // Price calculations
   const prices = products
@@ -181,6 +207,7 @@ export async function aggregatePublicCategoryIntelligence(params: {
     categoryName,
     marketplace,
     observedCatalogCount: products.length,
+    totalListings: products.length,
     priceDistribution: {
       min,
       max,

@@ -429,11 +429,33 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Added `ResearchCoverage` model tracking total products, fresh counts, available signal groups, and coverage confidence.
 - **Live Smoke Testing Harness (`src/tests/live-smoke/live-research-smoke.ts`)**:
   - Added opt-in development smoke test facility gated behind `SELLERSALT_LIVE_RESEARCH_SMOKE=true`.
-- **Verified Quality Baseline**:
-  - Test suite: **895/895 passing across 160 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+## Production-Grade Research Acquisition Hardening — Batch 10 (2026-08-20)
+
+**Why**: To harden SellerSalt's marketplace-independent research acquisition system into a production-grade acquisition layer that reliably operates as the primary research data source, protecting against SSRF attacks, handling redirects safely, managing rate limits with exponential jitter backoff, tracking granular field-level provenance, and orchestrating product detail resolution.
+
+**What changed**:
+- **Centralized Domain Safety & SSRF Guard (`src/marketplaces/core/acquisition/compliance.ts`)**:
+  - Implemented `ALLOWED_MARKETPLACE_DOMAINS`, `isAllowedMarketplaceHost`, `isAllowedMarketplaceUrl`, and hardened `validateAcquisitionCompliance`.
+  - Strictly blocks IP literals, private networks, cloud metadata endpoints (`169.254.169.254`), non-standard ports, and authenticated seller portals (`/your/shops`, `sellercentral.amazon.com`, `my.ebay.com`, `seller.walmart.com`, `seller-us.tiktok.com`).
+- **Production-Hardened Public Page Fetcher (`src/marketplaces/core/acquisition/page-fetcher.ts`)**:
+  - Implemented manual safe redirect resolution (`redirect: "manual"`) validating every redirect target against domain safety policy before following.
+  - Added bounded redirect limits (max 3) and exponential backoff with randomized jitter for 429 rate limits and 5xx server errors.
+  - Enforced content-type verification and response payload size caps (5MB max).
+- **Field-Level Provenance & Lineage (`src/marketplaces/core/types.ts` & `src/marketplaces/core/acquisition/merger.ts`)**:
+  - Added `FieldProvenanceRecord` and `ProductFieldLineage` to canonical `NormalizedProduct`.
+  - Non-destructive observation merger builds explicit field lineage for all individual metrics (`title`, `price`, `rating`, `reviewCount`, `favoritesCount`, `salesCount`, `estimatedDemand`).
+- **Product Detail Orchestration (`src/marketplaces/core/acquisition/orchestrator.ts`)**:
+  - Added `orchestrateProductDetail` resolving individual product listings across `PUBLIC_WEB` $\to$ `MARKETPLACE_API` $\to$ `HISTORICAL_OBSERVATION`.
+- **Public Adapters & Parsers Hardening (`structured-parser.ts`, `amazon`, `ebay`, `walmart`, `etsy`)**:
+  - Hardened semantic listing card and container parsers supporting both `data-listing-id` container blocks and standard link anchors.
+  - Enhanced category aggregation with overloaded parameter signatures and exact catalog counting.
+- **Comprehensive Test Suite & Verified Quality Baseline**:
+  - Added `src/tests/batch-10-production-acquisition-hardening.test.ts` with 24 thorough test cases.
+  - Test suite: **919/919 passing across 170 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
   - TypeScript: Clean (`npx tsc --noEmit`).
   - Prisma: Valid, 29 migrations up to date.
   - Next.js: Clean production build (**161/161 routes compiled**).
+
 
 
 

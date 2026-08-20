@@ -338,3 +338,219 @@ export async function orchestrateProductResearch(
     report,
   };
 }
+
+/**
+ * Orchestrates individual product detail resolution across Public Web, Official API,
+ * and Historical Database records.
+ */
+export async function orchestrateProductDetail(
+  externalIdOrUrl: string,
+  marketplace: MarketplaceId,
+  customPolicy?: Partial<ResearchSourcePolicy>
+): Promise<{ product: NormalizedProduct | null; report: AcquisitionReport }> {
+  registerAllConnectors();
+  const policy: ResearchSourcePolicy = { ...DEFAULT_SOURCE_POLICY, ...customPolicy };
+  const preferredSources = policy.preferredSources || DEFAULT_SOURCE_POLICY.preferredSources!;
+
+  const sourcesAttempted: DataSourceType[] = [];
+  const sourcesSucceeded: DataSourceType[] = [];
+  const sourcesFailed: DataSourceType[] = [];
+  const limitations: string[] = [];
+
+  let publicObservation: NormalizedProduct | null = null;
+  let apiObservation: NormalizedProduct | null = null;
+  let historicalObservation: NormalizedProduct | null = null;
+
+  // 1. Attempt PUBLIC_WEB
+  if (preferredSources.includes("PUBLIC_WEB")) {
+    sourcesAttempted.push("PUBLIC_WEB");
+    const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(marketplace);
+
+    if (publicAdapter && publicAdapter.capabilities.productDetail) {
+      try {
+        const res = await publicAdapter.fetchPublicProduct(externalIdOrUrl);
+        if (res.success && res.items.length > 0) {
+          sourcesSucceeded.push("PUBLIC_WEB");
+          publicObservation = res.items[0];
+        } else {
+          sourcesFailed.push("PUBLIC_WEB");
+          if (res.error) limitations.push(res.error);
+        }
+      } catch (err: any) {
+        sourcesFailed.push("PUBLIC_WEB");
+        limitations.push(`Public web product detail error: ${err.message}`);
+      }
+    } else {
+      sourcesFailed.push("PUBLIC_WEB");
+    }
+  }
+
+  // 2. Attempt MARKETPLACE_API if preferred or public web yielded no item
+  if (
+    preferredSources.includes("MARKETPLACE_API") &&
+    (!publicObservation || policy.enableMultiSourceEnrichment)
+  ) {
+    sourcesAttempted.push("MARKETPLACE_API");
+    const connector = MarketplaceRegistry.tryGetConnector(marketplace);
+
+    if (connector && connector.capabilities.research && connector.searchProducts) {
+      try {
+        const results = await connector.searchProducts({
+          keywords: [externalIdOrUrl],
+          limit: 1,
+        });
+        if (results && results.length > 0) {
+          sourcesSucceeded.push("MARKETPLACE_API");
+          apiObservation = results[0];
+        } else {
+          sourcesFailed.push("MARKETPLACE_API");
+        }
+      } catch (err: any) {
+        sourcesFailed.push("MARKETPLACE_API");
+        limitations.push(`Official API connector error: ${err.message}`);
+      }
+    } else {
+      sourcesFailed.push("MARKETPLACE_API");
+    }
+  }
+
+  // 3. Merge or fallback
+  let finalProduct: NormalizedProduct | null = null;
+  if (publicObservation && apiObservation) {
+    const merged = mergeProductObservations(publicObservation, apiObservation);
+    finalProduct = merged.product;
+  } else if (publicObservation) {
+    finalProduct = publicObservation;
+  } else if (apiObservation) {
+    finalProduct = apiObservation;
+  }
+
+  // 4. Tertiary Fallback: HISTORICAL_OBSERVATION
+  if (!finalProduct && policy.allowHistoricalFallback) {
+    sourcesAttempted.push("HISTORICAL_OBSERVATION");
+    try {
+      const connectorType = marketplace.toUpperCase() as any;
+      const rec = await prisma.prospect.findFirst({
+        where: {
+          marketplace: connectorType,
+          OR: [
+            { listingExternalId: externalIdOrUrl },
+            { listingUrl: externalIdOrUrl },
+          ],
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (rec) {
+        sourcesSucceeded.push("HISTORICAL_OBSERVATION");
+        historicalObservation = {
+          marketplace,
+          externalId: rec.listingExternalId,
+          title: rec.listingTitle,
+          url: rec.listingUrl,
+          imageUrl: rec.listingImageUrl ?? undefined,
+          price: rec.price,
+          currency: "USD",
+          rating: rec.reviewAverage ?? null,
+          reviewCount: rec.totalSales ?? null,
+          favoritesCount: rec.numFavorers ?? null,
+          shop: {
+            name: rec.shopName,
+            activeListings: rec.activeListings,
+            ageMonths: rec.shopAgeMonths,
+            reviewRatio: rec.reviewRatio,
+            reviewVelocity: rec.reviewVelocity,
+          },
+          source: "ACTUAL_DATA" as SignalProvenance,
+          acquisitionMethod: "HISTORICAL_OBSERVATION",
+          isHistorical: true,
+          capturedAt: rec.createdAt,
+        };
+
+        const oppInput = extractOpportunityInputFromNormalizedProduct(historicalObservation);
+        const report = evaluateCanonicalOpportunity(oppInput);
+        if (report.overallScore !== null) {
+          historicalObservation.opportunityScore = {
+            score: report.overallScore,
+            confidence: report.confidenceScore,
+            tier: report.tier,
+            verdict: report.verdictLabel,
+            verdictVariant: report.verdictVariant,
+            availableSignals: report.signals.available.map((s) => s.id),
+            unavailableSignals: report.signals.unavailable.map((s) => s.id),
+          };
+        }
+
+        finalProduct = historicalObservation;
+      } else {
+        sourcesFailed.push("HISTORICAL_OBSERVATION");
+      }
+    } catch {
+      sourcesFailed.push("HISTORICAL_OBSERVATION");
+    }
+  }
+
+  const primarySourceUsed: DataSourceType | undefined =
+    sourcesSucceeded.includes("PUBLIC_WEB")
+      ? "PUBLIC_WEB"
+      : sourcesSucceeded.includes("MARKETPLACE_API")
+      ? "MARKETPLACE_API"
+      : sourcesSucceeded.includes("HISTORICAL_OBSERVATION")
+      ? "HISTORICAL_OBSERVATION"
+      : undefined;
+
+  const fallbackUsed: DataSourceType | undefined =
+    primarySourceUsed === "HISTORICAL_OBSERVATION" ? "HISTORICAL_OBSERVATION" : undefined;
+
+  const observationTimestamp = finalProduct?.capturedAt || new Date();
+  const freshness = evaluateFreshness(
+    observationTimestamp,
+    "general",
+    primarySourceUsed === "HISTORICAL_OBSERVATION"
+  );
+
+  if (finalProduct?.opportunityScore && freshness.confidencePenalty > 0) {
+    finalProduct.opportunityScore.confidence = Math.max(
+      10,
+      finalProduct.opportunityScore.confidence - freshness.confidencePenalty
+    );
+  }
+
+  const connector = MarketplaceRegistry.tryGetConnector(marketplace);
+  const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(marketplace);
+
+  let status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
+  if (finalProduct) {
+    status = "AVAILABLE";
+  } else if (connector?.capabilities.research || connector?.capabilities.readListings || publicAdapter?.capabilities.productDetail) {
+    status = "UNAVAILABLE";
+  } else if (connector && Object.values(connector.capabilities).some(Boolean)) {
+    status = "PARTIAL";
+  } else {
+    status = "NOT_IMPLEMENTED";
+  }
+
+  const report: AcquisitionReport = {
+    marketplace,
+    status,
+    sourcesAttempted,
+    sourcesSucceeded,
+    sourcesFailed,
+    primarySourceUsed,
+    fallbackUsed,
+    observationTimestamp,
+    freshness,
+    confidenceScore: finalProduct?.opportunityScore?.confidence ?? 0,
+    itemCount: finalProduct ? 1 : 0,
+    message: finalProduct
+      ? `Successfully acquired product detail from ${sourcesSucceeded.join(" + ")} (${freshness.status}).`
+      : `Product detail unavailable for "${externalIdOrUrl}" on ${marketplace}.`,
+    limitations,
+  };
+
+  return {
+    product: finalProduct,
+    report,
+  };
+}
+

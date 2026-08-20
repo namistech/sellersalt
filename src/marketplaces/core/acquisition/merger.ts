@@ -29,8 +29,58 @@ export function mergeProductObservations(
 ): MergedProductObservation {
   if (!secondary) {
     const primarySource: DataSourceType = primary.acquisitionMethod || "PUBLIC_WEB";
+    const primaryObservedAt = primary.observedAt || primary.capturedAt || new Date();
+    const productWithLineage: NormalizedProduct = {
+      ...primary,
+      fieldLineage: primary.fieldLineage || {
+        title: {
+          value: primary.title,
+          provenance: "ACTUAL_DATA",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        price: {
+          value: primary.price,
+          provenance: primary.price !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        rating: {
+          value: primary.rating ?? null,
+          provenance: primary.rating !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        reviewCount: {
+          value: primary.reviewCount ?? null,
+          provenance: primary.reviewCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        salesCount: {
+          value: primary.salesCount ?? null,
+          provenance: primary.salesCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        favoritesCount: {
+          value: primary.favoritesCount ?? null,
+          provenance: primary.favoritesCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+        },
+        estimatedDemand: {
+          value: primary.estimatedDemand ?? null,
+          provenance: primary.estimatedDemand !== null ? "ESTIMATED" : "UNAVAILABLE",
+          source: primarySource,
+          observedAt: primaryObservedAt,
+          methodology: "daily-sales derived from observed sales & shop age",
+        },
+      },
+    };
+
     return {
-      product: primary,
+      product: productWithLineage,
       sources: [primarySource],
       isEnriched: false,
       fieldProvenance: {
@@ -81,24 +131,26 @@ export function mergeProductObservations(
   }
 
   // Ratings & Reviews
-  if (merged.rating === null && secondary.rating !== null) {
+  if ((merged.rating === null || merged.rating === undefined) && secondary.rating !== null && secondary.rating !== undefined) {
     merged.rating = secondary.rating;
     fieldProvenance.rating = secondarySource;
-  } else if (merged.rating !== null) {
+  } else if (merged.rating !== null && merged.rating !== undefined) {
     fieldProvenance.rating = primarySource;
   }
 
-  if (merged.reviewCount === null && secondary.reviewCount !== null) {
+  if ((merged.reviewCount === null || merged.reviewCount === undefined) && secondary.reviewCount !== null && secondary.reviewCount !== undefined) {
     merged.reviewCount = secondary.reviewCount;
     fieldProvenance.reviewCount = secondarySource;
-  } else if (merged.reviewCount !== null) {
+  } else if (merged.reviewCount !== null && merged.reviewCount !== undefined) {
     fieldProvenance.reviewCount = primarySource;
   }
 
   // Favorites / Engagement
-  if (merged.favoritesCount === null && secondary.favoritesCount !== null) {
+  if ((merged.favoritesCount === null || merged.favoritesCount === undefined) && secondary.favoritesCount !== null && secondary.favoritesCount !== undefined) {
     merged.favoritesCount = secondary.favoritesCount;
     fieldProvenance.favoritesCount = secondarySource;
+  } else if (merged.favoritesCount !== null && merged.favoritesCount !== undefined) {
+    fieldProvenance.favoritesCount = primarySource;
   }
 
   // Shop Info
@@ -132,6 +184,56 @@ export function mergeProductObservations(
   // Set merged provenance
   merged.source = "ACTUAL_DATA" as SignalProvenance;
   merged.acquisitionMethod = primarySource;
+
+  const now = new Date();
+  const primaryObservedAt = primary.observedAt || primary.capturedAt || now;
+  const secondaryObservedAt = secondary.observedAt || secondary.capturedAt || now;
+
+  merged.fieldLineage = {
+    title: {
+      value: merged.title,
+      provenance: "ACTUAL_DATA",
+      source: fieldProvenance.title,
+      observedAt: fieldProvenance.title === secondarySource ? secondaryObservedAt : primaryObservedAt,
+    },
+    price: {
+      value: merged.price,
+      provenance: merged.price !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: fieldProvenance.price,
+      observedAt: fieldProvenance.price === secondarySource ? secondaryObservedAt : primaryObservedAt,
+    },
+    rating: {
+      value: merged.rating ?? null,
+      provenance: merged.rating !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: fieldProvenance.rating || primarySource,
+      observedAt: fieldProvenance.rating === secondarySource ? secondaryObservedAt : primaryObservedAt,
+    },
+    reviewCount: {
+      value: merged.reviewCount ?? null,
+      provenance: merged.reviewCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: fieldProvenance.reviewCount || primarySource,
+      observedAt: fieldProvenance.reviewCount === secondarySource ? secondaryObservedAt : primaryObservedAt,
+    },
+    salesCount: {
+      value: merged.salesCount ?? null,
+      provenance: merged.salesCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: primarySource,
+      observedAt: primaryObservedAt,
+    },
+    favoritesCount: {
+      value: merged.favoritesCount ?? null,
+      provenance: merged.favoritesCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
+      source: fieldProvenance.favoritesCount || primarySource,
+      observedAt: fieldProvenance.favoritesCount === secondarySource ? secondaryObservedAt : primaryObservedAt,
+    },
+    estimatedDemand: {
+      value: merged.estimatedDemand ?? null,
+      provenance: merged.estimatedDemand !== null ? "ESTIMATED" : "UNAVAILABLE",
+      source: primarySource,
+      observedAt: primaryObservedAt,
+      methodology: "daily-sales derived from observed sales & shop age",
+    },
+  };
 
   // Re-evaluate Canonical Opportunity Score with all newly enriched signals
   const oppInput = extractOpportunityInputFromNormalizedProduct(merged);

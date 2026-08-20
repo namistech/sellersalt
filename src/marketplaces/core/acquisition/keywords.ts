@@ -38,6 +38,7 @@ export interface CanonicalKeywordObservation {
 
 export interface KeywordCluster {
   theme: string;
+  intent?: "MATERIAL_STYLE" | "RECIPIENT_OCCASION" | "PRODUCT_MODIFIER" | "GENERAL";
   intentCategory?: "MATERIAL_STYLE" | "RECIPIENT_OCCASION" | "PRODUCT_MODIFIER" | "GENERAL";
   keywords: string[];
   totalOccurrences: number;
@@ -73,7 +74,8 @@ const MODIFIER_PATTERNS = [
   "modern", "boho", "aesthetic", "large", "small", "cute", "funny",
 ];
 
-function classifyKeywordIntent(keyword: string): KeywordCluster["intentCategory"] {
+function classifyKeywordIntent(keyword: string): "MATERIAL_STYLE" | "RECIPIENT_OCCASION" | "PRODUCT_MODIFIER" | "GENERAL" {
+  if (!keyword) return "GENERAL";
   const lower = keyword.toLowerCase();
   for (const m of MATERIAL_PATTERNS) {
     if (lower.includes(m)) return "MATERIAL_STYLE";
@@ -88,7 +90,7 @@ function classifyKeywordIntent(keyword: string): KeywordCluster["intentCategory"
 }
 
 export function buildDeterministicKeywordClusters(
-  keywords: CanonicalKeywordObservation[]
+  keywords: (CanonicalKeywordObservation | string)[]
 ): KeywordCluster[] {
   if (!keywords || keywords.length === 0) return [];
 
@@ -100,9 +102,26 @@ export function buildDeterministicKeywordClusters(
     GENERAL: [],
   };
 
-  for (const kw of keywords) {
-    const intent = classifyKeywordIntent(kw.keyword) || "GENERAL";
-    intentBuckets[intent].push(kw);
+  for (const item of keywords) {
+    const kwObj: CanonicalKeywordObservation = typeof item === "string"
+      ? {
+          keyword: item,
+          marketplace: "etsy",
+          occurrenceCount: 1,
+          listingFrequencyPercent: 100,
+          observedAveragePrice: null,
+          demandProxyScore: 50,
+          competitionProxy: "UNAVAILABLE",
+          searchVolume: null,
+          searchVolumeProvenance: "UNAVAILABLE",
+          freshness: evaluateFreshness(new Date(), "general"),
+          provenance: "ACTUAL_DATA",
+          observedAt: new Date(),
+        }
+      : item;
+
+    const intent = classifyKeywordIntent(kwObj.keyword) || "GENERAL";
+    intentBuckets[intent].push(kwObj);
   }
 
   // 1. Material & Style Cluster
@@ -110,6 +129,7 @@ export function buildDeterministicKeywordClusters(
     const items = intentBuckets.MATERIAL_STYLE;
     clusters.push({
       theme: "Materials & Craft Styles",
+      intent: "MATERIAL_STYLE",
       intentCategory: "MATERIAL_STYLE",
       keywords: items.map((i) => i.keyword),
       totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
@@ -122,6 +142,7 @@ export function buildDeterministicKeywordClusters(
     const items = intentBuckets.RECIPIENT_OCCASION;
     clusters.push({
       theme: "Gifts & Occasions",
+      intent: "RECIPIENT_OCCASION",
       intentCategory: "RECIPIENT_OCCASION",
       keywords: items.map((i) => i.keyword),
       totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
@@ -134,6 +155,7 @@ export function buildDeterministicKeywordClusters(
     const items = intentBuckets.PRODUCT_MODIFIER;
     clusters.push({
       theme: "Product Customization & Attributes",
+      intent: "PRODUCT_MODIFIER",
       intentCategory: "PRODUCT_MODIFIER",
       keywords: items.map((i) => i.keyword),
       totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),

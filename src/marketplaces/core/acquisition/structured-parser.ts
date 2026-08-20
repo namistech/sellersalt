@@ -249,7 +249,68 @@ export function parseEtsyListingCardsFromHtml(html: string): ParsedListingCard[]
     }
   }
 
-  // Pattern 2: HTML Listing Cards parsing (anchors containing /listing/)
+  // Pattern 2: Container tags with data-listing-id="(\d+)"
+  const dataListingRegex = /data-listing-id=["'](\d+)["']/gi;
+  let dataMatch: RegExpExecArray | null;
+  while ((dataMatch = dataListingRegex.exec(html)) !== null) {
+    const externalId = dataMatch[1];
+    if (!externalId || seenIds.has(externalId)) continue;
+
+    const startPos = dataMatch.index;
+    const chunk = html.slice(Math.max(0, startPos - 100), startPos + 2500);
+
+    let title = "";
+    const headingMatch = chunk.match(/<h\d[^>]*>([\s\S]*?)<\/h\d>/i) || chunk.match(/class=["'][^"']*v2-listing-card__title[^"']*["'][^>]*>([\s\S]*?)<\/[a-z0-9]+>/i);
+    const titleAttrMatch = chunk.match(/title=["']([^"']+)["']/i);
+    const altMatch = chunk.match(/alt=["']([^"']+)["']/i);
+
+    if (headingMatch?.[1]) {
+      title = headingMatch[1].replace(/<[^>]+>/g, "").trim();
+    } else if (titleAttrMatch?.[1]) {
+      title = titleAttrMatch[1].trim();
+    } else if (altMatch?.[1]) {
+      title = altMatch[1].trim();
+    }
+
+    if (!title || title.length < 3) continue;
+
+    // Extract image url
+    let imageUrl: string | undefined;
+    const imgMatch = chunk.match(/src=["'](https?:\/\/[^"']+)["']/i);
+    if (imgMatch?.[1]) imageUrl = imgMatch[1];
+
+    // Extract price
+    let price: number | undefined;
+    let currency = "USD";
+    const priceMatch =
+      chunk.match(/class=["'][^"']*currency-value[^"']*["'][^>]*>([0-9]+(?:\.[0-9]{2})?)/i) ||
+      chunk.match(/(?:[$€£¥₹])\s*([0-9]+(?:\.[0-9]{2})?)/);
+    if (priceMatch?.[1]) {
+      const p = parseFloat(priceMatch[1]);
+      if (!isNaN(p)) price = p;
+    }
+
+    // Extract shop name
+    let shopName: string | undefined;
+    const shopMatch =
+      chunk.match(/class=["'][^"']*v2-listing-card__shop[^"']*["'][^>]*>([\s\S]*?)<\/p>/i) ||
+      chunk.match(/by\s+([A-Za-z0-9_-]+)/i);
+    if (shopMatch?.[1]) shopName = shopMatch[1].replace(/<[^>]+>/g, "").trim();
+
+    seenIds.add(externalId);
+    cards.push({
+      externalId,
+      title,
+      url: `https://www.etsy.com/listing/${externalId}`,
+      imageUrl,
+      price,
+      currency,
+      shopName,
+      shop: shopName ? { name: shopName } : undefined,
+    });
+  }
+
+  // Pattern 3: HTML Listing Cards parsing (anchors containing /listing/)
   const listingAnchorRegex = /<a\s+([^>]*)href=["'](https?:\/\/(?:www\.)?etsy\.com\/listing\/(\d+)[^"']*)["']([^>]*)>([\s\S]*?)<\/a>/gi;
   let match: RegExpExecArray | null;
 
@@ -311,6 +372,7 @@ export function parseEtsyListingCardsFromHtml(html: string): ParsedListingCard[]
       price,
       currency,
       shopName,
+      shop: shopName ? { name: shopName } : undefined,
     });
   }
 
