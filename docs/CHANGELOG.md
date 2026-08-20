@@ -1052,3 +1052,28 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**173/173 routes compiled**).
+
+## Batch 33: Real Merchant Beta Execution, Learning Loop & Product-Market Validation (2026-08-20)
+
+**Why**: Equip SellerSalt to systematically observe real merchant behavior across the canonical 5-step journey, detect genuine first-value attainment, calculate funnel drop-offs without synthetic data, prioritize product friction via the Beta Learning Loop, and manage beta cohort experiments.
+
+**What changed**:
+- **Merchant Journey Telemetry Engine (`src/services/telemetry/merchant-journey.ts`)**:
+  - Built organization-scoped telemetry service tracking events across `ONBOARDING`, `DISCOVER`, `RESEARCH`, `VALIDATE`, `PLAN`, `LAUNCH`, and `BILLING` with automated sanitization of passwords, tokens, API keys, card numbers, and PII.
+- **First-Value Detection Engine (`src/services/telemetry/first-value.ts`)**:
+  - Implemented `FirstValueEngine` evaluating true commercial actions (saving prospects, evidence-based idea rejection, creating execution roadmap items, generating original AI drafts, completing SEO audits) vs passive page views.
+- **Funnel Diagnostics Engine (`src/services/telemetry/funnel-diagnostics.ts`)**:
+  - Implemented empirical drop-off analyzer measuring conversion across all 7 transitions without synthetic 0% fallbacks.
+- **Beta Learning Loop Engine (`src/services/telemetry/beta-learning-loop.ts`)**:
+  - Built prioritized triage engine ($Impact \times Frequency \times Commercial$) classifying product friction and generating actionable recommendations (`FIX`, `IMPROVE`, `SIMPLIFY`, `INVESTIGATE`).
+- **Beta Experiment Framework (`src/services/telemetry/beta-experiments.ts`)**:
+  - Created deterministic cohort assignment engine (`CONTROL` vs `TREATMENT`) and hypothesis tracking.
+- **Admin Beta Insight Center API (`src/app/api/admin/beta-insights/route.ts`)**:
+  - Built comprehensive endpoint aggregating merchant funnel drop-offs, decision impact distribution, learning loop rankings, and data quality telemetry.
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-33-REAL-MERCHANT-LEARNING.md`.
+- **Verification Baseline**:
+  - Full test suite: **1175/1175 passing across 340 suites** (`src/tests/batch-33-real-merchant-learning.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**173/173 routes compiled**).

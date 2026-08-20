@@ -4,23 +4,22 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 32 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 33 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 32
-(Private Beta Activation, Real Merchant Validation & Product-Market Readiness):
+condensed version of everything else in this file, current as of Batch 33
+(Real Merchant Beta Execution, Learning Loop & Product-Market Validation):
 
-**Architecture** (`src/marketplaces/core/` & `src/services/beta/` & `src/services/ops/` — canonical, don't rebuild):
-- **Beta Merchant Milestone Engine** (`beta-merchant.ts`): Computes deterministic progression across `ONBOARDED` $\to$ `ACTIVATED` $\to$ `ENGAGED` $\to$ `VALUE_REALIZED` $\to$ `PAID` with empirical conversion rates.
-- **In-App Merchant Feedback & Decision Validation** (`beta-feedback.ts`, `/api/beta/feedback`): Captures structured usefulness ratings and 10 commercial decision impact categories with zero PII leakage.
-- **Data Quality & Acquisition Diagnostics** (`data-quality.ts`): Empirical telemetry measuring acquisition success/failure rates, source diversity, and signal coverage.
-- **Admin Beta Control Center** (`/api/admin/beta`): Aggregated operational dashboard for merchant activation, feedback distribution, and data quality telemetry.
-- **Beta Learning Loop Framework** (`BETA-LEARNING-LOOP.md`): Structured 7-step triage and prioritization model ($Impact \times Frequency \times Commercial$).
-- **Private Beta Access Control** (`private-beta.ts`): Configurable invite code allowlist and admission system (`PRIVATE_BETA_MODE=true`, `BETA_INVITE_CODES`).
-- **Production Smoke Test Harness** (`production-smoke-test.ts`): End-to-end operational diagnostic suite.
+**Architecture** (`src/marketplaces/core/` & `src/services/telemetry/` & `src/services/beta/` — canonical, don't rebuild):
+- **Merchant Journey Telemetry Engine** (`merchant-journey.ts`): Organization-scoped, non-PII, deterministic telemetry tracking across the 5 canonical stages + onboarding and billing with automated secret sanitization.
+- **First-Value Detection Engine** (`first-value.ts`): Evaluates evidence-based commercial actions (saving opportunities, rejecting high-risk niches, creating planner execution items, generating original drafts).
+- **Funnel Diagnostics Engine** (`funnel-diagnostics.ts`): Computes stage-by-stage drop-off analytics without synthetic 0% substitutions.
+- **Beta Learning Loop Engine** (`beta-learning-loop.ts`): Prioritizes real user friction and data issues via $Impact \times Frequency \times Commercial$.
+- **Admin Beta Insight Center** (`/api/admin/beta-insights`): Live operational telemetry aggregating merchant drop-offs, decision impact distribution, learning loop rankings, and data quality.
+- **Beta Experiment Framework** (`beta-experiments.ts`): Deterministic cohort variant assignment.
 
 **Current Verified Baseline**:
-- Tests: **1169/1169 passing across 334 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1175/1175 passing across 340 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**173/173 static and dynamic routes compiled**)
