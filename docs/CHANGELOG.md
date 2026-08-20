@@ -718,3 +718,44 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 20: Autonomous Opportunity Discovery, Market Radar 2.0 & Product Idea Engine (2026-08-20)
+
+**Why**: Empower merchants to discover high-value ecommerce opportunities, emerging products, and grounded product concepts directly from observable public market signals without requiring a specific query ("Discover For Me").
+
+**What changed**:
+- **Autonomous Discovery Types & Signal Taxonomy (`src/marketplaces/core/autonomous-discovery-types.ts`)**:
+  - 15 formal Opportunity Types (`EMERGING_PRODUCT`, `PERSISTENT_PRODUCT`, `RISING_KEYWORD`, `EMERGING_KEYWORD`, `UNDERSERVED_ATTRIBUTE`, `PRICE_GAP`, `CATEGORY_OPPORTUNITY`, `NICHE_OPPORTUNITY`, `LOW_CONCENTRATION_MARKET`, `CROSS_MARKETPLACE_OPPORTUNITY`, `IMPROVING_OPPORTUNITY`, `MOMENTUM_OPPORTUNITY`, `DIFFERENTIATION_OPPORTUNITY`, `NO_ACTIONABLE_OPPORTUNITY`, `INSUFFICIENT_DATA`).
+  - Formal Opportunity Signal Taxonomy covering Demand, Competition, Market, Keyword, Differentiation, and Cross-Marketplace signals with field-level provenance.
+- **Autonomous Opportunity Discovery Engine (`src/services/intelligence/autonomous-discovery-engine.ts`)**:
+  - Bounded seed generation across categories and niches (`QUICK`, `STANDARD`, `DEEP`).
+  - Multi-marketplace public ingestion via `MarketplaceRegistry` adapters with full acquisition trace and research quality evaluation.
+- **Opportunity Scoring 3.0 & Confidence Model (`src/services/intelligence/opportunity-scoring-3.ts`, `opportunity-confidence.ts`)**:
+  - Multi-factor deterministic scoring: Demand (0-25), Competition (0-25), Momentum (0-15), Differentiation (0-15), Price (0-10), Evidence Depth (0-10).
+  - Explicit weight redistribution when metrics are unobserved; transparent disclosure of unknown signals.
+- **Deterministic Detection Rules (`src/services/intelligence/opportunity-detector.ts`)**:
+  - Rule engines evaluating candidates for each specific opportunity type with structured explanations.
+- **Opportunity Deduplication & Ranking (`src/services/intelligence/opportunity-deduplication.ts`, `opportunity-ranking.ts`)**:
+  - Entity-level deduplication grouping observations around canonical IDs.
+  - 8 deterministic ranking modes (`BEST_OPPORTUNITIES`, `FASTEST_RISING`, `LOWEST_COMPETITION`, `BEST_DIFFERENTIATION`, `BEST_PRICE_GAP`, `MOST_PERSISTENT`, `NEWEST_EMERGING`, `CROSS_MARKETPLACE`).
+- **Product Idea Engine (`src/services/intelligence/product-idea-engine.ts`)**:
+  - Synthesizes evidence-grounded product concepts distinguishing observed metrics, derived strategy angles, and key risks without inventing consumer demand.
+- **Opportunity Radar 2.0 Feed Engine (`src/services/intelligence/opportunity-radar-2.ts`)**:
+  - Categorized feed organized into 7 decision sections with real-time pulse stats.
+- **Watchlist & Alert Engine (`src/services/intelligence/opportunity-watch-engine.ts`)**:
+  - Organization-scoped watch items with automated change detection for score shifts ($\ge 5$ pts) and momentum transitions.
+- **Discovery History Service (`src/services/intelligence/discovery-history.ts`)**:
+  - Persists and lists past autonomous discovery runs in PostgreSQL `ResearchRun`.
+- **API Suite**:
+  - `POST /api/discovery/run`, `GET /api/discovery/runs`, `GET /api/discovery/runs/[id]`, `GET /api/discovery/opportunities`, `POST /api/discovery/opportunities/[id]/save`, `POST /api/discovery/opportunities/[id]/research`, `POST /api/discovery/opportunities/[id]/validate`, `GET /api/radar`, `POST /api/radar/refresh`, `GET /api/watchlist`, `POST /api/watchlist`, `DELETE /api/watchlist/[id]`, `GET /api/watchlist/alerts`.
+- **Interactive UI Surfaces**:
+  - `AutonomousDiscoveryCenter.tsx` (Flagship discovery center with "Discover For Me" workflow).
+  - `OpportunityRadarFeed.tsx` (Radar 2.0 categorized feed).
+  - `OpportunityDetailDrawer.tsx` (Deep-dive drawer with verdict, evidence, risks, handoffs).
+  - `ProductIdeaCard.tsx` (Product idea presentation).
+  - `WatchlistAlertsView.tsx` (Watchlist & alert center).
+- **Verification Baseline**:
+  - Full test suite: **1070/1070 passing across 263 suites** (`src/tests/batch-20-autonomous-discovery.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).

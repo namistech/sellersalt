@@ -56,6 +56,8 @@ function getScoreBadgeClasses(score: number | null) {
   return "bg-surface-muted text-ink border-line";
 }
 
+import { AutonomousDiscoveryCenter } from "@/components/discovery/AutonomousDiscoveryCenter";
+
 export function DiscoveryClient({
   initialSummary,
   topProducts,
@@ -64,6 +66,7 @@ export function DiscoveryClient({
   totalTrackedShops,
   activeStreams,
 }: DiscoveryClientProps) {
+  const [activeTab, setActiveTab] = useState<"autonomous" | "niches">("autonomous");
   const [summary, setSummary] = useState<NicheDiscoverySummary>(initialSummary);
   const [searchQuery, setSearchQuery] = useState("");
   const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("etsy");
@@ -96,38 +99,66 @@ export function DiscoveryClient({
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0E8F5D]/10 text-[#0E8F5D]">
-              <Compass className="h-4 w-4" />
-            </span>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
-              Intelligence Central
-            </span>
-          </div>
-          <Heading as="h1" size="h2">
-            Niche Discovery & Demand Signals
-          </Heading>
-          <Text size="body-md" color="secondary" className="mt-0.5">
-            Identify high-opportunity ecommerce niches, study demand momentum, and inspect competition barriers.
-          </Text>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link href="/radar">
-            <Button variant="secondary" size="compact" className="text-xs">
-              <Flame className="h-3.5 w-3.5 mr-1 text-[#FFB020]" /> View Radar
-            </Button>
-          </Link>
-          <Link href="/prospects">
-            <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold">
-              Explore All Prospects →
-            </Button>
-          </Link>
-        </div>
+      {/* Mode Switcher Tabs */}
+      <div className="flex items-center gap-2 border-b pb-3">
+        <button
+          onClick={() => setActiveTab("autonomous")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+            activeTab === "autonomous"
+              ? "bg-primary text-white shadow-xs"
+              : "bg-muted/40 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          ✨ Autonomous Opportunity Discovery
+        </button>
+        <button
+          onClick={() => setActiveTab("niches")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+            activeTab === "niches"
+              ? "bg-primary text-white shadow-xs"
+              : "bg-muted/40 text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          📂 Niche Database Explorer
+        </button>
       </div>
+
+      {activeTab === "autonomous" ? (
+        <AutonomousDiscoveryCenter />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0E8F5D]/10 text-[#0E8F5D]">
+                  <Compass className="h-4 w-4" />
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
+                  Intelligence Central
+                </span>
+              </div>
+              <Heading as="h1" size="h2">
+                Niche Discovery & Demand Signals
+              </Heading>
+              <Text size="body-md" color="secondary" className="mt-0.5">
+                Identify high-opportunity ecommerce niches, study demand momentum, and inspect competition barriers.
+              </Text>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link href="/radar">
+                <Button variant="secondary" size="compact" className="text-xs">
+                  <Flame className="h-3.5 w-3.5 mr-1 text-[#FFB020]" /> View Radar
+                </Button>
+              </Link>
+              <Link href="/prospects">
+                <Button variant="primary" size="compact" className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold">
+                  Explore All Prospects →
+                </Button>
+              </Link>
+            </div>
+          </div>
 
       {/* Niche Discovery & Search Controls */}
       <Card padding="md" className="border-line bg-white space-y-4 shadow-xs">
@@ -424,6 +455,8 @@ export function DiscoveryClient({
           </Card>
         </Link>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -182,8 +182,10 @@ a route.
 
 ## 8. Intelligence Engines
 
-| Engine | Purpose | Marketplace coupling | Status |
-|---|---|---|---|
+| `src/services/intelligence/autonomous-discovery-engine.ts` | **Autonomous Opportunity Discovery Engine** — orchestrates broad multi-marketplace discovery ("Discover For Me"), seed expansion, detection rules, and persistence | Multi-marketplace, public web primary | **Canonical, Live** |
+| `src/services/intelligence/opportunity-scoring-3.ts` | **Opportunity Scoring 3.0** — multi-factor deterministic scoring (Demand, Competition, Momentum, Differentiation, Price, Evidence Depth) | Marketplace-neutral | **Canonical, Live** |
+| `src/services/intelligence/product-idea-engine.ts` | **Product Idea Engine** — evidence-grounded product synthesis distinguishing observed metrics and derived strategy angles | Marketplace-neutral | **Canonical, Live** |
+| `src/services/intelligence/opportunity-radar-2.ts` | **Opportunity Radar 2.0 Feed Engine** — categorizes opportunities into 7 structured decision sections with pulse statistics | Marketplace-neutral | **Canonical, Live** |
 | `src/services/intelligence/canonical-opportunity.ts` | **Canonical Opportunity Intelligence Engine** — evaluates multi-factor signal groups with explicit metric availability (`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`), dynamic weight redistribution, and calibrated confidence | Marketplace-neutral, parameterizable by `MarketplaceOptimizationRules` | **Canonical, Live** |
 | `src/services/intelligence/universal-scoring.ts` | Deterministic product/shop opportunity scoring | Fee schedule parameterized (defaults to Etsy's real fees) | Live, backwards-compatible |
 | `src/marketplaces/core/opportunity-engine.ts` | Wraps canonical and universal scoring in an `available`/`confidence`-aware envelope (`scoreProductOpportunity`, `scoreNormalizedProductOpportunity`, `scoreShopCompetition`) | None | Live |
@@ -336,7 +338,7 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1060/1060 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 254 suites)
+Tests:      1070/1070 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 263 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
 Next.js:    clean build      (npx next build — 168/168 static and dynamic routes compiled)

@@ -333,13 +333,13 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of the Marketplace-Independent Web Acquisition Expansion & Source Orchestrator batch (2026-08-20),
+As of Batch 20 (Autonomous Opportunity Discovery & Market Radar 2.0, 2026-08-20),
 independently re-run (not copied from an earlier report):
 
-- Tests: **879/879 passing** across 151 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1070/1070 passing** across 263 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: clean (`npx tsc --noEmit`)
-- Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status` — 29 migrations)
-- Build: clean (`npx next build` — 161/161 static and dynamic pages generated)
+- Prisma: valid, synchronized (`node --env-file=.env.local node_modules/prisma/build/index.js validate`)
+- Build: clean (`npx next build` — 168/168 static and dynamic routes compiled)
 
 If these numbers differ when you run them yourself, trust your own run —
 this file is a snapshot, not a live dashboard.
