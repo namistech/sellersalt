@@ -879,3 +879,24 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 25: Public Commercial Layer & Launch Readiness Foundation (2026-08-20)
+
+**Why**: Establish a credible, trustworthy, and conversion-ready public marketing foundation centered around SellerSalt's canonical value proposition (*"Know what to sell before you spend money."*), the 5-step workflow journey, and the Zero-Fabrication epistemological contract.
+
+**What changed**:
+- **Marketing Homepage (`src/app/page.tsx` & `src/app/marketing-homepage.tsx`)**:
+  - Completely rebuilt with canonical messaging, interactive hero search console, problem statement, 5-step workflow showcase, signal classification breakdown, transparent pricing, honest FAQs, and marketplace disclaimers.
+- **Product Methodology Page (`src/app/how-it-works/page.tsx`)**:
+  - Created comprehensive public walkthrough of the 5-step decision methodology, signal classes, and compliance guardrails.
+- **Pricing & Public Shell Updates (`src/app/pricing/page.tsx`, `PublicHeader.tsx`, `PublicFooter.tsx`)**:
+  - Modernized with multi-marketplace intelligence copy, clear plan definitions, and working navigation links to `/how-it-works`, `/pricing`, `/trust`, `/marketplaces`.
+- **Claim Safety & Trademark Compliance**:
+  - Audited all public surfaces to eliminate prohibited speculative claims (*"guaranteed to sell"*, *"exact monthly sales"*, *"spy on competitors"*) and ensure compliant marketplace trademark disclaimers.
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-25-PUBLIC-PRODUCT-LAUNCH.md`.
+- **Verification Baseline**:
+  - Full test suite: **1124/1124 passing across 299 suites** (`src/tests/batch-25-public-commercial-launch.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**169/169 routes compiled**).

@@ -4,25 +4,24 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 24 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 25 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 24
-(SellerSalt V1 — Unified Merchant Experience & Product Shell):
+condensed version of everything else in this file, current as of Batch 25
+(Public Commercial Layer & Launch Readiness Foundation):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Unified Product Shell & Navigation** (`src/services/navigation.ts`): Workflow-first navigation organized by merchant job-to-be-done (`DASHBOARD`, `DISCOVER`, `RESEARCH`, `DECIDE & VALIDATE`, `BUILD & OPTIMIZE`, `CHANNELS & GOVERNANCE`, `MANAGE & TRUST`) with direct access to `/product-workspaces`.
-- **Command Dashboard & Unified Search** (`src/app/(dashboard)/dashboard/`, `src/components/research/UnifiedSearchEntry.tsx`): Interactive hero search console with trending suggestions, multi-marketplace capability toggles, and direct workflow routing.
-- **Personalized Continuation & First-Time Launchpad** (`PersonalizedContinuationSection.tsx`, `FirstTimeMerchantGuide.tsx`): Real Postgres-backed activity resumption (`ResearchRun`, `ProductValidation`, `SavedOpportunity`) or friendly 4-phase merchant onboarding.
-- **Commercial Workflow Connectors** (`NextCommercialActionBar.tsx`): Seamless, evidence-grounded action handoffs linking Discover → Research → Validate → Plan → Launch.
+- **Public Commercial Layer & Marketing Shell** (`src/app/marketing-homepage.tsx`, `/how-it-works`, `/pricing`, `/trust`): Transparent, conversion-ready marketing pages communicating *"Know what to sell before you spend money."* and the 5-step workflow journey.
+- **Epistemological Signal Classification & Zero-Fabrication Contract** (`signal-classification.ts`, `UnavailableSignalCard.tsx`): Clear public disclosures of `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals.
+- **Unified Product Shell & Navigation** (`src/services/navigation.ts`): Workflow-first navigation organized by merchant jobs (`DASHBOARD`, `DISCOVER`, `RESEARCH`, `DECIDE & VALIDATE`, `BUILD & OPTIMIZE`, `CHANNELS & GOVERNANCE`, `MANAGE & TRUST`).
+- **Command Dashboard & Unified Search** (`src/app/(dashboard)/dashboard/`, `src/components/research/UnifiedSearchEntry.tsx`): Interactive hero search console with multi-marketplace capability toggles.
 - **Marketplace Access Resolver & Anti-Circumvention** (`access-modes.ts`, `anti-circumvention.ts`): Resolves 9 explicit data access modes with zero scraping fallback after API restrictions.
-- **Trust Center & Unavailable UX** (`/trust`, `UnavailableSignalCard.tsx`): Public methodology hub and zero-fabrication disclosures.
 
 **Current Verified Baseline**:
-- Tests: **1118/1118 passing across 294 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1124/1124 passing across 299 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
-- Next.js: Clean production build (**168/168 static and dynamic routes compiled**)
+- Next.js: Clean production build (**169/169 static and dynamic routes compiled**)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,

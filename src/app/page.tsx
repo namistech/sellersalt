@@ -9,23 +9,24 @@ import { MarketingHomepage } from "./marketing-homepage";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "SellerSalt — The Essential of eCommerce Intelligence",
+  title: "SellerSalt — Know What to Sell Before You Spend Money",
   description:
-    "SellerSalt helps Etsy sellers, brands, and agencies discover winning products, analyze competitor sales velocity, and spot high-demand niches using verified marketplace sales data.",
+    "SellerSalt helps ecommerce merchants discover opportunities, research observable markets, validate product ideas, and build evidence-grounded launch plans.",
   keywords:
-    "Etsy product research, Etsy market research tool, Opportunity Radar, Etsy sales tracker, Etsy market analysis, ecommerce research, product sourcing, shop intelligence",
+    "ecommerce intelligence, product research, market opportunity radar, product validation, unit economics modeling, ecommerce product sourcing, commercial decision software",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "SellerSalt — The Essential of eCommerce Intelligence",
+    title: "SellerSalt — Know What to Sell Before You Spend Money",
     description:
-      "Turn verified Etsy sales data and competitor velocity into profitable product decisions with the Opportunity Radar.",
+      "Turn observable marketplace signals into evidence-based product decisions with SellerSalt.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SellerSalt — The Essential of eCommerce Intelligence",
-    description: "Verified sales data, Opportunity Radar, and competitor intelligence for Etsy sellers.",
+    title: "SellerSalt — Know What to Sell Before You Spend Money",
+    description:
+      "Evidence-based ecommerce product research, commercial validation, and sourcing intelligence.",
   },
 };
 
@@ -37,26 +38,41 @@ const JSON_LD = {
       name: "SellerSalt",
       operatingSystem: "Web-based",
       applicationCategory: "BusinessApplication",
-      offers: { "@type": "AggregateOffer", priceCurrency: "USD", lowPrice: "19", highPrice: "199", offerCount: "3" },
-      description: "Ecommerce research and competitor intelligence platform for Etsy sellers, dropshippers, and sourcing agencies.",
+      offers: { "@type": "AggregateOffer", priceCurrency: "USD", lowPrice: "0", highPrice: "199", offerCount: "4" },
+      description: "Evidence-based ecommerce intelligence and product validation platform for independent merchants, brands, and agencies.",
+    },
+    {
+      "@type": "Organization",
+      name: "SellerSalt",
+      url: SITE_URL,
+      logo: `${SITE_URL}/brand/icon-mark.png`,
     },
     {
       "@type": "FAQPage",
       mainEntity: [
         {
           "@type": "Question",
-          name: "Do I need my own Etsy API key to use SellerSalt?",
-          acceptedAnswer: { "@type": "Answer", text: "No. SellerSalt works out of the box with our platform research engine. You do not need to apply for or configure an Etsy developer key." },
+          name: "What is SellerSalt?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "SellerSalt is an evidence-based ecommerce intelligence and decision-support platform that helps merchants discover opportunities, research markets, validate commercial feasibility, and build launch plans before investing capital.",
+          },
         },
         {
           "@type": "Question",
-          name: "Is the sales data on SellerSalt real or estimated?",
-          acceptedAnswer: { "@type": "Answer", text: "SellerSalt extracts verified lifetime transaction numbers directly from marketplace shop data and tracks point-in-time snapshots daily, providing accurate velocity metrics." },
+          name: "How does SellerSalt handle marketplace data?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "SellerSalt separates observable listing signals (prices, review counts, star ratings) from derived calculations and user-supplied costs. It adheres to a strict Zero-Fabrication Contract, never inventing synthetic search volumes or competitor revenues.",
+          },
         },
         {
           "@type": "Question",
-          name: "What is the Opportunity Radar?",
-          acceptedAnswer: { "@type": "Answer", text: "Opportunity Radar is SellerSalt's decision layer that evaluates sales velocity, catalog density, competition barriers, and freshness to surface high-potential products before they become crowded." },
+          name: "What is the 5-step workflow in SellerSalt?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "The SellerSalt workflow consists of Discover (spotting opportunities), Research (observing market structures), Validate (running feasibility models), Plan (sourcing and unit economics), and Launch (optimized listing drafts and execution roadmaps).",
+          },
         },
       ],
     },

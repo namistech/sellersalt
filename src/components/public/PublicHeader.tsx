@@ -28,33 +28,38 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#525B55]">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-[#525B55]">
           <Link
-            href="/#features"
-            className="hover:text-[#141B16] transition-colors"
-          >
-            Features
-          </Link>
-          <Link
-            href="/#radar"
-            className="flex items-center gap-1 hover:text-[#141B16] transition-colors"
-          >
-            <Flame className="h-3.5 w-3.5 text-[#FFB020]" />
-            Opportunity Radar
-          </Link>
-          <Link
-            href="/shops"
+            href="/how-it-works"
             className={`hover:text-[#141B16] transition-colors ${
-              currentPath === "/shops" ? "text-[#141B16] font-semibold" : ""
+              currentPath === "/how-it-works" ? "text-[#141B16] font-bold" : ""
             }`}
           >
-            Shop Directory
+            How It Works
           </Link>
           <Link
-            href="/#pricing"
-            className="hover:text-[#141B16] transition-colors"
+            href="/pricing"
+            className={`hover:text-[#141B16] transition-colors ${
+              currentPath === "/pricing" ? "text-[#141B16] font-bold" : ""
+            }`}
           >
             Pricing
+          </Link>
+          <Link
+            href="/trust"
+            className={`hover:text-[#141B16] transition-colors ${
+              currentPath === "/trust" ? "text-[#141B16] font-bold" : ""
+            }`}
+          >
+            Trust Center
+          </Link>
+          <Link
+            href="/marketplaces"
+            className={`hover:text-[#141B16] transition-colors ${
+              currentPath === "/marketplaces" ? "text-[#141B16] font-bold" : ""
+            }`}
+          >
+            Marketplaces
           </Link>
           <Link
             href="/#faq"

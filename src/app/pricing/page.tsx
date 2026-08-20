@@ -7,15 +7,15 @@ import { HelpCircle } from "lucide-react";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "Pricing Plans — Etsy Intelligence Platform | SellerSalt",
+  title: "Pricing Plans — Ecommerce Intelligence Platform | SellerSalt",
   description:
-    "Explore transparent pricing plans for SellerSalt's Etsy research engine, Opportunity Radar, and competitor tracking.",
+    "Explore transparent subscription plans for SellerSalt's multi-marketplace research engine, Opportunity Radar, product validation, and sourcing workspaces.",
   alternates: { canonical: `${SITE_URL}/pricing` },
   openGraph: {
     type: "website",
     url: `${SITE_URL}/pricing`,
-    title: "Pricing Plans — Etsy Intelligence Platform | SellerSalt",
-    description: "Track top-selling Etsy shops and product opportunities with SellerSalt.",
+    title: "Pricing Plans — Ecommerce Intelligence Platform | SellerSalt",
+    description: "Validate product opportunities and model unit economics with SellerSalt.",
   },
 };
 
@@ -29,8 +29,8 @@ const FAQ_ITEMS = [
     a: "Yes! You can cancel your subscription with one click directly in your workspace Billing settings at any time without penalty.",
   },
   {
-    q: "Do I need to connect my own Etsy shop to use SellerSalt?",
-    a: "No. SellerSalt provides platform-wide Etsy market intelligence and product research without requiring you to link your shop. Connecting your shop is optional to unlock internal store analytics.",
+    q: "Do I need to connect my own store to use SellerSalt?",
+    a: "No. SellerSalt provides platform-wide market intelligence, opportunity discovery, and product validation without requiring you to link your shop. Connecting your shop is optional to unlock internal store analytics and draft publishing.",
   },
   {
     q: "Which payment methods are supported?",
@@ -50,8 +50,8 @@ export default function PublicPricingPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "SellerSalt Etsy Intelligence Platform",
-    description: "Etsy market research, Opportunity Radar, and competitor sales velocity tracker.",
+    name: "SellerSalt Ecommerce Intelligence Platform",
+    description: "Multi-marketplace product research, Opportunity Radar, and commercial validation software.",
   };
 
   const faqJsonLd = {

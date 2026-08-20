@@ -16,34 +16,34 @@ export function PublicFooter() {
               </span>
             </Link>
             <p className="text-xs text-[#7C847E] leading-relaxed">
-              First-principles Etsy competitor intelligence, sales velocity tracking, and Opportunity Radar.
+              Evidence-based ecommerce intelligence and commercial decision software. Know what to sell before you spend money.
             </p>
           </div>
 
           {/* Col 2: Product */}
           <div>
             <div className="font-semibold text-xs text-[#141B16] uppercase tracking-wider mb-3">
-              Intelligence
+              Platform
             </div>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/#radar" className="hover:text-[#141B16] transition-colors">
-                  Opportunity Radar
-                </Link>
-              </li>
-              <li>
-                <Link href="/shops" className="hover:text-[#141B16] transition-colors">
-                  Etsy Shop Directory
-                </Link>
-              </li>
-              <li>
-                <Link href="/#features" className="hover:text-[#141B16] transition-colors">
-                  Market Research
+                <Link href="/how-it-works" className="hover:text-[#141B16] transition-colors">
+                  How It Works
                 </Link>
               </li>
               <li>
                 <Link href="/pricing" className="hover:text-[#141B16] transition-colors">
-                  Subscription Plans
+                  Subscription Pricing
+                </Link>
+              </li>
+              <li>
+                <Link href="/trust" className="hover:text-[#141B16] transition-colors">
+                  Trust Center & Methodology
+                </Link>
+              </li>
+              <li>
+                <Link href="/marketplaces" className="hover:text-[#141B16] transition-colors">
+                  Marketplace Overview
                 </Link>
               </li>
             </ul>
@@ -52,9 +52,14 @@ export function PublicFooter() {
           {/* Col 3: Legal & Trust */}
           <div>
             <div className="font-semibold text-xs text-[#141B16] uppercase tracking-wider mb-3">
-              Trust & Legal
+              Trust & Governance
             </div>
             <ul className="space-y-2 text-xs">
+              <li>
+                <Link href="/marketplaces/governance" className="hover:text-[#141B16] transition-colors">
+                  Data Governance Matrix
+                </Link>
+              </li>
               <li>
                 <Link href="/terms" className="hover:text-[#141B16] transition-colors">
                   Terms of Service
