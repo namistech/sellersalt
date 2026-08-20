@@ -23,10 +23,15 @@ import {
   HelpCircle,
   BarChart2,
   RefreshCw,
+  Globe,
+  Radio,
+  Database,
+  Award,
 } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { ResearchWorkbenchCard } from "./ResearchWorkbenchCard";
+import { evaluateResearchQuality, type ResearchQualityReport } from "@/marketplaces/core/acquisition/research-quality";
 import type { WorkbenchResearchResponse } from "@/marketplaces/core/acquisition/workbench";
 import type { NormalizedProduct, NicheDiscoverySummary, CrossMarketplaceComparison } from "@/marketplaces/core/types";
 import type { KeywordResearchSummary } from "@/marketplaces/core/acquisition/keywords";
@@ -43,25 +48,16 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
   const [activeTab, setActiveTab] = useState<"observations" | "signals" | "provenance" | "diff">("observations");
   const [productFilter, setProductFilter] = useState<string>("");
 
-  const getVerdictBadgeVariant = (variant?: string): BadgeVariant => {
-    switch (variant) {
-      case "success": return "success";
-      case "warning": return "warning";
-      case "danger": return "danger";
-      case "info": return "info";
-      default: return "neutral";
-    }
-  };
-
-  const getFreshnessBadgeVariant = (status: string): BadgeVariant => {
-    switch (status.toUpperCase()) {
-      case "LIVE": return "success";
-      case "FRESH": return "neutral";
-      case "STALE": return "warning";
-      case "HISTORICAL": return "neutral";
-      default: return "neutral";
-    }
-  };
+  const qualityReport: ResearchQualityReport = evaluateResearchQuality({
+    itemCount: report.itemCount,
+    liveCount: report.liveCount,
+    historicalCount: report.historicalCount,
+    sourcesUsed: report.sourcesUsed,
+    freshnessStatus: report.freshnessStatus,
+    confidence: report.confidence,
+    marketplaces: report.marketplaces,
+    sampleProducts: report.type === "PRODUCT" && Array.isArray(report.data) ? (report.data as NormalizedProduct[]) : undefined,
+  });
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -74,6 +70,10 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
             </span>
             <Badge variant={report.status === "COMPLETED" ? "success" : report.status === "PARTIAL" ? "warning" : "danger"}>
               {report.status}
+            </Badge>
+            <Badge variant={qualityReport.badgeVariant} className="text-[11px]">
+              <Award className="w-3 h-3 mr-1" />
+              {qualityReport.label} ({qualityReport.qualityScore}/100)
             </Badge>
             {report.isCached && (
               <Badge variant="neutral" className="text-[11px]">
@@ -150,7 +150,7 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
               : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
-          Provenance & Known Limitations
+          Provenance & Research Quality
         </button>
         {report.diffSummary && (
           <button
@@ -209,7 +209,7 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
 
       {activeTab === "provenance" && (
         <div className="space-y-4">
-          <DataProvenanceView report={report} />
+          <DataProvenanceView report={report} qualityReport={qualityReport} />
         </div>
       )}
 
@@ -754,29 +754,107 @@ function SignalIntelligenceView({ report }: { report: WorkbenchResearchResponse 
 }
 
 // ----------------------------------------------------------------------------
-// PROVENANCE & LIMITATIONS SUB-VIEW
+// PROVENANCE & RESEARCH QUALITY SUB-VIEW
 // ----------------------------------------------------------------------------
-function DataProvenanceView({ report }: { report: WorkbenchResearchResponse }) {
+function DataProvenanceView({
+  report,
+  qualityReport,
+}: {
+  report: WorkbenchResearchResponse;
+  qualityReport: ResearchQualityReport;
+}) {
   return (
-    <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
-      <h3 className="text-sm font-bold text-foreground">Data Provenance & Explicit Limitations</h3>
-      <p className="text-muted-foreground leading-relaxed">
-        SellerSalt strictly adheres to the <strong>Zero-Fabrication Contract</strong>. Every metric presented is either directly observed from public data or derived via documented models. Unavailable data is never faked.
-      </p>
+    <div className="space-y-6">
+      {/* Quality Score Breakdown Card */}
+      <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Award className="w-4 h-4 text-primary" />
+              Research Quality & Dataset Trustworthiness
+            </h3>
+            <p className="text-muted-foreground text-[11px] mt-0.5">
+              Evaluates empirical data completeness, observation volume, signal coverage, and provenance.
+            </p>
+          </div>
+          <Badge variant={qualityReport.badgeVariant} className="text-xs py-1 px-2.5">
+            {qualityReport.qualityScore}/100 • {qualityReport.qualityTier}
+          </Badge>
+        </div>
 
-      <div className="space-y-2 pt-2 border-t">
-        <h4 className="font-semibold text-foreground">Active Limitations for this Research Run:</h4>
-        <ul className="space-y-1.5 list-disc pl-4 text-muted-foreground">
-          {report.limitations && report.limitations.length > 0 ? (
-            report.limitations.map((lim, i) => <li key={i}>{lim}</li>)
-          ) : (
-            <li>No specific limitations recorded for this run.</li>
-          )}
-          <li>Exact buyer monthly search volume is unavailable without licensed third-party volume provider feeds.</li>
-          <li>Longitudinal deltas require at least 2 historical snapshots separated in time.</li>
-        </ul>
-      </div>
-    </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+          {qualityReport.factors.map((f) => (
+            <div key={f.id} className="p-3 border rounded-lg bg-muted/20 space-y-1">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-foreground text-[11px]">{f.name}</span>
+                <span className="font-semibold text-primary">{f.score}/{f.maxScore}</span>
+              </div>
+              <p className="text-muted-foreground text-[10px] leading-tight">{f.description}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* "How SellerSalt Got This Data" Source Acquisition Summary */}
+      <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
+        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          How SellerSalt Acquired This Data
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3 border rounded-lg bg-blue-500/5 border-blue-500/20 space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Globe className="w-3.5 h-3.5 text-blue-500" />
+              Primary Source: PUBLIC_WEB
+            </div>
+            <p className="text-muted-foreground text-[11px]">
+              Direct legitimate public web observation. {report.liveCount} live observations captured.
+            </p>
+            <Badge variant="success" className="text-[10px]">Active & Verified</Badge>
+          </div>
+
+          <div className="p-3 border rounded-lg bg-muted/30 space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Radio className="w-3.5 h-3.5 text-muted-foreground" />
+              Secondary Source: MARKETPLACE_API
+            </div>
+            <p className="text-muted-foreground text-[11px]">
+              {report.sourcesUsed.includes("MARKETPLACE_API") ? "Used for secondary metadata enrichment." : "Not required / Not used."}
+            </p>
+            <Badge variant={report.sourcesUsed.includes("MARKETPLACE_API") ? "success" : "neutral"} className="text-[10px]">
+              {report.sourcesUsed.includes("MARKETPLACE_API") ? "Enriched" : "Optional / Unused"}
+            </Badge>
+          </div>
+
+          <div className="p-3 border rounded-lg bg-muted/30 space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-foreground">
+              <Database className="w-3.5 h-3.5 text-muted-foreground" />
+              Tertiary Fallback: HISTORICAL_DB
+            </div>
+            <p className="text-muted-foreground text-[11px]">
+              {report.historicalCount > 0 ? `${report.historicalCount} historical observations utilized.` : "Not needed — real live data obtained."}
+            </p>
+            <Badge variant="neutral" className="text-[10px]">
+              {report.historicalCount > 0 ? "Utilized" : "Unused"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-2 border-t">
+          <h4 className="font-semibold text-foreground">Active Limitations for this Research Run:</h4>
+          <ul className="space-y-1.5 list-disc pl-4 text-muted-foreground">
+            {report.limitations && report.limitations.length > 0 ? (
+              report.limitations.map((lim, i) => <li key={i}>{lim}</li>)
+            ) : (
+              <li>No specific limitations recorded for this run.</li>
+            )}
+            <li>Exact buyer monthly search volume is unavailable without licensed third-party volume provider feeds.</li>
+            <li>Longitudinal deltas require at least 2 historical snapshots separated in time.</li>
+          </ul>
+        </div>
+      </Card>
+    </div>
   );
 }
 

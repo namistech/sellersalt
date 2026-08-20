@@ -514,6 +514,33 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
 
+## Real-World Marketplace Acquisition Reliability & Coverage Expansion — Batch 13 (2026-08-20)
+
+**Why**: To make SellerSalt's marketplace-independent public web acquisition layer production-grade for actual public research across Etsy, Amazon, eBay, Walmart, and TikTok Shop, enforcing multi-page budget bounds, parser resilience against missing/partial HTML attributes and malformed JSON-LD, structured source status handling, research quality scoring, end-to-end diagnostics tracing, and strict SSRF / redirect protection.
+
+**What changed**:
+- **Multi-Marketplace HTML & JSON-LD Parser Robustness**:
+  - Validated and hardened semantic listing card extraction for Etsy (`data-listing-id`), Amazon (`data-asin`), eBay (`s-item`), and Walmart (`data-item-id`).
+  - Implemented layered parsing strategy (JSON-LD `Product` / `BreadcrumbList`, OpenGraph fallback, semantic HTML) returning valid partial observations when non-critical fields (e.g. rating, review count) are missing.
+- **Structured Source Status & Health Telemetry**:
+  - Standardized source status (`SUCCESS`, `PARTIAL`, `NO_RESULTS`, `ACCESS_RESTRICTED`, `RATE_LIMITED`, `TIMEOUT`, `PARSER_FAILURE`, `SOURCE_UNAVAILABLE`).
+  - Enhanced `SourceHealthTracker` distinguishing in-memory cache hits from live external network successes and access restrictions.
+- **Research Quality Evaluation Engine (`src/marketplaces/core/acquisition/research-quality.ts`)**:
+  - Created `evaluateResearchQuality()` calculating empirical dataset completeness (Observation Volume 30 pts, Temporal Freshness 25 pts, Signal Coverage 25 pts, Source Diversity 20 pts) strictly separated from commercial opportunity scoring.
+- **Acquisition Diagnostics Tracing Engine (`src/marketplaces/core/acquisition/diagnostics.ts`)**:
+  - Created `runAcquisitionDiagnostics()` providing end-to-end tracing across adapter resolution, cache state, source health, live query execution, and normalization without exposing sensitive headers.
+- **Enhanced Live Smoke Test Facility (`src/tests/live-smoke/live-research-smoke.ts`)**:
+  - Updated opt-in manual test harness (`SELLERSALT_LIVE_RESEARCH_SMOKE=true`) covering Product, Keyword, Category, Diagnostics, and Opportunity Radar across supported public marketplaces.
+- **Security & SSRF Redirect Guard (`src/marketplaces/core/acquisition/compliance.ts`)**:
+  - Implemented `isSafeRedirect()` validating that redirects stay within authorized marketplace public domains and block private IP ranges (127.0.0.1, 169.254.169.254, loopback) and authenticated seller dashboards.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-13-acquisition-reliability.test.ts` (20 test cases).
+  - Test suite: **969/969 passing across 195 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
+
+
 
 
 

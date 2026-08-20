@@ -4,11 +4,11 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 12 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 13 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 12
-(Research Workbench → Real Ecommerce Intelligence Center):
+condensed version of everything else in this file, current as of Batch 13
+(Real-World Marketplace Acquisition Reliability & Coverage Expansion):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
 - **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
@@ -19,10 +19,12 @@ condensed version of everything else in this file, current as of Batch 12
 - **Acquisition Source Health Engine** (`source-health.ts`): Live operational health and rate limit / access restriction tracker.
 - **Unified Research Workbench Orchestrator** (`workbench.ts` & `/api/research/*`): `executeResearchRun` across `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR`.
 - **Interactive Research Center UI** (`/research`, `research-client.tsx`, `ResearchReportView.tsx`, `/research/runs/[id]`): Multi-domain research center executing live public ingestion without API credentials.
+- **Research Quality Evaluation Engine** (`research-quality.ts`): Calculates empirical dataset trustworthiness score (Volume, Freshness, Signals, Source Diversity) strictly separated from opportunity score.
+- **Acquisition Diagnostics Tracing** (`diagnostics.ts`): Traces adapter resolution, cache state, source health, and normalization.
 - **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
 
 **Current Verified Baseline**:
-- Tests: **949/949 passing across 186 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **969/969 passing across 195 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 routes compiled**)

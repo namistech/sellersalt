@@ -13,7 +13,9 @@ import { orchestrateProductResearch } from "@/marketplaces/core/acquisition/orch
 import { harvestPublicMarketplaceKeywords } from "@/marketplaces/core/acquisition/keywords";
 import { fetchPublicShopResearch } from "@/marketplaces/core/acquisition/shops";
 import { aggregatePublicCategoryIntelligence } from "@/marketplaces/core/acquisition/categories";
+import { discoverLiveMarketplaceNiches } from "@/services/intelligence/niche-discovery";
 import { executeResearchRun } from "@/marketplaces/core/acquisition/workbench";
+import { runAcquisitionDiagnostics } from "@/marketplaces/core/acquisition/diagnostics";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 
 async function runLiveSmokeSuite() {
@@ -83,6 +85,30 @@ async function runLiveSmokeSuite() {
     } catch (err: any) {
       console.log(`Result: ${err.message}`);
     }
+
+    console.log(`\n--- [4] Acquisition Diagnostics: ${m.toUpperCase()} ---`);
+    try {
+      const diag = await runAcquisitionDiagnostics({ marketplace: m, query: testQuery, type: "PRODUCT" });
+      console.log(`Overall Diagnostic Status: ${diag.overallStatus} (${diag.totalDurationMs}ms)`);
+      diag.steps.forEach((s) => console.log(`  - [${s.status}] ${s.step}: ${s.message || JSON.stringify(s.details || {})}`));
+    } catch (err: any) {
+      console.log(`Diagnostics error: ${err.message}`);
+    }
+  }
+
+  console.log("\n--- [5] Multi-Marketplace Opportunity Radar Smoke ---");
+  try {
+    const radarRes = await executeResearchRun({
+      organizationId: "org-smoke-test",
+      type: "RADAR",
+      query: testQuery,
+      marketplaces: targetMarketplaces,
+      limit: 5,
+    });
+    console.log(`Radar Research Status: ${radarRes.status} (Duration: ${radarRes.durationMs}ms)`);
+    console.log(`Confidence: ${radarRes.confidence}% | Freshness: ${radarRes.freshnessStatus}`);
+  } catch (err: any) {
+    console.log(`Radar error: ${err.message}`);
   }
 
   console.log("\n==================================================================");

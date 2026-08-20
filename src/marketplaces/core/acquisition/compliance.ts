@@ -237,3 +237,17 @@ export function validateAcquisitionCompliance(
     }
   }
 }
+
+/**
+ * Validates whether a redirect URL from a public marketplace page is safe and permitted.
+ */
+export function isSafeRedirect(originalUrl: string, redirectUrl: string, marketplace?: MarketplaceId): boolean {
+  if (!redirectUrl || typeof redirectUrl !== "string") return false;
+  try {
+    const resolvedUrl = new URL(redirectUrl, originalUrl).toString();
+    return isAllowedMarketplaceUrl(resolvedUrl, marketplace);
+  } catch {
+    return false;
+  }
+}
+
