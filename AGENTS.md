@@ -336,7 +336,7 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1028/1028 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 231 suites)
+Tests:      1032/1032 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 233 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
 Next.js:    clean build      (npx next build — 168/168 static and dynamic routes compiled)

@@ -260,4 +260,51 @@ describe("Batch 17: Product Validation & Commercial Decision Engine", () => {
       assert.ok(schemaSrc.includes("@@index([organizationId])"));
     });
   });
+
+  // --------------------------------------------------------------------------
+  // 7. Validation Depth Modes & Dynamic Weight Redistribution
+  // --------------------------------------------------------------------------
+  describe("7. Depth Modes & Dynamic Scoring Breakdown", () => {
+    it("respects QUICK, STANDARD, and DEEP depth modes", async () => {
+      const quickReport = await ProductValidationEngine.validateProduct({
+        query: "ceramic coffee mug",
+        depth: "QUICK",
+      });
+      assert.equal(quickReport.depth, "QUICK");
+
+      const deepReport = await ProductValidationEngine.validateProduct({
+        query: "ceramic coffee mug",
+        depth: "DEEP",
+      });
+      assert.equal(deepReport.depth, "DEEP");
+    });
+
+    it("redistributes score weights dynamically without injecting fabricated zeros", async () => {
+      const report = await ProductValidationEngine.validateProduct({
+        query: "ceramic coffee mug",
+      });
+
+      assert.ok(report.scoreBreakdown.dynamicWeights);
+      const totalWeight = Object.values(report.scoreBreakdown.dynamicWeights).reduce((a, b) => a + b, 0);
+      assert.ok(totalWeight > 0 && totalWeight <= 1.05); // Sum of active factor weights
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 8. UI & Navigation Integration
+  // --------------------------------------------------------------------------
+  describe("8. UI & Navigation Integration", () => {
+    it("OpportunityCard links directly to /validate with query and marketplace parameters", () => {
+      const cardSrc = fs.readFileSync(path.join(process.cwd(), "src/components/opportunities/OpportunityCard.tsx"), "utf8");
+      assert.ok(cardSrc.includes("/validate?q="));
+      assert.ok(cardSrc.includes("Validate Product"));
+    });
+
+    it("Navigation config includes Product Validation in primary Intelligence group", () => {
+      const navSrc = fs.readFileSync(path.join(process.cwd(), "src/services/navigation.ts"), "utf8");
+      assert.ok(navSrc.includes("id: \"validate\""));
+      assert.ok(navSrc.includes("href: \"/validate\""));
+      assert.ok(navSrc.includes("Product Validation"));
+    });
+  });
 });

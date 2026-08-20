@@ -21,7 +21,7 @@ condensed version of everything else in this file, current as of Batch 17
 - **First-Class Persistence in PostgreSQL** (`schema.prisma`): `ProductValidation`, `SavedOpportunity`, `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
 
 **Current Verified Baseline**:
-- Tests: **1028/1028 passing across 231 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1032/1032 passing across 233 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)

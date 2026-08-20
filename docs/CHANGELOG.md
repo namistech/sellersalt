@@ -650,8 +650,8 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Implemented `ValidationStudio.tsx` and `ValidationReportView.tsx` with executive summary, scorecard, and tabbed deep dives.
   - Integrated "Validate Product" direct handoff in `OpportunityCard.tsx`.
 - **Comprehensive Test Baseline**:
-  - Created `src/tests/batch-17-product-validation.test.ts` (14 test cases).
-  - Full test suite: **1028/1028 passing across 231 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - Created `src/tests/batch-17-product-validation.test.ts` (18 test cases).
+  - Full test suite: **1032/1032 passing across 233 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
   - TypeScript: Clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
