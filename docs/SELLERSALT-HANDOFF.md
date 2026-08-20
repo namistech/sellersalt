@@ -334,10 +334,10 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of the Data Acquisition & Research Pipeline Deep Audit batch (2026-08-20),
+As of the Marketplace-Independent Data Acquisition Foundation batch (2026-08-20),
 independently re-run (not copied from an earlier report):
 
-- Tests: **821/821 passing** across 127 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **830/830 passing** across 132 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: clean (`npx tsc --noEmit`)
 - Prisma: valid, migrations up to date (`npx prisma validate` / `migrate status` — 29 migrations)
 - Build: clean (`npx next build` — 161/161 static and dynamic pages generated)

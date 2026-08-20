@@ -279,6 +279,11 @@ export interface NormalizedProduct extends MarketplaceRef {
    * undefined rather than reusing shop.externalId to fake precision). */
   sellerId?: string;
 
+  /** Multi-source acquisition channel metadata */
+  acquisitionMethod?: DataSourceType;
+  observedAt?: Date;
+  isHistorical?: boolean;
+
   rating?: number | null;
   reviewCount?: number | null;
   /** Wishlist/favorites count — a fairly common marketplace concept (Etsy's
@@ -523,5 +528,40 @@ export interface NicheDiscoverySummary {
   marketLimitations: string[];
   generatedAt: Date;
 }
+
+/**
+ * Legitimate acquisition channel types through which SellerSalt can obtain commerce data.
+ */
+export type DataSourceType =
+  | "MARKETPLACE_API"          // Official Marketplace Open API v3 / Partner API
+  | "PUBLIC_WEB"               // Legitimate public JSON-LD / HTML parser
+  | "USER_IMPORT"              // User-provided CSV / manual listing import
+  | "CONNECTED_STORE"          // Authenticated seller channel (SellerChannel)
+  | "HISTORICAL_OBSERVATION"   // Persisted SellerSalt historical observations (Prospect, Snapshots)
+  | "EXTERNAL_PROVIDER"        // Third-party licensed provider (DataForSEO, Rainforest, Keepa, etc.)
+  | "DEV_FIXTURE";             // Offline sanitized development / CI test fixture
+
+/**
+ * Standard observation origin and provenance envelope.
+ */
+export interface ObservationMetadata {
+  sourceType: DataSourceType;
+  sourceIdentifier: string;
+  marketplace: MarketplaceId;
+  observedAt: Date;
+  provenance: SignalProvenance;
+  confidenceScore?: number; // 0-100
+  isHistorical?: boolean;
+}
+
+/**
+ * Generic normalized observation envelope carrying entity data alongside explicit acquisition origin.
+ */
+export interface NormalizedObservation<T> {
+  id: string;
+  data: T;
+  metadata: ObservationMetadata;
+}
+
 
 

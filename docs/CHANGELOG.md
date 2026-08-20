@@ -351,10 +351,27 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Zero-Fabrication & Honest Terminology Verification**:
   - Verified absence of hardcoded fallback constants (e.g. 4,850 searches/mo) across all tool registries and services.
   - Confirmed keyword demand is transparently branded as "Demand Proxy / Estimated Demand Signal (Avg Favorites)" rather than exact search volume.
+## Marketplace-Independent Data Acquisition Foundation — Batch 9A (2026-08-20)
+
+**Why**: To establish a clean, source-agnostic data acquisition layer that decouples SellerSalt's canonical intelligence engines from hard runtime dependencies on official marketplace APIs, allowing intelligence to ingest from live APIs, public web, user imports, connected stores, and historical SellerSalt observations with explicit provenance.
+
+**What changed**:
+- **Source-Agnostic Acquisition Domain Contracts**:
+  - Added `DataSourceType` (`MARKETPLACE_API`, `PUBLIC_WEB`, `USER_IMPORT`, `CONNECTED_STORE`, `HISTORICAL_OBSERVATION`, `EXTERNAL_PROVIDER`, `DEV_FIXTURE`) to `src/marketplaces/core/types.ts`.
+  - Added `ObservationMetadata` and `NormalizedObservation<T>` envelopes.
+  - Extended `NormalizedProduct` with `acquisitionMethod`, `observedAt`, and `isHistorical`.
+- **Multi-Source Acquisition Service**:
+  - Created `src/marketplaces/core/acquisition.ts` with `acquireProductObservations`, `acquireHistoricalProductObservations`, and `deduplicateProductObservations`.
+  - Implemented automatic graceful fallback to verified historical SellerSalt observations from PostgreSQL `Prospect` records when live APIs are unconfigured or fail.
+  - Ensured deterministic deduplication preferring fresh live observations while preserving historical lineage.
+- **Research Pipeline Integration**:
+  - Updated `src/marketplaces/core/research-pipeline.ts`'s `ResearchRequest` to support `allowHistoricalFallback` and `preferredSources`.
+  - Wired `runProductResearch` to return historical observations on connector failure when fallback is enabled, eliminating unnecessary `UNAVAILABLE` errors.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/data-acquisition-pipeline-audit.test.ts` (11 tests).
-  - Full test baseline: **821/821 passing across 127 suites**.
+  - Created `src/tests/batch-9a-data-acquisition-foundation.test.ts` (9 tests).
+  - Full test baseline: **830/830 passing across 132 suites**.
   - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
 

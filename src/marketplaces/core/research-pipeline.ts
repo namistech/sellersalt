@@ -17,7 +17,8 @@ import {
   evaluateCanonicalOpportunity,
   extractOpportunityInputFromNormalizedProduct,
 } from "@/services/intelligence/canonical-opportunity";
-import type { MarketplaceId, SearchResult, NormalizedProduct } from "./types";
+import { acquireHistoricalProductObservations } from "./acquisition";
+import type { MarketplaceId, SearchResult, NormalizedProduct, DataSourceType } from "./types";
 import type { OpportunityScore } from "./opportunity-engine";
 
 /** Explicit status for a single marketplace's contribution to a research
@@ -113,6 +114,8 @@ export interface ResearchRequest {
   minShopAgeMonths?: number;
   maxShopAgeMonths?: number;
   minReviewCount?: number;
+  allowHistoricalFallback?: boolean;
+  preferredSources?: DataSourceType[];
 }
 
 export interface ResearchDatasetItem {
@@ -283,6 +286,55 @@ export async function runProductResearch(request: ResearchRequest): Promise<Prod
       generatedAt,
     };
   } catch (err: any) {
+    // If historical fallback is permitted, attempt to retrieve stored SellerSalt observations
+    if (request.allowHistoricalFallback && request.organizationId) {
+      try {
+        const historical = await acquireHistoricalProductObservations({
+          marketplace: request.marketplace,
+          organizationId: request.organizationId,
+          keywords: request.keywords,
+          limit: request.limit,
+        });
+
+        if (historical.length > 0) {
+          const historicalProducts = historical.map((o) => o.data);
+          let totalScore = 0;
+          let scoredCount = 0;
+          let totalConfidence = 0;
+          const availableGroupsSet = new Set<string>();
+          const unavailableGroupsSet = new Set<string>();
+
+          for (const prod of historicalProducts) {
+            if (prod.opportunityScore?.score != null) {
+              totalScore += prod.opportunityScore.score;
+              scoredCount++;
+              totalConfidence += prod.opportunityScore.confidence;
+              prod.opportunityScore.availableSignals?.forEach((s) => availableGroupsSet.add(s));
+              prod.opportunityScore.unavailableSignals?.forEach((s) => unavailableGroupsSet.add(s));
+            }
+          }
+
+          return {
+            marketplace: request.marketplace,
+            status: "AVAILABLE",
+            products: historicalProducts,
+            summary: {
+              totalProducts: historicalProducts.length,
+              scoredProductsCount: scoredCount,
+              averageOpportunityScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : null,
+              averageConfidence: scoredCount > 0 ? Math.round(totalConfidence / scoredCount) : null,
+              availableSignalGroups: Array.from(availableGroupsSet),
+              unavailableSignalGroups: Array.from(unavailableGroupsSet),
+            },
+            message: `Live ${connector.displayName} API unavailable; serving verified historical SellerSalt observations.`,
+            generatedAt,
+          };
+        }
+      } catch {
+        // Fall through to UNAVAILABLE
+      }
+    }
+
     // A real connector that's configured to be live but failed this call
     // (e.g. no credentials configured, network error) — UNAVAILABLE, not
     // NOT_IMPLEMENTED, and never silently swallowed into an empty
