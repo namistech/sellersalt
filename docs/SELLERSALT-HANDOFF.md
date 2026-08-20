@@ -4,21 +4,21 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 26 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 27 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 26
-(V1 Product Completion & Usable SaaS Readiness):
+condensed version of everything else in this file, current as of Batch 27
+(V1 Launch Hardening & Production Usability Readiness):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
+- **Activation & Dashboard Continuation** (`dashboard-client.tsx`, `PersonalizedContinuationSection.tsx`): Real Postgres activity hub surfacing active research, validations, and workspaces.
+- **Query-Driven Workspaces** (`src/app/(dashboard)/product-workspaces/page.tsx`): Query-parameter-driven filtering and 1-click workspace initialization.
 - **First-Time Merchant Onboarding & Activation** (`src/app/(dashboard)/onboarding/onboarding-client.tsx`): 4-step interactive setup configuring focus categories, target marketplaces, and Data Trust contract, routing directly into active research.
-- **Continuous 5-Step Commercial Workflow** (`NextCommercialActionBar.tsx`): Seamless, evidence-grounded action handoffs linking Discover → Research → Validate → Plan → Launch across all primary surfaces.
-- **Public Commercial Layer & Marketing Shell** (`src/app/marketing-homepage.tsx`, `/how-it-works`, `/pricing`, `/trust`): Transparent marketing pages communicating *"Know what to sell before you spend money."*
-- **Epistemological Signal Classification & Zero-Fabrication Contract** (`signal-classification.ts`, `UnavailableSignalCard.tsx`): Disclosures of `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals.
+- **Continuous 5-Step Commercial Workflow** (`NextCommercialActionBar.tsx`): Seamless action handoffs linking Discover → Research → Validate → Plan → Launch across all primary surfaces.
 - **Quota & Plan Enforcement** (`quota-enforcement.ts`, `PLAN_DEFINITIONS`): Multi-tier enforcement across Free, Starter, Pro, Agency.
 
 **Current Verified Baseline**:
-- Tests: **1133/1133 passing across 305 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1140/1140 passing across 311 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**169/169 static and dynamic routes compiled**)

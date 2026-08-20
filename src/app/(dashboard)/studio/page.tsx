@@ -3,7 +3,7 @@ import { StudioClient } from "./studio-client";
 
 export const metadata = {
   title: "AI Listing Studio | SellerSalt",
-  description: "Convert market research into high-converting Etsy listing drafts with real-time SEO scoring and originality protection.",
+  description: "Convert validated market research into policy-compliant listing drafts with real-time SEO scoring, human approval gates, and originality protection.",
 };
 
 export default function StudioPage() {

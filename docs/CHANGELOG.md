@@ -920,3 +920,25 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**169/169 routes compiled**).
+
+## Batch 27: V1 Launch Hardening & Production Usability Readiness (2026-08-20)
+
+**Why**: Transition SellerSalt from technically complete V1 into an activation-hardened, production-ready SaaS for real merchants with validated onboarding, personalized dashboard continuation, query-driven product workspaces, strict multi-tenant isolation, and verified quota enforcement.
+
+**What changed**:
+- **Activation & Dashboard Continuation (`src/app/(dashboard)/dashboard/`)**:
+  - Validated `DashboardOnboardingGuide` against real database records and refined `PersonalizedContinuationSection` to resume real research without synthetic metrics.
+  - Aligned page subtitle with canonical positioning (*"Turn observable marketplace signals into evidence-based product decisions."*).
+- **Query-Driven Product Opportunity Workspaces (`src/app/(dashboard)/product-workspaces/`)**:
+  - Added support for query parameters (`?q=...`) to filter existing workspaces or seamlessly initialize a new workspace directly from validation results.
+- **Launch Studio Policy Alignment (`src/app/(dashboard)/studio/`)**:
+  - Updated metadata description to emphasize policy-compliant drafts, SEO scoring, human approval gates, and originality protection.
+- **Security & Multi-Tenancy Hardening**:
+  - Verified `organizationId` scoping and authentication across all core API endpoints (`/api/product-workspaces`, `/api/product-workspaces/[id]`, `/api/validation/product`, `/api/onboarding/complete`).
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-27-V1-LAUNCH-HARDENING.md`.
+- **Verification Baseline**:
+  - Full test suite: **1140/1140 passing across 311 suites** (`src/tests/batch-27-v1-launch-hardening.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**169/169 routes compiled**).

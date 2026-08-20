@@ -14,12 +14,21 @@ export const metadata: Metadata = {
   description: "Evidence-grounded product opportunity, sourcing specifications, and launch intelligence cockpit.",
 };
 
-export default async function ProductWorkspacesPage() {
+interface ProductWorkspacesPageProps {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function ProductWorkspacesPage({ searchParams }: ProductWorkspacesPageProps) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
+  const { q } = await searchParams;
   const organizationId = (session.user as any)?.organizationId || "org_default";
-  const workspaces = await ProductOpportunityWorkspaceEngine.listWorkspaces(organizationId);
+  const allWorkspaces = await ProductOpportunityWorkspaceEngine.listWorkspaces(organizationId);
+
+  const workspaces = q
+    ? allWorkspaces.filter((w) => w.title.toLowerCase().includes(q.toLowerCase()))
+    : allWorkspaces;
 
   return (
     <div className="space-y-8 pb-12">
@@ -50,17 +59,35 @@ export default async function ProductWorkspacesPage() {
         </div>
       </div>
 
+      {q && (
+        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div>
+            <span className="font-bold text-foreground">Filtering for query: &quot;{q}&quot;</span>
+            <p className="text-muted-foreground text-[11px]">
+              Found {workspaces.length} workspace{workspaces.length === 1 ? "" : "s"} matching this focus.
+            </p>
+          </div>
+          <Link href={`/validate?q=${encodeURIComponent(q)}`}>
+            <Button size="compact" variant="secondary" className="text-xs">
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Validate &quot;{q}&quot;
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Workspaces List */}
       {workspaces.length === 0 ? (
         <Card className="p-12 text-center border rounded-2xl bg-card space-y-3">
           <Boxes className="w-8 h-8 text-muted-foreground mx-auto" />
-          <h3 className="text-sm font-bold text-foreground">No Workspaces Created Yet</h3>
+          <h3 className="text-sm font-bold text-foreground">
+            {q ? `No Workspaces Found for "${q}"` : "No Workspaces Created Yet"}
+          </h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             Discover an opportunity in the Discovery Center or Opportunity Radar, then open it in a Product Opportunity Workspace.
           </p>
-          <Link href="/discovery">
+          <Link href={q ? `/validate?q=${encodeURIComponent(q)}` : "/discovery"}>
             <Button size="compact" variant="secondary" className="text-xs mt-2">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Go to Discovery Center
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" /> {q ? `Validate "${q}"` : "Go to Discovery Center"}
             </Button>
           </Link>
         </Card>

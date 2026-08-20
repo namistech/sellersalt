@@ -61,7 +61,7 @@ export function DashboardClient({
   const statusSubtitle =
     pulse.activeSearches > 0 || pulse.pendingProspects > 0
       ? `${pulse.activeSearches} active saved search${pulse.activeSearches === 1 ? "" : "es"} · ${pulse.pendingProspects} prospect${pulse.pendingProspects === 1 ? "" : "s"} awaiting review`
-      : "Turn observable marketplace signals into profitable product decisions.";
+      : "Turn observable marketplace signals into evidence-based product decisions.";
 
   return (
     <div className="flex flex-col gap-6">
