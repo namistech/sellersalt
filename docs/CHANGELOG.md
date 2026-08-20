@@ -802,3 +802,32 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 22: Marketplace Governance + Source-Compliant Intelligence Architecture + Unified Product Intelligence Workspace (2026-08-20)
+
+**Why**: Establish canonical marketplace data governance, explicit source-specific compliance boundaries, policy enforcement, source boundary sanitization, retention governance, and a unified Data Trust transparency system across all ecommerce platforms.
+
+**What changed**:
+- **Marketplace Governance Contracts (`src/marketplaces/core/governance/types.ts`)**:
+  - Structured canonical types for `MarketplaceDataPolicy`, `PolicyPermissionStatus`, `ComplianceVerificationStatus`, `MarketplaceRetentionRules`, `MarketplaceCachingRules`, `MarketplaceDisplayRules`, `MarketplaceRateLimitRules`, `GovernancePolicyDecision`, `AcquisitionGovernanceLog`, and `DataTrustSummary`.
+- **Etsy Data Governance Policy (`src/marketplaces/core/governance/etsy-policy.ts`)**:
+  - Explicit compliance boundary separating Public Web, Open API v3, OAuth seller data, and historical memory. Mandates least-privilege OAuth scopes, trademark disclaimers, and zero private portal scraping.
+- **Marketplace Governance Registry (`src/marketplaces/core/governance/registry.ts`)**:
+  - Authoritative policies for Etsy, Amazon, eBay, Walmart, Shopify, WooCommerce, and TikTok Shop, with strict conservative fallback for unregistered platforms.
+- **Source Policy Enforcer (`src/marketplaces/core/governance/source-policy-enforcer.ts`)**:
+  - Pre-acquisition policy gate evaluating allowed source types and prohibited private portal paths before network calls. Returns `POLICY_RESTRICTED` on disallow without attempting evasive scraping. Records audit telemetry.
+- **Source Boundary Layer (`src/marketplaces/core/governance/source-boundary.ts`)**:
+  - Sanitizes product observations to strip seller contact PII (email, phone, address) and buyer data, while enforcing strict tenant isolation.
+- **Retention Governance Service (`src/marketplaces/core/governance/retention-governance-service.ts`)**:
+  - Evaluates snapshot expiry dates and provides safe snapshot pruning for records past policy retention.
+- **Data Trust Engine (`src/services/intelligence/data-trust-engine.ts`)**:
+  - Computes transparent trust score (0–100), source diversity, freshness, and completeness metrics, accounting for observed vs derived vs estimated vs unknown signals.
+- **UI Surfaces**:
+  - `MarketplaceGovernanceMatrix.tsx`: Admin diagnostic matrix for policy, source, retention, and rate limit inspection.
+  - `/marketplaces/governance`: Dedicated governance route.
+  - `ProductOpportunityCockpit.tsx`: Integrated Data Trust transparency strip and provenance breakdown.
+- **Verification Baseline**:
+  - Full test suite: **1097/1097 passing across 281 suites** (`src/tests/batch-22-marketplace-governance.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).

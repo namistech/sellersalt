@@ -8,8 +8,9 @@
  * Commercial Decision Trees, Action Plans, and Information Value Gaps.
  */
 
-import type { MarketplaceId, SignalProvenance } from "./types";
+import type { NormalizedProduct, MarketplaceId, SignalProvenance } from "./types";
 import type { OpportunityScore3Breakdown } from "./autonomous-discovery-types";
+import type { DataTrustSummary, MarketplaceDataPolicy } from "./governance/types";
 
 // ============================================================================
 // 1. Evidence Ledger Models
@@ -406,6 +407,8 @@ export interface ProductOpportunityWorkspace {
   informationGaps: InformationValueReport;
   commercialDecision: CommercialDecision;
   actionPlan: ActionPlan;
+  dataTrust: DataTrustSummary;
+  governancePolicy?: MarketplaceDataPolicy;
 
   notes?: string;
   createdAt: Date;

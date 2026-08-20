@@ -22,6 +22,12 @@ import { InformationValueEngine } from "./information-value-engine";
 import { ActionPlanGenerator } from "./action-plan-generator";
 import { EvidenceLedgerBuilder } from "./evidence-ledger-builder";
 import { OpportunityScoring3Engine } from "./opportunity-scoring-3";
+import { DataTrustEngine } from "./data-trust-engine";
+import {
+  MarketplaceGovernanceRegistry,
+  SourcePolicyEnforcer,
+  SourceBoundary,
+} from "@/marketplaces/core/governance";
 import { prisma } from "@/lib/db";
 
 // In-memory workspace cache for rapid lookup and testing
@@ -52,11 +58,23 @@ export class ProductOpportunityWorkspaceEngine {
       ? request.marketplaces
       : (["etsy", "amazon", "ebay", "walmart"] as MarketplaceId[]);
 
-    // 1. Gather Product Observations
-    let products: NormalizedProduct[] = request.products ? [...request.products] : [];
+    // 1. Gather Product Observations with Policy Gate
+    let rawProducts: NormalizedProduct[] = request.products ? [...request.products] : [];
 
-    if (products.length === 0) {
+    if (rawProducts.length === 0) {
       for (const mp of marketplaces) {
+        // Evaluate data governance policy before network attempt
+        const policyDecision = SourcePolicyEnforcer.evaluateRequest({
+          organizationId: orgId,
+          marketplace: mp,
+          sourceType: "PUBLIC_WEB",
+          purpose: "PRODUCT_SEARCH",
+        });
+
+        if (!policyDecision.allowed) {
+          continue; // Prohibited or restricted by policy
+        }
+
         const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(mp);
         if (adapter && adapter.capabilities.productSearch) {
           try {
@@ -65,7 +83,7 @@ export class ProductOpportunityWorkspaceEngine {
               limit: 15,
             });
             if (res.success && res.items.length > 0) {
-              products.push(...res.items);
+              rawProducts.push(...res.items);
             }
           } catch {
             // Degrade cleanly
@@ -73,6 +91,9 @@ export class ProductOpportunityWorkspaceEngine {
         }
       }
     }
+
+    // 1b. Sanitize products through Source Boundary layer
+    const products = SourceBoundary.sanitizeProducts(rawProducts);
 
     // 2. Extract Observable Attributes
     const attributes = ProductAttributeIntelligenceEngine.analyze(products);
@@ -184,6 +205,14 @@ export class ProductOpportunityWorkspaceEngine {
       economics,
     });
 
+    // 14. Data Trust & Governance Evaluation
+    const dataTrust = DataTrustEngine.evaluateTrust({
+      products,
+      marketplaces,
+      hasUserEconomics,
+    });
+    const governancePolicy = MarketplaceGovernanceRegistry.getPolicy(marketplaces[0] || "etsy");
+
     const now = new Date();
     const workspaceId = `ws_${orgId}_${encodeURIComponent(query).replace(/%/g, "_")}`;
     const canonicalProductId = `prod:workspace:${encodeURIComponent(query)}`;
@@ -211,6 +240,8 @@ export class ProductOpportunityWorkspaceEngine {
       informationGaps,
       commercialDecision,
       actionPlan,
+      dataTrust,
+      governancePolicy,
       createdAt: now,
       updatedAt: now,
     };

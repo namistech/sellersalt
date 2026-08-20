@@ -4,21 +4,23 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 21 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 22 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 21
-(Proprietary Product Opportunity → Sourcing → Launch Intelligence Engine):
+condensed version of everything else in this file, current as of Batch 22
+(Marketplace Governance + Source-Compliant Intelligence Architecture + Unified Product Intelligence Workspace):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Product Opportunity Workspace & Launch Cockpit** (`product-opportunity-workspace-engine.ts`, `/product-workspaces`, `/product-workspaces/[id]`): Converts discovered opportunities into an actionable, evidence-grounded decision cockpit with observable attribute intelligence, differentiation angles, empirical price quantiles, product configurations, supplier RFQ specifications, unit economics scenarios (Base, Conservative, Optimistic), launch readiness scores (10 dimensions), information value gaps, commercial decision tree, and prioritized 5-step action plan.
+- **Marketplace Data Governance Registry & Policies** (`src/marketplaces/core/governance/registry.ts`, `/marketplaces/governance`): Canonical policy registry across all 7 registered platforms with explicit permission statuses (`ALLOWED`, `CONDITIONALLY_ALLOWED`, `RESTRICTED`, `PROHIBITED`, `UNKNOWN`).
+- **Source Policy Enforcer** (`source-policy-enforcer.ts`): Pre-acquisition policy gate checking allowed source types and prohibited private portal paths before network calls.
+- **Source Boundary Layer** (`source-boundary.ts`): Sanitizes product observations to strip seller contact PII and buyer data, while enforcing strict tenant isolation.
+- **Data Trust Engine** (`data-trust-engine.ts`): Transparent data trust scoring (0–100), source diversity, freshness, completeness, and transparent Zero-Fabrication disclosures.
+- **Product Opportunity Workspace & Launch Cockpit** (`product-opportunity-workspace-engine.ts`, `/product-workspaces`, `/product-workspaces/[id]`): Converts discovered opportunities into an actionable, evidence-grounded decision cockpit with data trust metrics, observable attribute intelligence, differentiation angles, empirical price quantiles, product configurations, supplier RFQ specifications, unit economics scenarios (Base, Conservative, Optimistic), launch readiness scores (10 dimensions), information value gaps, commercial decision tree, and prioritized 5-step action plan.
 - **Autonomous Opportunity Discovery Engine** (`autonomous-discovery-engine.ts`, `/discovery`): Broad multi-marketplace discovery ("Discover For Me"), seed expansion, deterministic detection rules, and persistence.
 - **Opportunity Scoring 3.0 & Radar 2.0** (`opportunity-scoring-3.ts`, `opportunity-radar-2.ts`, `/radar`): 6-factor deterministic scoring and categorized radar feed across 7 decision sections.
-- **Product Validation & Commercial Decision Engine** (`product-validation-engine.ts`, `/validate`): Multi-factor commercial feasibility validation with dynamic score weight redistribution.
-- **Proprietary Market Intelligence Graph & Continuous Memory** (`src/services/intelligence/market-graph-engine.ts`, `continuous-market-memory.ts`, `market-change-detection.ts`): Longitudinal snapshotting, "What Changed?" differential comparison, and cross-marketplace entity resolution.
 
 **Current Verified Baseline**:
-- Tests: **1083/1083 passing across 274 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1097/1097 passing across 281 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)
