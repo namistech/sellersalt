@@ -793,13 +793,41 @@ function DataProvenanceView({
             </div>
           ))}
         </div>
+
+        {/* Field-level Coverage Metrics */}
+        {qualityReport.fieldMetrics && qualityReport.fieldMetrics.length > 0 && (
+          <div className="space-y-2 pt-3 border-t">
+            <h4 className="font-semibold text-foreground">Field-Level Signal Completeness:</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              {qualityReport.fieldMetrics.map((fm) => (
+                <div key={fm.field} className="p-2.5 border rounded-lg bg-muted/20 space-y-1">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="font-medium text-muted-foreground truncate">{fm.label}</span>
+                    <span className="font-bold text-foreground">{fm.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        fm.status === "OPTIMAL" ? "bg-emerald-500" : fm.status === "PARTIAL" ? "bg-amber-500" : "bg-red-500"
+                      }`}
+                      style={{ width: `${fm.percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-[9px] text-muted-foreground block">
+                    {fm.observedCount}/{fm.totalCount} observed
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* "How SellerSalt Got This Data" Source Acquisition Summary */}
       <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          How SellerSalt Acquired This Data
+          How SellerSalt Acquired This Data & Acquisition Pipeline
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -840,6 +868,21 @@ function DataProvenanceView({
             </Badge>
           </div>
         </div>
+
+        {/* Source Strategy Timeline */}
+        {qualityReport.sourceTimeline && qualityReport.sourceTimeline.length > 0 && (
+          <div className="space-y-1.5 pt-2 border-t text-[11px]">
+            <h4 className="font-semibold text-foreground">Strategy Resolution Timeline:</h4>
+            <div className="space-y-1">
+              {qualityReport.sourceTimeline.map((step, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                  <span>{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2 pt-2 border-t">
           <h4 className="font-semibold text-foreground">Active Limitations for this Research Run:</h4>

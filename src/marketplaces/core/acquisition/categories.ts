@@ -231,3 +231,63 @@ export async function aggregatePublicCategoryIntelligence(
     ],
   };
 }
+
+export async function comparePublicCategories(params: {
+  categories: string[];
+  marketplace?: MarketplaceId;
+  limitPerCategory?: number;
+}): Promise<{
+  marketplace: MarketplaceId;
+  categories: PublicCategoryIntelligenceResult[];
+  comparison: {
+    highestYieldCategory: string | null;
+    highestOpportunityCategory: string | null;
+    highestMedianPriceCategory: string | null;
+  };
+}> {
+  const marketplace = params.marketplace || "etsy";
+  const limit = params.limitPerCategory || 20;
+  const results: PublicCategoryIntelligenceResult[] = [];
+
+  for (const catName of params.categories) {
+    const res = await aggregatePublicCategoryIntelligence({
+      categoryName: catName,
+      marketplace,
+      limit,
+    });
+    if ("categoryName" in res) {
+      results.push(res);
+    }
+  }
+
+  let highestYield: { name: string; count: number } | null = null;
+  let highestOpp: { name: string; score: number } | null = null;
+  let highestPrice: { name: string; price: number } | null = null;
+
+  for (const cat of results) {
+    if (!highestYield || cat.observedCatalogCount > highestYield.count) {
+      highestYield = { name: cat.categoryName, count: cat.observedCatalogCount };
+    }
+    if (cat.opportunityDistribution.averageScore !== null) {
+      if (!highestOpp || cat.opportunityDistribution.averageScore > highestOpp.score) {
+        highestOpp = { name: cat.categoryName, score: cat.opportunityDistribution.averageScore };
+      }
+    }
+    if (cat.priceDistribution.median !== null) {
+      if (!highestPrice || cat.priceDistribution.median > highestPrice.price) {
+        highestPrice = { name: cat.categoryName, price: cat.priceDistribution.median };
+      }
+    }
+  }
+
+  return {
+    marketplace,
+    categories: results,
+    comparison: {
+      highestYieldCategory: highestYield?.name || null,
+      highestOpportunityCategory: highestOpp?.name || null,
+      highestMedianPriceCategory: highestPrice?.name || null,
+    },
+  };
+}
+

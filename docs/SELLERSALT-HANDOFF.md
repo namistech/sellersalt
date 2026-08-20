@@ -4,13 +4,18 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 13 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 14 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 13
-(Real-World Marketplace Acquisition Reliability & Coverage Expansion):
+condensed version of everything else in this file, current as of Batch 14
+(Production Research Intelligence Engine, Marketplace Coverage Expansion & Autonomous Acquisition Recovery):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
+- **Centralized Acquisition Strategy Engine** (`strategy-engine.ts`): Prioritized multi-source strategy execution (`PUBLIC_SEARCH_HTML` -> `STRUCTURED_JSON_LD` -> `PRODUCT_DETAIL_CRAWL` -> `SECONDARY_OFFICIAL_API` -> `TERTIARY_HISTORICAL_DB`).
+- **Autonomous Acquisition Recovery Engine** (`recovery-engine.ts`): Graceful multi-tier fallback with compliance halts on `ACCESS_RESTRICTED`.
+- **Universal Pagination Engine** (`pagination.ts`): Bounded multi-page traversal with duplicate saturation detection and budget enforcement.
+- **Query Normalizer & Search Variants** (`query-normalizer.ts`): Semantic clean query tokens and bounded variant generation.
+- **Parser Health & Drift Detection** (`parser-health.ts`): Real-time field fill rate evaluation and DOM layout change detection.
 - **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
 - **Observation Deduplication & Fingerprinting** (`deduplication.ts`): SHA-256 fingerprinting across all volatile/structural fields, preventing redundant snapshot creation.
 - **Product & Query Diff Engine** (`diff-engine.ts`): Calculates empirical price drops, review velocities, and run comparisons (appearing/disappearing/persisting items); strictly preserves `null` for $n \le 1$ observations.
@@ -24,7 +29,7 @@ condensed version of everything else in this file, current as of Batch 13
 - **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
 
 **Current Verified Baseline**:
-- Tests: **969/969 passing across 195 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **992/992 passing across 208 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 routes compiled**)

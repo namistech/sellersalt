@@ -178,7 +178,8 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
       };
     }
 
-    const searchUrl = `https://www.amazon.com/s?k=${encodeURIComponent(queryTerm)}`;
+    const pageParam = query.page && query.page > 1 ? `&page=${query.page}` : "";
+    const searchUrl = `https://www.amazon.com/s?k=${encodeURIComponent(queryTerm)}${pageParam}`;
 
     try {
       const page = await this.pageFetcher.fetchPage(searchUrl);

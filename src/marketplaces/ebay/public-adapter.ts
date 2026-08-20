@@ -154,7 +154,8 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
       };
     }
 
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(queryTerm)}`;
+    const pageParam = query.page && query.page > 1 ? `&_pgn=${query.page}` : "";
+    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(queryTerm)}${pageParam}`;
 
     try {
       const page = await this.pageFetcher.fetchPage(searchUrl);

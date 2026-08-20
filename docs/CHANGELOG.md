@@ -540,6 +540,41 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
 
+## Production Research Intelligence Engine & Autonomous Acquisition Recovery — Batch 14 (2026-08-20)
+
+**Why**: To transform SellerSalt's public acquisition layer into a self-improving, production-grade intelligence acquisition system capable of autonomous strategy resolution, bounded pagination with duplicate detection, query normalization, parser drift detection, multi-tier recovery, longitudinal shop metrics, category comparisons, and structured field-level provenance transparency.
+
+**What changed**:
+- **Centralized Acquisition Strategy Engine (`src/marketplaces/core/acquisition/strategy-engine.ts`)**:
+  - Implemented `AcquisitionStrategyEngine.resolveStrategyPlan()` coordinating strategies based on marketplace, research type, cost, risk, historical health, and capabilities.
+  - Prioritized pipeline: `PUBLIC_SEARCH_HTML` -> `STRUCTURED_JSON_LD` -> `PRODUCT_DETAIL_CRAWL` -> `SECONDARY_OFFICIAL_API` -> `TERTIARY_HISTORICAL_DB`.
+- **Autonomous Acquisition Recovery Engine (`src/marketplaces/core/acquisition/recovery-engine.ts`)**:
+  - Implemented `AcquisitionRecoveryEngine.executeWithRecovery()` with graceful multi-tier fallback when primary extraction yields poor/empty results or degrades.
+  - Strictly enforces compliance by halting immediately upon `ACCESS_RESTRICTED` or `RATE_LIMITED` without attempting forbidden anti-bot evasion.
+- **Universal Pagination Engine (`src/marketplaces/core/acquisition/pagination.ts`)**:
+  - Reusable multi-page coordinator supporting page numbers, cursors, and next URLs.
+  - Features duplicate item saturation termination and strict budget quota enforcement (`maxPages`, `maxItems`, `maxPayload`, `maxDuration`).
+- **Query Normalization & Search Variants Engine (`src/marketplaces/core/acquisition/query-normalizer.ts`)**:
+  - Cleans whitespace and punctuation noise, strips stop words, and generates bounded semantic research variants (2-3 variants max) without request explosion.
+- **Parser Health & Drift Detection Engine (`src/marketplaces/core/acquisition/parser-health.ts`)**:
+  - Calculates real-time field fill rates for title, price, rating, review count, seller, category, and image.
+  - Detects parser drift and degradation (e.g. price extraction rate < 40% on valid 200 OK HTML) and alerts source health tracking.
+- **Intelligence Upgrades across 6 Domains**:
+  - *Keywords*: Empirical listing prevalence %, price association, and intent classification (`MATERIAL_STYLE`, `RECIPIENT_OCCASION`, `PRODUCT_MODIFIER`, `GENERAL`) with strictly null search volume.
+  - *Shops*: Public seller profiles, catalog yield, competition scoring, and longitudinal catalog/review deltas from database history.
+  - *Categories*: Percentile price distributions (10th, median, 90th) and `comparePublicCategories()` cross-category benchmarking.
+  - *Niches*: Structured niche profiles with explicit signals and limitations.
+- **Enhanced UI Transparency & Research Report Views (`ResearchReportView.tsx`)**:
+  - Added field-level signal completeness progress bars (Title, Price, Rating, Reviews, Seller, Category).
+  - Added Strategy Resolution Timeline displaying exact step-by-step acquisition and recovery lineage.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-14-strategy-and-recovery.test.ts` (23 test cases).
+  - Full test suite: **992/992 passing across 208 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
+
+
 
 
 

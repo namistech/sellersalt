@@ -158,7 +158,8 @@ export class WalmartPublicWebAdapter implements PublicWebAcquisitionAdapter {
       };
     }
 
-    const searchUrl = `https://www.walmart.com/search?q=${encodeURIComponent(queryTerm)}`;
+    const pageParam = query.page && query.page > 1 ? `&page=${query.page}` : "";
+    const searchUrl = `https://www.walmart.com/search?q=${encodeURIComponent(queryTerm)}${pageParam}`;
 
     try {
       const page = await this.pageFetcher.fetchPage(searchUrl);

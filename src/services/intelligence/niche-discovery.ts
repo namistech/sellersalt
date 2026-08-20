@@ -14,6 +14,7 @@
 import { prisma } from "@/lib/db";
 import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
 import { runProductResearch } from "@/marketplaces/core/research-pipeline";
+import { orchestrateProductResearch } from "@/marketplaces/core/acquisition/orchestrator";
 import {
   evaluateCanonicalOpportunity,
   extractOpportunityInputFromNormalizedProduct,
@@ -557,7 +558,25 @@ export async function discoverLiveMarketplaceNiches(
     limit,
   });
 
-  if (result.status !== "AVAILABLE" || !result.products || result.products.length === 0) {
+  let products = (result.status === "AVAILABLE" && result.products) ? result.products : [];
+
+  if (products.length === 0) {
+    try {
+      const orchRes = await orchestrateProductResearch({
+        marketplace,
+        query,
+        limit,
+        organizationId,
+      });
+      if (orchRes.items && orchRes.items.length > 0) {
+        products = orchRes.items;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (products.length === 0) {
     return {
       query,
       marketplace,
@@ -570,5 +589,5 @@ export async function discoverLiveMarketplaceNiches(
     };
   }
 
-  return discoverNichesFromProducts(result.products, marketplace, query);
+  return discoverNichesFromProducts(products, marketplace, query);
 }

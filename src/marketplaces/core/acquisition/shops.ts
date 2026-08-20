@@ -13,6 +13,7 @@ import { MarketplaceRegistry, registerAllConnectors } from "../registry";
 import { scoreShopCompetition, type OpportunityScore } from "../opportunity-engine";
 import { evaluateFreshness, type FreshnessEvaluation } from "./freshness";
 import type { MarketplaceId, MarketplaceShopStats, NormalizedProduct, SignalProvenance } from "../types";
+import { prisma } from "@/lib/db";
 
 export interface PublicShopResearchResult {
   shop: MarketplaceShopStats;
@@ -24,6 +25,11 @@ export interface PublicShopResearchResult {
     max: number | null;
     average: number | null;
   };
+  longitudinalDeltas?: {
+    catalogDelta: number | null;
+    reviewDelta: number | null;
+    observationCount: number;
+  } | null;
   freshness: FreshnessEvaluation;
   provenance: SignalProvenance;
   limitations: string[];
@@ -110,12 +116,34 @@ export async function fetchPublicShopResearch(
   });
   const freshness = evaluateFreshness(fetchedAt, "shop");
 
+  let longitudinalDeltas: {
+    catalogDelta: number | null;
+    reviewDelta: number | null;
+    observationCount: number;
+  } | null = null;
+
+  try {
+    const prevCount = await prisma.productObservation.count({
+      where: { marketplace, shopName: normalizedShop.name || shopIdentifier },
+    });
+    if (prevCount > 0) {
+      longitudinalDeltas = {
+        catalogDelta: sampleProducts.length > 0 ? sampleProducts.length - prevCount : null,
+        reviewDelta: null,
+        observationCount: prevCount,
+      };
+    }
+  } catch {
+    // Graceful fallback
+  }
+
   return {
     shop: normalizedShop,
     marketplace,
     competition,
     sampleProducts,
     priceRange,
+    longitudinalDeltas,
     freshness,
     provenance: "ACTUAL_DATA",
     limitations: [

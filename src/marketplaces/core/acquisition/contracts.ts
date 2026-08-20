@@ -32,6 +32,7 @@ export interface PublicWebCapabilities {
 
 export interface PublicSearchQuery {
   query: string;
+  page?: number;
   limit?: number;
   minPrice?: number;
   maxPrice?: number;
