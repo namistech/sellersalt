@@ -15,6 +15,7 @@ import {
   Search,
   Layers,
   ArrowRight,
+  Boxes,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -64,6 +65,10 @@ export function OpportunityDetailDrawer({
 
   const handleValidate = () => {
     router.push(`/validate?query=${encodeURIComponent(opportunity.title)}&marketplace=${opportunity.marketplace}`);
+  };
+
+  const handleWorkspace = () => {
+    router.push(`/product-workspaces/${encodeURIComponent(opportunity.title)}`);
   };
 
   const { score, confidence, explanation, signals } = opportunity;
@@ -196,15 +201,20 @@ export function OpportunityDetailDrawer({
         </Card>
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t">
-          <Button onClick={handleValidate} size="default" variant="primary" className="w-full sm:w-auto text-xs">
+        <div className="flex flex-wrap items-center gap-2 pt-4 border-t">
+          <Button onClick={handleWorkspace} size="default" variant="primary" className="text-xs font-bold">
+            <Boxes className="w-4 h-4 mr-1.5" />
+            Open Opportunity Workspace
+          </Button>
+
+          <Button onClick={handleValidate} size="default" variant="secondary" className="text-xs">
             <Compass className="w-4 h-4 mr-1.5" />
             Validate Product
           </Button>
 
-          <Button onClick={handleResearch} size="default" variant="secondary" className="w-full sm:w-auto text-xs">
+          <Button onClick={handleResearch} size="default" variant="secondary" className="text-xs">
             <Search className="w-4 h-4 mr-1.5" />
-            Deep Research Center
+            Research Center
           </Button>
 
           <Button
@@ -212,10 +222,10 @@ export function OpportunityDetailDrawer({
             disabled={saving || isSaved}
             size="default"
             variant="secondary"
-            className="w-full sm:w-auto text-xs ml-auto"
+            className="text-xs ml-auto"
           >
             {isSaved ? <Check className="w-4 h-4 mr-1.5 text-emerald-600" /> : <Bookmark className="w-4 h-4 mr-1.5" />}
-            {isSaved ? "Saved to Watchlist" : "Save to Watchlist"}
+            {isSaved ? "Saved" : "Save"}
           </Button>
         </div>
       </div>

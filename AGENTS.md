@@ -182,6 +182,13 @@ a route.
 
 ## 8. Intelligence Engines
 
+| `src/services/intelligence/product-opportunity-workspace-engine.ts` | **Product Opportunity Workspace Engine** — orchestrates end-to-end Opportunity → Sourcing → Launch Intelligence workspace | Multi-marketplace, public web primary | **Canonical, Live** |
+| `src/services/intelligence/unit-economics-scenario-engine.ts` | **Unit Economics Scenario Engine 2.0** — models Conservative, Base, and Optimistic financial sensitivity scenarios | User-input grounded, zero synthetic costs | **Canonical, Live** |
+| `src/services/intelligence/launch-readiness-engine.ts` | **Launch Readiness Engine** — multi-dimensional assessment across 10 commercial readiness vectors | Marketplace-neutral | **Canonical, Live** |
+| `src/services/intelligence/commercial-decision-tree.ts` | **Commercial Decision Tree** — deterministic verdict engine (`PURSUE`, `INVESTIGATE`, `TEST`, `WAIT`, `REJECT`) | Marketplace-neutral | **Canonical, Live** |
+| `src/services/intelligence/product-attribute-intelligence.ts` | **Product Attribute Intelligence Engine** — observable attribute prevalence %, seller concentration, and median price association | Multi-marketplace | **Canonical, Live** |
+| `src/services/intelligence/differentiation-builder-2.ts` | **Differentiation Builder 2.0** — builds concrete differentiation candidates from saturated vs gap attribute clusters | Marketplace-neutral | **Canonical, Live** |
+| `src/services/intelligence/market-positioning-engine.ts` | **Market Price Positioning Engine** — empirical quantiles ($P_{10}, P_{25}, P_{50}, P_{75}, P_{90}$) and 5 strategic positioning tiers | Marketplace-neutral | **Canonical, Live** |
 | `src/services/intelligence/autonomous-discovery-engine.ts` | **Autonomous Opportunity Discovery Engine** — orchestrates broad multi-marketplace discovery ("Discover For Me"), seed expansion, detection rules, and persistence | Multi-marketplace, public web primary | **Canonical, Live** |
 | `src/services/intelligence/opportunity-scoring-3.ts` | **Opportunity Scoring 3.0** — multi-factor deterministic scoring (Demand, Competition, Momentum, Differentiation, Price, Evidence Depth) | Marketplace-neutral | **Canonical, Live** |
 | `src/services/intelligence/product-idea-engine.ts` | **Product Idea Engine** — evidence-grounded product synthesis distinguishing observed metrics and derived strategy angles | Marketplace-neutral | **Canonical, Live** |
@@ -333,12 +340,12 @@ source of truth, this is a map, not a copy):
   Permanent, not a WIP limitation (§3/§10).
 
 ## 18. Current Test/Build Baseline
-
+ 
 Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1070/1070 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 263 suites)
+Tests:      1083/1083 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 274 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
 Next.js:    clean build      (npx next build — 168/168 static and dynamic routes compiled)

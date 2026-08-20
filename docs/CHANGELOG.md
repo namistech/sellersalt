@@ -759,3 +759,46 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 21: Proprietary Product Opportunity → Sourcing → Launch Intelligence Engine (2026-08-20)
+
+**Why**: Enable merchants to advance from discovering an opportunity into a complete, evidence-grounded decision cockpit with observable attribute intelligence, differentiation angles, empirical price positioning, Bill of Materials, supplier RFQ sourcing specifications, interactive unit economics sensitivity simulator, launch readiness assessment, information value gaps, and prioritized action plan without synthetic supplier pricing.
+
+**What changed**:
+- **Domain Contracts (`src/marketplaces/core/opportunity-workspace-types.ts`)**:
+  - Structured canonical types for `ProductOpportunityWorkspace`, `EvidenceLedger`, `ProductAttributeIntelligenceSummary`, `DifferentiationBuilderResult`, `MarketPositioningAnalysis`, `ProductConfiguration`, `SourcingSpecification`, `UnitEconomicsAnalysis`, `LaunchReadinessAssessment`, `CommercialDecision`, `ActionPlan`, and `InformationValueReport`.
+- **Product Attribute Intelligence Engine (`src/services/intelligence/product-attribute-intelligence.ts`)**:
+  - Extracts observable attributes (materials, finishes, styles, formats, bundles, occasions), calculates listing prevalence %, seller concentration, and median price association.
+- **Differentiation Builder 2.0 (`src/services/intelligence/differentiation-builder-2.ts`)**:
+  - Analyzes saturated market clusters and underrepresented attribute pairs, generating actionable differentiation candidates.
+- **Market Positioning Engine (`src/services/intelligence/market-positioning-engine.ts`)**:
+  - Evaluates empirical quantiles ($P_{10}, P_{25}, P_{50}, P_{75}, P_{90}$) and structures 5 strategic positioning tiers (Value, Lower-Mid, Mid-Market, Upper-Mid, Premium).
+- **Product Configuration Builder (`src/services/intelligence/product-configuration-builder.ts`)**:
+  - Constructs structured product configurations strictly separating Observed Combinations from Derived Product Concepts.
+- **Sourcing Requirements Intelligence Engine (`src/services/intelligence/sourcing-requirements-engine.ts`)**:
+  - Generates comprehensive supplier RFQ checklists, material specs, packaging, and compliance guidelines without fabricating supplier pricing.
+- **Unit Economics Scenario Engine 2.0 (`src/services/intelligence/unit-economics-scenario-engine.ts`)**:
+  - Models Base, Conservative, and Optimistic financial sensitivity scenarios from user inputs, calculating gross/contribution margin %, marketplace fees, break-even price, and max allowable CAC.
+- **Launch Readiness Engine (`src/services/intelligence/launch-readiness-engine.ts`)**:
+  - Evaluates readiness across 10 dimensions, assigning structured milestone recommendations.
+- **Commercial Decision Tree (`src/services/intelligence/commercial-decision-tree.ts`)**:
+  - Higher-level deterministic verdict engine (`PURSUE`, `INVESTIGATE`, `TEST`, `WAIT`, `REJECT`, `INSUFFICIENT_DATA`) detailing positive/negative evidence, unknowns, and risks.
+- **Information Value Engine (`src/services/intelligence/information-value-engine.ts`)**:
+  - "What should I verify next?" engine ranking information gaps by commercial decision impact.
+- **Action Plan Generator (`src/services/intelligence/action-plan-generator.ts`)**:
+  - Generates prioritized, uncertainty-reducing 5-step action plan.
+- **Evidence Ledger Builder (`src/services/intelligence/evidence-ledger-builder.ts`)**:
+  - Compiles traceable evidence records anchoring every score and recommendation in verified observations.
+- **Workspace Master Orchestrator (`src/services/intelligence/product-opportunity-workspace-engine.ts`)**:
+  - Assembles end-to-end workspaces with multi-tenant organization scoping and persistence.
+- **API Suite**:
+  - `/api/product-workspaces`, `/api/product-workspaces/[id]`, `/api/product-workspaces/[id]/refresh`, `/api/product-workspaces/[id]/economics`.
+- **UI Surfaces**:
+  - `ProductOpportunityCockpit.tsx` (Flagship decision cockpit with 15 sections).
+  - `/product-workspaces` (Workspace catalog).
+  - `/product-workspaces/[id]` (Workspace detail cockpit).
+- **Verification Baseline**:
+  - Full test suite: **1083/1083 passing across 274 suites** (`src/tests/batch-21-product-opportunity-workspace.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).
