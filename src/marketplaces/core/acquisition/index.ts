@@ -15,5 +15,8 @@ export * from "./merger";
 export * from "./persistence";
 export * from "./orchestrator";
 export * from "./keywords";
+export * from "./trends";
+export * from "./shops";
+export * from "./categories";
 export * from "./job-contracts";
 export * from "../acquisition";

@@ -4,28 +4,26 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-19)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 9D COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of the
-Keyword Research / Category Hunting / SEO Audit marketplace-context batch
-and the documentation-synchronization pass that followed it.
+condensed version of everything else in this file, current as of Batch 9D
+(Real Marketplace Research & Observation Intelligence Foundation):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-`MarketplaceConnector` interface (`interfaces.ts`) · `MarketplaceRegistry`
-+ `registerAllConnectors()` (`registry/index.ts`) · capability flags
-(`capabilities.ts`, `MarketplaceCapabilities`) · research pipeline
-(`research-pipeline.ts` — `runMarketResearch`/`runProductResearch`/
-`runAllMarketplaceProductResearch`/`fanOutMarketplaceRequest<T>()`) ·
-optimization rules (`optimization-rules.ts` — `getOptimizationRules`,
-`MarketplaceOptimizationRules`, Etsy the only marketplace with real
-values) · canonical opportunity engine (`canonical-opportunity.ts` —
-`evaluateCanonicalOpportunity`, explicit `OBSERVED`/`ESTIMATED`/`DERIVED`/`UNAVAILABLE`
-metric availability, dynamic weight redistribution, `toOpportunityMetric`) ·
-opportunity scoring envelope (`opportunity-engine.ts` — `scoreProductOpportunity`,
-`scoreNormalizedProductOpportunity`, `scoreShopCompetition`) · normalized research
-types (`types.ts` — `NormalizedProduct`, `Listing`, `Order`, `MarketplaceId`,
-`marketplaceFromSellerChannelPlatform`).
+- **Research Source Orchestrator** (`orchestrator.ts`): Multi-source cascades (`PUBLIC_WEB` $\to$ `MARKETPLACE_API` $\to$ `HISTORICAL_OBSERVATION`) with non-destructive observation merging (`mergeProductObservations`), metric freshness penalties (`evaluateFreshness`), and automatic observation persistence into PostgreSQL (`persistPublicProductObservations`).
+- **Longitudinal Trend Foundation** (`trends.ts`): Calculates genuine empirical price deltas, review velocities, and persistence lifecycles (`NEW`, `PERSISTENT`, `STALE`). Enforces Zero-Fabrication Rule ($n \le 1 \implies \text{delta} = \text{null}$).
+- **Empirical Keyword Harvester** (`keywords.ts`): Token and intent-based clustering (`MATERIAL_STYLE`, `RECIPIENT_OCCASION`, `PRODUCT_MODIFIER`, `GENERAL`) with strict `searchVolume = null` provenance guarantees.
+- **Public Shop & Category Engines** (`shops.ts`, `categories.ts`): Public shop competition scoring (`scoreShopCompetition`) and category price distributions (min, max, median, 10th/90th percentiles).
+- **Cross-Marketplace Coverage Model** (`cross-marketplace-comparison.ts`): Evaluates `ResearchCoverage` metrics (total products, fresh counts, available signal groups, coverage confidence).
+- **Public Web Adapters** (`amazon`, `ebay`, `walmart`, `etsy`): Semantic HTML and JSON-LD parsers extracting product cards, prices, ratings, and reviews.
+- **Live Smoke Testing Harness** (`src/tests/live-smoke/live-research-smoke.ts`): Opt-in manual smoke test facility gated by `SELLERSALT_LIVE_RESEARCH_SMOKE=true`.
+
+**Current Verified Baseline**:
+- Tests: 895/895 passing across 160 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- TypeScript: Clean (`npx tsc --noEmit`)
+- Prisma: Valid, 29 migrations up to date
+- Next.js: Clean production build (161/161 routes compiled)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,

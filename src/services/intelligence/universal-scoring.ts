@@ -269,7 +269,8 @@ export function evaluateShopCompetition(params: {
   else catalogScore = 50;
 
   // 3. Daily Velocity Factor (Weight: 25%)
-  const velocityScore = Math.min(100, Math.max(20, Math.round((estDailySales / 5) * 90)));
+  const safeDailySales = typeof estDailySales === "number" ? estDailySales : 0;
+  const velocityScore = Math.min(100, Math.max(20, Math.round((safeDailySales / 5) * 90)));
 
   // 4. Shop Age Maturity Factor (Weight: 15%)
   // Younger successful shops (<24 months) are easier to reverse-engineer
@@ -299,8 +300,8 @@ export function evaluateShopCompetition(params: {
       score: velocityScore,
       pointsContributed: Math.round(velocityScore * 0.25),
       impactLabel: velocityScore >= 70 ? "Positive" : "Neutral",
-      explanation: `Generates ~${estDailySales.toFixed(1)} orders per day across ${activeListings} active listings.`,
-      rawMetric: `~${estDailySales.toFixed(1)} sales/day`,
+      explanation: `Generates ~${safeDailySales.toFixed(1)} orders per day across ${activeListings} active listings.`,
+      rawMetric: `~${safeDailySales.toFixed(1)} sales/day`,
     },
     {
       id: "catalog",

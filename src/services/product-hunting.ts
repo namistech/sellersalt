@@ -282,24 +282,172 @@ export async function searchMarketplaceProducts(
   organizationId: string,
   filters: EtsySearchFilters = {}
 ): Promise<ProductHuntingSearchResponse | CapabilityUnavailable> {
-  const unavailable = checkMarketplaceCapability(marketplace, "research");
-  if (unavailable) return unavailable;
+  const startTime = Date.now();
 
-  if (marketplace !== "etsy") {
-    // Defensive: a capability flag says available but no branch exists here
-    // yet. Should not happen (only Etsy's connector sets research: true
-    // today) — never silently fall through to Etsy-only logic for another
-    // marketplace's data.
+  try {
+    const { orchestrateProductResearch } = await import("@/marketplaces/core/acquisition/orchestrator");
+    const orchRes = await orchestrateProductResearch(
+      {
+        query: filters.keywords || "",
+        marketplace,
+        organizationId,
+        limit: filters.limit,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+      },
+      {
+        preferredSources: ["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"],
+        allowHistoricalFallback: true,
+      }
+    );
+
+    if (orchRes.report.status === "NOT_IMPLEMENTED" || orchRes.report.status === "PARTIAL") {
+      return {
+        available: false,
+        marketplace,
+        capability: "research",
+        reason: "CONNECTOR_NOT_IMPLEMENTED",
+        message: `${marketplace} product search is not implemented yet.`,
+      };
+    }
+
+    if (orchRes.items.length === 0 && orchRes.report.status === "UNAVAILABLE") {
+      return {
+        available: false,
+        marketplace,
+        capability: "research",
+        reason: "CONNECTOR_NOT_CONFIGURED",
+        message: orchRes.report.limitations.join("; ") || `${marketplace} product search is currently unavailable.`,
+      };
+    }
+
+    // Fetch existing PlannerItems for this organization to mark saved status
+    const existingPlannerItems = await prisma.plannerItem.findMany({
+      where: { organizationId },
+      select: { id: true, sourceListingUrl: true, sourceShopExternalId: true },
+    }).catch(() => []);
+
+    const plannerUrlMap = new Map<string, string>();
+    for (const item of existingPlannerItems) {
+      if (item.sourceListingUrl) {
+        plannerUrlMap.set(item.sourceListingUrl, item.id);
+      }
+    }
+
+    const results: ProductHuntingResult[] = orchRes.items.map((p) => {
+      const listingAgeDays = 30;
+      const shopAgeMonths = p.shop?.ageMonths ?? 12;
+      const totalSales = p.salesCount ?? 0;
+      const activeListings = p.shop?.activeListings ?? 1;
+      const reviewCount = p.reviewCount ?? 0;
+      const reviewAverage = p.rating ?? null;
+      const priceAmount = p.price ?? 0;
+
+      const normalizedListing: NormalizedProductListing = {
+        listingId: p.externalId,
+        title: p.title,
+        description: "",
+        price: priceAmount,
+        currency: p.currency || "USD",
+        images: p.imageUrl ? [p.imageUrl] : [],
+        imageUrl: p.imageUrl || null,
+        tags: (p.keywordSignals?.map((k) => k.term)) || [],
+        materials: [],
+        taxonomyId: null,
+        createdTimestamp: Math.floor(Date.now() / 1000) - 30 * 86400,
+        updatedTimestamp: Math.floor(Date.now() / 1000),
+        listingAgeDays,
+        listingAgeMonths: 1,
+        listingUrl: p.url || "",
+        shopId: p.shop?.name || p.externalId,
+        shopName: p.shop?.name || "Marketplace Merchant",
+        numFavorers: p.favoritesCount ?? null,
+        views: null,
+      };
+
+      const normalizedShop: NormalizedShopProfile = {
+        shopId: p.shop?.name || p.externalId,
+        shopName: p.shop?.name || "Marketplace Merchant",
+        shopUrl: p.shop?.url || p.url || "",
+        shopIconUrl: null,
+        createdTimestamp: Math.floor(Date.now() / 1000) - shopAgeMonths * 30 * 86400,
+        shopAgeMonths,
+        activeListings,
+        totalSales,
+        reviewCount,
+        reviewAverage,
+      };
+
+      const estDailySales = totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0;
+      const avgSellingRatio = totalSales > 0 ? totalSales / activeListings : 0;
+      const reviewConversionRate = totalSales > 0 ? reviewCount / totalSales : 0;
+
+      let salesVelocityProxy: ProductCalculatedSignals["salesVelocityProxy"] = "LOW";
+      if (estDailySales >= 8) salesVelocityProxy = "HIGH";
+      else if (estDailySales >= 3) salesVelocityProxy = "MODERATE";
+      else if (estDailySales >= 0.8) salesVelocityProxy = "EMERGING";
+
+      const signals: ProductCalculatedSignals = {
+        estDailySales,
+        avgSellingRatio,
+        salesVelocityProxy,
+        reviewConversionRate,
+      };
+
+      const opportunity: ProductOpportunityScore = computeProductOpportunity({
+        price: priceAmount,
+        listingAgeDays,
+        shopAgeMonths,
+        totalSales,
+        activeListings,
+        reviewCount,
+        reviewAverage,
+        numFavorers: p.favoritesCount ?? null,
+        estDailySales,
+        avgSellingRatio,
+      });
+
+      if (p.opportunityScore?.score !== null && p.opportunityScore?.score !== undefined) {
+        opportunity.opportunityScore = p.opportunityScore.score;
+      }
+
+      const plannerItemId = plannerUrlMap.get(normalizedListing.listingUrl) ?? null;
+
+      return {
+        id: p.externalId,
+        listing: normalizedListing,
+        shop: normalizedShop,
+        signals,
+        opportunity,
+        isSavedToPlanner: !!plannerItemId,
+        plannerItemId,
+      };
+    });
+
+    const durationMs = Date.now() - startTime;
+
+    return {
+      results,
+      totalCount: results.length,
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 25,
+      hasMore: false,
+      searchParams: filters,
+      source: "ETSY_LIVE_SEARCH" as const,
+      executionDurationMs: durationMs,
+    };
+  } catch (err: any) {
+    if (marketplace === "etsy") {
+      return searchEtsyMarketplaceProducts(organizationId, filters);
+    }
     return {
       available: false,
       marketplace,
       capability: "research",
-      reason: "CONNECTOR_NOT_IMPLEMENTED",
-      message: `${marketplace} product search has no implementation wired up yet.`,
+      reason: "CONNECTOR_NOT_CONFIGURED",
+      message: err?.message || `${marketplace} search failed.`,
     };
   }
-
-  return searchEtsyMarketplaceProducts(organizationId, filters);
 }
 
 export async function searchEtsyMarketplaceProducts(

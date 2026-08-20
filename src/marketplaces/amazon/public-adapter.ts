@@ -56,7 +56,7 @@ export function parseAmazonListingCardsFromHtml(html: string): NormalizedProduct
   if (!html || typeof html !== "string") return [];
 
   const products: NormalizedProduct[] = [];
-  const asinRegex = /data-asin=["']([A-Z0-9]{10})["']/gi;
+  const asinRegex = /data-asin=["']([A-Za-z0-9_-]+)["']/gi;
   const asinMatches = Array.from(html.matchAll(asinRegex));
   const seenAsins = new Set<string>();
 
@@ -165,7 +165,7 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
     query: PublicSearchQuery
   ): Promise<PublicAcquisitionResult<NormalizedProduct>> {
     const fetchedAt = new Date();
-    const queryTerm = query.query.trim();
+    const queryTerm = (query.query || "").trim();
 
     if (!queryTerm) {
       return {
@@ -437,6 +437,14 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
       .sort((a, b) => b.occurrenceCount - a.occurrenceCount)
       .slice(0, 15);
 
+    const validPrices = searchRes.items
+      .map((i) => i.price)
+      .filter((p): p is number => p !== null && p !== undefined && p > 0);
+    const averagePrice =
+      validPrices.length > 0
+        ? parseFloat((validPrices.reduce((a, b) => a + b, 0) / validPrices.length).toFixed(2))
+        : null;
+
     return {
       success: true,
       marketplace: "amazon",
@@ -447,7 +455,7 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
           relatedKeywords,
           topTags: [],
           observedListingsCount: searchRes.items.length,
-          averagePrice: null,
+          averagePrice,
           demandProxyScore: 65,
           fetchedAt,
         },

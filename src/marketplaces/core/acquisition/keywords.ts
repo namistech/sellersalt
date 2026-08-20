@@ -1,33 +1,33 @@
 /**
- * SellerSalt Public Keyword Observation & Harvesting Engine
+ * SellerSalt Marketplace-Independent Empirical Keyword Harvester
  * 
- * Performs empirical, marketplace-independent keyword research without relying on official keyword APIs.
- * Analyzes live search listing titles, category breadcrumbs, public tags, and frequency distributions.
+ * Harvests keyword occurrence frequencies, co-occurrences, tags, and price distributions
+ * directly from public search cards and listings without official API dependencies.
  * 
- * Rules:
- * 1. NEVER label observed frequency as "monthly search volume" unless backed by a licensed provider.
- * 2. Missing exact search volume is explicitly searchVolume: null with provenance: "UNAVAILABLE".
- * 3. Use precise terminology: "Observed Listing Frequency", "Marketplace Result Density", "SellerSalt Demand Proxy".
+ * ZERO-FABRICATION CONTRACT:
+ * - exactSearchVolume is ALWAYS null unless backed by a licensed keyword search provider.
+ * - Mislabeled "monthly search volume" from listing counts is strictly prohibited.
+ * - Exposes observed listing prevalence percentage and SellerSalt demand proxy score.
  */
 
 import { MarketplaceRegistry, registerAllConnectors } from "../registry";
 import { evaluateFreshness, type FreshnessEvaluation } from "./freshness";
 import type { MarketplaceId, SignalProvenance } from "../types";
-import type { PublicSearchQuery } from "./contracts";
 
-export interface KeywordCluster {
-  theme: string;
-  keywords: string[];
-  totalOccurrences: number;
+export interface PublicKeywordQuery {
+  query: string;
+  marketplace: MarketplaceId;
+  organizationId?: string;
+  limit?: number;
 }
 
 export interface CanonicalKeywordObservation {
   keyword: string;
   marketplace: MarketplaceId;
   occurrenceCount: number;
-  listingFrequencyPercent: number;
+  listingFrequencyPercent: number; // 0-100% of analyzed listings containing this term
   observedAveragePrice: number | null;
-  demandProxyScore: number;
+  demandProxyScore: number; // 0-100 derived from listing prevalence and engagement
   competitionProxy: "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
   searchVolume: null;
   searchVolumeProvenance: "UNAVAILABLE";
@@ -36,12 +36,20 @@ export interface CanonicalKeywordObservation {
   observedAt: Date;
 }
 
+export interface KeywordCluster {
+  theme: string;
+  intentCategory?: "MATERIAL_STYLE" | "RECIPIENT_OCCASION" | "PRODUCT_MODIFIER" | "GENERAL";
+  keywords: string[];
+  totalOccurrences: number;
+  averagePrice?: number | null;
+}
+
 export interface KeywordResearchSummary {
   query: string;
   marketplace: MarketplaceId;
   totalListingsObserved: number;
   averageObservedPrice: number | null;
-  demandProxyScore: number;
+  demandProxyScore: number | null;
   topKeywords: CanonicalKeywordObservation[];
   clusters: KeywordCluster[];
   tags: Array<{ tag: string; count: number }>;
@@ -50,103 +58,210 @@ export interface KeywordResearchSummary {
   limitations: string[];
 }
 
+const MATERIAL_PATTERNS = [
+  "ceramic", "wood", "wooden", "leather", "linen", "cotton", "gold", "silver",
+  "clay", "stoneware", "porcelain", "brass", "canvas", "glass", "metal", "resin",
+];
+
+const OCCASION_PATTERNS = [
+  "gift", "wedding", "birthday", "anniversary", "christmas", "holiday", "mom",
+  "dad", "for him", "for her", "baby", "teacher", "bridesmaid", "groomsmen",
+];
+
+const MODIFIER_PATTERNS = [
+  "handmade", "personalized", "custom", "vintage", "rustic", "minimalist",
+  "modern", "boho", "aesthetic", "large", "small", "cute", "funny",
+];
+
+function classifyKeywordIntent(keyword: string): KeywordCluster["intentCategory"] {
+  const lower = keyword.toLowerCase();
+  for (const m of MATERIAL_PATTERNS) {
+    if (lower.includes(m)) return "MATERIAL_STYLE";
+  }
+  for (const o of OCCASION_PATTERNS) {
+    if (lower.includes(o)) return "RECIPIENT_OCCASION";
+  }
+  for (const mod of MODIFIER_PATTERNS) {
+    if (lower.includes(mod)) return "PRODUCT_MODIFIER";
+  }
+  return "GENERAL";
+}
+
+export function buildDeterministicKeywordClusters(
+  keywords: CanonicalKeywordObservation[]
+): KeywordCluster[] {
+  if (!keywords || keywords.length === 0) return [];
+
+  const clusters: KeywordCluster[] = [];
+  const intentBuckets: Record<string, CanonicalKeywordObservation[]> = {
+    MATERIAL_STYLE: [],
+    RECIPIENT_OCCASION: [],
+    PRODUCT_MODIFIER: [],
+    GENERAL: [],
+  };
+
+  for (const kw of keywords) {
+    const intent = classifyKeywordIntent(kw.keyword) || "GENERAL";
+    intentBuckets[intent].push(kw);
+  }
+
+  // 1. Material & Style Cluster
+  if (intentBuckets.MATERIAL_STYLE.length > 0) {
+    const items = intentBuckets.MATERIAL_STYLE;
+    clusters.push({
+      theme: "Materials & Craft Styles",
+      intentCategory: "MATERIAL_STYLE",
+      keywords: items.map((i) => i.keyword),
+      totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
+      averagePrice: items[0]?.observedAveragePrice ?? null,
+    });
+  }
+
+  // 2. Occasion & Recipient Cluster
+  if (intentBuckets.RECIPIENT_OCCASION.length > 0) {
+    const items = intentBuckets.RECIPIENT_OCCASION;
+    clusters.push({
+      theme: "Gifts & Occasions",
+      intentCategory: "RECIPIENT_OCCASION",
+      keywords: items.map((i) => i.keyword),
+      totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
+      averagePrice: items[0]?.observedAveragePrice ?? null,
+    });
+  }
+
+  // 3. Modifier & Attributes Cluster
+  if (intentBuckets.PRODUCT_MODIFIER.length > 0) {
+    const items = intentBuckets.PRODUCT_MODIFIER;
+    clusters.push({
+      theme: "Product Customization & Attributes",
+      intentCategory: "PRODUCT_MODIFIER",
+      keywords: items.map((i) => i.keyword),
+      totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
+      averagePrice: items[0]?.observedAveragePrice ?? null,
+    });
+  }
+
+  // 4. General / Long-Tail Cluster
+  if (intentBuckets.GENERAL.length > 0) {
+    const items = intentBuckets.GENERAL.slice(0, 10);
+    clusters.push({
+      theme: "Trending Search Variations",
+      intentCategory: "GENERAL",
+      keywords: items.map((i) => i.keyword),
+      totalOccurrences: items.reduce((acc, curr) => acc + curr.occurrenceCount, 0),
+      averagePrice: items[0]?.observedAveragePrice ?? null,
+    });
+  }
+
+  return clusters;
+}
+
 /**
- * Harvests keyword signals, n-grams, and clusters from marketplace public search results.
+ * Harvests keyword research from public web adapters.
  */
 export async function harvestPublicMarketplaceKeywords(
-  query: PublicSearchQuery & { marketplace: MarketplaceId }
+  query: PublicKeywordQuery
 ): Promise<KeywordResearchSummary> {
   registerAllConnectors();
-  const fetchedAt = new Date();
-  const queryTerm = query.query.trim().toLowerCase();
+  const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(query.marketplace);
 
-  const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(query.marketplace);
-  if (!publicAdapter) {
-    const freshness = evaluateFreshness(fetchedAt, "general");
+  if (!adapter || !adapter.capabilities.keywordDiscovery) {
+    const freshness = evaluateFreshness(null, "general");
     return {
       query: query.query,
       marketplace: query.marketplace,
       totalListingsObserved: 0,
       averageObservedPrice: null,
-      demandProxyScore: 0,
-      topKeywords: [],
-      clusters: [],
-      tags: [],
-      freshness,
-      provenance: "UNAVAILABLE",
-      limitations: [`No public web acquisition adapter available for ${query.marketplace}`],
-    };
-  }
-
-  // 1. If adapter provides dedicated harvester, invoke it
-  if (publicAdapter.harvestPublicKeywords) {
-    try {
-      const res = await publicAdapter.harvestPublicKeywords(query);
-      if (res.success && res.items.length > 0) {
-        const harvest = res.items[0];
-        const freshness = evaluateFreshness(harvest.fetchedAt, "general");
-
-        const topKeywords: CanonicalKeywordObservation[] = harvest.relatedKeywords.map((k) => ({
-          keyword: k.keyword,
-          marketplace: query.marketplace,
-          occurrenceCount: k.occurrenceCount,
-          listingFrequencyPercent: k.listingFrequency,
-          observedAveragePrice: harvest.averagePrice,
-          demandProxyScore: k.demandProxy,
-          competitionProxy:
-            k.listingFrequency > 60 ? "HIGH" : k.listingFrequency > 25 ? "MODERATE" : "LOW",
-          searchVolume: null,
-          searchVolumeProvenance: "UNAVAILABLE",
-          freshness,
-          provenance: "ACTUAL_DATA",
-          observedAt: harvest.fetchedAt,
-        }));
-
-        return {
-          query: query.query,
-          marketplace: query.marketplace,
-          totalListingsObserved: harvest.observedListingsCount,
-          averageObservedPrice: harvest.averagePrice,
-          demandProxyScore: harvest.demandProxyScore,
-          topKeywords,
-          clusters: buildKeywordClusters(topKeywords.map((k) => k.keyword)),
-          tags: harvest.topTags,
-          freshness,
-          provenance: "ACTUAL_DATA",
-          limitations: [
-            "Exact monthly search volume is unavailable without licensed third-party volume feeds.",
-          ],
-        };
-      }
-    } catch {
-      // Fall back to manual search extraction
-    }
-  }
-
-  // 2. Fallback: Search products and extract n-grams from titles
-  const searchRes = await publicAdapter.searchPublicProducts({ ...query, limit: 30 });
-  const items = searchRes.items || [];
-  const freshness = evaluateFreshness(searchRes.fetchedAt || fetchedAt, "general");
-
-  if (items.length === 0) {
-    return {
-      query: query.query,
-      marketplace: query.marketplace,
-      totalListingsObserved: 0,
-      averageObservedPrice: null,
-      demandProxyScore: 0,
+      demandProxyScore: null,
       topKeywords: [],
       clusters: [],
       tags: [],
       freshness,
       provenance: "UNAVAILABLE",
       limitations: [
-        `No public listing observations found for "${query.query}" on ${query.marketplace}.`,
+        `${query.marketplace} public keyword discovery adapter is not available yet.`,
       ],
     };
   }
 
+  // If adapter has dedicated keyword harvester:
+  if (adapter.harvestPublicKeywords) {
+    try {
+      const harvestRes = await adapter.harvestPublicKeywords({
+        query: query.query,
+        limit: query.limit || 50,
+      });
+
+      if (harvestRes.success && harvestRes.items.length > 0) {
+        const h = harvestRes.items[0];
+        const freshness = evaluateFreshness(harvestRes.fetchedAt, "general");
+
+        const topKeywords: CanonicalKeywordObservation[] = (h.relatedKeywords || []).map((k) => ({
+          keyword: k.keyword,
+          marketplace: query.marketplace,
+          occurrenceCount: k.occurrenceCount,
+          listingFrequencyPercent: k.listingFrequency,
+          observedAveragePrice: h.averagePrice,
+          demandProxyScore: k.demandProxy,
+          competitionProxy: (k.listingFrequency > 60 ? "HIGH" : k.listingFrequency > 25 ? "MODERATE" : "LOW") as "HIGH" | "MODERATE" | "LOW",
+          searchVolume: null,
+          searchVolumeProvenance: "UNAVAILABLE" as const,
+          freshness,
+          provenance: "ACTUAL_DATA" as SignalProvenance,
+          observedAt: harvestRes.fetchedAt,
+        }));
+
+        return {
+          query: h.query,
+          marketplace: query.marketplace,
+          totalListingsObserved: h.observedListingsCount,
+          averageObservedPrice: h.averagePrice,
+          demandProxyScore: h.demandProxyScore,
+          topKeywords,
+          clusters: buildDeterministicKeywordClusters(topKeywords),
+          tags: (h.topTags || []).map((t) => ({ tag: t.tag, count: t.count })),
+          freshness,
+          provenance: "ACTUAL_DATA",
+          limitations: [
+            "Exact monthly search volume is unavailable without licensed third-party volume feeds. SellerSalt uses observed listing prevalence percentage.",
+          ],
+        };
+      }
+    } catch {
+      // Fall through to search listing analysis
+    }
+  }
+
+  // Fallback: analyze search listings directly
+  const searchRes = await adapter.searchPublicProducts({
+    query: query.query,
+    limit: query.limit || 50,
+  });
+
+  const freshness = evaluateFreshness(searchRes.fetchedAt, "general");
+
+  if (!searchRes.success || searchRes.items.length === 0) {
+    return {
+      query: query.query,
+      marketplace: query.marketplace,
+      totalListingsObserved: 0,
+      averageObservedPrice: null,
+      demandProxyScore: null,
+      topKeywords: [],
+      clusters: [],
+      tags: [],
+      freshness,
+      provenance: searchRes.provenance || "UNAVAILABLE",
+      limitations: [
+        searchRes.error || `${query.marketplace} public search cards could not be analyzed.`,
+      ],
+    };
+  }
+
+  const items = searchRes.items;
   const wordCounts = new Map<string, number>();
+  const queryTerm = query.query.toLowerCase().trim();
+
   let priceSum = 0;
   let priceCount = 0;
 
@@ -196,31 +311,12 @@ export async function harvestPublicMarketplaceKeywords(
     averageObservedPrice: averagePrice,
     demandProxyScore: Math.min(95, Math.round(items.length * 4)),
     topKeywords,
-    clusters: buildKeywordClusters(topKeywords.map((k) => k.keyword)),
+    clusters: buildDeterministicKeywordClusters(topKeywords),
     tags: [],
     freshness,
     provenance: "ACTUAL_DATA",
     limitations: [
-      "Exact monthly search volume is unavailable without licensed third-party volume feeds.",
+      "Exact monthly search volume is unavailable without licensed third-party volume feeds. SellerSalt uses observed marketplace listing prevalence.",
     ],
   };
-}
-
-function buildKeywordClusters(keywords: string[]): KeywordCluster[] {
-  const clusters: KeywordCluster[] = [];
-  const visited = new Set<string>();
-
-  for (const kw of keywords) {
-    if (visited.has(kw)) continue;
-    const group = keywords.filter((k) => k.includes(kw) || kw.includes(k));
-    for (const g of group) visited.add(g);
-
-    clusters.push({
-      theme: kw,
-      keywords: group,
-      totalOccurrences: group.length,
-    });
-  }
-
-  return clusters.slice(0, 5);
 }

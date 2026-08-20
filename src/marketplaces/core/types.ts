@@ -396,6 +396,15 @@ export interface CrossMarketplaceRanking {
   totalSignalsCount: number;
 }
 
+export interface ResearchCoverage {
+  totalObservedProducts: number;
+  freshProductsCount: number;
+  marketplacesEvaluated: number;
+  availableMarketplacesCount: number;
+  availableSignalGroups: string[];
+  coverageConfidence: number; // 0-100%
+}
+
 /**
  * Cross-marketplace intelligence comparison model.
  * Evaluates how attractive a product/niche is across all requested channels,
@@ -408,6 +417,7 @@ export interface CrossMarketplaceComparison {
   availableMarketplaces: MarketplaceId[];
   unavailableMarketplaces: MarketplaceId[];
   rankings: CrossMarketplaceRanking[];
+  coverage?: ResearchCoverage;
   bestAvailableMarketplace?: {
     marketplace: MarketplaceId;
     displayName: string;

@@ -295,7 +295,6 @@ export function discoverNichesFromProducts(
 
   // If connector is not implemented or has no research capability:
   if (!connector || !connector.capabilities.research) {
-    const status = connector && Object.values(connector.capabilities).some(Boolean) ? "PARTIAL" : "NOT_IMPLEMENTED";
     return {
       query,
       marketplace,

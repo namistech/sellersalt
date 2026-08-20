@@ -141,7 +141,7 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
     query: PublicSearchQuery
   ): Promise<PublicAcquisitionResult<NormalizedProduct>> {
     const fetchedAt = new Date();
-    const queryTerm = query.query.trim();
+    const queryTerm = (query.query || "").trim();
 
     if (!queryTerm) {
       return {

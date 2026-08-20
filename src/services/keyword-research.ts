@@ -244,20 +244,117 @@ export async function fetchMarketplaceKeywordResearch(
   organizationId: string,
   request: KeywordSearchRequest
 ): Promise<KeywordSearchResponse | CapabilityUnavailable> {
-  const unavailable = checkMarketplaceCapability(marketplace, "keywordResearch");
-  if (unavailable) return unavailable;
+  if (marketplace === "etsy") {
+    try {
+      return await fetchStandaloneKeywordResearch(organizationId, request);
+    } catch {
+      // Fall through to public harvester
+    }
+  }
 
-  if (marketplace !== "etsy") {
+  try {
+    const { harvestPublicMarketplaceKeywords } = await import("@/marketplaces/core/acquisition/keywords");
+    const harvestRes = await harvestPublicMarketplaceKeywords({
+      query: request.query,
+      marketplace,
+      organizationId,
+      limit: request.limit || 50,
+    });
+
+    if (harvestRes.provenance === "UNAVAILABLE" && harvestRes.topKeywords.length === 0) {
+      if (marketplace === "etsy") {
+        return fetchStandaloneKeywordResearch(organizationId, request);
+      }
+      return {
+        available: false,
+        marketplace,
+        capability: "keywordResearch",
+        reason: "CONNECTOR_NOT_IMPLEMENTED",
+        message: harvestRes.limitations.join("; ") || `${marketplace} keyword research is not implemented yet.`,
+      };
+    }
+
+    const harvestedKeywords: any[] = harvestRes.topKeywords.map((k) => {
+      const tailClass: KeywordTailClassification =
+        k.keyword.split(" ").length >= 4 ? "LONG_TAIL" : k.keyword.split(" ").length >= 2 ? "MID_TAIL" : "HEAD_TERM";
+
+      return {
+        term: k.keyword,
+        keyword: k.keyword,
+        wordCount: k.keyword.split(" ").length,
+        charCount: k.keyword.length,
+        isTagCompliant: k.keyword.length <= 20,
+        frequency: k.occurrenceCount,
+        percentage: k.listingFrequencyPercent,
+        relevanceScore: Math.min(100, k.occurrenceCount * 10),
+        estimatedDemandSignal: k.demandProxyScore,
+        competitionLevel: (k.competitionProxy === "HIGH" ? "HIGH" : k.competitionProxy === "MODERATE" ? "MODERATE" : "LOW") as any,
+        competitionScore: k.competitionProxy === "HIGH" ? 85 : k.competitionProxy === "MODERATE" ? 55 : 25,
+        searchVolume: null,
+        tailClassification: tailClass,
+        intentClassification: classifyIntent(k.keyword),
+        provenance: "MARKETPLACE_OBSERVATION" as const,
+      };
+    });
+
+    const avgPrice = harvestRes.averageObservedPrice;
+    const demandScore = harvestRes.demandProxyScore;
+
+    const summary: any = {
+      query: request.query,
+      totalEtsySupply: harvestRes.totalListingsObserved,
+      sampledListingCount: harvestRes.totalListingsObserved,
+      avgPrice,
+      avgFavorers: 0,
+      competitionLevel: "MODERATE",
+      competitionScore: 50,
+      analyzedListingCount: harvestRes.totalListingsObserved,
+      uniqueKeywordCount: harvestedKeywords.length,
+      totalSupply: harvestRes.totalListingsObserved,
+      searchVolume: null,
+      demandRatio: demandScore,
+      averagePrice: avgPrice,
+      priceRange: avgPrice ? { min: avgPrice * 0.5, max: avgPrice * 1.8, median: avgPrice } : null,
+      dominantIntent: "PRODUCT_TYPE",
+      competitionRating: "MODERATE",
+      isHighOpportunity: (demandScore ?? 0) >= 70,
+    };
+
+    return {
+      query: request.query,
+      summary,
+      keywords: harvestedKeywords,
+      harvestedKeywords,
+      evidenceListings: [],
+      opportunityTags: harvestRes.tags.map((t) => t.tag),
+      topListings: [],
+      capturedAt: new Date().toISOString(),
+      intentBreakdown: {
+        productType: harvestedKeywords.filter((k) => k.intentClassification === "PRODUCT_TYPE").length,
+        materialStyle: harvestedKeywords.filter((k) => k.intentClassification === "MATERIAL_STYLE").length,
+        recipientOccasion: harvestedKeywords.filter((k) => k.intentClassification === "RECIPIENT_OCCASION").length,
+        general: harvestedKeywords.filter((k) => k.intentClassification === "GENERAL").length,
+      },
+      tailDistribution: {
+        head: harvestedKeywords.filter((k) => k.tailClassification === "HEAD_TERM").length,
+        mediumTail: harvestedKeywords.filter((k) => k.tailClassification === "MID_TAIL").length,
+        longTail: harvestedKeywords.filter((k) => k.tailClassification === "LONG_TAIL").length,
+      },
+      executionDurationMs: 150,
+      timestamp: new Date().toISOString(),
+    } as any;
+  } catch (err: any) {
+    if (marketplace === "etsy") {
+      return fetchStandaloneKeywordResearch(organizationId, request);
+    }
     return {
       available: false,
       marketplace,
       capability: "keywordResearch",
       reason: "CONNECTOR_NOT_IMPLEMENTED",
-      message: `${marketplace} keyword research has no implementation wired up yet.`,
+      message: err?.message || `${marketplace} keyword research failed.`,
     };
   }
-
-  return fetchStandaloneKeywordResearch(organizationId, request);
 }
 
 /** "All Marketplaces" fan-out — reuses the same generic helper the product

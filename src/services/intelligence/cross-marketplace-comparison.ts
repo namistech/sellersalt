@@ -206,7 +206,30 @@ export function buildCrossMarketplaceComparison(
     comparisonConfidence = Math.round(totalConf / rankings.length);
   }
 
-  // Construct honest, transparent system limitations
+  // Calculate Research Coverage Metrics
+  let totalObservedProducts = 0;
+  let freshProductsCount = 0;
+  const signalGroupsSet = new Set<string>();
+
+  for (const evalItem of evaluations) {
+    totalObservedProducts += evalItem.totalProductsCount;
+    for (const p of evalItem.products) {
+      if (p.isHistorical !== true) {
+        freshProductsCount++;
+      }
+    }
+    evalItem.availableSignals.forEach((s) => signalGroupsSet.add(s));
+  }
+
+  const coverage = {
+    totalObservedProducts,
+    freshProductsCount,
+    marketplacesEvaluated: evaluations.length,
+    availableMarketplacesCount: availableMarketplaces.length,
+    availableSignalGroups: Array.from(signalGroupsSet),
+    coverageConfidence: comparisonConfidence ?? (availableMarketplaces.length > 0 ? 60 : 0),
+  };
+
   const limitations: string[] = [];
   if (availableMarketplaces.length === 1 && availableMarketplaces[0] === "etsy") {
     limitations.push("Etsy is currently the only active public market research integration. Comparative rankings reflect single-channel availability.");
@@ -225,6 +248,7 @@ export function buildCrossMarketplaceComparison(
     availableMarketplaces,
     unavailableMarketplaces,
     rankings,
+    coverage,
     bestAvailableMarketplace: bestAvailable,
     highestConfidenceMarketplace,
     comparisonConfidence,

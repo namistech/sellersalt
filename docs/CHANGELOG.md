@@ -406,14 +406,34 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Empirical Keyword Research Pipeline (`src/marketplaces/core/acquisition/keywords.ts`)**:
   - Built marketplace-independent keyword harvester calculating listing frequencies, price distributions, and demand proxy scores.
   - Strictly preserves `exactSearchVolume = null` unless backed by licensed external volume providers.
-- **Centralized Compliance Safeguards (`src/marketplaces/core/acquisition/compliance.ts`)**:
-  - Added SSRF guards and authenticated seller dashboard protection (`/your/shops`, `sellercentral.amazon.com`, `seller.walmart.com`).
-- **Comprehensive Documentation**:
-  - Created `docs/DATA-ACQUISITION.md` detailing the complete acquisition architecture.
-- **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-9c-marketplace-independent-acquisition.test.ts` (28 tests across 12 suites).
-  - Full test baseline: **879/879 passing across 151 suites**.
-  - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+## Real Marketplace Research & Observation Intelligence Foundation — Batch 9D (2026-08-20)
+
+**Why**: To turn SellerSalt's multi-source acquisition infrastructure into a genuine ecommerce research engine capable of delivering product, keyword, shop, category, niche, and opportunity intelligence without requiring official marketplace API accounts, while strictly enforcing zero-fabrication guarantees and observation provenance.
+
+**What changed**:
+- **Canonical Multi-Source Research Pipeline Integration**:
+  - Integrated `orchestrateProductResearch` into `runProductResearch`, `searchMarketplaceProducts`, and `fetchMarketplaceKeywordResearch`.
+  - Unified multi-source acquisition cascades: `PUBLIC_WEB` $\to$ `MARKETPLACE_API` $\to$ `HISTORICAL_OBSERVATION`.
+- **Longitudinal Observation & Trend Foundation (`src/marketplaces/core/acquisition/trends.ts`)**:
+  - Implemented `calculateObservationTrendsFromPoints` and `acquireLongitudinalTrends`.
+  - Calculates genuine empirical price deltas, review velocities, and lifecycle persistence statuses (`NEW`, `PERSISTENT`, `STALE`).
+  - Zero-Fabrication Rule: if $n \le 1$ observation, trend deltas and velocities are strictly `null`.
+- **Empirical Keyword Harvesting & Deterministic Intent Clustering (`src/marketplaces/core/acquisition/keywords.ts`)**:
+  - Implemented `buildDeterministicKeywordClusters` sorting keywords into `MATERIAL_STYLE`, `RECIPIENT_OCCASION`, `PRODUCT_MODIFIER`, and `GENERAL` clusters.
+  - Harvests keywords directly from observable public listing titles and tags across Amazon, eBay, Walmart, and Etsy.
+- **Public Shop & Seller Research Engine (`src/marketplaces/core/acquisition/shops.ts`)**:
+  - Implemented `fetchPublicShopResearch` extracting seller profile metrics, calculating price distributions, and evaluating canonical shop competition barriers (`scoreShopCompetition`) without seller OAuth.
+- **Public Category Aggregation Engine (`src/marketplaces/core/acquisition/categories.ts`)**:
+  - Implemented `aggregatePublicCategoryIntelligence` calculating empirical price percentiles (min, max, median, 10th/90th percentiles) and opportunity score distributions.
+- **Cross-Marketplace Research Coverage Model (`src/marketplaces/core/types.ts` & `src/services/intelligence/cross-marketplace-comparison.ts`)**:
+  - Added `ResearchCoverage` model tracking total products, fresh counts, available signal groups, and coverage confidence.
+- **Live Smoke Testing Harness (`src/tests/live-smoke/live-research-smoke.ts`)**:
+  - Added opt-in development smoke test facility gated behind `SELLERSALT_LIVE_RESEARCH_SMOKE=true`.
+- **Verified Quality Baseline**:
+  - Test suite: **895/895 passing across 160 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid, 29 migrations up to date.
+  - Next.js: Clean production build (**161/161 routes compiled**).
 
 
 

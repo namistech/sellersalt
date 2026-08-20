@@ -282,15 +282,29 @@ export async function orchestrateProductResearch(
   }
 
   // 7. Status Classification
-  const status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED" =
-    mergedProducts.length > 0
-      ? sourcesSucceeded.includes("PUBLIC_WEB") || sourcesSucceeded.includes("MARKETPLACE_API")
-        ? "AVAILABLE"
-        : "PARTIAL"
-      : MarketplaceRegistry.tryGetConnector(request.marketplace) ||
-        MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace)
-      ? "UNAVAILABLE"
-      : "NOT_IMPLEMENTED";
+  const connector = MarketplaceRegistry.tryGetConnector(request.marketplace);
+  const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
+
+  let status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
+  if (mergedProducts.length > 0) {
+    status = sourcesSucceeded.includes("PUBLIC_WEB") || sourcesSucceeded.includes("MARKETPLACE_API")
+      ? "AVAILABLE"
+      : "PARTIAL";
+  } else if (!request.query || request.query.trim().length === 0) {
+    if (connector?.capabilities.research || publicAdapter?.capabilities.productSearch) {
+      status = "AVAILABLE";
+    } else if (connector && Object.values(connector.capabilities).some(Boolean)) {
+      status = "PARTIAL";
+    } else {
+      status = "NOT_IMPLEMENTED";
+    }
+  } else if (connector?.capabilities.research || publicAdapter?.capabilities.productSearch) {
+    status = "UNAVAILABLE";
+  } else if (connector && Object.values(connector.capabilities).some(Boolean)) {
+    status = "PARTIAL";
+  } else {
+    status = "NOT_IMPLEMENTED";
+  }
 
   const avgConfidence =
     mergedProducts.length > 0

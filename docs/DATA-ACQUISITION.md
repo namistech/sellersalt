@@ -124,3 +124,31 @@ Observations are calibrated against metric-specific natural lifetimes:
 3. **Honest User-Agent**: Identifies requests as `SellerSalt Commerce Research Bot/1.0 (+https://sellersalt.com/bot; research@sellersalt.com)`.
 4. **Token-Bucket Rate Limiting**: Per-domain request concurrency and throttling (`DomainRateLimiter`).
 5. **Bounded Payloads & Timeouts**: 8s default timeout, 5MB max payload size.
+
+---
+
+## 8. Longitudinal Trend & Observation Tracking Foundation
+
+- Persists legitimate public observations into PostgreSQL (`Prospect` table and `ListingSnapshot` time-series).
+- `computeObservationTrendsFromPoints` calculates empirical deltas:
+  - **Price Deltas**: Initial price, current price, dollar delta, percentage delta, price drop detection.
+  - **Review Velocity**: Initial reviews, latest reviews, review delta, monthly review velocity.
+  - **Persistence Lifecycle**: `NEW` (< 7 days), `PERSISTENT` (repeated observations over time), `STALE` (> 30 days without update).
+- **Zero Fabrication Guarantee**: If `observationCount <= 1`, historical deltas are strictly `null` (never manufactured).
+
+---
+
+## 9. Public Shop & Category Research Aggregation
+
+- **Public Shop Research (`fetchPublicShopResearch`)**: Normalizes storefront profile metrics, extracts sample listings, calculates price distributions, and evaluates canonical competition barriers (`scoreShopCompetition`) without requiring seller OAuth.
+- **Public Category Aggregation (`aggregatePublicCategoryIntelligence`)**: Calculates empirical price percentiles (min, max, median, 10th percentile, 90th percentile) and canonical opportunity score distributions across catalog samples.
+
+---
+
+## 10. Live Smoke Testing Facility
+
+- Dedicated development/manual testing harness at `src/tests/live-smoke/live-research-smoke.ts`.
+- Gated behind `SELLERSALT_LIVE_RESEARCH_SMOKE=true`.
+- Never executes in CI or automated unit test runs.
+- Runs small (5-item) sample requests against public adapters to verify live HTML markup compatibility.
+

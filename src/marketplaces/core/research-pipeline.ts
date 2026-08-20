@@ -18,6 +18,7 @@ import {
   extractOpportunityInputFromNormalizedProduct,
 } from "@/services/intelligence/canonical-opportunity";
 import { acquireHistoricalProductObservations } from "./acquisition";
+import { orchestrateProductResearch } from "./acquisition/orchestrator";
 import type { MarketplaceId, SearchResult, NormalizedProduct, DataSourceType } from "./types";
 import type { OpportunityScore } from "./opportunity-engine";
 
@@ -211,7 +212,13 @@ export async function runProductResearch(request: ResearchRequest): Promise<Prod
   const generatedAt = new Date();
 
   if (!connector) {
-    return { marketplace: request.marketplace, status: "NOT_IMPLEMENTED", products: [], message: `Unknown marketplace "${request.marketplace}".`, generatedAt };
+    return {
+      marketplace: request.marketplace,
+      status: "NOT_IMPLEMENTED",
+      products: [],
+      message: `Unknown marketplace "${request.marketplace}".`,
+      generatedAt,
+    };
   }
 
   if (!connector.capabilities.research || !connector.searchProducts) {
@@ -225,120 +232,70 @@ export async function runProductResearch(request: ResearchRequest): Promise<Prod
     };
   }
 
-  try {
-    const products = await connector.searchProducts({
-      organizationId: request.organizationId,
-      keywords: request.keywords,
-      categoryId: request.categoryId,
-      minPrice: request.minPrice,
-      maxPrice: request.maxPrice,
-      limit: request.limit,
-      minShopAgeMonths: request.minShopAgeMonths,
-      maxShopAgeMonths: request.maxShopAgeMonths,
-      minReviewCount: request.minReviewCount,
-    });
+  if (!request.keywords || request.keywords.length === 0) {
+    return {
+      marketplace: request.marketplace,
+      status: "AVAILABLE",
+      products: [],
+      generatedAt,
+    };
+  }
 
-    // Attach canonical opportunity score to normalized products
+  try {
+    const query = request.keywords.join(" ");
+    const orchRes = await orchestrateProductResearch(
+      {
+        query,
+        marketplace: request.marketplace,
+        organizationId: request.organizationId,
+        limit: request.limit,
+        minPrice: request.minPrice,
+        maxPrice: request.maxPrice,
+      },
+      {
+        preferredSources: request.preferredSources || ["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"],
+        allowHistoricalFallback: request.allowHistoricalFallback !== false,
+      }
+    );
+
+    const products = orchRes.items;
     const availableGroupsSet = new Set<string>();
     const unavailableGroupsSet = new Set<string>();
     let totalScore = 0;
     let scoredCount = 0;
     let totalConfidence = 0;
 
-    const scoredProducts = products.map((prod) => {
-      if (prod.price !== null) {
-        const input = extractOpportunityInputFromNormalizedProduct(prod);
-        const report = evaluateCanonicalOpportunity(input);
-        if (report.overallScore !== null) {
-          prod.opportunityScore = {
-            score: report.overallScore,
-            confidence: report.confidenceScore,
-            tier: report.tier,
-            verdict: report.verdictLabel,
-            verdictVariant: report.verdictVariant,
-            availableSignals: report.signals.available.map((s) => s.id),
-            unavailableSignals: report.signals.unavailable.map((s) => s.id),
-          };
-          totalScore += report.overallScore;
-          scoredCount++;
-          totalConfidence += report.confidenceScore;
-          report.signals.available.forEach((s) => availableGroupsSet.add(s.name));
-          report.signals.unavailable.forEach((s) => unavailableGroupsSet.add(s.name));
-        }
-      }
-      return prod;
-    });
-
-    const summary: MarketplaceOpportunitySummary | undefined = scoredProducts.length > 0 ? {
-      totalProducts: scoredProducts.length,
-      scoredProductsCount: scoredCount,
-      averageOpportunityScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : null,
-      averageConfidence: scoredCount > 0 ? Math.round(totalConfidence / scoredCount) : null,
-      availableSignalGroups: Array.from(availableGroupsSet),
-      unavailableSignalGroups: Array.from(unavailableGroupsSet),
-    } : undefined;
-
-    return {
-      marketplace: request.marketplace,
-      status: "AVAILABLE",
-      products: scoredProducts,
-      summary,
-      generatedAt,
-    };
-  } catch (err: any) {
-    // If historical fallback is permitted, attempt to retrieve stored SellerSalt observations
-    if (request.allowHistoricalFallback && request.organizationId) {
-      try {
-        const historical = await acquireHistoricalProductObservations({
-          marketplace: request.marketplace,
-          organizationId: request.organizationId,
-          keywords: request.keywords,
-          limit: request.limit,
-        });
-
-        if (historical.length > 0) {
-          const historicalProducts = historical.map((o) => o.data);
-          let totalScore = 0;
-          let scoredCount = 0;
-          let totalConfidence = 0;
-          const availableGroupsSet = new Set<string>();
-          const unavailableGroupsSet = new Set<string>();
-
-          for (const prod of historicalProducts) {
-            if (prod.opportunityScore?.score != null) {
-              totalScore += prod.opportunityScore.score;
-              scoredCount++;
-              totalConfidence += prod.opportunityScore.confidence;
-              prod.opportunityScore.availableSignals?.forEach((s) => availableGroupsSet.add(s));
-              prod.opportunityScore.unavailableSignals?.forEach((s) => unavailableGroupsSet.add(s));
-            }
-          }
-
-          return {
-            marketplace: request.marketplace,
-            status: "AVAILABLE",
-            products: historicalProducts,
-            summary: {
-              totalProducts: historicalProducts.length,
-              scoredProductsCount: scoredCount,
-              averageOpportunityScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : null,
-              averageConfidence: scoredCount > 0 ? Math.round(totalConfidence / scoredCount) : null,
-              availableSignalGroups: Array.from(availableGroupsSet),
-              unavailableSignalGroups: Array.from(unavailableGroupsSet),
-            },
-            message: `Live ${connector.displayName} API unavailable; serving verified historical SellerSalt observations.`,
-            generatedAt,
-          };
-        }
-      } catch {
-        // Fall through to UNAVAILABLE
+    for (const prod of products) {
+      if (prod.opportunityScore?.score !== null && prod.opportunityScore?.score !== undefined) {
+        totalScore += prod.opportunityScore.score;
+        scoredCount++;
+        totalConfidence += prod.opportunityScore.confidence;
+        (prod.opportunityScore.availableSignals || []).forEach((s: string) => availableGroupsSet.add(s));
+        (prod.opportunityScore.unavailableSignals || []).forEach((s: string) => unavailableGroupsSet.add(s));
       }
     }
 
-    // A real connector that's configured to be live but failed this call
-    // (e.g. no credentials configured, network error) — UNAVAILABLE, not
-    // NOT_IMPLEMENTED, and never silently swallowed into an empty
-    // "AVAILABLE, zero results" response.
+    const summary: MarketplaceOpportunitySummary | undefined =
+      products.length > 0
+        ? {
+            totalProducts: products.length,
+            scoredProductsCount: scoredCount,
+            averageOpportunityScore: scoredCount > 0 ? Math.round(totalScore / scoredCount) : null,
+            averageConfidence: scoredCount > 0 ? Math.round(totalConfidence / scoredCount) : null,
+            availableSignalGroups: Array.from(availableGroupsSet),
+            unavailableSignalGroups: Array.from(unavailableGroupsSet),
+          }
+        : undefined;
+
+    return {
+      marketplace: request.marketplace,
+      status: orchRes.report.status,
+      products,
+      summary,
+      message: orchRes.report.limitations.join("; ") || undefined,
+      generatedAt,
+    };
+  } catch (err: any) {
     return {
       marketplace: request.marketplace,
       status: "UNAVAILABLE",
