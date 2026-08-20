@@ -534,6 +534,70 @@ is a pointer, not a duplicate.
   credentials before any capability can go live — external dependency,
   not an engineering task.
 
+**Real acquisition runtime forensics (2026-08-20, Batch 34)** — a real
+merchant search for a product on SellerSalt currently returns zero
+results. Root-caused end-to-end against the live staging environment (see
+`BATCH-34-REAL-ACQUISITION-RUNTIME-FORENSICS.md` for the full trace):
+Etsy's `PUBLIC_WEB` source is genuinely blocked by Cloudflare/DataDome
+(known, unchanged, must not be bypassed), and Etsy's `MARKETPLACE_API`
+source is genuinely rejected by Etsy itself — a real, live `403 "API key
+not found or not active..."` from the AppSetting-configured
+`etsy_seller_client_id`/`secret`. **This is the actual, current launch
+blocker**: the configured Etsy API credential needs to be re-verified or
+reissued in the Etsy Developer Console; nothing in the codebase can fix
+it. Three real code defects found and fixed while tracing this:
+1. `src/connectors/etsy/index.ts`'s `runSearch()` silently discarded that
+   403 (`catch { continue; }`) instead of surfacing it — the orchestrator
+   never saw *why* the official API failed, only an empty array
+   indistinguishable from a genuine zero-result search. Fixed: rethrows
+   the real `EtsyApiError` when every keyword attempt fails.
+2. **Cross-tenant data leak**: `orchestrateProductResearch`'s
+   `HISTORICAL_OBSERVATION` fallback
+   (`src/marketplaces/core/acquisition/orchestrator.ts`) queried the
+   org-scoped `Prospect` table with **no `organizationId` filter** — any
+   org's search could return another org's saved research. A sibling
+   implementation of the same historical-fallback concept
+   (`acquireHistoricalProductObservations` in
+   `src/marketplaces/core/acquisition.ts`) already scoped correctly; the
+   orchestrator's independent inline duplicate did not. Fixed in both
+   `orchestrateProductResearch` and the previously-dead-code
+   `orchestrateProductDetail` (now takes an `organizationId` param).
+3. **Fabricated data found and removed**: 40 `Prospect` rows on staging
+   were literally titled `"Simulated Product Research 1-5"`/`"Simulated
+   Shop 1-5"` (left over from a Batch 28 test run against
+   `test_org_batch28_*` orgs) and were reachable through the real
+   historical-fallback search path as genuine-looking observations —
+   deleted with founder confirmation.
+
+New: `AcquisitionReport.unavailableReason` (`REQUIRES_CREDENTIALS` /
+`RATE_LIMITED` / `UPSTREAM_ERROR` / `POLICY_RESTRICTED` / `PARSER_ERROR`),
+computed from real HTTP status codes and each public-web adapter's own
+already-computed `failureReason` (previously silently discarded) — never
+inferred from item count alone, so a genuine empty search is never
+misreported as a failure and vice versa. Wired into
+`CapabilityUnavailable` (`src/marketplaces/core/availability.ts`) and
+`src/services/product-hunting.ts`'s user-facing messages. Same fix
+incidentally corrected Amazon/Walmart's public-web adapters, which were
+silently reporting unhelpful emptiness on a real, unparseable `200`
+response (now honestly `PARSER_ERROR`) — these are real,
+UI-selectable-today marketplaces via `MarketplaceSelector`, not
+hypothetical. New `npm run diagnose:acquisition -- "<query>"` command
+(`src/scripts/diagnose-acquisition.ts`) runs the real orchestrator against
+every registered marketplace and prints the full per-source trace,
+bounded and non-destructive. Safe structured telemetry added to the
+orchestrator via the existing `StructuredLogger`/`CorrelationManager`
+(no new logging system). 7 new real integration tests
+(`src/tests/batch-34-real-acquisition.test.ts`), full suite
+1,182/1,182 passing.
+
+**Launch classification: NOT_USABLE** — no legitimate live acquisition
+path currently produces real product observations, for the external
+credential reason above, not an architecture/code defect. This is the
+single highest-priority item for any future session: verify/reissue the
+Etsy API key in `/admin` → Site Settings, then re-run
+`npm run diagnose:acquisition -- "wooden desk organizer"` to confirm real
+results before claiming search works again.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,

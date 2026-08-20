@@ -311,13 +311,29 @@ export async function searchMarketplaceProducts(
       };
     }
 
-    if (orchRes.items.length === 0 && orchRes.report.status === "UNAVAILABLE") {
+    // A genuine "Etsy has zero listings matching this query" (no failures,
+    // no unavailableReason) is NOT a capability failure — it falls through
+    // to the normal empty-results response below, which the UI already
+    // renders honestly ("No marketplace products found"). Only an actual
+    // acquisition failure (credentials rejected, rate limited, upstream
+    // error, or policy restricted) short-circuits here — see
+    // classifyUnavailableReason in the orchestrator, which never infers a
+    // failure from item count alone.
+    if (orchRes.items.length === 0 && orchRes.report.status === "UNAVAILABLE" && orchRes.report.unavailableReason) {
+      const reason = orchRes.report.unavailableReason;
+      const MESSAGES: Record<NonNullable<typeof reason>, string> = {
+        REQUIRES_CREDENTIALS: `Connect ${marketplace === "etsy" ? "Etsy" : marketplace} to enable ${marketplace} marketplace research, or ask an admin to check the configured API credentials in Admin -> Site Settings — the marketplace rejected the current key.`,
+        RATE_LIMITED: `${marketplace} rate limit reached. Please try again shortly.`,
+        UPSTREAM_ERROR: `The ${marketplace} marketplace source returned an error. Please try again later.`,
+        POLICY_RESTRICTED: `This source cannot be accessed under the current marketplace data policy for ${marketplace}.`,
+        PARSER_ERROR: `${marketplace} responded, but SellerSalt could not safely interpret the response.`,
+      };
       return {
         available: false,
         marketplace,
         capability: "research",
-        reason: "CONNECTOR_NOT_CONFIGURED",
-        message: orchRes.report.limitations.join("; ") || `${marketplace} product search is currently unavailable.`,
+        reason,
+        message: `${MESSAGES[reason]} (${orchRes.report.limitations.join("; ")})`,
       };
     }
 

@@ -75,6 +75,11 @@ export const etsyConnector: MarketplaceConnector = {
     const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
     const results: ProspectResult[] = [];
     const shopCache = new Map<string, any | null>();
+    // Every keyword's search failure, if any — kept distinct from "the
+    // search succeeded and genuinely returned zero listings" so callers
+    // can tell an upstream/credential failure apart from a real empty
+    // result instead of seeing an indistinguishable [] either way.
+    const keywordErrors: unknown[] = [];
 
     for (const keyword of config.keywords) {
       let listings: any[] = [];
@@ -86,7 +91,8 @@ export const etsyConnector: MarketplaceConnector = {
           limit: 50,
         });
         listings = data?.results ?? [];
-      } catch {
+      } catch (err) {
+        keywordErrors.push(err);
         continue;
       }
 
@@ -157,6 +163,15 @@ export const etsyConnector: MarketplaceConnector = {
           price,
         });
       }
+    }
+
+    // If every single keyword attempt errored (not just "Etsy returned zero
+    // matching listings"), that's an acquisition failure, not a real empty
+    // result — rethrow the first one so callers (the orchestrator) can
+    // report an honest REQUIRES_CREDENTIALS/UPSTREAM_ERROR/RATE_LIMITED
+    // status instead of a silent, indistinguishable [].
+    if (results.length === 0 && keywordErrors.length > 0 && keywordErrors.length === config.keywords.length) {
+      throw keywordErrors[0];
     }
 
     return results;

@@ -28,6 +28,10 @@ import type {
 import { prisma } from "@/lib/db";
 import { SourcePolicyEnforcer } from "../governance/source-policy-enforcer";
 import { SourceBoundary } from "../governance/source-boundary";
+import { StructuredLogger } from "@/lib/observability/structured-logger";
+import { CorrelationManager } from "@/lib/observability/correlation";
+
+const acquisitionLogger = new StructuredLogger("acquisition-orchestrator");
 
 export interface ResearchSourcePolicy {
   preferredSources?: DataSourceType[];
@@ -50,6 +54,20 @@ export const DEFAULT_SOURCE_POLICY: ResearchSourcePolicy = {
   persistObservations: true,
 };
 
+/** Why a marketplace produced zero observations, distinct from a genuine
+ * empty result — lets callers (API routes, UI) show an honest, actionable
+ * message instead of an indistinguishable "no results found". Only set
+ * when status is UNAVAILABLE/PARTIAL and at least one source actually
+ * failed with a classifiable cause; a search that ran cleanly and simply
+ * matched nothing leaves this undefined (see NO_RESULTS handling in
+ * src/services/product-hunting.ts). */
+export type AcquisitionUnavailableReason =
+  | "REQUIRES_CREDENTIALS"
+  | "RATE_LIMITED"
+  | "UPSTREAM_ERROR"
+  | "POLICY_RESTRICTED"
+  | "PARSER_ERROR";
+
 export interface AcquisitionReport {
   marketplace: MarketplaceId;
   status: "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
@@ -64,6 +82,61 @@ export interface AcquisitionReport {
   itemCount: number;
   message?: string;
   limitations: string[];
+  unavailableReason?: AcquisitionUnavailableReason;
+}
+
+/** Classifies why acquisition failed from the raw HTTP status codes and
+ * limitation strings collected while attempting each source — never from
+ * item count alone, so a genuine zero-match search is never mistaken for
+ * a credential/upstream/policy failure. `apiStatusCodes` (official,
+ * credentialed connector calls) and `publicWebStatusCodes` (unauthenticated
+ * public HTML fetches) are classified separately: a 401/403 from the
+ * official API means our credentials were rejected, but the same status
+ * from an anonymous public-web fetch means bot/anti-scraping protection
+ * blocked the request — there are no "credentials" to fix there. */
+function classifyUnavailableReason(
+  apiStatusCodes: number[],
+  publicWebStatusCodes: number[],
+  limitations: string[],
+  publicWebFailureReasons: string[] = []
+): AcquisitionUnavailableReason | undefined {
+  if (apiStatusCodes.some((c) => c === 401 || c === 403)) return "REQUIRES_CREDENTIALS";
+  if (
+    apiStatusCodes.some((c) => c === 429) ||
+    publicWebStatusCodes.some((c) => c === 429) ||
+    publicWebFailureReasons.includes("RATE_LIMITED")
+  ) {
+    return "RATE_LIMITED";
+  }
+  if (apiStatusCodes.some((c) => c >= 500)) return "UPSTREAM_ERROR";
+  // Matches SourcePolicyEnforcer's own generated wording ("... is
+  // PROHIBITED/RESTRICTED by policy for <marketplace>") — deliberately not
+  // a bare RESTRICTED/PROHIBITED substring match, since failure-reason
+  // enum values like ACCESS_RESTRICTED also contain "RESTRICTED" without
+  // meaning a SellerSalt governance policy decision.
+  if (limitations.some((l) => /\bby policy\b/i.test(l))) {
+    return "POLICY_RESTRICTED";
+  }
+  if (publicWebStatusCodes.some((c) => c === 403 || c >= 500)) return "UPSTREAM_ERROR";
+  // The adapter got a real (usually 200) response but couldn't extract
+  // recognizable listing data from it — e.g. the site served a page shape
+  // its HTML/JSON-LD parser doesn't recognize. That's a parser failure,
+  // not proof the marketplace genuinely has zero matching listings.
+  if (
+    publicWebFailureReasons.some((r) =>
+      ["PARSE_FAILURE", "MALFORMED_RESPONSE", "UNSUPPORTED_PAGE", "NO_DATA"].includes(r)
+    )
+  ) {
+    return "PARSER_ERROR";
+  }
+  // ACCESS_RESTRICTED means the target site itself blocked the request
+  // (bot/CAPTCHA protection) — an upstream condition, not a SellerSalt
+  // governance policy decision (that's already handled above via the
+  // "policy"/PROHIBITED/RESTRICTED limitations check).
+  if (publicWebFailureReasons.some((r) => ["ACCESS_RESTRICTED", "NETWORK_ERROR", "TIMEOUT"].includes(r))) {
+    return "UPSTREAM_ERROR";
+  }
+  return undefined;
 }
 
 export interface OrchestratedProductResult {
@@ -78,6 +151,8 @@ export async function orchestrateProductResearch(
   request: PublicSearchQuery & { marketplace: MarketplaceId },
   customPolicy?: Partial<ResearchSourcePolicy>
 ): Promise<OrchestratedProductResult> {
+  const acquisitionStartedAt = Date.now();
+  const correlationId = CorrelationManager.generateId("acq");
   registerAllConnectors();
   const policy: ResearchSourcePolicy = { ...DEFAULT_SOURCE_POLICY, ...customPolicy };
   const preferredSources = policy.preferredSources || DEFAULT_SOURCE_POLICY.preferredSources!;
@@ -86,6 +161,14 @@ export async function orchestrateProductResearch(
   const sourcesSucceeded: DataSourceType[] = [];
   const sourcesFailed: DataSourceType[] = [];
   const limitations: string[] = [];
+  // Tracked separately from publicWebStatusCodes: a 401/403 from an
+  // official, credentialed API call means "our credentials were rejected"
+  // (REQUIRES_CREDENTIALS). A 403 from an unauthenticated public web fetch
+  // means "the site's bot protection blocked us" — not a credentials
+  // problem, since public HTML has no credentials to begin with.
+  const apiStatusCodes: number[] = [];
+  const publicWebStatusCodes: number[] = [];
+  const publicWebFailureReasons: string[] = [];
 
   let publicObservations: NormalizedProduct[] = [];
   let apiObservations: NormalizedProduct[] = [];
@@ -113,10 +196,16 @@ export async function orchestrateProductResearch(
           } else {
             sourcesFailed.push("PUBLIC_WEB");
             if (res.error) limitations.push(res.error);
+            if (typeof res.statusCode === "number") publicWebStatusCodes.push(res.statusCode);
+            if (res.failureReason) {
+              publicWebFailureReasons.push(res.failureReason);
+              limitations.push(`Public web response could not be used (${res.failureReason}).`);
+            }
           }
         } catch (err: any) {
           sourcesFailed.push("PUBLIC_WEB");
           limitations.push(`Public web fetch error: ${err.message}`);
+          if (typeof err.statusCode === "number") publicWebStatusCodes.push(err.statusCode);
         }
       } else {
         sourcesFailed.push("PUBLIC_WEB");
@@ -151,6 +240,7 @@ export async function orchestrateProductResearch(
       } catch (err: any) {
         sourcesFailed.push("MARKETPLACE_API");
         limitations.push(`Official API connector error: ${err.message}`);
+        if (typeof err.statusCode === "number") apiStatusCodes.push(err.statusCode);
       }
     } else {
       sourcesFailed.push("MARKETPLACE_API");
@@ -186,9 +276,10 @@ export async function orchestrateProductResearch(
       const connectorType = request.marketplace.toUpperCase();
       const validConnectorTypes = ["ETSY", "AMAZON", "EBAY", "SHOPIFY", "WOOCOMMERCE"];
 
-      if (validConnectorTypes.includes(connectorType)) {
+      if (validConnectorTypes.includes(connectorType) && request.organizationId) {
         const historicalRecords = await prisma.prospect.findMany({
           where: {
+            organizationId: request.organizationId,
             marketplace: connectorType as any,
             ...(request.query
               ? {
@@ -356,6 +447,11 @@ export async function orchestrateProductResearch(
         )
       : 0;
 
+  const unavailableReason =
+    mergedProducts.length === 0
+      ? classifyUnavailableReason(apiStatusCodes, publicWebStatusCodes, limitations, publicWebFailureReasons)
+      : undefined;
+
   const report: AcquisitionReport = {
     marketplace: request.marketplace,
     status,
@@ -373,7 +469,31 @@ export async function orchestrateProductResearch(
         ? `Successfully acquired ${mergedProducts.length} observations from ${sourcesSucceeded.join(" + ")} (${freshness.status}).`
         : `No observations available for "${request.query}" on ${request.marketplace}.`,
     limitations,
+    unavailableReason,
   };
+
+  // Safe, structured acquisition telemetry — never logs credentials/tokens
+  // (StructuredLogger.redactSensitive strips anything under a
+  // secret/token/key-shaped key), only counts and classifications. This is
+  // the "first zero" trace: which source(s) were attempted, which
+  // succeeded/failed, and why — so a real failure never has to be
+  // re-diagnosed by hand the way this batch's investigation started.
+  acquisitionLogger.info("product_research_acquisition", {
+    correlationId,
+    organizationId: request.organizationId,
+    durationMs: Date.now() - acquisitionStartedAt,
+    metadata: {
+      marketplace: request.marketplace,
+      queryLength: request.query?.length ?? 0,
+      status: report.status,
+      unavailableReason: report.unavailableReason,
+      sourcesAttempted: report.sourcesAttempted,
+      sourcesSucceeded: report.sourcesSucceeded,
+      sourcesFailed: report.sourcesFailed,
+      requestedLimit: request.limit,
+      itemCount: report.itemCount,
+    },
+  });
 
   return {
     items: SourceBoundary.sanitizeProducts(mergedProducts),
@@ -388,7 +508,8 @@ export async function orchestrateProductResearch(
 export async function orchestrateProductDetail(
   externalIdOrUrl: string,
   marketplace: MarketplaceId,
-  customPolicy?: Partial<ResearchSourcePolicy>
+  customPolicy?: Partial<ResearchSourcePolicy>,
+  organizationId?: string
 ): Promise<{ product: NormalizedProduct | null; report: AcquisitionReport }> {
   registerAllConnectors();
   const policy: ResearchSourcePolicy = { ...DEFAULT_SOURCE_POLICY, ...customPolicy };
@@ -398,6 +519,9 @@ export async function orchestrateProductDetail(
   const sourcesSucceeded: DataSourceType[] = [];
   const sourcesFailed: DataSourceType[] = [];
   const limitations: string[] = [];
+  const apiStatusCodes: number[] = [];
+  const publicWebStatusCodes: number[] = [];
+  const publicWebFailureReasons: string[] = [];
 
   let publicObservation: NormalizedProduct | null = null;
   let apiObservation: NormalizedProduct | null = null;
@@ -417,10 +541,13 @@ export async function orchestrateProductDetail(
         } else {
           sourcesFailed.push("PUBLIC_WEB");
           if (res.error) limitations.push(res.error);
+          if (typeof res.statusCode === "number") publicWebStatusCodes.push(res.statusCode);
+          if (res.failureReason) publicWebFailureReasons.push(res.failureReason);
         }
       } catch (err: any) {
         sourcesFailed.push("PUBLIC_WEB");
         limitations.push(`Public web product detail error: ${err.message}`);
+        if (typeof err.statusCode === "number") publicWebStatusCodes.push(err.statusCode);
       }
     } else {
       sourcesFailed.push("PUBLIC_WEB");
@@ -450,6 +577,7 @@ export async function orchestrateProductDetail(
       } catch (err: any) {
         sourcesFailed.push("MARKETPLACE_API");
         limitations.push(`Official API connector error: ${err.message}`);
+        if (typeof err.statusCode === "number") apiStatusCodes.push(err.statusCode);
       }
     } else {
       sourcesFailed.push("MARKETPLACE_API");
@@ -468,12 +596,13 @@ export async function orchestrateProductDetail(
   }
 
   // 4. Tertiary Fallback: HISTORICAL_OBSERVATION
-  if (!finalProduct && policy.allowHistoricalFallback) {
+  if (!finalProduct && policy.allowHistoricalFallback && organizationId) {
     sourcesAttempted.push("HISTORICAL_OBSERVATION");
     try {
       const connectorType = marketplace.toUpperCase() as any;
       const rec = await prisma.prospect.findFirst({
         where: {
+          organizationId,
           marketplace: connectorType,
           OR: [
             { listingExternalId: externalIdOrUrl },
@@ -588,6 +717,9 @@ export async function orchestrateProductDetail(
       ? `Successfully acquired product detail from ${sourcesSucceeded.join(" + ")} (${freshness.status}).`
       : `Product detail unavailable for "${externalIdOrUrl}" on ${marketplace}.`,
     limitations,
+    unavailableReason: finalProduct
+      ? undefined
+      : classifyUnavailableReason(apiStatusCodes, publicWebStatusCodes, limitations, publicWebFailureReasons),
   };
 
   return {

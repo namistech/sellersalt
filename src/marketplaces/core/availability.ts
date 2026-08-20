@@ -12,7 +12,15 @@ export interface CapabilityUnavailable {
   available: false;
   marketplace: MarketplaceId;
   capability: string;
-  reason: "CONNECTOR_NOT_IMPLEMENTED" | "CONNECTOR_NOT_CONFIGURED" | "UNKNOWN_MARKETPLACE";
+  reason:
+    | "CONNECTOR_NOT_IMPLEMENTED"
+    | "CONNECTOR_NOT_CONFIGURED"
+    | "UNKNOWN_MARKETPLACE"
+    | "REQUIRES_CREDENTIALS"
+    | "RATE_LIMITED"
+    | "UPSTREAM_ERROR"
+    | "POLICY_RESTRICTED"
+    | "PARSER_ERROR";
   message: string;
 }
 
