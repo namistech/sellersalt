@@ -942,3 +942,24 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**169/169 routes compiled**).
+
+## Batch 28: Production Billing, Subscription Lifecycle & Commercial Entitlements (2026-08-20)
+
+**Why**: Turn SellerSalt's pricing and quota architecture into a production-grade commercial entitlement, webhook-idempotent subscription lifecycle, and billing reconciliation system.
+
+**What changed**:
+- **Authoritative Entitlement Engine (`src/services/billing/entitlement-engine.ts`)**:
+  - Implemented `EntitlementEngine` resolving plan definitions, feature flags, marketplace research permissions (Etsy, Amazon, eBay, Walmart, TikTok Shop), discovery depth, and monthly quota counters with exact UTC reset dates.
+- **Immutable Billing Event Ledger (`src/services/billing/billing-event-ledger.ts`)**:
+  - Built audit ledger recording webhook event IDs, types, organizations, and processing statuses to ensure replay safety and idempotency.
+- **Billing Reconciliation Service (`src/services/billing/billing-reconciliation.ts`) & Endpoint (`/api/billing/reconcile`)**:
+  - Implemented diagnostic audit engine detecting expired active subscriptions, package mismatches, and missing provider IDs, supporting dry-run and live reconciliation.
+- **Deterministic Billing Simulation Harness (`src/services/billing/billing-simulator.ts`)**:
+  - Built end-to-end integration test harness simulating complete merchant commercial lifecycles from Free through Starter, Quota Consumption, Renewal, Pro Upgrade, Cancellation, Reactivation, and Past Due fallback.
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-28-BILLING-COMMERCIAL-READINESS.md`.
+- **Verification Baseline**:
+  - Full test suite: **1151/1151 passing across 316 suites** (`src/tests/batch-28-billing-and-entitlements.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**170/170 routes compiled**).
