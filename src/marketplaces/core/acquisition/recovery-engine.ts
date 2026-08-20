@@ -17,6 +17,8 @@ import { ResearchBudgetTracker } from "./research-budgets";
 import { MarketplaceRegistry } from "../registry";
 import { prisma } from "@/lib/db";
 import { evaluateCanonicalOpportunity, extractOpportunityInputFromNormalizedProduct } from "@/services/intelligence/canonical-opportunity";
+import { AntiCircumventionGuard } from "../governance/anti-circumvention";
+import { SourceBoundary } from "../governance/source-boundary";
 
 export interface StrategyAttemptRecord {
   strategy: string;
@@ -213,8 +215,11 @@ export class AcquisitionRecoveryEngine {
     const primaryStrategyUsed = attempts.length > 0 && attempts[0].success;
     const recoveryApplied = attempts.length > 1 && acquiredProducts.length > 0;
 
+    // Sanitize observations through SourceBoundary
+    const sanitizedItems = SourceBoundary.sanitizeProducts(acquiredProducts);
+
     return {
-      items: acquiredProducts,
+      items: sanitizedItems,
       successfulStrategy,
       primaryStrategyUsed,
       recoveryApplied,

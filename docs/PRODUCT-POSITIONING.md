@@ -69,3 +69,27 @@ SellerSalt integrates multiple legitimate acquisition channels:
 3. **Connected Merchant Stores**: OAuth-authorized store data for inventory, order syncing, and own-shop operations.
 4. **Historical Market Memory (Tertiary)**: Longitudinal trend tracking and snapshot memory built from SellerSalt's own historical observations.
 5. **User-Supplied Sourcing Inputs**: Landed manufacturing costs, supplier quotes, packaging fees, and target CAC entered directly by merchants.
+
+---
+
+## 5. Signal Classification Framework
+
+Every metric in SellerSalt belongs to an explicit epistemological classification:
+- **`OBSERVED`**: Direct live marketplace listing or official API data (Price, Review Count, Star Rating).
+- **`DERIVED`**: Deterministically calculated without synthetic assumptions ($P_{50}$ Median Price, Attribute Prevalence %, Price Spread).
+- **`ESTIMATED`**: Statistical models with explicit confidence ratings (Opportunity Score 3.0, Launch Readiness Index).
+- **`USER_DERIVED`**: Computed from merchant-supplied landed costs and quote inputs in the workspace.
+- **`UNAVAILABLE`**: Private or unobserved signals (e.g. Competitor Revenue, Monthly Search Volumes) are strictly marked unavailable.
+
+---
+
+## 6. Product Claim Safety Guidelines
+
+| Risky / Prohibited Copy | Evidence-Grounded SellerSalt Standard |
+|---|---|
+| *"Winning Product"* | *"High Opportunity Signal"* |
+| *"Demand: 87"* | *"Demand Proxy: 87 / 100"* |
+| *"Monthly Searches: 20,000"* (if unobserved) | *"Search Volume: Unavailable"* |
+| *"Expected Sales"* | *"Observed Market Signals"* |
+| *"This product will sell."* | *"Observed signals support further investigation."* |
+

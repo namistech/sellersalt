@@ -90,10 +90,12 @@ const MY_BUSINESS_ITEMS: NavigationItem[] = [
 
 const MARKETPLACE_ITEMS: NavigationItem[] = [
   { id: "marketplaces-overview", label: "Marketplace Overview", href: "/marketplaces", icon: Plug },
+  { id: "marketplaces-governance", label: "Data Governance", href: "/marketplaces/governance", icon: ShieldCheck },
   { id: "connected-shops", label: "Connected Accounts", href: "/settings/channels", icon: Plug },
 ];
 
 const MANAGE_ITEMS_BASE: NavigationItem[] = [
+  { id: "trust-center", label: "Trust Center", href: "/trust", icon: ShieldCheck },
   { id: "roadmap", label: "Public Roadmap", href: "/roadmap", icon: Compass },
   { id: "whats-new", label: "What's New", href: "/whats-new", icon: Sparkles },
   { id: "support", label: "Support & Help", href: "/support", icon: LifeBuoy },

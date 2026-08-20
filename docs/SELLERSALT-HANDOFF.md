@@ -4,23 +4,23 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 22 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 23 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 22
-(Marketplace Governance + Source-Compliant Intelligence Architecture + Unified Product Intelligence Workspace):
+condensed version of everything else in this file, current as of Batch 23
+(Production Trust, Marketplace-Compliant Acquisition Separation & Intelligence Productization):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Marketplace Data Governance Registry & Policies** (`src/marketplaces/core/governance/registry.ts`, `/marketplaces/governance`): Canonical policy registry across all 7 registered platforms with explicit permission statuses (`ALLOWED`, `CONDITIONALLY_ALLOWED`, `RESTRICTED`, `PROHIBITED`, `UNKNOWN`).
-- **Source Policy Enforcer** (`source-policy-enforcer.ts`): Pre-acquisition policy gate checking allowed source types and prohibited private portal paths before network calls.
-- **Source Boundary Layer** (`source-boundary.ts`): Sanitizes product observations to strip seller contact PII and buyer data, while enforcing strict tenant isolation.
-- **Data Trust Engine** (`data-trust-engine.ts`): Transparent data trust scoring (0–100), source diversity, freshness, completeness, and transparent Zero-Fabrication disclosures.
-- **Product Opportunity Workspace & Launch Cockpit** (`product-opportunity-workspace-engine.ts`, `/product-workspaces`, `/product-workspaces/[id]`): Converts discovered opportunities into an actionable, evidence-grounded decision cockpit with data trust metrics, observable attribute intelligence, differentiation angles, empirical price quantiles, product configurations, supplier RFQ specifications, unit economics scenarios (Base, Conservative, Optimistic), launch readiness scores (10 dimensions), information value gaps, commercial decision tree, and prioritized 5-step action plan.
-- **Autonomous Opportunity Discovery Engine** (`autonomous-discovery-engine.ts`, `/discovery`): Broad multi-marketplace discovery ("Discover For Me"), seed expansion, deterministic detection rules, and persistence.
-- **Opportunity Scoring 3.0 & Radar 2.0** (`opportunity-scoring-3.ts`, `opportunity-radar-2.ts`, `/radar`): 6-factor deterministic scoring and categorized radar feed across 7 decision sections.
+- **Marketplace Access Resolver & Anti-Circumvention** (`src/marketplaces/core/governance/access-modes.ts`, `anti-circumvention.ts`): Resolves 9 explicit data access modes across 10 capabilities. Enforces zero automated scraping fallback after API restrictions unless independently policy-permitted.
+- **Etsy Capability & Compliance Matrix** (`etsy-capability-matrix.ts`): Formalized rules for all 10 capabilities, least-privilege OAuth scopes, rate limits (60/min), and mandatory trademark disclaimers.
+- **Signal Classification Framework** (`signal-classification.ts`): Rigorous provenance tagging across `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals with transparent Zero-Fabrication disclosures.
+- **Trust Center & Unavailable UX** (`/trust`, `UnavailableSignalCard.tsx`, `MarketplaceAttributionBadge.tsx`): Public transparency center and evidence-grounded UX explaining why private metrics remain unavailable.
+- **Safe Retention Pruning** (`retention-governance-service.ts`): Dry-run auditing and marketplace-scoped snapshot deletion.
+- **Marketplace Data Governance Registry & Policies** (`registry.ts`, `/marketplaces/governance`): Canonical policy registry across all 7 registered platforms.
+- **Product Opportunity Workspace & Launch Cockpit** (`product-opportunity-workspace-engine.ts`, `/product-workspaces`, `/product-workspaces/[id]`): Converts discovered opportunities into an actionable decision cockpit.
 
 **Current Verified Baseline**:
-- Tests: **1097/1097 passing across 281 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1112/1112 passing across 289 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)

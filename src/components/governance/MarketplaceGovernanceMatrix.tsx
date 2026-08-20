@@ -27,9 +27,11 @@ export function MarketplaceGovernanceMatrix() {
   const policies = MarketplaceGovernanceRegistry.listPolicies();
   const [selectedPolicy, setSelectedPolicy] = useState<MarketplaceDataPolicy | null>(null);
   const [filterMarketplace, setFilterMarketplace] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const filtered = policies.filter((p) => {
     if (filterMarketplace !== "all" && p.marketplace !== filterMarketplace) return false;
+    if (filterStatus !== "all" && p.complianceStatus !== filterStatus) return false;
     return true;
   });
 
@@ -69,7 +71,7 @@ export function MarketplaceGovernanceMatrix() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={filterMarketplace}
             onChange={(e) => setFilterMarketplace(e.target.value)}
@@ -81,6 +83,17 @@ export function MarketplaceGovernanceMatrix() {
                 {p.displayName}
               </option>
             ))}
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="h-8 px-2.5 rounded-lg border bg-background text-xs font-bold text-foreground"
+          >
+            <option value="all">All Compliance Statuses</option>
+            <option value="IMPLEMENTED">Implemented</option>
+            <option value="REQUIRES_PLATFORM_CONFIRMATION">Requires Review</option>
+            <option value="DESIGNED">Designed</option>
           </select>
         </div>
       </div>

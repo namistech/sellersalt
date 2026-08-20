@@ -831,3 +831,29 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 23: Production Trust, Marketplace-Compliant Acquisition Separation & Intelligence Productization (2026-08-20)
+
+**Why**: Transition SellerSalt from internal intelligence architecture to a production-trustworthy, marketplace-compliant platform with strict anti-circumvention boundaries, canonical access mode resolution, signal classification transparency, Etsy capability matrix, and a public Trust Center.
+
+**What changed**:
+- **Marketplace Access Resolver (`src/marketplaces/core/governance/access-modes.ts`)**:
+  - Canonical resolution of 9 access modes (`PUBLIC_WEB_ALLOWED`, `PUBLIC_WEB_RESTRICTED`, `API_ALLOWED`, `API_REQUIRES_OAUTH`, `API_REQUIRES_COMMERCIAL_ACCESS`, `CONNECTED_STORE_ONLY`, `HISTORICAL_ONLY`, `NOT_AVAILABLE`, `REQUIRES_PLATFORM_REVIEW`) across 10 capabilities.
+- **Anti-Circumvention Guard (`src/marketplaces/core/governance/anti-circumvention.ts`)**:
+  - Halts automated fallback to `PUBLIC_WEB` after API restrictions unless public catalog research is independently permitted by policy. Blocks scraping fallback for unauthorized OAuth calls and private seller portal paths.
+- **Etsy Capability & Compliance Matrix (`src/marketplaces/core/governance/etsy-capability-matrix.ts`)**:
+  - Defines authorized data sources, OAuth scope requirements (`listings_w listings_r shops_r transactions_r`), commercial review paths, and anti-circumvention rules across all 10 capabilities.
+- **Signal Classification Contract (`src/marketplaces/core/governance/signal-classification.ts`)**:
+  - Standardizes `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` metrics with explicit provenance and Zero-Fabrication disclosures.
+- **Safe Retention Pruning (`src/marketplaces/core/governance/retention-governance-service.ts`)**:
+  - Added dry-run auditing and marketplace-scoped snapshot cleanup.
+- **UI Surfaces**:
+  - `TrustCenterPage` (`/trust`): Public trust and data methodology center.
+  - `UnavailableSignalCard.tsx`: Reusable component explaining transparently why private metrics (search volume, competitor revenue) are unavailable.
+  - `MarketplaceAttributionBadge.tsx` & `MarketplaceDisclaimerBox.tsx`: Neutral, compliant marketplace branding and trademark disclaimers.
+  - Expanded `MarketplaceGovernanceMatrix.tsx`: Filters for compliance status and access modes.
+- **Verification Baseline**:
+  - Full test suite: **1112/1112 passing across 289 suites** (`src/tests/batch-23-production-trust.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).

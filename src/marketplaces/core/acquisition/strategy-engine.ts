@@ -15,6 +15,7 @@ import type { MarketplaceId, DataSourceType } from "../types";
 import type { ResearchRunType } from "./workbench";
 import { SourceHealthTracker, type SourceHealthStatus } from "./source-health";
 import { MarketplaceRegistry } from "../registry";
+import { SourcePolicyEnforcer } from "../governance/source-policy-enforcer";
 
 export type AcquisitionStrategyType =
   | "PUBLIC_SEARCH_HTML"
@@ -86,8 +87,15 @@ export class AcquisitionStrategyEngine {
 
     const strategies: AcquisitionStrategyDefinition[] = [];
 
+    // Evaluate Data Governance Policy
+    const publicWebPolicy = SourcePolicyEnforcer.evaluateRequest({
+      marketplace,
+      sourceType: "PUBLIC_WEB",
+      purpose: "PRODUCT_SEARCH",
+    });
+
     // 1. Primary Public Strategies
-    if (preferredSources.includes("PUBLIC_WEB") && !isPublicRestricted) {
+    if (preferredSources.includes("PUBLIC_WEB") && !isPublicRestricted && publicWebPolicy.allowed) {
       if (researchType === "PRODUCT" || researchType === "RADAR") {
         strategies.push({
           id: "PUBLIC_SEARCH_HTML",

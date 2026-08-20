@@ -26,6 +26,8 @@ import type {
   PublicAcquisitionResult,
 } from "./contracts";
 import { prisma } from "@/lib/db";
+import { SourcePolicyEnforcer } from "../governance/source-policy-enforcer";
+import { SourceBoundary } from "../governance/source-boundary";
 
 export interface ResearchSourcePolicy {
   preferredSources?: DataSourceType[];
@@ -89,27 +91,38 @@ export async function orchestrateProductResearch(
   let apiObservations: NormalizedProduct[] = [];
   let historicalObservations: NormalizedProduct[] = [];
 
-  // 1. Attempt PUBLIC_WEB if preferred
+  // 1. Attempt PUBLIC_WEB if preferred and allowed by data policy
   if (preferredSources.includes("PUBLIC_WEB")) {
-    sourcesAttempted.push("PUBLIC_WEB");
-    const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
+    const policyDecision = SourcePolicyEnforcer.evaluateRequest({
+      organizationId: request.organizationId,
+      marketplace: request.marketplace,
+      sourceType: "PUBLIC_WEB",
+      purpose: "PRODUCT_SEARCH",
+    });
 
-    if (publicAdapter) {
-      try {
-        const res = await publicAdapter.searchPublicProducts(request);
-        if (res.success && res.items.length > 0) {
-          sourcesSucceeded.push("PUBLIC_WEB");
-          publicObservations = res.items;
-        } else {
+    if (policyDecision.allowed) {
+      sourcesAttempted.push("PUBLIC_WEB");
+      const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
+
+      if (publicAdapter) {
+        try {
+          const res = await publicAdapter.searchPublicProducts(request);
+          if (res.success && res.items.length > 0) {
+            sourcesSucceeded.push("PUBLIC_WEB");
+            publicObservations = res.items;
+          } else {
+            sourcesFailed.push("PUBLIC_WEB");
+            if (res.error) limitations.push(res.error);
+          }
+        } catch (err: any) {
           sourcesFailed.push("PUBLIC_WEB");
-          if (res.error) limitations.push(res.error);
+          limitations.push(`Public web fetch error: ${err.message}`);
         }
-      } catch (err: any) {
+      } else {
         sourcesFailed.push("PUBLIC_WEB");
-        limitations.push(`Public web fetch error: ${err.message}`);
       }
     } else {
-      sourcesFailed.push("PUBLIC_WEB");
+      limitations.push(`Public web research is ${policyDecision.status} by policy for ${request.marketplace}.`);
     }
   }
 
@@ -363,7 +376,7 @@ export async function orchestrateProductResearch(
   };
 
   return {
-    items: mergedProducts,
+    items: SourceBoundary.sanitizeProducts(mergedProducts),
     report,
   };
 }
