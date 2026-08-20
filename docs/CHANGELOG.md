@@ -1010,3 +1010,23 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**173/173 routes compiled**).
+
+## Batch 31: Production Deployment, External Integration Activation & Private Beta Readiness (2026-08-20)
+
+**Why**: Transition SellerSalt from a "production-ready codebase" to an externally connectable, privately deployable SaaS platform with complete production deployment artifacts, private beta invite allowlist controls, and an end-to-end operational smoke test harness.
+
+**What changed**:
+- **Production Deployment Foundation (`.env.example` & `docs/PRODUCTION-DEPLOYMENT.md`)**:
+  - Created complete `.env.example` reference with secret sanitization and categorized variables.
+  - Documented Prisma migration deployment commands, PostgreSQL connection pooling rules, health probe load balancer routing, and emergency rollback procedures.
+- **Private Beta Access Control (`src/lib/security/private-beta.ts`)**:
+  - Built `PrivateBetaManager` supporting `PRIVATE_BETA_MODE=true`, case-insensitive `BETA_INVITE_CODES` validation, and superadmin override bypasses.
+- **Production Smoke Test Suite (`src/services/ops/production-smoke-test.ts`)**:
+  - Created comprehensive `ProductionSmokeTestRunner` executing non-destructive sanity checks covering 15 operational subsystems (PostgreSQL pooling, IDOR isolation, SSRF guards, rate limiter, error sanitization, entitlements, email, private beta).
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-31-PRODUCTION-DEPLOYMENT-AND-PRIVATE-BETA.md`.
+- **Verification Baseline**:
+  - Full test suite: **1165/1165 passing across 330 suites** (`src/tests/batch-31-production-deployment.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**173/173 routes compiled**).

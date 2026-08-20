@@ -4,22 +4,22 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 30 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 31 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 30
-(Real-World Production Activation & Launch Readiness Audit):
+condensed version of everything else in this file, current as of Batch 31
+(Production Deployment, External Integration Activation & Private Beta Readiness):
 
-**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` & `src/lib/config/` — canonical, don't rebuild):
+**Architecture** (`src/marketplaces/core/` & `src/services/ops/` & `src/lib/security/` — canonical, don't rebuild):
+- **Production Smoke Test Harness** (`production-smoke-test.ts`): End-to-end, non-destructive diagnostic suite validating environment, database, health probes, tenant isolation, error handling, rate limiting, and Data Trust calculations.
+- **Private Beta Access Control** (`private-beta.ts`): Configurable invite code allowlist and admission system (`PRIVATE_BETA_MODE=true`, `BETA_INVITE_CODES`).
+- **Production Deployment Foundation** (`.env.example`, `PRODUCTION-DEPLOYMENT.md`): Standalone build guides, PostgreSQL connection pooling specs, and migration procedures.
+- **Marketplace Connection Center** (`/settings/channels`): Customer-facing channel management with explicit capability and policy states for all 7 marketplaces.
 - **Production Environment Configuration Validator** (`environment-validator.ts`, `PRODUCTION-ENVIRONMENT.md`): Strict categorization and startup validation of all boot, billing, email, and marketplace credentials without secret leakage.
 - **Transactional Email Service & Simulation Capture** (`transactional-email.ts`): Unified outbound communication layer with Nodemailer SMTP, AWS SES, and local simulation capture buffers.
-- **Real-Data Acquisition Smoke Test Framework** (`acquisition-smoke-test.ts`): Non-aggressive sanity check harness testing domain whitelisting, SSRF protections, and Data Trust calculations.
-- **Etsy Integration Readiness Package** (`ETSY-INTEGRATION-READINESS.md`): Forensic verification of OpenAPI v3, OAuth PKCE, least-privilege scopes, and public vs seller data separation.
-- **Canonical Error Taxonomy & Safe Serializer** (`app-error.ts`): Unified error taxonomy across 18 machine-readable codes with strict PII/stack trace protection.
-- **Production Health Endpoints** (`/api/health/live`, `/api/health/ready`): Fast process liveness and database readiness probes.
 
 **Current Verified Baseline**:
-- Tests: **1161/1161 passing across 326 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1165/1165 passing across 330 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**173/173 static and dynamic routes compiled**)
