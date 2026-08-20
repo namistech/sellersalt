@@ -43,6 +43,7 @@ model Organization {
   productObservations ProductObservation[]
   keywordObservations KeywordObservation[]
   categoryObservations CategoryObservation[]
+  savedOpportunities SavedOpportunity[]
 }
 
 enum Plan {
@@ -1313,6 +1314,37 @@ model AcquisitionSourceHealth {
   @@unique([marketplace, sourceType])
   @@index([marketplace])
   @@index([status])
+}
+
+model SavedOpportunity {
+  id              String       @id @default(cuid())
+  organizationId  String
+  type            String       // "PRODUCT" | "KEYWORD" | "NICHE" | "CATEGORY" | "SELLER" | "MARKETPLACE"
+  targetId        String       // external ID, keyword string, category name, shop name, or niche ID
+  title           String
+  subtitle        String?
+  marketplace     String       // "etsy" | "amazon" | "ebay" | "walmart" | etc.
+  score           Float?
+  confidence      Float        @default(0)
+  verdict         String
+  verdictVariant  String       @default("info")
+  evidenceJson    Json?
+  provenanceJson  Json?
+  notes           String?
+  tags            String[]     @default([])
+  firstObservedAt DateTime     @default(now())
+  lastObservedAt  DateTime     @default(now())
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, type, marketplace, targetId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([marketplace])
+  @@index([score])
+  @@index([createdAt])
 }
 
 

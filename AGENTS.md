@@ -297,7 +297,7 @@ source of truth, this is a map, not a copy):
   generalize this model without a real second-marketplace write path to
   back it.
 - `SellerOrder` — synced orders, cascades from `SellerChannel`.
-- `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth` — first-class persistent observation workbench models with SHA-256 fingerprinting and longitudinal snapshot time-series.
+- `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`, `SavedOpportunity` — first-class persistent observation workbench models and multi-tenant opportunity watchlist with SHA-256 fingerprinting and longitudinal snapshot time-series.
 - `ShopSnapshot` / `ListingSnapshot` — periodic public research captures,
   pruned per §12.
 - `Prospect` — product research results, `marketplace` field tags which
@@ -336,7 +336,7 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1003/1003 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 218 suites)
+Tests:      1014/1014 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 224 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
 Next.js:    clean build      (npx next build — 168/168 static and dynamic routes compiled)

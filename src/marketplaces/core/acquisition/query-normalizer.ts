@@ -20,6 +20,13 @@ const STOP_WORDS = new Set([
 
 export class QueryNormalizer {
   /**
+   * Cleans and standardizes a raw query string.
+   */
+  public static cleanQuery(rawQuery: string): string {
+    return this.normalize(rawQuery).normalizedQuery || (rawQuery || "").trim();
+  }
+
+  /**
    * Normalizes a raw research query into standard form and produces bounded variants.
    */
   public static normalize(rawQuery: string, maxVariants = 3): NormalizedQueryProfile {

@@ -137,6 +137,9 @@ describe("Batch 15: Intelligence Data Depth & Marketplace Coverage Expansion", (
         products: mockProducts,
       });
 
+      assert.ok("observedCatalogCount" in catIntel);
+      if (!("observedCatalogCount" in catIntel)) return;
+
       assert.equal(catIntel.observedCatalogCount, 5);
       assert.equal(catIntel.observedSellerCount, 4);
       assert.ok(catIntel.priceDistribution.median !== null);

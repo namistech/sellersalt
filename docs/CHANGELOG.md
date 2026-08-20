@@ -607,6 +607,31 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
 
+## Batch 16: Market Intelligence & Opportunity Discovery Engine 2.0 (2026-08-20)
+
+**Why**: Transform SellerSalt from presenting raw listing metrics into an evidence-based, deterministic opportunity discovery engine across Products, Keywords, Niches, Categories, Sellers, and Marketplaces.
+
+**What changed**:
+- **Canonical Opportunity Discovery Engine 2.0 (`src/services/intelligence/opportunity-discovery-engine.ts`)**:
+  - Multi-domain orchestrator discovering structured opportunities from live public web ingestion and historical memory.
+  - Generates typed `OpportunityItem` objects with calibrated confidence, score tiers, and deterministic ranking.
+- **Opportunity Explanation Engine (`src/services/intelligence/opportunity-explanation.ts`)**:
+  - Generates deterministic, explainable rationales including headline verdicts, positive drivers, watch/risk friction points, universal unknown signal disclosures, and recommended next actions.
+- **Unified Market Momentum Engine (`src/marketplaces/core/acquisition/momentum.ts`)**:
+  - Classifies empirical trajectories (`RISING`, `ACCELERATING`, `STABLE`, `COOLING`, `DECLINING`, `INSUFFICIENT_DATA`) using longitudinal snapshots ($n \ge 2$ required; $n \le 1$ strictly yields `INSUFFICIENT_DATA` with `null` velocity).
+- **Opportunity Watchlist & Multi-Tenant Persistence**:
+  - Added `SavedOpportunity` model to `prisma/schema.prisma` with multi-tenant `organizationId` scoping.
+  - Implemented `/api/opportunities/discover`, `/api/opportunities`, `/api/opportunities/[id]`, `/api/opportunities/[id]/save`, `/api/opportunities/saved`, and `/api/opportunities/[id]/refresh`.
+- **Interactive UI Components**:
+  - `OpportunityCard.tsx`: Rich opportunity card with type/marketplace badges, score tier, calibrated confidence, verdict banner, evidence drawers, and save toggles.
+  - `OpportunityFeed.tsx`: Filterable opportunity discovery feed supporting type filtering, marketplace switching, and saved watchlist filtering.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-16-opportunity-discovery.test.ts` (11 test cases).
+  - Full test suite: **1014/1014 passing across 224 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
+
 
 
 

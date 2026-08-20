@@ -4,13 +4,18 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 15 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 16 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 15
-(SellerSalt Intelligence Data Depth & Marketplace Coverage Expansion):
+condensed version of everything else in this file, current as of Batch 16
+(SellerSalt Market Intelligence & Opportunity Discovery Engine 2.0):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
+- **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): End-to-end multi-domain opportunity orchestrator discovering structured, evidence-backed opportunities across Products, Keywords, Niches, Categories, Sellers, and Marketplaces.
+- **Opportunity Explanation Engine** (`opportunity-explanation.ts`): Deterministically generates headline verdicts, positive drivers, watch/risk friction points, unobserved signal disclosures, and recommended next actions.
+- **Unified Market Momentum Engine** (`momentum.ts`): Classifies empirical trajectories (`RISING`, `ACCELERATING`, `STABLE`, `COOLING`, `DECLINING`, `INSUFFICIENT_DATA`) from multi-snapshot time-series ($n \ge 2$ required; $n \le 1$ remains strictly `INSUFFICIENT_DATA` with `null` velocity).
+- **Opportunity Watchlist & Multi-Tenant Persistence** (`SavedOpportunity` Prisma model + `/api/opportunities/*`): Complete CRUD and live signal refresh with strict `organizationId` multi-tenant isolation.
+- **Interactive Opportunity Discovery Feed & Card System** (`OpportunityFeed.tsx`, `OpportunityCard.tsx`): Rich interactive UI with evidence drawers, confidence indicators, momentum badges, and next action recommendations.
 - **Longitudinal Intelligence Engine** (`longitudinal.ts`): Computes price deltas, review velocities, rating drift, catalog growth, and keyword momentum across persistent observation snapshots ($n \ge 2$ required; $n \le 1$ remains strictly `null`).
 - **Market Memory & Intelligence Snapshots** (`market-memory.ts`): Retains and indexes derived domain intelligence snapshots (`PRODUCT`, `KEYWORD`, `SELLER`, `CATEGORY`, `NICHE`, `RADAR`) with sample sizes, freshness ratings, confidence, and observation lineages.
 - **Product Demand Intelligence Engine** (`demand.ts`): Computes demand proxy scores from observable signals (reviews, ratings, favorites, velocity) with explicit classification (`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`) and strictly zero fabricated search volume.
@@ -23,7 +28,7 @@ condensed version of everything else in this file, current as of Batch 15
 - **Universal Pagination Engine** (`pagination.ts`): Bounded multi-page traversal with duplicate saturation detection and budget enforcement.
 - **Query Normalizer & Search Variants** (`query-normalizer.ts`): Semantic clean query tokens and bounded variant generation.
 - **Parser Health & Drift Detection** (`parser-health.ts`): Real-time field fill rate evaluation and DOM layout change detection.
-- **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
+- **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`, `SavedOpportunity`.
 - **Observation Deduplication & Fingerprinting** (`deduplication.ts`): SHA-256 fingerprinting across all volatile/structural fields, preventing redundant snapshot creation.
 - **Research Budgets & Safety Bounds** (`research-budgets.ts`): Bounded execution (max 3 pages, max 50 listings, max 15 shops, max 20s timeout, max 5MB payload).
 - **Multi-Tier Research Cache** (`research-cache.ts`): In-memory TTL caching (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d).
@@ -32,7 +37,7 @@ condensed version of everything else in this file, current as of Batch 15
 - **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
 
 **Current Verified Baseline**:
-- Tests: **1003/1003 passing across 218 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1014/1014 passing across 224 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 routes compiled**)
