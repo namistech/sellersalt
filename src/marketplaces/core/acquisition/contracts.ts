@@ -96,6 +96,30 @@ export interface ParsedListingCard {
   tags?: string[];
 }
 
+export interface PublicKeywordHarvestResult {
+  query: string;
+  marketplace: MarketplaceId;
+  relatedKeywords: Array<{
+    keyword: string;
+    occurrenceCount: number;
+    listingFrequency: number;
+    demandProxy: number;
+    demandTier: "HIGH" | "MEDIUM" | "LOW";
+  }>;
+  topTags: Array<{ tag: string; count: number }>;
+  observedListingsCount: number;
+  averagePrice: number | null;
+  demandProxyScore: number;
+  fetchedAt: Date;
+}
+
+export interface MergedProductObservation {
+  product: NormalizedProduct;
+  sources: DataSourceType[];
+  isEnriched: boolean;
+  fieldProvenance: Record<string, DataSourceType>;
+}
+
 /**
  * Common contract for all marketplace-specific public web acquisition adapters.
  */
@@ -118,4 +142,10 @@ export interface PublicWebAcquisitionAdapter {
    * Fetches public shop / seller profile statistics where publicly accessible.
    */
   fetchPublicShop?(shopExternalIdOrUrl: string): Promise<PublicAcquisitionResult<MarketplaceShopStats>>;
+
+  /**
+   * Harvests keyword signals, co-occurring phrases, and tags from public search results.
+   */
+  harvestPublicKeywords?(query: PublicSearchQuery): Promise<PublicAcquisitionResult<PublicKeywordHarvestResult>>;
 }
+

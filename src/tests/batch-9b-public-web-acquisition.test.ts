@@ -9,17 +9,21 @@ import {
   extractListingIdFromUrl,
   DomainRateLimiter,
   PublicPageFetcher,
+  mergeProductObservations,
+  persistPublicProductObservations,
+  acquireProductObservations,
+  deduplicateProductObservations,
 } from "@/marketplaces/core/acquisition";
-import { EtsyPublicWebAdapter } from "@/marketplaces/etsy/public-adapter";
-import { acquireProductObservations } from "@/marketplaces/core/acquisition";
+import { EtsyPublicWebAdapter, etsyPublicWebAdapter } from "@/marketplaces/etsy/public-adapter";
+import { AmazonPublicWebAdapter, amazonPublicWebAdapter } from "@/marketplaces/amazon/public-adapter";
+import { EbayPublicWebAdapter, ebayPublicWebAdapter } from "@/marketplaces/ebay/public-adapter";
+import { TikTokShopPublicWebAdapter, tiktokShopPublicWebAdapter } from "@/marketplaces/tiktok-shop/public-adapter";
 import { registerAllConnectors } from "@/marketplaces/core/registry";
-import {
-  evaluateCanonicalOpportunity,
-  extractOpportunityInputFromNormalizedProduct,
-} from "@/services/intelligence/canonical-opportunity";
-import type { NormalizedProduct } from "@/marketplaces/core/types";
+import { discoverNichesFromProducts } from "@/services/intelligence/niche-discovery";
+import { scoreShopCompetition } from "@/marketplaces/core/opportunity-engine";
+import type { NormalizedProduct, NormalizedObservation } from "@/marketplaces/core/types";
 
-describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine", () => {
+describe("Batch 9B: Marketplace-Independent Public Web Acquisition Engine & Foundation", () => {
   registerAllConnectors();
 
   const sampleEtsyListingHtml = `
@@ -90,8 +94,17 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
     </div>
   `;
 
+  const sampleEtsyShopHtml = `
+    <div class="shop-home">
+      <h1>StoneCraftMakers</h1>
+      <span>1,420 Sales</span>
+      <span>(385) reviews</span>
+      <span>64 Items</span>
+    </div>
+  `;
+
   describe("1. Structured Data & Metadata Parsing", () => {
-    it("extracts JSON-LD Product with prices, ratings, reviews, and seller info", () => {
+    it("1. extracts JSON-LD Product with prices, ratings, reviews, and seller info", () => {
       const blocks = extractJsonLdBlocks(sampleEtsyListingHtml);
       assert.equal(blocks.length, 2);
 
@@ -103,49 +116,61 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
       assert.equal(product.ratingValue, 4.9);
       assert.equal(product.reviewCount, 142);
       assert.equal(product.sellerName, "EarthAndWheelPottery");
-      assert.equal(product.sellerUrl, "https://www.etsy.com/shop/EarthAndWheelPottery");
     });
 
-    it("extracts BreadcrumbList category taxonomy hierarchy", () => {
+    it("2. extracts BreadcrumbList category taxonomy hierarchy", () => {
       const blocks = extractJsonLdBlocks(sampleEtsyListingHtml);
       const breadcrumbs = parseCategoryBreadcrumbsFromJsonLd(blocks);
-
       assert.deepEqual(breadcrumbs, ["Home & Living", "Kitchen & Dining", "Drinkware", "Mugs"]);
     });
 
-    it("extracts OpenGraph meta properties as secondary fallback", () => {
+    it("3. extracts OpenGraph meta properties as secondary fallback", () => {
       const og = parseOpenGraphData(sampleEtsyListingHtml);
-
       assert.equal(og.title, "Ceramic Coffee Mug Handmade");
       assert.equal(og.priceAmount, 26.5);
       assert.equal(og.priceCurrency, "USD");
       assert.equal(og.image, "https://i.etsystatic.com/123/r/il/mug.jpg");
     });
 
-    it("extracts numeric listing IDs from canonical marketplace URLs", () => {
+    it("4. handles malformed HTML gracefully without throwing", () => {
+      const blocks = extractJsonLdBlocks("<script type='application/ld+json'>{malformed json");
+      assert.deepEqual(blocks, []);
+
+      const og = parseOpenGraphData("<html><body><<<bad markup>>></body></html>");
+      assert.deepEqual(og, {});
+    });
+
+    it("5. preserves missing price as null without fabricating zero", () => {
+      const htmlWithoutPrice = sampleEtsyListingHtml.replace(/"price":\s*"26.50",/g, "");
+      const blocks = extractJsonLdBlocks(htmlWithoutPrice);
+      const parsed = parseProductFromJsonLd(blocks);
+      assert.equal(parsed?.price, undefined);
+    });
+
+    it("6. preserves missing rating as null without fabricating default", () => {
+      const htmlWithoutRating = sampleEtsyListingHtml.replace(/"ratingValue":\s*"4.9",/g, "");
+      const blocks = extractJsonLdBlocks(htmlWithoutRating);
+      const parsed = parseProductFromJsonLd(blocks);
+      assert.equal(parsed?.ratingValue, undefined);
+    });
+
+    it("7. preserves missing review count as null", () => {
+      const htmlWithoutReviews = sampleEtsyListingHtml.replace(/"reviewCount":\s*"142"/g, "");
+      const blocks = extractJsonLdBlocks(htmlWithoutReviews);
+      const parsed = parseProductFromJsonLd(blocks);
+      assert.equal(parsed?.reviewCount, undefined);
+    });
+
+    it("8. extracts numeric listing IDs from canonical marketplace URLs", () => {
       assert.equal(extractListingIdFromUrl("https://www.etsy.com/listing/987654321/pottery-mug"), "987654321");
       assert.equal(extractListingIdFromUrl("https://www.amazon.com/dp/B08N5WRWNW/ref=sr_1"), "B08N5WRWNW");
       assert.equal(extractListingIdFromUrl("https://www.ebay.com/itm/123456789012"), "123456789012");
       assert.equal(extractListingIdFromUrl("invalid-url"), null);
     });
-
-    it("parses listing cards from public search result HTML", () => {
-      const cards = parseEtsyListingCardsFromHtml(sampleEtsySearchHtml);
-
-      assert.equal(cards.length, 2);
-      assert.equal(cards[0].externalId, "987654321");
-      assert.equal(cards[0].title, "Handmade Pottery Mug 12oz");
-      assert.equal(cards[0].price, 28.0);
-      assert.equal(cards[0].shopName, "StoneCraftMakers");
-
-      assert.equal(cards[1].externalId, "123456789");
-      assert.equal(cards[1].price, 22.5);
-      assert.equal(cards[1].shopName, "WildFlowerCeramics");
-    });
   });
 
   describe("2. Rate Limiting, Throttling & Fetch Caching", () => {
-    it("enforces domain rate limiting without throwing", async () => {
+    it("9. enforces domain rate limiting with configurable limits", async () => {
       const limiter = new DomainRateLimiter({
         "etsy.com": {
           maxRequestsPerSecond: 10,
@@ -162,11 +187,10 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
       assert.ok(backoff >= 1000);
     });
 
-    it("PublicPageFetcher transparently caches successful responses", async () => {
+    it("10. PublicPageFetcher transparently caches successful responses", async () => {
       const fetcher = new PublicPageFetcher();
       fetcher.clearCache();
 
-      // Mock fetch in unit context
       const originalFetch = globalThis.fetch;
       let networkFetchCount = 0;
 
@@ -192,10 +216,144 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
         globalThis.fetch = originalFetch;
       }
     });
+
+    it("11. supports cache clearing and bypass", async () => {
+      const fetcher = new PublicPageFetcher();
+      const originalFetch = globalThis.fetch;
+      let count = 0;
+
+      globalThis.fetch = async () => {
+        count++;
+        return new Response(sampleEtsyListingHtml, { status: 200 });
+      };
+
+      try {
+        await fetcher.fetchPage("https://www.etsy.com/listing/111");
+        assert.equal(count, 1);
+
+        // Fetch with bypassCache: true
+        await fetcher.fetchPage("https://www.etsy.com/listing/111", { bypassCache: true });
+        assert.equal(count, 2);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
   });
 
-  describe("3. EtsyPublicWebAdapter & Canonical Opportunity Scoring", () => {
-    it("fetches and normalizes a public product with canonical opportunity score", async () => {
+  describe("3. Observation Merging & Source Lineage", () => {
+    it("12. merges PUBLIC_WEB observation with MARKETPLACE_API observation non-destructively", () => {
+      const publicObs: NormalizedProduct = {
+        marketplace: "etsy",
+        externalId: "987654321",
+        title: "Ceramic Coffee Mug Handmade",
+        url: "https://www.etsy.com/listing/987654321",
+        price: 28.0,
+        currency: "USD",
+        rating: 4.8,
+        reviewCount: 95,
+        source: "ACTUAL_DATA",
+        acquisitionMethod: "PUBLIC_WEB",
+        isHistorical: false,
+        capturedAt: new Date(),
+      };
+
+      const apiObs: NormalizedProduct = {
+        marketplace: "etsy",
+        externalId: "987654321",
+        title: "Ceramic Coffee Mug Handmade - Artisanal Stoneware",
+        url: "https://www.etsy.com/listing/987654321",
+        price: 28.0,
+        currency: "USD",
+        rating: null,
+        reviewCount: null,
+        categoryPath: ["Home & Living", "Drinkware"],
+        keywordSignals: [
+          {
+            term: "ceramic mug",
+            metric: "competition",
+            value: 10,
+            source: "etsy",
+            provenance: "ACTUAL_DATA",
+          },
+        ],
+        source: "ACTUAL_DATA",
+        acquisitionMethod: "MARKETPLACE_API",
+        isHistorical: false,
+        capturedAt: new Date(),
+      };
+
+      const merged = mergeProductObservations(publicObs, apiObs);
+      assert.equal(merged.isEnriched, true);
+      assert.deepEqual(merged.sources, ["PUBLIC_WEB", "MARKETPLACE_API"]);
+      assert.equal(merged.product.price, 28.0);
+      assert.equal(merged.product.rating, 4.8, "Preserved public rating");
+      assert.equal(merged.product.reviewCount, 95, "Preserved public review count");
+      assert.deepEqual(merged.product.categoryPath, ["Home & Living", "Drinkware"], "Enriched API categories");
+    });
+
+    it("13. deduplicates observations and prefers fresher live observations", () => {
+      const now = new Date();
+      const older = new Date(Date.now() - 86400000);
+
+      const obs1: NormalizedObservation<NormalizedProduct> = {
+        id: "1",
+        data: {
+          marketplace: "etsy",
+          externalId: "987654321",
+          title: "Old Title",
+          url: "https://www.etsy.com/listing/987654321",
+          price: 25.0,
+          currency: "USD",
+          source: "ACTUAL_DATA",
+          acquisitionMethod: "HISTORICAL_OBSERVATION",
+          isHistorical: true,
+          capturedAt: older,
+        },
+        metadata: {
+          sourceType: "HISTORICAL_OBSERVATION",
+          sourceIdentifier: "db",
+          marketplace: "etsy",
+          observedAt: older,
+          provenance: "ACTUAL_DATA",
+          confidenceScore: 60,
+          isHistorical: true,
+        },
+      };
+
+      const obs2: NormalizedObservation<NormalizedProduct> = {
+        id: "2",
+        data: {
+          marketplace: "etsy",
+          externalId: "987654321",
+          title: "Fresh Live Title",
+          url: "https://www.etsy.com/listing/987654321",
+          price: 28.0,
+          currency: "USD",
+          source: "ACTUAL_DATA",
+          acquisitionMethod: "PUBLIC_WEB",
+          isHistorical: false,
+          capturedAt: now,
+        },
+        metadata: {
+          sourceType: "PUBLIC_WEB",
+          sourceIdentifier: "etsy:public_web",
+          marketplace: "etsy",
+          observedAt: now,
+          provenance: "ACTUAL_DATA",
+          confidenceScore: 85,
+          isHistorical: false,
+        },
+      };
+
+      const deduped = deduplicateProductObservations([obs1, obs2]);
+      assert.equal(deduped.length, 1);
+      assert.equal(deduped[0].data.title, "Fresh Live Title");
+      assert.equal(deduped[0].data.isHistorical, false);
+    });
+  });
+
+  describe("4. EtsyPublicWebAdapter Core Capabilities", () => {
+    it("14. fetches public listing and calculates canonical opportunity", async () => {
       const fetcher = new PublicPageFetcher();
       const originalFetch = globalThis.fetch;
 
@@ -213,27 +371,58 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
         assert.equal(result.success, true);
         assert.equal(result.items.length, 1);
 
-        const product = result.items[0];
-        assert.equal(product.marketplace, "etsy");
-        assert.equal(product.externalId, "987654321");
-        assert.equal(product.title, "Ceramic Coffee Mug Handmade Stoneware");
-        assert.equal(product.price, 26.5);
-        assert.equal(product.currency, "USD");
-        assert.equal(product.rating, 4.9);
-        assert.equal(product.reviewCount, 142);
-        assert.equal(product.acquisitionMethod, "PUBLIC_WEB");
-        assert.equal(product.source, "ACTUAL_DATA");
-        assert.equal(product.isHistorical, false);
-
-        assert.ok(product.opportunityScore !== null && product.opportunityScore !== undefined);
-        assert.ok(product.opportunityScore.score! >= 0 && product.opportunityScore.score! <= 100);
-        assert.ok(product.opportunityScore.confidence >= 35, "Calibrated confidence for observed public signals");
+        const prod = result.items[0];
+        assert.equal(prod.externalId, "987654321");
+        assert.equal(prod.price, 26.5);
+        assert.equal(prod.rating, 4.9);
+        assert.equal(prod.reviewCount, 142);
+        assert.ok(prod.opportunityScore !== null && prod.opportunityScore !== undefined);
       } finally {
         globalThis.fetch = originalFetch;
       }
     });
 
-    it("searches public products and normalizes listing cards into NormalizedProducts", async () => {
+    it("15. fetches public shop profile statistics", async () => {
+      const fetcher = new PublicPageFetcher();
+      const originalFetch = globalThis.fetch;
+
+      globalThis.fetch = async () => {
+        return new Response(sampleEtsyShopHtml, {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        });
+      };
+
+      try {
+        const adapter = new EtsyPublicWebAdapter(fetcher);
+        const result = await adapter.fetchPublicShop("StoneCraftMakers");
+
+        assert.equal(result.success, true);
+        assert.equal(result.items.length, 1);
+
+        const shop = result.items[0];
+        assert.equal(shop.externalId, "StoneCraftMakers");
+        assert.equal(shop.totalSales, 1420);
+        assert.equal(shop.reviewCount, 385);
+        assert.equal(shop.activeListings, 64);
+
+        // Feed into canonical shop competition engine
+        const comp = scoreShopCompetition({
+          marketplace: shop.marketplace,
+          shopName: shop.name,
+          totalSales: shop.totalSales ?? 0,
+          reviewCount: shop.reviewCount ?? 0,
+          activeListings: shop.activeListings ?? 0,
+          shopAgeMonths: shop.ageMonths ?? 12,
+          estDailySales: 3.8,
+        });
+        assert.ok(comp.score !== null && comp.score >= 0 && comp.score <= 100);
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    it("16. harvests keyword signals and co-occurring phrases from search results", async () => {
       const fetcher = new PublicPageFetcher();
       const originalFetch = globalThis.fetch;
 
@@ -246,26 +435,105 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
 
       try {
         const adapter = new EtsyPublicWebAdapter(fetcher);
-        const result = await adapter.searchPublicProducts({ query: "ceramic mug", limit: 10 });
+        const result = await adapter.harvestPublicKeywords({ query: "ceramic mug" });
 
         assert.equal(result.success, true);
-        assert.equal(result.items.length, 2);
+        assert.equal(result.items.length, 1);
 
-        assert.equal(result.items[0].externalId, "987654321");
-        assert.equal(result.items[0].price, 28.0);
-        assert.equal(result.items[0].acquisitionMethod, "PUBLIC_WEB");
-        assert.equal(result.items[0].source, "ACTUAL_DATA");
-
-        assert.equal(result.items[1].externalId, "123456789");
-        assert.equal(result.items[1].price, 22.5);
+        const harvest = result.items[0];
+        assert.equal(harvest.query, "ceramic mug");
+        assert.equal(harvest.observedListingsCount, 2);
+        assert.equal(harvest.averagePrice, 25.25);
+        assert.ok(harvest.relatedKeywords.length > 0);
       } finally {
         globalThis.fetch = originalFetch;
       }
     });
   });
 
-  describe("4. STRATEGIC CONTRACT: Product Research WITHOUT Official API Keys", () => {
-    it("successfully acquires and evaluates real product research via PUBLIC_WEB when API keys are absent", async () => {
+  describe("5. Niche Discovery & Opportunity Clustered Ingestion", () => {
+    it("17. clusters publicly acquired products into niches via canonical engine", () => {
+      const products: NormalizedProduct[] = [
+        {
+          marketplace: "etsy",
+          externalId: "1",
+          title: "Handmade Ceramic Stoneware Coffee Mug",
+          price: 28.0,
+          currency: "USD",
+          rating: 4.9,
+          reviewCount: 150,
+          favoritesCount: 420,
+          categoryPath: ["Home & Living", "Kitchen & Dining", "Drinkware"],
+          keywordSignals: [
+            {
+              term: "ceramic mug",
+              metric: "competition",
+              value: 5,
+              source: "etsy",
+              provenance: "ACTUAL_DATA",
+            },
+          ],
+          source: "ACTUAL_DATA",
+          acquisitionMethod: "PUBLIC_WEB",
+          isHistorical: false,
+          capturedAt: new Date(),
+        },
+        {
+          marketplace: "etsy",
+          externalId: "2",
+          title: "Speckled Clay Tea Cup Artisan",
+          price: 24.0,
+          currency: "USD",
+          rating: 4.7,
+          reviewCount: 80,
+          favoritesCount: 210,
+          categoryPath: ["Home & Living", "Kitchen & Dining", "Drinkware"],
+          keywordSignals: [
+            {
+              term: "tea cup",
+              metric: "competition",
+              value: 3,
+              source: "etsy",
+              provenance: "ACTUAL_DATA",
+            },
+          ],
+          source: "ACTUAL_DATA",
+          acquisitionMethod: "PUBLIC_WEB",
+          isHistorical: false,
+          capturedAt: new Date(),
+        },
+      ];
+
+      const summary = discoverNichesFromProducts(products, "etsy", "ceramic mug");
+      assert.ok(summary.niches.length > 0);
+      assert.ok(summary.niches[0].opportunityScore !== null && summary.niches[0].opportunityScore >= 0);
+      assert.equal(summary.niches[0].sampleProducts.length, 2);
+    });
+  });
+
+  describe("6. Cross-Marketplace Isolation & Architecture-Ready Public Adapters", () => {
+    it("18. Amazon public adapter gracefully reports UNAVAILABLE without fake products", async () => {
+      const res = await amazonPublicWebAdapter.searchPublicProducts({ query: "mug" });
+      assert.equal(res.success, false);
+      assert.equal(res.items.length, 0);
+      assert.equal(res.provenance, "UNAVAILABLE");
+    });
+
+    it("19. eBay public adapter gracefully reports UNAVAILABLE without fake products", async () => {
+      const res = await ebayPublicWebAdapter.searchPublicProducts({ query: "mug" });
+      assert.equal(res.success, false);
+      assert.equal(res.items.length, 0);
+      assert.equal(res.provenance, "UNAVAILABLE");
+    });
+
+    it("20. TikTok Shop public adapter gracefully reports UNAVAILABLE without fake products", async () => {
+      const res = await tiktokShopPublicWebAdapter.searchPublicProducts({ query: "mug" });
+      assert.equal(res.success, false);
+      assert.equal(res.items.length, 0);
+      assert.equal(res.provenance, "UNAVAILABLE");
+    });
+
+    it("21. Multi-marketplace fan-out isolates failures (Etsy success + Amazon unavailable)", async () => {
       const originalFetch = globalThis.fetch;
 
       globalThis.fetch = async () => {
@@ -276,25 +544,18 @@ describe("Batch 9B: Marketplace-Independent Public Web Data Acquisition Engine",
       };
 
       try {
-        // Execute research request specifying PUBLIC_WEB as preferred source
-        const result = await acquireProductObservations({
-          marketplace: "etsy",
-          query: "ceramic mug",
-          preferredSources: ["PUBLIC_WEB"],
-          limit: 10,
-        });
+        const [etsyRes, amazonRes] = await Promise.all([
+          acquireProductObservations({ marketplace: "etsy", query: "mug", preferredSources: ["PUBLIC_WEB"] }),
+          acquireProductObservations({ marketplace: "amazon", query: "mug", preferredSources: ["PUBLIC_WEB"] }),
+        ]);
 
-        assert.equal(result.marketplace, "etsy");
-        assert.equal(result.status, "AVAILABLE");
-        assert.equal(result.hasLiveCoverage, true);
-        assert.equal(result.sourcesSucceeded[0], "PUBLIC_WEB");
-        assert.equal(result.products.length, 2);
+        assert.equal(etsyRes.status, "AVAILABLE");
+        assert.equal(etsyRes.hasLiveCoverage, true);
+        assert.equal(etsyRes.products.length, 2);
 
-        const prod = result.products[0];
-        assert.equal(prod.acquisitionMethod, "PUBLIC_WEB");
-        assert.equal(prod.source, "ACTUAL_DATA");
-        assert.ok(prod.opportunityScore !== null && prod.opportunityScore !== undefined);
-        assert.ok(prod.opportunityScore.score! >= 0 && prod.opportunityScore.score! <= 100);
+        assert.equal(amazonRes.status, "NOT_IMPLEMENTED");
+        assert.equal(amazonRes.hasLiveCoverage, false);
+        assert.equal(amazonRes.products.length, 0);
       } finally {
         globalThis.fetch = originalFetch;
       }

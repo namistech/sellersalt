@@ -194,50 +194,47 @@ export async function acquireProductObservations(
 
   const preferredSources = request.preferredSources || ["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"];
 
-  // 1. Attempt PUBLIC_WEB acquisition if preferred and available for this marketplace
-  if (preferredSources.includes("PUBLIC_WEB") && request.marketplace === "etsy") {
+  let publicObservations: NormalizedProduct[] = [];
+  let apiObservations: NormalizedProduct[] = [];
+
+  // 1. Attempt PUBLIC_WEB acquisition if preferred
+  if (preferredSources.includes("PUBLIC_WEB")) {
     sourcesAttempted.push("PUBLIC_WEB");
     try {
-      const { etsyPublicWebAdapter } = await import("../etsy/public-adapter");
-      const publicRes = await etsyPublicWebAdapter.searchPublicProducts({
-        query: request.query || request.keywords?.[0] || "",
-        limit: request.limit,
-      });
+      let publicAdapter: import("./acquisition/contracts").PublicWebAcquisitionAdapter | null = null;
 
-      if (publicRes.success && publicRes.items.length > 0) {
-        sourcesSucceeded.push("PUBLIC_WEB");
-        const observations: Array<NormalizedObservation<NormalizedProduct>> = publicRes.items.map((p) => ({
-          id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
-          data: p,
-          metadata: {
-            sourceType: "PUBLIC_WEB",
-            sourceIdentifier: "etsy:public_web",
-            marketplace: p.marketplace,
-            observedAt: generatedAt,
-            provenance: p.source,
-            confidenceScore: p.opportunityScore?.confidence ?? 75,
-            isHistorical: false,
-          },
-        }));
+      if (request.marketplace === "etsy") {
+        const { etsyPublicWebAdapter } = await import("../etsy/public-adapter");
+        publicAdapter = etsyPublicWebAdapter;
+      } else if (request.marketplace === "amazon") {
+        const { amazonPublicWebAdapter } = await import("../amazon/public-adapter");
+        publicAdapter = amazonPublicWebAdapter;
+      } else if (request.marketplace === "ebay") {
+        const { ebayPublicWebAdapter } = await import("../ebay/public-adapter");
+        publicAdapter = ebayPublicWebAdapter;
+      } else if (request.marketplace === "tiktok_shop") {
+        const { tiktokShopPublicWebAdapter } = await import("../tiktok-shop/public-adapter");
+        publicAdapter = tiktokShopPublicWebAdapter;
+      }
 
-        return {
-          marketplace: request.marketplace,
-          status: "AVAILABLE",
-          observations,
-          products: observations.map((o) => o.data),
-          sourcesAttempted,
-          sourcesSucceeded,
-          hasLiveCoverage: true,
-          hasHistoricalCoverage: false,
-          generatedAt,
-        };
+      if (publicAdapter) {
+        const publicRes = await publicAdapter.searchPublicProducts({
+          query: request.query || request.keywords?.[0] || "",
+          limit: request.limit,
+          organizationId: request.organizationId,
+        });
+
+        if (publicRes.success && publicRes.items.length > 0) {
+          sourcesSucceeded.push("PUBLIC_WEB");
+          publicObservations = publicRes.items;
+        }
       }
     } catch {
       // Fall through to secondary acquisition strategies
     }
   }
 
-  // 2. Attempt OFFICIAL MARKETPLACE API if connector claims research capability
+  // 2. Attempt OFFICIAL MARKETPLACE API if preferred and connector claims research capability
   if (preferredSources.includes("MARKETPLACE_API") && connector.capabilities.research && connector.searchProducts) {
     sourcesAttempted.push("MARKETPLACE_API");
 
@@ -251,60 +248,94 @@ export async function acquireProductObservations(
       };
 
       const liveProducts = await connector.searchProducts(researchQuery);
-      sourcesSucceeded.push("MARKETPLACE_API");
-
-      // Normalize observations and score canonical opportunity
-      const liveObservations: Array<NormalizedObservation<NormalizedProduct>> = liveProducts.map((p) => {
-        p.acquisitionMethod = "MARKETPLACE_API";
-        p.observedAt = generatedAt;
-        p.isHistorical = false;
-
-        const oppInput = extractOpportunityInputFromNormalizedProduct(p);
-        const report = evaluateCanonicalOpportunity(oppInput);
-        if (report.overallScore !== null) {
-          p.opportunityScore = {
-            score: report.overallScore,
-            confidence: report.confidenceScore,
-            tier: report.tier,
-            verdict: report.verdictLabel,
-            verdictVariant: report.verdictVariant,
-            availableSignals: report.signals.available.map((s) => s.id),
-            unavailableSignals: report.signals.unavailable.map((s) => s.id),
-          };
-        }
-
-        return {
-          id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
-          data: p,
-          metadata: {
-            sourceType: "MARKETPLACE_API",
-            sourceIdentifier: `${p.marketplace}:api`,
-            marketplace: p.marketplace,
-            observedAt: generatedAt,
-            provenance: (p.source as SignalProvenance) || "ACTUAL_DATA",
-            confidenceScore: report.confidenceScore,
-            isHistorical: false,
-          },
-        };
-      });
-
-      return {
-        marketplace: request.marketplace,
-        status: "AVAILABLE",
-        observations: liveObservations,
-        products: liveObservations.map((o) => o.data),
-        sourcesAttempted,
-        sourcesSucceeded,
-        hasLiveCoverage: true,
-        hasHistoricalCoverage: false,
-        generatedAt,
-      };
+      if (liveProducts && liveProducts.length > 0) {
+        sourcesSucceeded.push("MARKETPLACE_API");
+        apiObservations = liveProducts.map((p) => {
+          p.acquisitionMethod = "MARKETPLACE_API";
+          p.observedAt = generatedAt;
+          p.isHistorical = false;
+          return p;
+        });
+      }
     } catch {
-      // Live API failed, continue to historical fallback
+      // Live API failed, continue to fallback or use public observations
     }
   }
 
-  // 3. Attempt HISTORICAL OBSERVATIONS from database
+  // 3. Merge observations if both sources returned data
+  let finalProducts: NormalizedProduct[] = [];
+  if (publicObservations.length > 0 && apiObservations.length > 0) {
+    const { mergeProductObservations } = await import("./acquisition/merger");
+    const apiMap = new Map<string, NormalizedProduct>();
+    for (const ap of apiObservations) {
+      apiMap.set(ap.externalId, ap);
+    }
+
+    finalProducts = publicObservations.map((pub) => {
+      const matchingApi = apiMap.get(pub.externalId);
+      const merged = mergeProductObservations(pub, matchingApi);
+      return merged.product;
+    });
+  } else if (publicObservations.length > 0) {
+    finalProducts = publicObservations;
+  } else if (apiObservations.length > 0) {
+    finalProducts = apiObservations;
+  }
+
+  // If live products were acquired, format and return them
+  if (finalProducts.length > 0) {
+    // Asynchronously record into postgres historical observations without blocking response
+    const { persistPublicProductObservations } = await import("./acquisition/persistence");
+    persistPublicProductObservations(finalProducts, {
+      organizationId: request.organizationId,
+      searchQuery: request.query || request.keywords?.[0],
+      marketplace: request.marketplace,
+    }).catch(() => {});
+
+    const observations: Array<NormalizedObservation<NormalizedProduct>> = finalProducts.map((p) => {
+      const oppInput = extractOpportunityInputFromNormalizedProduct(p);
+      const report = evaluateCanonicalOpportunity(oppInput);
+      if (report.overallScore !== null) {
+        p.opportunityScore = {
+          score: report.overallScore,
+          confidence: report.confidenceScore,
+          tier: report.tier,
+          verdict: report.verdictLabel,
+          verdictVariant: report.verdictVariant,
+          availableSignals: report.signals.available.map((s) => s.id),
+          unavailableSignals: report.signals.unavailable.map((s) => s.id),
+        };
+      }
+
+      return {
+        id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
+        data: p,
+        metadata: {
+          sourceType: p.acquisitionMethod || "PUBLIC_WEB",
+          sourceIdentifier: `${p.marketplace}:${p.acquisitionMethod === "MARKETPLACE_API" ? "api" : "public_web"}`,
+          marketplace: p.marketplace,
+          observedAt: generatedAt,
+          provenance: p.source || "ACTUAL_DATA",
+          confidenceScore: p.opportunityScore?.confidence ?? report.confidenceScore,
+          isHistorical: false,
+        },
+      };
+    });
+
+    return {
+      marketplace: request.marketplace,
+      status: "AVAILABLE",
+      observations,
+      products: observations.map((o) => o.data),
+      sourcesAttempted,
+      sourcesSucceeded,
+      hasLiveCoverage: true,
+      hasHistoricalCoverage: false,
+      generatedAt,
+    };
+  }
+
+  // 4. Attempt HISTORICAL OBSERVATIONS from database
   if (preferredSources.includes("HISTORICAL_OBSERVATION") && request.allowHistoricalFallback !== false) {
     sourcesAttempted.push("HISTORICAL_OBSERVATION");
     const historical = await acquireHistoricalProductObservations(request);
@@ -326,7 +357,7 @@ export async function acquireProductObservations(
     }
   }
 
-  // If connector is purely architecture-ready (e.g. Amazon, eBay, TikTok Shop)
+  // If connector is purely architecture-ready (e.g. Amazon, eBay, Walmart, TikTok Shop)
   if (!connector.capabilities.research) {
     const isPartial = Object.values(connector.capabilities).some(Boolean);
     return {

@@ -367,28 +367,32 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Research Pipeline Integration**:
   - Updated `src/marketplaces/core/research-pipeline.ts`'s `ResearchRequest` to support `allowHistoricalFallback` and `preferredSources`.
   - Wired `runProductResearch` to return historical observations on connector failure when fallback is enabled, eliminating unnecessary `UNAVAILABLE` errors.
-## Public Web Data Acquisition Engine — Batch 9B (2026-08-20)
+## Public Web Data Acquisition Engine & Foundation — Batch 9B (2026-08-20)
 
 **Why**: To build SellerSalt's primary marketplace-independent public web acquisition layer, extracting legitimate public commerce observations from public web pages, JSON-LD structured schemas (`schema.org/Product`, `BreadcrumbList`, `AggregateRating`, `Offer`), and OpenGraph metadata without requiring official marketplace API keys.
 
 **What changed**:
 - **Public Web Acquisition Contracts (`src/marketplaces/core/acquisition/contracts.ts`)**:
-  - Defined `PublicWebAcquisitionAdapter`, `PublicSearchQuery`, `PublicAcquisitionResult<T>`, `PageFetchOptions`, `ParsedJsonLdProduct`, `ParsedOpenGraphData`, and `ParsedListingCard`.
+  - Defined `PublicWebAcquisitionAdapter`, `PublicSearchQuery`, `PublicAcquisitionResult<T>`, `PageFetchOptions`, `ParsedJsonLdProduct`, `ParsedOpenGraphData`, `ParsedListingCard`, `PublicKeywordHarvestResult`, and `MergedProductObservation`.
 - **Responsible Rate Limiting & Throttling (`src/marketplaces/core/acquisition/rate-limiter.ts`)**:
   - Implemented `DomainRateLimiter` with token-bucket algorithm, per-domain request concurrency limits, and exponential backoff with jitter.
 - **Safe Public Page Fetcher (`src/marketplaces/core/acquisition/page-fetcher.ts`)**:
   - Implemented `PublicPageFetcher` with honest `User-Agent: SellerSaltBot/1.0`, timeout management, response size limits (5MB max), transparent in-memory/Redis response caching (6-hour TTL), and transient error retries.
 - **Structured Data & HTML Parser (`src/marketplaces/core/acquisition/structured-parser.ts`)**:
   - Implemented `extractJsonLdBlocks`, `parseProductFromJsonLd`, `parseCategoryBreadcrumbsFromJsonLd`, `parseOpenGraphData`, `extractListingIdFromUrl`, and `parseEtsyListingCardsFromHtml`.
+- **Multi-Source Observation Merger (`src/marketplaces/core/acquisition/merger.ts`)**:
+  - Implemented `mergeProductObservations` providing non-destructive signal enrichment with explicit field lineage tracking (`sources: [PUBLIC_WEB, MARKETPLACE_API]`).
+- **Historical Observation Persistence (`src/marketplaces/core/acquisition/persistence.ts`)**:
+  - Created `persistPublicProductObservations` saving normalized research observations into PostgreSQL (`Prospect` table) to build longitudinal datasets.
 - **Etsy Public Web Adapter (`src/marketplaces/etsy/public-adapter.ts`)**:
-  - Created `EtsyPublicWebAdapter` implementing `PublicWebAcquisitionAdapter` for `searchPublicProducts`, `fetchPublicProduct`, and `fetchPublicShop` with canonical opportunity score evaluation.
-- **Amazon & eBay Public Web Stubs (`src/marketplaces/amazon/public-adapter.ts`, `src/marketplaces/ebay/public-adapter.ts`)**:
-  - Created architecture-ready public adapter contracts for Amazon and eBay.
+  - Implemented `EtsyPublicWebAdapter` supporting `searchPublicProducts`, `fetchPublicProduct`, `fetchPublicShop`, and `harvestPublicKeywords` with canonical opportunity score evaluation.
+- **Amazon, eBay & TikTok Shop Public Web Stubs (`src/marketplaces/amazon/public-adapter.ts`, `src/marketplaces/ebay/public-adapter.ts`, `src/marketplaces/tiktok-shop/public-adapter.ts`)**:
+  - Created architecture-ready public adapter contracts for Amazon, eBay, and TikTok Shop.
 - **Acquisition Router Priority Upgrade (`src/marketplaces/core/acquisition.ts`)**:
-  - Configured `acquireProductObservations` with primary `PUBLIC_WEB` strategy, falling back to `MARKETPLACE_API`, then `HISTORICAL_OBSERVATION`.
+  - Configured `acquireProductObservations` with primary `PUBLIC_WEB` strategy, `MARKETPLACE_API` secondary enrichment, and `HISTORICAL_OBSERVATION` tertiary fallback.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-9b-public-web-acquisition.test.ts` (10 tests).
-  - Full test baseline: **840/840 passing across 137 suites**.
+  - Created `src/tests/batch-9b-public-web-acquisition.test.ts` (22 tests across 7 suites).
+  - Full test baseline: **851/851 passing across 139 suites**.
   - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
 
 

@@ -286,8 +286,8 @@ export class EtsyPublicWebAdapter implements PublicWebAcquisitionAdapter {
       if (!isNaN(parsedSales)) stats.totalSales = parsedSales;
     }
 
-    // Extract review count (e.g. "(567)")
-    const reviewMatch = page.html.match(/\(([0-9,]+)\)\s*<\/span>\s*reviews/i);
+    // Extract review count (e.g. "(385) reviews" or "385 reviews")
+    const reviewMatch = page.html.match(/\(?([0-9,]+)\)?\s*(?:<\/span>)?\s*reviews/i);
     if (reviewMatch?.[1]) {
       const parsedReviews = parseInt(reviewMatch[1].replace(/,/g, ""), 10);
       if (!isNaN(parsedReviews)) stats.reviewCount = parsedReviews;
@@ -311,6 +311,129 @@ export class EtsyPublicWebAdapter implements PublicWebAcquisitionAdapter {
       fetchedAt,
     };
   }
+
+  /**
+   * Harvests keyword signals, co-occurring phrases, and tags from public Etsy search results.
+   */
+  async harvestPublicKeywords(
+    query: PublicSearchQuery
+  ): Promise<PublicAcquisitionResult<import("../core/acquisition/contracts").PublicKeywordHarvestResult>> {
+    const fetchedAt = new Date();
+    const queryTerm = query.query.trim();
+
+    if (!queryTerm) {
+      return {
+        success: true,
+        marketplace: "etsy",
+        items: [
+          {
+            query: "",
+            marketplace: "etsy",
+            relatedKeywords: [],
+            topTags: [],
+            observedListingsCount: 0,
+            averagePrice: null,
+            demandProxyScore: 0,
+            fetchedAt,
+          },
+        ],
+        sourceType: "PUBLIC_WEB",
+        provenance: "ACTUAL_DATA",
+        fetchedAt,
+      };
+    }
+
+    const searchUrl = `https://www.etsy.com/search?q=${encodeURIComponent(queryTerm)}`;
+    const page = await this.pageFetcher.fetchPage(searchUrl);
+
+    if (page.statusCode !== 200 || !page.html) {
+      return {
+        success: false,
+        marketplace: "etsy",
+        items: [],
+        sourceUrl: searchUrl,
+        sourceType: "PUBLIC_WEB",
+        provenance: "ACTUAL_DATA",
+        statusCode: page.statusCode,
+        error: `HTTP error ${page.statusCode}`,
+        fetchedAt,
+      };
+    }
+
+    const cards = parseEtsyListingCardsFromHtml(page.html);
+    const stopWords = new Set(["and", "the", "for", "with", "in", "of", "a", "an", "to", "by", "is", "on", "at", "or"]);
+    const wordCounts = new Map<string, number>();
+    const tagCounts = new Map<string, number>();
+
+    let totalPrice = 0;
+    let priceCount = 0;
+
+    for (const card of cards) {
+      if (card.price !== undefined && card.price > 0) {
+        totalPrice += card.price;
+        priceCount++;
+      }
+
+      // Tokenize title
+      const words = card.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !stopWords.has(w));
+
+      // 1-grams
+      for (const w of words) {
+        wordCounts.set(w, (wordCounts.get(w) || 0) + 1);
+      }
+
+      // 2-grams
+      for (let i = 0; i < words.length - 1; i++) {
+        const bigram = `${words[i]} ${words[i + 1]}`;
+        wordCounts.set(bigram, (wordCounts.get(bigram) || 0) + 1);
+      }
+    }
+
+    const totalObserved = cards.length || 1;
+    const relatedKeywords = Array.from(wordCounts.entries())
+      .filter(([kw, count]) => kw !== queryTerm.toLowerCase() && count >= 1)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([keyword, count]) => {
+        const listingFrequency = Math.round((count / totalObserved) * 100);
+        return {
+          keyword,
+          occurrenceCount: count,
+          listingFrequency,
+          demandProxy: Math.min(100, Math.round((count / totalObserved) * 100 * 1.5)),
+          demandTier: (count > 3 ? "HIGH" : count > 1 ? "MEDIUM" : "LOW") as "HIGH" | "MEDIUM" | "LOW",
+        };
+      });
+
+    const harvestResult: import("../core/acquisition/contracts").PublicKeywordHarvestResult = {
+      query: queryTerm,
+      marketplace: "etsy",
+      relatedKeywords,
+      topTags: Array.from(tagCounts.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count),
+      observedListingsCount: cards.length,
+      averagePrice: priceCount > 0 ? parseFloat((totalPrice / priceCount).toFixed(2)) : null,
+      demandProxyScore: Math.min(100, Math.round(cards.length * 4)),
+      fetchedAt,
+    };
+
+    return {
+      success: true,
+      marketplace: "etsy",
+      items: [harvestResult],
+      sourceUrl: searchUrl,
+      sourceType: "PUBLIC_WEB",
+      provenance: "ACTUAL_DATA",
+      statusCode: page.statusCode,
+      fetchedAt,
+    };
+  }
 }
 
 export const etsyPublicWebAdapter = new EtsyPublicWebAdapter();
+
