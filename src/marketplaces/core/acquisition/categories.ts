@@ -19,6 +19,8 @@ export interface CategoryPriceDistribution {
   median: number | null;
   average: number | null;
   percentile10: number | null;
+  percentile25: number | null;
+  percentile75: number | null;
   percentile90: number | null;
 }
 
@@ -33,9 +35,13 @@ export interface PublicCategoryIntelligenceResult {
   categoryName: string;
   marketplace: MarketplaceId;
   observedCatalogCount: number;
+  observedSellerCount: number;
   totalListings: number;
   priceDistribution: CategoryPriceDistribution;
   opportunityDistribution: CategoryOpportunityDistribution;
+  sellerConcentrationIndex: number | null;
+  freshnessRatio: number | null;
+  reviewBarrierRating: "LOW" | "MODERATE" | "HIGH";
   topProducts: NormalizedProduct[];
   recurringThemes: string[];
   freshness: FreshnessEvaluation;
@@ -105,6 +111,7 @@ export async function aggregatePublicCategoryIntelligence(
         categoryName,
         marketplace,
         observedCatalogCount: 0,
+        observedSellerCount: 0,
         totalListings: 0,
         priceDistribution: {
           min: null,
@@ -112,6 +119,8 @@ export async function aggregatePublicCategoryIntelligence(
           median: null,
           average: null,
           percentile10: null,
+          percentile25: null,
+          percentile75: null,
           percentile90: null,
         },
         opportunityDistribution: {
@@ -120,6 +129,9 @@ export async function aggregatePublicCategoryIntelligence(
           competitiveCount: 0,
           averageScore: null,
         },
+        sellerConcentrationIndex: null,
+        freshnessRatio: null,
+        reviewBarrierRating: "LOW",
         topProducts: [],
         recurringThemes: [],
         freshness,
@@ -147,7 +159,41 @@ export async function aggregatePublicCategoryIntelligence(
       : null;
   const median = prices.length > 0 ? calculatePercentile(prices, 50) : null;
   const percentile10 = prices.length > 0 ? calculatePercentile(prices, 10) : null;
+  const percentile25 = prices.length > 0 ? calculatePercentile(prices, 25) : null;
+  const percentile75 = prices.length > 0 ? calculatePercentile(prices, 75) : null;
   const percentile90 = prices.length > 0 ? calculatePercentile(prices, 90) : null;
+
+  // Seller metrics & concentration
+  const sellerCounts = new Map<string, number>();
+  for (const p of products) {
+    const sName = p.shop?.name || "Unknown Seller";
+    sellerCounts.set(sName, (sellerCounts.get(sName) || 0) + 1);
+  }
+  const observedSellerCount = sellerCounts.size;
+
+  let sellerConcentrationIndex: number | null = null;
+  if (products.length > 0) {
+    let sumSq = 0;
+    for (const count of sellerCounts.values()) {
+      const share = (count / products.length) * 100;
+      sumSq += share * share;
+    }
+    // Normalize to 0-100 index (10000 = single seller monopoly -> 100)
+    sellerConcentrationIndex = Math.min(100, Math.round(sumSq / 100));
+  }
+
+  // Review barrier rating
+  const reviewCounts = products
+    .map((p) => p.reviewCount)
+    .filter((r): r is number => typeof r === "number")
+    .sort((a, b) => a - b);
+  const medianReviews = reviewCounts.length > 0 ? calculatePercentile(reviewCounts, 50) : 0;
+  const reviewBarrierRating: "LOW" | "MODERATE" | "HIGH" =
+    medianReviews >= 250 ? "HIGH" : medianReviews >= 50 ? "MODERATE" : "LOW";
+
+  // Freshness ratio
+  const liveCount = products.filter((p) => !p.isHistorical).length;
+  const freshnessRatio = products.length > 0 ? Math.round((liveCount / products.length) * 100) : null;
 
   // Opportunity scoring distribution
   let highCount = 0;
@@ -207,6 +253,7 @@ export async function aggregatePublicCategoryIntelligence(
     categoryName,
     marketplace,
     observedCatalogCount: products.length,
+    observedSellerCount,
     totalListings: products.length,
     priceDistribution: {
       min,
@@ -214,6 +261,8 @@ export async function aggregatePublicCategoryIntelligence(
       median,
       average,
       percentile10,
+      percentile25,
+      percentile75,
       percentile90,
     },
     opportunityDistribution: {
@@ -222,6 +271,9 @@ export async function aggregatePublicCategoryIntelligence(
       competitiveCount: compCount,
       averageScore: avgScore,
     },
+    sellerConcentrationIndex,
+    freshnessRatio,
+    reviewBarrierRating,
     topProducts: scoredProducts.slice(0, 10),
     recurringThemes,
     freshness,

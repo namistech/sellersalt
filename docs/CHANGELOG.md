@@ -574,6 +574,40 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
 
+## SellerSalt Intelligence Data Depth & Marketplace Coverage Expansion — Batch 15 (2026-08-20)
+
+**Why**: To transition SellerSalt from acquiring raw public observations to building a structured, reusable, multi-dimensional intelligence memory across products, sellers, categories, keywords, and niches with rigorous provenance, longitudinal tracking, and zero data fabrication.
+
+**What changed**:
+- **Longitudinal Intelligence Engine (`src/marketplaces/core/acquisition/longitudinal.ts`)**:
+  - Implemented multi-snapshot historical intelligence evaluating price deltas, daily review velocities, rating drift, catalog expansion, and keyword momentum.
+  - Strictly adheres to the $n \ge 2$ observation threshold requirement — returns `null` deltas and `INSUFFICIENT_DATA` for $n \le 1$ observations without fabricating 0% changes.
+- **Market Memory & Intelligence Snapshot Layer (`src/marketplaces/core/acquisition/market-memory.ts`)**:
+  - Created indexing and caching engine for domain intelligence snapshots (`PRODUCT`, `KEYWORD`, `SELLER`, `CATEGORY`, `NICHE`, `RADAR`).
+  - Preserves exact observation period, sample size, freshness rating, confidence, derived metrics, and source lineage.
+- **Product Demand Intelligence Engine (`src/marketplaces/core/acquisition/demand.ts`)**:
+  - Evaluates demand proxy scores (0-100) strictly from observable signals (verified review count, buyer ratings, favorites/saves, velocity).
+  - Categorizes all metrics into `OBSERVED`, `ESTIMATED`, `DERIVED`, or `UNAVAILABLE`.
+  - Explicitly refuses to fabricate exact monthly search volume or unit sales numbers.
+- **Deep Category Intelligence & Multi-Percentile Distribution (`src/marketplaces/core/acquisition/categories.ts`)**:
+  - Added 10th, 25th, median, 75th, and 90th percentile price metrics.
+  - Added observed seller count, sample-level seller concentration index (Herfindahl-Hirschman proxy), freshness ratio, and review barrier rating.
+- **Enhanced Public Seller Research (`src/marketplaces/core/acquisition/shops.ts`)**:
+  - Computes observed catalog size, category concentration breakdown, median price, and longitudinal catalog/review deltas from database history.
+- **Keyword Intelligence 2.0 (`src/marketplaces/core/acquisition/keywords.ts`)**:
+  - Added seller prevalence %, keyword intent classification, price associations, and longitudinal momentum status (`RISING`, `STABLE`, `DECLINING`, `INSUFFICIENT_DATA`).
+- **Niche Discovery Market Profiles (`src/services/intelligence/niche-discovery.ts`)**:
+  - Generates structured answers addressing the 10 market questions (active status, sample growth, dominant price bands, dominant keywords, dominant subcategories, seller concentration).
+- **Enriched Product Observation Depth (`src/marketplaces/core/types.ts`)**:
+  - Extended `NormalizedProduct` and `ProductFieldLineage` with `originalPrice`, `discountPercent`, `brand`, `badges`, `shippingInfo`, `availability`, `variantsCount`, and field-level lineage maps.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-15-intelligence-depth.test.ts` (11 test cases).
+  - Full test suite: **1003/1003 passing across 218 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
+
+
 
 
 

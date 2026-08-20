@@ -251,6 +251,7 @@ export interface FieldProvenanceRecord<T = any> {
 export interface ProductFieldLineage {
   title?: FieldProvenanceRecord<string>;
   price?: FieldProvenanceRecord<number | null>;
+  originalPrice?: FieldProvenanceRecord<number | null>;
   rating?: FieldProvenanceRecord<number | null>;
   reviewCount?: FieldProvenanceRecord<number | null>;
   salesCount?: FieldProvenanceRecord<number | null>;
@@ -258,6 +259,9 @@ export interface ProductFieldLineage {
   estimatedDemand?: FieldProvenanceRecord<number | null>;
   shop?: FieldProvenanceRecord<any>;
   category?: FieldProvenanceRecord<any>;
+  brand?: FieldProvenanceRecord<string | null>;
+  availability?: FieldProvenanceRecord<string | null>;
+  shippingInfo?: FieldProvenanceRecord<string | null>;
 }
 
 /**
@@ -278,6 +282,13 @@ export interface NormalizedProduct extends MarketplaceRef {
   imageUrl?: string;
   price: number | null;
   currency: string | null;
+  originalPrice?: number | null;
+  discountPercent?: number | null;
+  brand?: string | null;
+  badges?: string[];
+  shippingInfo?: string | null;
+  availability?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "UNAVAILABLE" | null;
+  variantsCount?: number | null;
   category?: Category;
   categoryPath?: string[];
 
@@ -541,6 +552,16 @@ export interface NicheOpportunity {
   topSubcategories: NicheSubcategory[];
   topKeywordClusters: NicheKeywordCluster[];
   sampleProducts: NormalizedProduct[];
+
+  nicheProfileAnswers?: {
+    isActive: boolean;
+    isSampleGrowing: boolean | null;
+    dominantPriceBand: string;
+    dominantKeywords: string[];
+    dominantSubcategories: string[];
+    sellerConcentration: "LOW" | "MODERATE" | "HIGH";
+    dataGaps: string[];
+  };
 
   availableSignalGroups: string[];
   unavailableSignalGroups: string[];

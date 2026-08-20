@@ -4,13 +4,20 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 14 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 15 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 14
-(Production Research Intelligence Engine, Marketplace Coverage Expansion & Autonomous Acquisition Recovery):
+condensed version of everything else in this file, current as of Batch 15
+(SellerSalt Intelligence Data Depth & Marketplace Coverage Expansion):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
+- **Longitudinal Intelligence Engine** (`longitudinal.ts`): Computes price deltas, review velocities, rating drift, catalog growth, and keyword momentum across persistent observation snapshots ($n \ge 2$ required; $n \le 1$ remains strictly `null`).
+- **Market Memory & Intelligence Snapshots** (`market-memory.ts`): Retains and indexes derived domain intelligence snapshots (`PRODUCT`, `KEYWORD`, `SELLER`, `CATEGORY`, `NICHE`, `RADAR`) with sample sizes, freshness ratings, confidence, and observation lineages.
+- **Product Demand Intelligence Engine** (`demand.ts`): Computes demand proxy scores from observable signals (reviews, ratings, favorites, velocity) with explicit classification (`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`) and strictly zero fabricated search volume.
+- **Deep Category Intelligence** (`categories.ts`): Multi-percentile price distributions (10th, 25th, median, 75th, 90th), seller concentration index, freshness ratio, review barrier rating, and cross-category comparisons (`comparePublicCategories()`).
+- **Enhanced Public Seller Research** (`shops.ts`): Observed catalog size, category concentration breakdown, median price, and longitudinal catalog/review deltas.
+- **Keyword Intelligence 2.0** (`keywords.ts`): Listing prevalence %, seller prevalence %, price associations, intent classification, and keyword momentum (`RISING`, `STABLE`, `DECLINING`, `INSUFFICIENT_DATA`).
+- **Niche Discovery Market Profiles** (`niche-discovery.ts`): Evaluates market activity, dominant price bands, dominant keywords, dominant subcategories, and seller concentration.
 - **Centralized Acquisition Strategy Engine** (`strategy-engine.ts`): Prioritized multi-source strategy execution (`PUBLIC_SEARCH_HTML` -> `STRUCTURED_JSON_LD` -> `PRODUCT_DETAIL_CRAWL` -> `SECONDARY_OFFICIAL_API` -> `TERTIARY_HISTORICAL_DB`).
 - **Autonomous Acquisition Recovery Engine** (`recovery-engine.ts`): Graceful multi-tier fallback with compliance halts on `ACCESS_RESTRICTED`.
 - **Universal Pagination Engine** (`pagination.ts`): Bounded multi-page traversal with duplicate saturation detection and budget enforcement.
@@ -18,18 +25,14 @@ condensed version of everything else in this file, current as of Batch 14
 - **Parser Health & Drift Detection** (`parser-health.ts`): Real-time field fill rate evaluation and DOM layout change detection.
 - **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
 - **Observation Deduplication & Fingerprinting** (`deduplication.ts`): SHA-256 fingerprinting across all volatile/structural fields, preventing redundant snapshot creation.
-- **Product & Query Diff Engine** (`diff-engine.ts`): Calculates empirical price drops, review velocities, and run comparisons (appearing/disappearing/persisting items); strictly preserves `null` for $n \le 1$ observations.
 - **Research Budgets & Safety Bounds** (`research-budgets.ts`): Bounded execution (max 3 pages, max 50 listings, max 15 shops, max 20s timeout, max 5MB payload).
 - **Multi-Tier Research Cache** (`research-cache.ts`): In-memory TTL caching (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d).
-- **Acquisition Source Health Engine** (`source-health.ts`): Live operational health and rate limit / access restriction tracker.
 - **Unified Research Workbench Orchestrator** (`workbench.ts` & `/api/research/*`): `executeResearchRun` across `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR`.
 - **Interactive Research Center UI** (`/research`, `research-client.tsx`, `ResearchReportView.tsx`, `/research/runs/[id]`): Multi-domain research center executing live public ingestion without API credentials.
-- **Research Quality Evaluation Engine** (`research-quality.ts`): Calculates empirical dataset trustworthiness score (Volume, Freshness, Signals, Source Diversity) strictly separated from opportunity score.
-- **Acquisition Diagnostics Tracing** (`diagnostics.ts`): Traces adapter resolution, cache state, source health, and normalization.
 - **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
 
 **Current Verified Baseline**:
-- Tests: **992/992 passing across 208 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1003/1003 passing across 218 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 routes compiled**)

@@ -20,11 +20,14 @@ export interface PublicShopResearchResult {
   marketplace: MarketplaceId;
   competition: OpportunityScore;
   sampleProducts: NormalizedProduct[];
+  observedCatalogSize: number;
   priceRange: {
     min: number | null;
     max: number | null;
+    median: number | null;
     average: number | null;
   };
+  categoryConcentration?: Array<{ categoryName: string; count: number; sharePercent: number }>;
   longitudinalDeltas?: {
     catalogDelta: number | null;
     reviewDelta: number | null;
@@ -45,7 +48,7 @@ export async function fetchPublicShopResearch(
   if (!adapter || !adapter.capabilities.shopResearch) {
     return {
       available: false,
-      message: `${marketplace} public shop research is not available.`,
+      message: `Shop research is not supported via public web adapter for ${marketplace}.`,
     };
   }
 
@@ -87,16 +90,38 @@ export async function fetchPublicShopResearch(
     // Ignore error
   }
 
-  // 3. Compute price range
+  // 3. Compute price range & category concentration
   const prices = sampleProducts
     .map((p) => p.price)
-    .filter((p): p is number => p !== null && p !== undefined && p > 0);
+    .filter((p): p is number => p !== null && p !== undefined && p > 0)
+    .sort((a, b) => a - b);
+
+  const medianPrice =
+    prices.length > 0
+      ? prices.length % 2 === 1
+        ? prices[Math.floor(prices.length / 2)]
+        : parseFloat(((prices[prices.length / 2 - 1] + prices[prices.length / 2]) / 2).toFixed(2))
+      : null;
 
   const priceRange = {
-    min: prices.length > 0 ? Math.min(...prices) : null,
-    max: prices.length > 0 ? Math.max(...prices) : null,
+    min: prices.length > 0 ? prices[0] : null,
+    max: prices.length > 0 ? prices[prices.length - 1] : null,
+    median: medianPrice,
     average: prices.length > 0 ? parseFloat((prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2)) : null,
   };
+
+  const catMap = new Map<string, number>();
+  for (const p of sampleProducts) {
+    const cat = p.categoryPath?.[0] || p.category?.name || "General";
+    catMap.set(cat, (catMap.get(cat) || 0) + 1);
+  }
+  const categoryConcentration = Array.from(catMap.entries())
+    .map(([categoryName, count]) => ({
+      categoryName,
+      count,
+      sharePercent: sampleProducts.length > 0 ? Math.round((count / sampleProducts.length) * 100) : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
 
   // 4. Compute canonical competition score
   const totalSales = normalizedShop.totalSales ?? 0;
@@ -123,18 +148,38 @@ export async function fetchPublicShopResearch(
   } | null = null;
 
   try {
-    const prevCount = await prisma.productObservation.count({
-      where: { marketplace, shopName: normalizedShop.name || shopIdentifier },
+    const historicalObs = await prisma.productObservation.findMany({
+      where: {
+        marketplace,
+        shopName: {
+          contains: shopIdentifier,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        observedAt: true,
+        reviewCount: true,
+      },
+      orderBy: { observedAt: "asc" },
     });
-    if (prevCount > 0) {
+
+    if (historicalObs.length > 1) {
+      const first = historicalObs[0];
+      const last = historicalObs[historicalObs.length - 1];
+      const revDelta =
+        last.reviewCount !== null && first.reviewCount !== null
+          ? last.reviewCount - first.reviewCount
+          : null;
+
       longitudinalDeltas = {
-        catalogDelta: sampleProducts.length > 0 ? sampleProducts.length - prevCount : null,
-        reviewDelta: null,
-        observationCount: prevCount,
+        catalogDelta: sampleProducts.length - historicalObs.length,
+        reviewDelta: revDelta,
+        observationCount: historicalObs.length,
       };
     }
   } catch {
-    // Graceful fallback
+    // Database query error: degrade safely to null
   }
 
   return {
@@ -142,12 +187,16 @@ export async function fetchPublicShopResearch(
     marketplace,
     competition,
     sampleProducts,
+    observedCatalogSize: sampleProducts.length,
     priceRange,
+    categoryConcentration,
     longitudinalDeltas,
     freshness,
     provenance: "ACTUAL_DATA",
     limitations: [
-      "Total sales and store revenues are omitted when not publicly reported by the marketplace.",
+      "Sales metrics and shop age are derived from public profile headers where exposed by the marketplace.",
+      "Observed catalog size represents acquired public sample listings rather than complete merchant inventory.",
+      "Conversion rates are strictly private store data and remain unavailable without merchant OAuth authorization.",
     ],
   };
 }

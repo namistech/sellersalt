@@ -422,6 +422,27 @@ export function discoverNichesFromProducts(
         100
     );
 
+    const dominantPriceBand =
+      priceRange ? `$${priceRange.min} - $${priceRange.max}` : "Unknown price band";
+    const dominantKeywords = topKeywordClusters.flatMap((c) => c.keywords).slice(0, 5);
+    const dominantSubcategories = topSubcategories.map((s) => s.name).slice(0, 3);
+    const sellerConcentration: "HIGH" | "MODERATE" | "LOW" =
+      competition.topShopConcentration !== null && competition.topShopConcentration > 60
+        ? "HIGH"
+        : competition.topShopConcentration !== null && competition.topShopConcentration > 30
+        ? "MODERATE"
+        : "LOW";
+
+    const nicheProfileAnswers = {
+      isActive: clusterProducts.length > 0,
+      isSampleGrowing: momentum.isHistorical ? (momentum.growthRatePercent !== null ? momentum.growthRatePercent > 0 : null) : null,
+      dominantPriceBand,
+      dominantKeywords,
+      dominantSubcategories,
+      sellerConcentration,
+      dataGaps: unavailableSignalGroups,
+    };
+
     const limitations = [
       "Exact buyer search volume is unavailable (estimated via listing penetration and favorer proxies).",
       "Historical multi-month sales trajectory is unavailable; momentum reflects current listing freshness.",
@@ -446,6 +467,7 @@ export function discoverNichesFromProducts(
       topSubcategories,
       topKeywordClusters,
       sampleProducts: clusterProducts.slice(0, 4),
+      nicheProfileAnswers,
       availableSignalGroups,
       unavailableSignalGroups,
       provenance: "ACTUAL_DATA" as SignalProvenance,

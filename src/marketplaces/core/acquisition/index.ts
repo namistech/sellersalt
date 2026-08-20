@@ -32,4 +32,7 @@ export * from "./pagination";
 export * from "./query-normalizer";
 export * from "./parser-health";
 export * from "./recovery-engine";
+export * from "./longitudinal";
+export * from "./market-memory";
+export * from "./demand";
 export * from "../acquisition";

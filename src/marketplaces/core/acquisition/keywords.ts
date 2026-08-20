@@ -27,9 +27,12 @@ export interface CanonicalKeywordObservation {
   marketplace: MarketplaceId;
   occurrenceCount: number;
   listingFrequencyPercent: number; // 0-100% of analyzed listings containing this term
+  sellerPrevalencePercent?: number | null; // 0-100% of unique sellers using this term
   observedAveragePrice: number | null;
   demandProxyScore: number; // 0-100 derived from listing prevalence and engagement
   competitionProxy: "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
+  momentum?: "RISING" | "STABLE" | "DECLINING" | "INSUFFICIENT_DATA";
+  deltaPrevalencePercent?: number | null;
   searchVolume: null;
   searchVolumeProvenance: "UNAVAILABLE";
   freshness: FreshnessEvaluation;
