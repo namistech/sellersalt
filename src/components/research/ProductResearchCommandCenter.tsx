@@ -574,7 +574,37 @@ export function ProductResearchCommandCenter({
             marketplaces={result.marketplaces}
           />
         </div>
-      ) : null}
+      ) : (
+        <Card className="p-8 md:p-12 text-center border rounded-2xl bg-card space-y-6 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <Compass className="w-6 h-6" />
+          </div>
+          <div className="space-y-2 max-w-lg mx-auto">
+            <h3 className="text-base font-bold text-foreground">
+              Ready to Execute Market Research
+            </h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Enter a product idea, keyword, or niche above to analyze empirical pricing distributions (P10–P90), review count barriers, dominant seller shares, and keyword cluster prevalence across live catalogs.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
+            <span className="text-muted-foreground text-[11px]">Popular starting searches:</span>
+            {["wooden desk organizer", "ceramic pour-over dripper", "linen apron", "leather passport wallet"].map((sample) => (
+              <button
+                key={sample}
+                type="button"
+                onClick={() => {
+                  setQuery(sample);
+                }}
+                className="px-3 py-1 rounded-lg border bg-muted/40 hover:bg-muted text-foreground text-xs transition-colors"
+              >
+                {sample}
+              </button>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

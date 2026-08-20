@@ -1,77 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Sparkles,
+  Compass,
   ArrowRight,
   CheckCircle2,
   Store,
   Flame,
   Search,
   Layers,
-  ShoppingBag,
-  FileText,
-  Activity,
+  Sparkles,
   ShieldCheck,
   Zap,
+  HelpCircle,
+  TrendingUp,
+  BarChart3,
+  Check,
 } from "lucide-react";
-import { Button, Card, Badge, Heading, Text } from "@/components/ui";
+import { Button, Card, Badge } from "@/components/ui";
 
 const CATEGORIES = [
   "Home & Living",
   "Jewelry & Accessories",
-  "Clothing & Shoes",
+  "Apparel & Footwear",
   "Craft Supplies & Tools",
-  "Paper & Party Supplies",
-  "Art & Collectibles",
-  "Pet Supplies",
-  "Weddings",
+  "Office & Workspace",
+  "Kitchen & Dining",
+  "Pet Accessories",
+  "Beauty & Personal Care",
 ];
 
-const GOALS = [
+const MARKETPLACE_OPTIONS = [
+  { id: "etsy", label: "Etsy", badge: "Live Catalog & Research" },
+  { id: "amazon", label: "Amazon", badge: "Public Catalog & Pricing" },
+  { id: "ebay", label: "eBay", badge: "Completed & Active Listings" },
+  { id: "walmart", label: "Walmart", badge: "Catalog & BuyBox Structure" },
+];
+
+const COMMERCIAL_GOALS = [
   {
-    id: "radar",
-    title: "Find Winning Breakout Products",
-    description: "Scan niches for low-saturation, high-velocity listing opportunities.",
+    id: "discover",
+    title: "1. Discover Emerging Opportunities",
+    description: "Surface low-saturation, high-potential product ideas and attribute gaps.",
     icon: Flame,
-    route: "/radar",
+    route: "/discovery",
   },
   {
-    id: "keywords",
-    title: "Mine High-Intent Buyer Keywords",
-    description: "Extract long-tail keyword clusters and 13-tag optimizer replacements.",
+    id: "research",
+    title: "2. Research Market Structure",
+    description: "Analyze observable price distributions, review barriers, and seller concentration.",
     icon: Search,
-    route: "/keyword-research",
+    route: "/research-center",
   },
   {
-    id: "seo",
-    title: "Audit & Optimize Listing SEO",
-    description: "Score listing titles, 13 tags, front-loading, and find missing keywords.",
-    icon: FileText,
-    route: "/seo",
-  },
-  {
-    id: "competitors",
-    title: "Market Research",
-    description: "Track shop sales spikes, review velocity, and winning catalogs.",
-    icon: Store,
-    route: "/spy",
-  },
-  {
-    id: "own_shop",
-    title: "Optimize My Existing Etsy Shop",
-    description: "Audit active catalog health, fix zero-sales listings, and track revenue.",
-    icon: Activity,
-    route: "/store",
-  },
-  {
-    id: "studio",
-    title: "Create Listing Strategy & Copy",
-    description: "Generate original, human-approved listing titles, tags, and descriptions.",
+    id: "validate",
+    title: "3. Validate Commercial Feasibility",
+    description: "Run deterministic decision models (PURSUE, TEST, WAIT, REJECT) on a specific product.",
     icon: Sparkles,
-    route: "/studio",
+    route: "/validate",
+  },
+  {
+    id: "workspace",
+    title: "4. Plan Product Sourcing & Unit Economics",
+    description: "Model 3-scenario financial sensitivity, RFQ specs, and launch readiness.",
+    icon: Layers,
+    route: "/product-workspaces",
   },
 ];
 
@@ -81,37 +76,23 @@ export function OnboardingClient({ userName }: { userName: string }) {
 
   // Form states
   const [selectedCategory, setSelectedCategory] = useState("Home & Living");
-  const [customNiche, setCustomNiche] = useState("Minimalist Desk Accessories");
-  const [selectedGoal, setSelectedGoal] = useState("radar");
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [customNiche, setCustomNiche] = useState("Minimalist Ceramic Coffee Dripper");
+  const [selectedGoal, setSelectedGoal] = useState("research");
+  const [selectedMarketplaces, setSelectedMarketplaces] = useState<string[]>(["etsy", "amazon"]);
   const [isFinishing, setIsFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
 
-  function handleCategorySelect(cat: string) {
-    setSelectedCategory(cat);
-  }
-
-  function handleGoalSelect(goalId: string) {
-    setSelectedGoal(goalId);
-  }
-
-  function handleConnectEtsy() {
-    setIsConnecting(true);
-    const win = window.open(
-      "/api/seller-channels/etsy/connect",
-      "etsy-connect",
-      "width=620,height=760,noopener,noreferrer"
-    );
-    if (!win) {
-      window.location.href = "/api/seller-channels/etsy/connect";
+  const toggleMarketplace = (id: string) => {
+    if (selectedMarketplaces.includes(id)) {
+      if (selectedMarketplaces.length > 1) {
+        setSelectedMarketplaces(selectedMarketplaces.filter((m) => m !== id));
+      }
+    } else {
+      setSelectedMarketplaces([...selectedMarketplaces, id]);
     }
-  }
+  };
 
   async function handleFinish() {
-    // Real business fact — persisted server-side via the User row, not
-    // localStorage (a client-side value can't be trusted as a server-side
-    // fact; see dashboard-onboarding-guide.tsx, which reads this same data
-    // from real props, never localStorage).
     setIsFinishing(true);
     setFinishError(null);
     try {
@@ -124,8 +105,8 @@ export function OnboardingClient({ userName }: { userName: string }) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to save onboarding preferences.");
       }
-      const targetGoal = GOALS.find((g) => g.id === selectedGoal);
-      router.push(targetGoal ? targetGoal.route : "/workspace");
+      const targetGoal = COMMERCIAL_GOALS.find((g) => g.id === selectedGoal);
+      router.push(targetGoal ? targetGoal.route : "/dashboard");
     } catch (err: any) {
       setIsFinishing(false);
       setFinishError(err.message || "Something went wrong saving your preferences. Please try again.");
@@ -133,33 +114,34 @@ export function OnboardingClient({ userName }: { userName: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] py-10 px-4 flex flex-col justify-between">
+    <div className="min-h-screen bg-[#FAFAF8] py-10 px-4 flex flex-col justify-between text-[#141B16]">
       <div className="max-w-2xl mx-auto w-full space-y-8">
         {/* Progress Bar & Header */}
         <div className="space-y-4 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E7FAF1] border border-[#0E8F5D]/20 text-[#0E8F5D] text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="h-3.5 w-3.5" /> First-Value Fast Start
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <span>Fast-Start Merchant Setup</span>
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl font-extrabold text-[#141B16]">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#141B16] tracking-tight">
               Welcome to SellerSalt, {userName}
             </h1>
-            <p className="text-xs text-[#525B55]">
-              Let&apos;s customize your intelligence command center in under 60 seconds.
+            <p className="text-xs sm:text-sm text-[#525B55]">
+              Know what to sell before you spend money. Let&apos;s personalize your workspace in 60 seconds.
             </p>
           </div>
 
           {/* Stepper Dots */}
-          <div className="flex items-center justify-center gap-2 pt-2">
+          <div className="flex items-center justify-center gap-2 pt-1">
             {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={`h-2 rounded-full transition-all ${
                   step === s
-                    ? "w-8 bg-[#0E8F5D]"
+                    ? "w-8 bg-emerald-600"
                     : step > s
-                    ? "w-2 bg-[#0E8F5D]"
+                    ? "w-2 bg-emerald-600"
                     : "w-2 bg-[#E3E6E0]"
                 }`}
               />
@@ -167,32 +149,31 @@ export function OnboardingClient({ userName }: { userName: string }) {
           </div>
         </div>
 
-        {/* Step 1: What do you sell? */}
+        {/* Step 1: Category & Initial Idea */}
         {step === 1 && (
           <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-6">
             <div className="space-y-1">
               <h2 className="text-base font-bold text-[#141B16]">
-                Step 1: What category or niche are you focusing on?
+                Step 1: What category and product idea are you considering?
               </h2>
               <p className="text-xs text-[#525B55]">
-                SellerSalt will tune its Opportunity Radar and keyword mining algorithms to your focus.
+                SellerSalt will configure your research and opportunity feeds around this focus.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-xs font-semibold text-[#141B16] block">
-                Primary Category
-              </label>
+            {/* Category selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#525B55]">Primary Product Category</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => handleCategorySelect(cat)}
-                    className={`p-2.5 rounded-lg text-xs font-semibold border text-left transition-all ${
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`p-2.5 rounded-xl text-xs font-medium text-left border transition-all ${
                       selectedCategory === cat
-                        ? "border-[#0E8F5D] bg-[#E7FAF1] text-[#0E8F5D]"
-                        : "border-[#E3E6E0] bg-[#FAFAF8] text-[#525B55] hover:border-[#C7CCC4]"
+                        ? "bg-emerald-500/10 border-emerald-600 text-emerald-800 font-bold"
+                        : "bg-[#FAFAF8] border-[#E3E6E0] text-[#525B55] hover:bg-white"
                     }`}
                   >
                     {cat}
@@ -201,86 +182,101 @@ export function OnboardingClient({ userName }: { userName: string }) {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#141B16] block">
-                Target Niche / Product Concept
-              </label>
+            {/* Focus Product / Niche Input */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#525B55]">Initial Product Idea or Niche</label>
               <input
                 type="text"
                 value={customNiche}
                 onChange={(e) => setCustomNiche(e.target.value)}
-                placeholder="e.g. Minimalist Ceramic Pour Over, Personalized Leather Wallets"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#C7CCC4] text-xs text-[#141B16] outline-none focus:border-[#0E8F5D]"
+                placeholder="e.g. Minimalist Desk Organizer, Ceramic Pour-Over Dripper..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#E3E6E0] text-xs font-medium focus:outline-hidden focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/10 bg-[#FAFAF8]"
               />
-            </div>
-
-            {/* Marketplace Status Strip */}
-            <div className="p-3 rounded-lg border border-[#E3E6E0] bg-[#FAFAF8] flex items-center justify-between text-xs">
-              <span className="font-semibold text-[#141B16]">Active Channel:</span>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-[#E7FAF1] text-[#0E8F5D] font-bold text-[11px]">
-                  🟢 Etsy (Active)
-                </span>
-                <span className="text-[11px] text-[#7C847E]">
-                  Amazon, eBay &amp; TikTok (Coming Soon)
-                </span>
-              </div>
             </div>
 
             <div className="pt-2 flex justify-end">
               <Button
                 variant="primary"
                 onClick={() => setStep(2)}
-                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold px-5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl"
               >
-                <span>Continue to Goals</span>
+                <span>Continue</span>
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </div>
           </Card>
         )}
 
-        {/* Step 2: What is your primary goal? */}
+        {/* Step 2: Target Marketplaces & Goal */}
         {step === 2 && (
           <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-6">
             <div className="space-y-1">
               <h2 className="text-base font-bold text-[#141B16]">
-                Step 2: What is your main objective right now?
+                Step 2: Which marketplaces are relevant, and what is your primary goal?
               </h2>
               <p className="text-xs text-[#525B55]">
-                We will guide you into the most direct intelligence tool for your first action.
+                SellerSalt conducts cross-marketplace research across permitted public catalogs.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {GOALS.map((g) => {
-                const Icon = g.icon;
-                const isSelected = selectedGoal === g.id;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => handleGoalSelect(g.id)}
-                    className={`p-3.5 rounded-xl border text-left transition-all space-y-1.5 ${
-                      isSelected
-                        ? "border-[#0E8F5D] bg-[#E7FAF1]/60 shadow-xs"
-                        : "border-[#E3E6E0] bg-white hover:border-[#C7CCC4]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={`p-1.5 rounded-lg ${isSelected ? "bg-[#0E8F5D] text-white" : "bg-[#FAFAF8] text-[#525B55]"}`}>
-                        <Icon className="h-4 w-4" />
+            {/* Marketplace multi-select */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#525B55]">Target Marketplaces</label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {MARKETPLACE_OPTIONS.map((mp) => {
+                  const isSelected = selectedMarketplaces.includes(mp.id);
+                  return (
+                    <button
+                      key={mp.id}
+                      type="button"
+                      onClick={() => toggleMarketplace(mp.id)}
+                      className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
+                        isSelected
+                          ? "bg-emerald-500/10 border-emerald-600 text-emerald-900 font-bold"
+                          : "bg-[#FAFAF8] border-[#E3E6E0] text-[#525B55] hover:bg-white"
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold">{mp.label}</div>
+                        <div className="text-[10px] text-[#7C847E]">{mp.badge}</div>
                       </div>
-                      {isSelected && <CheckCircle2 className="h-4 w-4 text-[#0E8F5D]" />}
-                    </div>
-                    <div className="font-bold text-xs text-[#141B16]">{g.title}</div>
-                    <div className="text-[11px] text-[#525B55] leading-relaxed">{g.description}</div>
-                  </button>
-                );
-              })}
+                      {isSelected && <Check className="w-4 h-4 text-emerald-600" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="pt-2 flex justify-between items-center">
+            {/* Goal selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[#525B55]">Primary First Workflow Goal</label>
+              <div className="space-y-2">
+                {COMMERCIAL_GOALS.map((g) => {
+                  const isSelected = selectedGoal === g.id;
+                  const Icon = g.icon;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setSelectedGoal(g.id)}
+                      className={`w-full p-3 rounded-xl border text-left transition-all flex items-start gap-3 ${
+                        isSelected
+                          ? "bg-emerald-500/10 border-emerald-600 text-emerald-900 shadow-xs"
+                          : "bg-[#FAFAF8] border-[#E3E6E0] text-[#525B55] hover:bg-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isSelected ? "text-emerald-600" : "text-[#7C847E]"}`} />
+                      <div>
+                        <div className="text-xs font-bold text-[#141B16]">{g.title}</div>
+                        <div className="text-[11px] text-[#7C847E] mt-0.5">{g.description}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -291,128 +287,119 @@ export function OnboardingClient({ userName }: { userName: string }) {
               <Button
                 variant="primary"
                 onClick={() => setStep(3)}
-                className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold px-5"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl"
               >
-                <span>Continue to Shop Setup</span>
+                <span>Continue</span>
                 <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </div>
           </Card>
         )}
 
-        {/* Step 3: Connect Etsy */}
+        {/* Step 3: Our Data Trust Contract */}
         {step === 3 && (
           <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-6">
             <div className="space-y-1">
               <h2 className="text-base font-bold text-[#141B16]">
-                Step 3: Connect Your Etsy Shop (Optional)
+                Step 3: How SellerSalt Handles Marketplace Data
               </h2>
               <p className="text-xs text-[#525B55]">
-                Link your store to synchronize live listing health, tag audits, and sales velocity proxies.
+                We separate observable listing facts from derived math and your grounded costs.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-[#E3E6E0] bg-[#FAFAF8] space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-[#E7FAF1] text-[#0E8F5D] flex items-center justify-center">
-                  <Store className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-[#141B16]">Etsy Seller Open API v3</h3>
-                  <p className="text-[11px] text-[#525B55]">
-                    Read-only synchronization for shop analytics, tags, and listing SEO diagnostics.
-                  </p>
-                </div>
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-1">
+                <span className="font-bold text-emerald-900 block">OBSERVED Signals</span>
+                <p className="text-[#525B55] text-[11px]">
+                  Real listing prices, review counts, star ratings, and seller tags captured directly from permitted public catalogs.
+                </p>
               </div>
 
-              <div className="pt-2 flex flex-wrap gap-2 text-[11px] text-[#525B55]">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[#0E8F5D]" /> Official OAuth 2.0 PKCE
-                </span>
-                <span>•</span>
-                <span>Zero password storage</span>
-                <span>•</span>
-                <span>Rule 9 human publishing gate</span>
+              <div className="p-3.5 rounded-xl border border-sky-200 bg-sky-50/40 space-y-1">
+                <span className="font-bold text-sky-900 block">DERIVED & ESTIMATED Decision Models</span>
+                <p className="text-[#525B55] text-[11px]">
+                  Deterministic price positioning quantiles ($P_{10} - P_{90}$), seller concentration indices, and commercial feasibility scores.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+                <span className="font-bold text-slate-900 block">Zero-Fabrication Contract</span>
+                <p className="text-[#525B55] text-[11px]">
+                  Unobservable metrics (like competitor store revenues or private search volumes) remain strictly <strong>UNAVAILABLE</strong> (never fake zeros).
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pt-2">
-              <Button
-                variant="secondary"
-                onClick={handleConnectEtsy}
-                loading={isConnecting}
-                className="w-full sm:w-auto text-xs font-semibold"
+            <div className="pt-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="text-xs font-semibold text-[#525B55] hover:underline"
               >
-                <Store className="h-3.5 w-3.5 mr-1.5" />
-                <span>Authorize with Etsy</span>
+                Back
+              </button>
+              <Button
+                variant="primary"
+                onClick={() => setStep(4)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl"
+              >
+                <span>I Understand — Launch Workspace</span>
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={() => setStep(4)}
-                  className="text-xs font-semibold text-[#525B55] hover:underline"
-                >
-                  Skip for Now
-                </button>
-                <Button
-                  variant="primary"
-                  onClick={() => setStep(4)}
-                  className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold px-5"
-                >
-                  <span>Next Step</span>
-                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                </Button>
-              </div>
             </div>
           </Card>
         )}
 
-        {/* Step 4: Launch into First Action */}
+        {/* Step 4: Ready to Launch */}
         {step === 4 && (
-          <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-6">
-            <div className="space-y-1 text-center">
-              <div className="inline-flex h-12 w-12 rounded-full bg-[#E7FAF1] text-[#0E8F5D] items-center justify-center mx-auto mb-2">
-                <Zap className="h-6 w-6" />
-              </div>
+          <Card padding="lg" className="border-[#E3E6E0] bg-white shadow-xs space-y-6 text-center">
+            <div className="inline-flex h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-600 items-center justify-center mx-auto mb-1">
+              <Zap className="h-6 w-6" />
+            </div>
+
+            <div className="space-y-1">
               <h2 className="text-lg font-bold text-[#141B16]">
-                You&apos;re Ready to Discover Your Next High-Margin Product
+                You&apos;re Ready to Execute Evidence-Based Research
               </h2>
               <p className="text-xs text-[#525B55] max-w-md mx-auto">
                 Your workspace is configured for <strong>{selectedCategory}</strong> ({customNiche}).
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-2 text-xs">
-              <div className="font-bold text-[#141B16]">Selected First Value Workflow:</div>
-              <div className="flex items-center justify-between text-[#525B55]">
-                <span>Goal:</span>
-                <span className="font-semibold text-[#141B16]">
-                  {GOALS.find((g) => g.id === selectedGoal)?.title}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[#525B55]">
-                <span>Focus Niche:</span>
+            <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-2 text-xs text-left">
+              <div className="font-bold text-[#141B16] border-b border-[#E3E6E0] pb-2">Workspace Configuration Summary:</div>
+              <div className="flex items-center justify-between text-[#525B55] pt-1">
+                <span>Selected Focus:</span>
                 <span className="font-semibold text-[#141B16]">{customNiche}</span>
               </div>
               <div className="flex items-center justify-between text-[#525B55]">
-                <span>Plan Tier:</span>
-                <Badge variant="neutral" className="text-[10px]">Free Explorer</Badge>
+                <span>Category:</span>
+                <span className="font-semibold text-[#141B16]">{selectedCategory}</span>
+              </div>
+              <div className="flex items-center justify-between text-[#525B55]">
+                <span>Marketplaces:</span>
+                <span className="font-semibold text-[#141B16] uppercase">{selectedMarketplaces.join(", ")}</span>
+              </div>
+              <div className="flex items-center justify-between text-[#525B55]">
+                <span>First Action:</span>
+                <span className="font-semibold text-[#141B16]">{COMMERCIAL_GOALS.find((g) => g.id === selectedGoal)?.title}</span>
               </div>
             </div>
 
-            <div className="pt-2 space-y-2">
-              {finishError && (
-                <p className="text-[11px] text-red-600 text-center">{finishError}</p>
-              )}
+            {finishError && (
+              <p className="text-xs text-red-600 text-center">{finishError}</p>
+            )}
+
+            <div className="pt-2">
               <Button
                 variant="primary"
                 onClick={handleFinish}
                 loading={isFinishing}
                 disabled={isFinishing}
-                className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold py-3 shadow-sm flex items-center justify-center gap-2"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-3 rounded-xl shadow-sm flex items-center justify-center gap-2"
               >
-                <span>Launch First Intelligence Tool</span>
+                <span>Launch First Research Session</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -422,8 +409,8 @@ export function OnboardingClient({ userName }: { userName: string }) {
 
       {/* Footer Navigation */}
       <div className="max-w-2xl mx-auto w-full text-center pt-8">
-        <Link href="/workspace" className="text-xs text-[#7C847E] hover:text-[#141B16] underline">
-          Skip onboarding and go directly to Workspace Command Center
+        <Link href="/dashboard" className="text-xs text-[#7C847E] hover:text-[#141B16] underline">
+          Skip onboarding and go directly to Command Dashboard
         </Link>
       </div>
     </div>

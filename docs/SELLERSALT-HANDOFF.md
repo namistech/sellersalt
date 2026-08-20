@@ -4,21 +4,21 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 25 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 26 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 25
-(Public Commercial Layer & Launch Readiness Foundation):
+condensed version of everything else in this file, current as of Batch 26
+(V1 Product Completion & Usable SaaS Readiness):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Public Commercial Layer & Marketing Shell** (`src/app/marketing-homepage.tsx`, `/how-it-works`, `/pricing`, `/trust`): Transparent, conversion-ready marketing pages communicating *"Know what to sell before you spend money."* and the 5-step workflow journey.
-- **Epistemological Signal Classification & Zero-Fabrication Contract** (`signal-classification.ts`, `UnavailableSignalCard.tsx`): Clear public disclosures of `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals.
-- **Unified Product Shell & Navigation** (`src/services/navigation.ts`): Workflow-first navigation organized by merchant jobs (`DASHBOARD`, `DISCOVER`, `RESEARCH`, `DECIDE & VALIDATE`, `BUILD & OPTIMIZE`, `CHANNELS & GOVERNANCE`, `MANAGE & TRUST`).
-- **Command Dashboard & Unified Search** (`src/app/(dashboard)/dashboard/`, `src/components/research/UnifiedSearchEntry.tsx`): Interactive hero search console with multi-marketplace capability toggles.
-- **Marketplace Access Resolver & Anti-Circumvention** (`access-modes.ts`, `anti-circumvention.ts`): Resolves 9 explicit data access modes with zero scraping fallback after API restrictions.
+- **First-Time Merchant Onboarding & Activation** (`src/app/(dashboard)/onboarding/onboarding-client.tsx`): 4-step interactive setup configuring focus categories, target marketplaces, and Data Trust contract, routing directly into active research.
+- **Continuous 5-Step Commercial Workflow** (`NextCommercialActionBar.tsx`): Seamless, evidence-grounded action handoffs linking Discover → Research → Validate → Plan → Launch across all primary surfaces.
+- **Public Commercial Layer & Marketing Shell** (`src/app/marketing-homepage.tsx`, `/how-it-works`, `/pricing`, `/trust`): Transparent marketing pages communicating *"Know what to sell before you spend money."*
+- **Epistemological Signal Classification & Zero-Fabrication Contract** (`signal-classification.ts`, `UnavailableSignalCard.tsx`): Disclosures of `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals.
+- **Quota & Plan Enforcement** (`quota-enforcement.ts`, `PLAN_DEFINITIONS`): Multi-tier enforcement across Free, Starter, Pro, Agency.
 
 **Current Verified Baseline**:
-- Tests: **1124/1124 passing across 299 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1133/1133 passing across 305 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**169/169 static and dynamic routes compiled**)

@@ -900,3 +900,23 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**169/169 routes compiled**).
+
+## Batch 26: V1 Product Completion & End-to-End Usable SaaS Readiness (2026-08-20)
+
+**Why**: Transition SellerSalt into an end-to-end usable, trustworthy, and continuous V1 SaaS application where real merchants can navigate seamlessly across the entire 5-step commercial decision journey (Discover → Research → Validate → Plan → Launch) without dead ends or synthetic mock metrics.
+
+**What changed**:
+- **First-Time Merchant Onboarding (`src/app/(dashboard)/onboarding/`)**:
+  - Rewrote `OnboardingClient` to introduce the 5-step workflow, configure focus niches and target marketplaces, explain the Data Trust contract, and route authoritatively into active research.
+- **Continuous Workflow Handoffs & Empty States**:
+  - Enriched `ProductResearchCommandCenter.tsx` with helpful empty state suggestions and continuous action bars.
+  - Verified zero dead ends across Discovery (`OpportunityDetailDrawer.tsx`), Research (`ProductResearchCommandCenter.tsx`), Validation (`ValidationReportView.tsx`), Workspace (`ProductOpportunityCockpit.tsx`), and Studio (`StudioClient.tsx`).
+- **Quota & Billing Verification**:
+  - Verified `PLAN_DEFINITIONS` alignment with database models and server-side `checkQuota` enforcement across all 4 tiers (Free Explorer, Starter, Pro, Agency).
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-26-V1-PRODUCT-COMPLETION.md`.
+- **Verification Baseline**:
+  - Full test suite: **1133/1133 passing across 305 suites** (`src/tests/batch-26-v1-product-completion.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**169/169 routes compiled**).
