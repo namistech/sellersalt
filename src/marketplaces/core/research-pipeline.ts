@@ -221,7 +221,25 @@ export async function runProductResearch(request: ResearchRequest): Promise<Prod
     };
   }
 
-  if (!connector.capabilities.research || !connector.searchProducts) {
+  // Batch 35 fix: this used to gate purely on the *official API* connector's
+  // `research` capability, which meant Amazon/Walmart/eBay/TikTok — whose
+  // official connectors are architecture-ready stubs with
+  // `capabilities.research: false` — were short-circuited to
+  // NOT_IMPLEMENTED here and orchestrateProductResearch() (which knows how
+  // to use their real, working PUBLIC_WEB adapters) was never even called.
+  // That directly contradicted this codebase's own documented priority
+  // order (docs/DATA-ACQUISITION.md: PUBLIC_WEB is priority 1/primary,
+  // MARKETPLACE_API is priority 2/enrichment) and meant the "All
+  // Marketplaces" fan-out silently excluded marketplaces whose public-web
+  // acquisition genuinely works today. Now: only short-circuit here when
+  // NEITHER the official API NOR a real public-web search capability
+  // exists — otherwise fall through and let orchestrateProductResearch
+  // attempt every source it's actually allowed to.
+  const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
+  const hasOfficialResearch = connector.capabilities.research && !!connector.searchProducts;
+  const hasPublicWebResearch = !!publicAdapter?.capabilities.productSearch;
+
+  if (!hasOfficialResearch && !hasPublicWebResearch) {
     const hasAnyCapability = Object.values(connector.capabilities).some(Boolean);
     return {
       marketplace: request.marketplace,

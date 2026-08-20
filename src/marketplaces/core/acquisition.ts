@@ -95,13 +95,27 @@ export function deduplicateProductObservations(
 export async function acquireHistoricalProductObservations(
   request: AcquisitionRequest
 ): Promise<Array<NormalizedObservation<NormalizedProduct>>> {
+  // Batch 35 fix: this previously queried Prospect with no `marketplace`
+  // filter at all, then unconditionally relabeled every row it found as
+  // `request.marketplace` — so a query for, say, "tiktok_shop" (a
+  // marketplace with zero real capability) could return another
+  // marketplace's real historical Prospect rows mislabeled as TikTok Shop
+  // observations. Also never ran without an organizationId (matching the
+  // same fix already applied to orchestrator.ts's historical fallback)
+  // rather than silently querying unscoped across every organization.
+  if (!request.organizationId) return [];
+
+  const connectorType = request.marketplace.toUpperCase();
+  const validConnectorTypes = ["ETSY", "AMAZON", "EBAY", "TIKTOK_SHOP", "SHOPIFY", "WOOCOMMERCE"];
+  if (!validConnectorTypes.includes(connectorType)) return [];
+
   const limit = Math.min(100, Math.max(1, request.limit ?? 25));
   const queryTerm = request.query?.trim() || request.keywords?.[0]?.trim() || "";
 
-  const whereClause: any = {};
-  if (request.organizationId) {
-    whereClause.organizationId = request.organizationId;
-  }
+  const whereClause: any = {
+    organizationId: request.organizationId,
+    marketplace: connectorType,
+  };
 
   // Filter by query term in listingTitle or keyword if specified
   if (queryTerm) {

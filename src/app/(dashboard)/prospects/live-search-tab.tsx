@@ -69,7 +69,16 @@ export function LiveSearchTab() {
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [sortOn, setSortOn] = useState<"score" | "created" | "price">("score");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("etsy");
+  // Batch 35: defaults to "All Marketplaces" rather than a single
+  // marketplace. A search must not depend on one marketplace being up —
+  // Etsy's official API credential is currently rejected and its public
+  // web access is blocked (see BATCH-34/35 forensics reports), while
+  // Amazon/Walmart's public-web adapters genuinely work today. "All
+  // Marketplaces" fans out to every eligible source in parallel and shows
+  // each one's own real status, so a fresh search surfaces real results
+  // from whichever sources are actually working instead of silently
+  // depending on whichever one happens to be first in a dropdown.
+  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("all");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

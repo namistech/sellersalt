@@ -66,7 +66,18 @@ describe("Batch 2: Cross-Marketplace Intelligence & Radar Consolidation", () => 
   });
 
   describe("2. Cross-Marketplace Research & Status Integrity", () => {
-    it("AVAILABLE marketplace exposes products, while NOT_IMPLEMENTED marketplaces remain strictly empty without fake data", async () => {
+    it("marketplaces with a real research capability report AVAILABLE, while a genuinely unimplemented one remains strictly empty without fake data", async () => {
+      // Batch 35: Amazon and eBay's official connectors are still
+      // NOT_IMPLEMENTED, but both have a real, registered PUBLIC_WEB
+      // adapter with productSearch capability (Amazon's genuinely works
+      // after this batch's parser fix; eBay's is real but currently
+      // blocked by the target site — either way, both are real
+      // capabilities runProductResearch must actually attempt, not
+      // silently skip). TikTok Shop has neither capability registered at
+      // all — the only one of these four that's genuinely NOT_IMPLEMENTED.
+      // With empty keywords, runProductResearch's own early-return for
+      // "no query yet" reports AVAILABLE for any marketplace with a real
+      // capability (matching Etsy's existing behavior for the same case).
       const results = await runAllMarketplaceProductResearch(["etsy", "amazon", "ebay", "tiktok_shop"], {
         type: "products",
         keywords: [],
@@ -80,12 +91,12 @@ describe("Batch 2: Cross-Marketplace Intelligence & Radar Consolidation", () => 
       const tiktok = results.find((r) => r.marketplace === "tiktok_shop");
 
       assert.equal(etsy?.status, "AVAILABLE");
-      assert.equal(amazon?.status, "NOT_IMPLEMENTED");
-      assert.equal(ebay?.status, "NOT_IMPLEMENTED");
+      assert.equal(amazon?.status, "AVAILABLE");
+      assert.equal(ebay?.status, "AVAILABLE");
       assert.equal(tiktok?.status, "NOT_IMPLEMENTED");
 
-      assert.deepEqual(amazon?.products, [], "Amazon must return 0 products when not implemented");
-      assert.deepEqual(ebay?.products, [], "eBay must return 0 products when not implemented");
+      assert.deepEqual(amazon?.products, [], "no keywords means no query was run yet, not fabricated products");
+      assert.deepEqual(ebay?.products, [], "no keywords means no query was run yet, not fabricated products");
       assert.deepEqual(tiktok?.products, [], "TikTok Shop must return 0 products when not implemented");
     });
 

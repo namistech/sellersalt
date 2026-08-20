@@ -477,9 +477,13 @@ compliant" — see caveats below.
 the Etsy compliance remediation above)** — SellerSalt repositioned from an
 Etsy-centric app into a marketplace-agnostic ecommerce intelligence
 platform architecturally, without changing the customer-facing product
-scope (Etsy stays the only fully live marketplace; see MVP Scope section
-above, unchanged). Full detail lives in the docs listed below — this entry
-is a pointer, not a duplicate.
+scope (Etsy was the only fully live marketplace at the time this was
+written; **as of Batch 35, 2026-08-21, Amazon and Walmart's PUBLIC_WEB
+research is also genuinely live** — see the Batch 35 entry further down
+and the MVP Scope section above, which still governs which marketplaces
+are *customer-facing-selectable* vs. admin-only regardless of which ones
+have real acquisition capability under the hood). Full detail lives in the
+docs listed below — this entry is a pointer, not a duplicate.
 
 - **`src/marketplaces/core/`** — a `MarketplaceConnector` interface,
   `MarketplaceCapabilities` flags, a central `MarketplaceRegistry`,
@@ -590,13 +594,102 @@ orchestrator via the existing `StructuredLogger`/`CorrelationManager`
 (`src/tests/batch-34-real-acquisition.test.ts`), full suite
 1,182/1,182 passing.
 
-**Launch classification: NOT_USABLE** — no legitimate live acquisition
-path currently produces real product observations, for the external
-credential reason above, not an architecture/code defect. This is the
-single highest-priority item for any future session: verify/reissue the
-Etsy API key in `/admin` → Site Settings, then re-run
-`npm run diagnose:acquisition -- "wooden desk organizer"` to confirm real
-results before claiming search works again.
+**Launch classification at the time (2026-08-20): NOT_USABLE** — see the
+Batch 35 entry immediately below for how this changed one day later by
+fixing non-Etsy sources instead of the Etsy credential.
+
+**Independent (non-Etsy) acquisition now genuinely works (2026-08-21,
+Batch 35)** — Batch 34 correctly diagnosed Etsy's blocker but, per
+founder redirection, had over-focused on Etsy specifically; SellerSalt's
+own architecture (`docs/DATA-ACQUISITION.md`) was already designed to be
+marketplace-independent (PUBLIC_WEB acquisition is documented as the
+*primary* source, official marketplace APIs as secondary enrichment) but
+had never actually been exercised end-to-end for any marketplace besides
+Etsy. Found and fixed (full detail, real traces, and before/after counts
+in `BATCH-35-INDEPENDENT-ACQUISITION-AND-RESEARCH-VALIDATION.md`):
+- **Amazon's public-web card parser** (`src/marketplaces/amazon/
+  public-adapter.ts`) used a fixed 2,500-character window to isolate each
+  product card's HTML — a real live fetch showed Amazon's current markup
+  puts the `<h2>` title 3,000-6,000 characters after the card's
+  `data-asin` attribute, so the adapter always silently found zero
+  titles despite Amazon returning a completely real, successful `200`
+  response with real product data already in hand. Fixed: window is now
+  bounded by the next card's own match, not a fixed size.
+- **Walmart's public-web parser** (`src/marketplaces/walmart/
+  public-adapter.ts`) was rewritten entirely — its old HTML-regex
+  approach was structurally incapable of capturing real card content
+  (matched up to the first nested `</div>`, a few characters in) and
+  targeted a build-specific hashed CSS class name that no longer exists
+  on the live site. Now parses the page's own embedded `__NEXT_DATA__`
+  Next.js hydration JSON instead — real field names
+  (`usItemId`/`name`/`priceInfo`/`averageRating`/etc.), far more
+  reliable than scraping obfuscated classes, and not client-side JS
+  execution or anti-bot evasion (it's structured data the server already
+  sent in the response we already fetch).
+- **"All Marketplaces" mode and its default marketplace list both
+  silently excluded Amazon/Walmart** even after the two parser fixes
+  above, because `runProductResearch`
+  (`src/marketplaces/core/research-pipeline.ts`) and the `/api/
+  marketplaces/research` route's default-marketplace computation both
+  gated on the *official API connector's* `capabilities.research` flag
+  alone, before ever checking whether a real `PUBLIC_WEB` adapter
+  existed — exactly backwards from this codebase's own documented
+  priority order. Fixed: gate on either capability.
+- **The marketplace picker UI** (`MarketplaceSelector.tsx`) and `GET
+  /api/marketplaces` had the identical bug, hard-disabling the
+  Amazon/Walmart buttons ("Coming soon", not clickable) even after the
+  above fixes. Fixed via a new `researchAvailable` field
+  (official-API-OR-public-web) the UI now gates on instead of
+  `capabilities.research` alone.
+- **Cross-marketplace data mislabeling + cross-tenant gap found while
+  updating stale tests**: `acquireHistoricalProductObservations`
+  (`src/marketplaces/core/acquisition.ts` — a sibling implementation to
+  the one Batch 34 fixed in `orchestrator.ts`) queried `Prospect` with no
+  `marketplace` filter at all, then unconditionally relabeled every row
+  it found with whatever marketplace was requested — a query for a
+  zero-capability marketplace could return another marketplace's real
+  historical data mislabeled as that marketplace's own. Also ran
+  unscoped when no `organizationId` was given (same class of bug Batch
+  34 fixed in the other engine). Fixed the same way: require
+  `organizationId`, filter by the correct `marketplace`.
+- **Default marketplace on `/prospects`' "Search Marketplace" changed
+  from `etsy` (currently blocked) to `all`** — a search must not depend
+  on one marketplace; "All Marketplaces" fans out in parallel with each
+  source's own honest status, verified live in the browser.
+- 7 new deterministic unit tests (`src/tests/batch-35-independent-
+  acquisition.test.ts`, minimal-but-structurally-real fixtures, no live
+  network — CI-safe) plus 6 existing test files updated where their
+  assertions encoded the *old, now-incorrect* premise that Amazon/eBay
+  were unconditionally unsupported (never weakened — retargeted at a
+  genuinely zero-capability marketplace like TikTok Shop where that was
+  the test's real intent, or updated to the new correct contract where
+  the underlying behavior legitimately changed). Full suite:
+  1,196/1,196 passing.
+- **Verified live in the running app, not just the CLI**: a real browser
+  session searching "wooden desk organizer" with the new "All
+  Marketplaces" default shows Etsy/eBay honestly "Currently unavailable"
+  (with real, specific reasons) and Amazon/Walmart "Available" with real
+  product cards — real titles, real prices, real ratings, real review
+  counts, real images, computed Opportunity Radar scores.
+- **Not fabricated, disclosed honestly**: Amazon's current search-card
+  markup doesn't render price/rating in static HTML (confirmed zero
+  occurrences of the relevant CSS classes anywhere on a real captured
+  page) — those fields stay `null` for Amazon, never estimated. Amazon's
+  live response also isn't perfectly deterministic under concurrent
+  multi-marketplace load (occasional real `200` with no parseable
+  listings, honestly classified `PARSER_ERROR`) — sequential,
+  reasonably-paced requests succeeded 5/5 across all four required test
+  queries during this batch's verification; Walmart showed no such
+  variability in any test performed.
+
+**Launch classification (2026-08-21): ACQUISITION_READY_FOR_BETA** — at
+least two legitimate, independent, credential-free acquisition paths
+(Amazon, Walmart) work end-to-end today with real, provenanced
+observations. Etsy's external credential blocker (Batch 34) is
+unchanged. The full downstream `RESEARCH → VALIDATE → PLAN` chain was
+**not** re-verified against this newly-real non-Etsy data in this
+batch — that's the next concrete step toward a `PRIVATE_BETA_READY`
+claim, and the data now exists to actually perform that test.
 
 ## What's explicitly NOT built yet
 

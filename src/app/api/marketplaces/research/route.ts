@@ -28,9 +28,22 @@ export async function POST(req: Request) {
     const keywords = typeof body.keywords === "string" && body.keywords.trim() ? [body.keywords.trim()] : undefined;
 
     registerAllConnectors();
+    // Batch 35 fix: MarketplaceRegistry.listActive() only reflects official
+    // API connector capability — it excludes Amazon/Walmart/eBay/TikTok,
+    // whose official connectors are architecture-ready stubs even though
+    // their PUBLIC_WEB adapters can genuinely acquire real data (verified
+    // live — see BATCH-35-INDEPENDENT-ACQUISITION-AND-RESEARCH-VALIDATION.md).
+    // The default (no explicit `marketplaces` in the request) must include
+    // every marketplace with EITHER real capability, or "All Marketplaces"
+    // silently never even attempts the sources that actually work today.
+    const researchCapableMarketplaces = ALL_MARKETPLACE_IDS.filter((id) => {
+      const connector = MarketplaceRegistry.tryGetConnector(id);
+      const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(id);
+      return !!connector?.capabilities.research || !!publicAdapter?.capabilities.productSearch;
+    });
     const requested: MarketplaceId[] = Array.isArray(body.marketplaces) && body.marketplaces.length
       ? body.marketplaces.filter((m: string) => ALL_MARKETPLACE_IDS.includes(m as MarketplaceId))
-      : MarketplaceRegistry.listActive().map((c) => c.marketplace);
+      : researchCapableMarketplaces;
 
     const results = await runAllMarketplaceProductResearch(requested, {
       type: "products",

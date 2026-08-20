@@ -45,11 +45,114 @@ export const WALMART_PUBLIC_WEB_CAPABILITIES: PublicWebCapabilities = {
 };
 
 /**
- * Extracts Walmart search cards from search HTML.
+ * Extracts real Walmart search-result items from the page's own embedded
+ * `__NEXT_DATA__` Next.js hydration state (`props.pageProps.initialData.
+ * searchResult.itemStacks[].items[]`) — the same JSON the page's own React
+ * components render from, present verbatim in the server-rendered HTML
+ * response we already fetch. This is far more reliable than scraping
+ * atomic/hashed CSS class names (which change on every Walmart deploy) and
+ * is not client-side JS execution or anti-bot evasion — it's parsing
+ * structured data the server already sent us, the same category of
+ * technique as this file's JSON-LD/OpenGraph parsing elsewhere. Verified
+ * against a real live fetch while diagnosing why the previous HTML-regex
+ * parser (kept below as `parseWalmartListingCardsFromRegexFallback`)
+ * extracted zero real results: its card-boundary regex matched up to the
+ * *first* nested `</div>` inside each card (a few characters in), never
+ * the real card content, and its title/price selectors targeted a
+ * build-specific hashed class name that no longer exists on the live site.
  */
-export function parseWalmartListingCardsFromHtml(html: string): NormalizedProduct[] {
-  if (!html || typeof html !== "string") return [];
+function parseWalmartListingCardsFromNextData(html: string): NormalizedProduct[] {
+  const scriptMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+  if (!scriptMatch) return [];
 
+  let data: any;
+  try {
+    data = JSON.parse(scriptMatch[1]);
+  } catch {
+    return [];
+  }
+
+  const itemStacks = data?.props?.pageProps?.initialData?.searchResult?.itemStacks;
+  if (!Array.isArray(itemStacks)) return [];
+
+  const products: NormalizedProduct[] = [];
+  const seenIds = new Set<string>();
+
+  for (const stack of itemStacks) {
+    const items = stack?.items;
+    if (!Array.isArray(items)) continue;
+
+    for (const item of items) {
+      const itemId = item?.usItemId ? String(item.usItemId) : null;
+      const rawTitle = typeof item?.name === "string" ? item.name.trim() : "";
+      if (!itemId || !rawTitle || seenIds.has(itemId)) continue;
+      seenIds.add(itemId);
+
+      // linePrice ("Now $X.XX") is the current buyable single-variant
+      // price when present; minPrice is the numeric lowest-variant price
+      // for multi-option items ("Options from $X.XX") — both are real,
+      // server-provided values, never estimated.
+      let price: number | null = null;
+      const linePrice = item?.priceInfo?.linePrice;
+      if (typeof linePrice === "string" && linePrice.trim()) {
+        const parsed = parseFloat(linePrice.replace(/[^0-9.]/g, ""));
+        if (!isNaN(parsed)) price = parsed;
+      }
+      if (price === null && typeof item?.priceInfo?.minPrice === "number") {
+        price = item.priceInfo.minPrice;
+      }
+
+      const rating = typeof item?.averageRating === "number" ? item.averageRating : null;
+      const reviewCount = typeof item?.numberOfReviews === "number" ? item.numberOfReviews : null;
+      const imageUrl = typeof item?.image === "string" ? item.image : undefined;
+      const productUrl = typeof item?.canonicalUrl === "string"
+        ? `https://www.walmart.com${item.canonicalUrl}`
+        : `https://www.walmart.com/ip/${itemId}`;
+
+      const normalized: NormalizedProduct = {
+        marketplace: "walmart",
+        externalId: itemId,
+        title: rawTitle,
+        url: productUrl,
+        imageUrl,
+        price,
+        currency: "USD",
+        rating,
+        reviewCount,
+        source: "ACTUAL_DATA" as SignalProvenance,
+        acquisitionMethod: "PUBLIC_WEB",
+        isHistorical: false,
+        capturedAt: new Date(),
+      };
+
+      const oppInput = extractOpportunityInputFromNormalizedProduct(normalized);
+      const report = evaluateCanonicalOpportunity(oppInput);
+      if (report.overallScore !== null) {
+        normalized.opportunityScore = {
+          score: report.overallScore,
+          confidence: report.confidenceScore,
+          tier: report.tier,
+          verdict: report.verdictLabel,
+          verdictVariant: report.verdictVariant,
+          availableSignals: report.signals.available.map((s) => s.id),
+          unavailableSignals: report.signals.unavailable.map((s) => s.id),
+        };
+      }
+
+      products.push(normalized);
+    }
+  }
+
+  return products;
+}
+
+/**
+ * Legacy HTML-regex extraction — kept as a fallback for a page shape
+ * without `__NEXT_DATA__` (e.g. a cached/edge variant). Known to
+ * frequently miss real cards (see the function above's doc comment); not
+ * relied upon as the primary path any more.
+ */
+function parseWalmartListingCardsFromRegexFallback(html: string): NormalizedProduct[] {
   const products: NormalizedProduct[] = [];
   const cardRegex = /<div[^>]*data-item-id=["']([0-9]+)["'][^>]*>([\s\S]*?)<\/div>/gi;
   const matches = Array.from(html.matchAll(cardRegex));
@@ -127,6 +230,20 @@ export function parseWalmartListingCardsFromHtml(html: string): NormalizedProduc
   }
 
   return products;
+}
+
+/**
+ * Extracts Walmart search cards from search HTML — tries the reliable
+ * `__NEXT_DATA__` JSON path first, falls back to HTML-regex extraction
+ * only if that structure isn't present.
+ */
+export function parseWalmartListingCardsFromHtml(html: string): NormalizedProduct[] {
+  if (!html || typeof html !== "string") return [];
+
+  const fromJson = parseWalmartListingCardsFromNextData(html);
+  if (fromJson.length > 0) return fromJson;
+
+  return parseWalmartListingCardsFromRegexFallback(html);
 }
 
 export class WalmartPublicWebAdapter implements PublicWebAcquisitionAdapter {

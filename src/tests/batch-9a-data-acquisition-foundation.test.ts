@@ -148,13 +148,22 @@ describe("Batch 9A: Marketplace-Independent Data Acquisition Foundation", () => 
   });
 
   describe("3. Multi-Source Acquisition Orchestrator & Graceful Degradation", () => {
-    it("handles unintegrated marketplace by returning NOT_IMPLEMENTED without fabricating results", async () => {
+    it("handles a genuinely unintegrated marketplace (TikTok Shop — no official capability, no public-web adapter registered) by returning NOT_IMPLEMENTED without fabricating results", async () => {
+      // Batch 35: this used to test "amazon" — Amazon is no longer a
+      // genuinely unintegrated marketplace (its PUBLIC_WEB adapter was
+      // fixed and verified to acquire real observations; see
+      // BATCH-35-INDEPENDENT-ACQUISITION-AND-RESEARCH-VALIDATION.md and
+      // the dedicated coverage in batch-35-independent-acquisition.test.ts),
+      // so asserting it always returns NOT_IMPLEMENTED is no longer true
+      // and would also make this test flaky (dependent on a live Amazon
+      // fetch). TikTok Shop has neither capability registered at all,
+      // which is what this test is actually meant to exercise.
       const result = await acquireProductObservations({
-        marketplace: "amazon",
+        marketplace: "tiktok_shop",
         query: "ceramic mug",
       });
 
-      assert.equal(result.marketplace, "amazon");
+      assert.equal(result.marketplace, "tiktok_shop");
       assert.equal(result.status, "NOT_IMPLEMENTED");
       assert.equal(result.observations.length, 0);
       assert.equal(result.products.length, 0);
@@ -186,14 +195,20 @@ describe("Batch 9A: Marketplace-Independent Data Acquisition Foundation", () => 
   });
 
   describe("4. Research Pipeline Integration & Zero-Fabrication Contract", () => {
-    it("runProductResearch gracefully reports status without crashing when API is unavailable", async () => {
+    it("runProductResearch gracefully reports status without crashing for a marketplace with no capability registered at all", async () => {
+      // Batch 35: this used to test "amazon", whose official API is
+      // unavailable but whose real PUBLIC_WEB adapter now genuinely
+      // works (see the dedicated coverage in
+      // batch-35-independent-acquisition.test.ts) — asserting
+      // NOT_IMPLEMENTED for it is no longer true and would depend on a
+      // live Amazon fetch. TikTok Shop has neither capability registered.
       const result = await runProductResearch({
-        marketplace: "amazon",
+        marketplace: "tiktok_shop",
         type: "products",
         keywords: ["ceramic mug"],
       });
 
-      assert.equal(result.marketplace, "amazon");
+      assert.equal(result.marketplace, "tiktok_shop");
       assert.equal(result.status, "NOT_IMPLEMENTED");
       assert.equal(result.products.length, 0);
     });

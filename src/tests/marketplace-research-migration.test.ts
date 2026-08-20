@@ -22,11 +22,32 @@ describe("Phase 2 — Research Routes Migrated Onto the Marketplace-Neutral Core
   });
 
   describe("5. Unsupported marketplaces return a structured unavailable state, never a crash or fabricated result", () => {
-    it("searchMarketplaceProducts('amazon', ...) returns CapabilityUnavailable instead of throwing", async () => {
-      const result = await searchMarketplaceProducts("amazon", "org_test", { keywords: "mug" });
-      assert.equal((result as any).available, false);
-      assert.equal((result as any).marketplace, "amazon");
-      assert.equal((result as any).capability, "research");
+    // Batch 35: Amazon's PUBLIC_WEB adapter was fixed and verified to
+    // genuinely acquire real observations (its official API is still
+    // NOT_IMPLEMENTED — this is public-web-only research, not a
+    // credentialed integration). It is no longer "unsupported" the way
+    // this describe block originally meant, so this test no longer
+    // asserts an unconditional CapabilityUnavailable — real network
+    // variability (a live scrape can legitimately return zero items on
+    // any given run) makes that too strict a deterministic assertion
+    // either way. What must always hold, regardless of that day's live
+    // result: the call never throws, and whichever shape it returns is
+    // well-formed and honest — either a real result whose items carry
+    // real provenance, or a structured CapabilityUnavailable, never a
+    // silently fabricated result.
+    it("searchMarketplaceProducts('amazon', ...) never throws and returns either real, provenanced results or a structured CapabilityUnavailable", async () => {
+      const result = await searchMarketplaceProducts("amazon", "org_test", { keywords: "wooden desk organizer" });
+      if ((result as any).available === false) {
+        assert.equal((result as any).marketplace, "amazon");
+        assert.equal((result as any).capability, "research");
+        assert.ok(typeof (result as any).message === "string" && (result as any).message.length > 0);
+      } else {
+        const success = result as any;
+        assert.ok(Array.isArray(success.results));
+        for (const item of success.results) {
+          assert.equal(item.listing.title.length > 0, true, "a real result must never have an empty title");
+        }
+      }
     });
 
     it("fetchMarketplaceKeywordResearch('ebay', ...) returns CapabilityUnavailable instead of throwing", async () => {
@@ -59,8 +80,24 @@ describe("Phase 2 — Research Routes Migrated Onto the Marketplace-Neutral Core
       assert.ok(ids.includes("amazon"));
       const etsy = body.marketplaces.find((m: any) => m.id === "etsy");
       assert.equal(etsy.status, "LIVE");
+      assert.equal(etsy.researchAvailable, true);
+      // Batch 35: Amazon's official API is still NOT_IMPLEMENTED, but its
+      // PUBLIC_WEB adapter was fixed and verified to genuinely acquire
+      // real observations — `researchAvailable` (capabilities.research OR
+      // a real public-web productSearch capability) is what the
+      // marketplace picker UI now gates on, so it must be true here, and
+      // `status` must reflect that real capability rather than reporting
+      // "architecture ready, zero live capabilities" for a marketplace
+      // that genuinely has one.
       const amazon = body.marketplaces.find((m: any) => m.id === "amazon");
-      assert.equal(amazon.status, "ARCHITECTURE_READY");
+      assert.equal(amazon.researchAvailable, true);
+      assert.equal(amazon.status, "LIVE");
+      assert.equal(amazon.capabilities.research, false, "Amazon's OFFICIAL API capability is still genuinely NOT_IMPLEMENTED");
+      // TikTok Shop has neither an official connector capability nor a
+      // public-web adapter registered at all — genuinely architecture-ready.
+      const tiktok = body.marketplaces.find((m: any) => m.id === "tiktok_shop");
+      assert.equal(tiktok.researchAvailable, false);
+      assert.equal(tiktok.status, "ARCHITECTURE_READY");
     });
   });
 

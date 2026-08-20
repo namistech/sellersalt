@@ -60,14 +60,24 @@ export function parseAmazonListingCardsFromHtml(html: string): NormalizedProduct
   const asinMatches = Array.from(html.matchAll(asinRegex));
   const seenAsins = new Set<string>();
 
-  for (const match of asinMatches) {
+  for (let i = 0; i < asinMatches.length; i++) {
+    const match = asinMatches[i];
     const asin = match[1];
     if (!asin || asin === "0000000000" || seenAsins.has(asin)) continue;
     seenAsins.add(asin);
 
-    // Isolate card block around ASIN
+    // Isolate card block around ASIN. Amazon's real search-result markup
+    // (verified against a live fetch while diagnosing this) puts the
+    // <h2> title 3,000-6,000 characters after the data-asin attribute —
+    // a fixed 2,500-char window silently missed every card's title and
+    // made this adapter produce zero results despite a real, successful
+    // 200 response. Bounded by the next card's own data-asin match (never
+    // reads into the next product's markup) rather than a single fixed
+    // size, with a generous cap for the final/only card on the page.
     const cardStart = match.index ?? 0;
-    const cardChunk = html.slice(cardStart, cardStart + 2500);
+    const nextCardStart = asinMatches[i + 1]?.index ?? html.length;
+    const cardEnd = Math.min(nextCardStart, cardStart + 9000);
+    const cardChunk = html.slice(cardStart, cardEnd);
 
     // Title
     const titleMatch =

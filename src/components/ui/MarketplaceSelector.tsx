@@ -70,7 +70,7 @@ export function MarketplaceSelector({
   }, []);
 
   function handleClick(m: MarketplaceListItem) {
-    const isActive = m.capabilities.research === true;
+    const isActive = m.researchAvailable === true;
     if (!isActive) {
       setTooltipMarketplace(m.displayName);
       setTimeout(() => setTooltipMarketplace(null), 3000);
@@ -86,7 +86,7 @@ export function MarketplaceSelector({
     onChange?.("all");
   }
 
-  const liveCount = marketplaces.filter((m) => m.capabilities.research === true).length;
+  const liveCount = marketplaces.filter((m) => m.researchAvailable === true).length;
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
@@ -107,7 +107,7 @@ export function MarketplaceSelector({
           </button>
         )}
         {marketplaces.map((m) => {
-          const liveNow = m.capabilities.research === true;
+          const liveNow = m.researchAvailable === true;
           const isActive = activeMarketplace === m.id && liveNow;
           const isDisabled = !liveNow;
 

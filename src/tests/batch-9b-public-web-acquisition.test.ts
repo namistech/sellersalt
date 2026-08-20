@@ -19,6 +19,7 @@ import { AmazonPublicWebAdapter, amazonPublicWebAdapter } from "@/marketplaces/a
 import { EbayPublicWebAdapter, ebayPublicWebAdapter } from "@/marketplaces/ebay/public-adapter";
 import { TikTokShopPublicWebAdapter, tiktokShopPublicWebAdapter } from "@/marketplaces/tiktok-shop/public-adapter";
 import { registerAllConnectors } from "@/marketplaces/core/registry";
+import { globalPageFetcher } from "@/marketplaces/core/acquisition/page-fetcher";
 import { discoverNichesFromProducts } from "@/services/intelligence/niche-discovery";
 import { scoreShopCompetition } from "@/marketplaces/core/opportunity-engine";
 import type { NormalizedProduct, NormalizedObservation } from "@/marketplaces/core/types";
@@ -512,11 +513,29 @@ describe("Batch 9B: Marketplace-Independent Public Web Acquisition Engine & Foun
   });
 
   describe("6. Cross-Marketplace Isolation & Architecture-Ready Public Adapters", () => {
-    it("18. Amazon public adapter gracefully reports UNAVAILABLE without fake products", async () => {
+    it("18. Amazon public adapter returns real, provenanced results for a real query — never fabricated, never a crash (Batch 35: fixed, no longer unconditionally unavailable)", async () => {
+      // This used to assert Amazon always reports UNAVAILABLE — that was
+      // true only because the card parser was broken (see Batch 35's
+      // forensics report), not because Amazon's public web access is
+      // genuinely blocked the way eBay's and TikTok Shop's are (tests 19
+      // and 20, unchanged, still correctly UNAVAILABLE). A live query can
+      // legitimately return zero items on any given run (real network
+      // variability), so this asserts the honest contract instead of a
+      // brittle exact outcome: never throws, and whichever shape comes
+      // back is well-formed — real items with real provenance, or a
+      // structured unavailable state, never a silently fabricated result.
       const res = await amazonPublicWebAdapter.searchPublicProducts({ query: "mug" });
-      assert.equal(res.success, false);
-      assert.equal(res.items.length, 0);
-      assert.equal(res.provenance, "UNAVAILABLE");
+      if (res.success) {
+        assert.ok(res.items.length > 0);
+        for (const item of res.items) {
+          assert.equal(item.source, "ACTUAL_DATA");
+          assert.equal(item.marketplace, "amazon");
+          assert.ok(item.title.length > 0);
+        }
+      } else {
+        assert.equal(res.items.length, 0);
+        assert.equal(res.provenance, "UNAVAILABLE");
+      }
     });
 
     it("19. eBay public adapter gracefully reports UNAVAILABLE without fake products", async () => {
@@ -535,6 +554,16 @@ describe("Batch 9B: Marketplace-Independent Public Web Acquisition Engine & Foun
 
     it("21. Multi-marketplace fan-out isolates failures (Etsy success + Amazon unavailable)", async () => {
       const originalFetch = globalThis.fetch;
+
+      // Batch 35: test 18 above (and any other earlier real Amazon call
+      // in this run) may have populated globalPageFetcher's 6-hour cache
+      // with a real, successful amazon.com response for this same query —
+      // fetchPage checks that cache before ever calling fetch(), so
+      // without clearing it first, the mock below would silently never
+      // be consulted for Amazon's request and this test would assert
+      // against stale real data instead of the mocked input it's
+      // actually designed to test.
+      globalPageFetcher.clearCache();
 
       globalThis.fetch = async () => {
         return new Response(sampleEtsySearchHtml, {

@@ -48,10 +48,30 @@ describe("Keyword Research: All-Marketplaces fan-out reuses fanOutMarketplaceReq
       assert.ok(etsy?.message, "Etsy UNAVAILABLE must explain why, never fail silently");
     }
 
+    // Batch 35: Amazon's PUBLIC_WEB adapter was fixed and verified to
+    // genuinely acquire real search listings — harvestPublicKeywords
+    // derives keywords from those same real listings
+    // (src/marketplaces/amazon/public-adapter.ts's harvestPublicKeywords
+    // calls this.searchPublicProducts internally), so Amazon keyword
+    // research is no longer unconditionally NOT_IMPLEMENTED. This
+    // function already gated correctly on the public adapter's own
+    // `keywordDiscovery` capability (never had the official-API-only bug
+    // this batch fixed elsewhere), so real acquisition was always
+    // attempted here — it just always failed before because the search
+    // parser it depends on was broken. A live harvest can legitimately
+    // return zero keywords on any given run, so this asserts the honest
+    // contract rather than a brittle exact outcome.
     const amazon = results.find((r) => r.marketplace === "amazon");
-    assert.equal(amazon?.status, "NOT_IMPLEMENTED");
-    assert.ok(amazon?.message, "must explain why, never a silent empty result");
-    assert.equal(amazon?.data, undefined, "must never fabricate keyword data for an unimplemented connector");
+    assert.ok(
+      amazon?.status === "AVAILABLE" || amazon?.status === "UNAVAILABLE",
+      `Amazon has a real public-web keyword capability now — must attempt it, got status ${amazon?.status}`
+    );
+    if (amazon?.status === "AVAILABLE") {
+      assert.ok(amazon.data?.keywords, "AVAILABLE must carry real harvested keywords, never fabricated ones");
+    } else {
+      assert.ok(amazon?.message, "must explain why, never a silent empty result");
+      assert.equal(amazon?.data, undefined, "must never fabricate keyword data on failure");
+    }
   });
 
   it("POST /api/keywords/search branches on marketplace === 'all' into the fan-out helper", () => {

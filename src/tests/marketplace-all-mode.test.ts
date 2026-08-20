@@ -24,9 +24,21 @@ describe("runProductResearch — explicit AVAILABLE/PARTIAL/UNAVAILABLE/NOT_IMPL
     assert.deepEqual(result.products, []);
   });
 
-  it("Amazon (zero capabilities) returns NOT_IMPLEMENTED, never fabricated products", async () => {
-    const result = await runProductResearch({ marketplace: "amazon", type: "products", keywords: ["desk organizer"] });
+  it("TikTok Shop (zero capabilities — neither official API nor public web registered) returns NOT_IMPLEMENTED, never fabricated products", async () => {
+    const result = await runProductResearch({ marketplace: "tiktok_shop", type: "products", keywords: ["desk organizer"] });
     assert.equal(result.status, "NOT_IMPLEMENTED");
+    assert.deepEqual(result.products, []);
+  });
+
+  it("Amazon (official API not implemented, but a real PUBLIC_WEB capability is registered) with empty keywords returns AVAILABLE, not NOT_IMPLEMENTED (Batch 35 fix)", async () => {
+    // Deterministic, no live network call — mirrors the Etsy test above:
+    // empty keywords hits runProductResearch's "no query yet" early
+    // return, which reports AVAILABLE for any marketplace with a real
+    // capability. Before the Batch 35 fix, this incorrectly returned
+    // NOT_IMPLEMENTED because the gate only checked the official
+    // connector's capability, ignoring the registered public-web adapter.
+    const result = await runProductResearch({ marketplace: "amazon", type: "products", keywords: [] });
+    assert.equal(result.status, "AVAILABLE");
     assert.deepEqual(result.products, []);
   });
 
@@ -36,15 +48,21 @@ describe("runProductResearch — explicit AVAILABLE/PARTIAL/UNAVAILABLE/NOT_IMPL
   });
 
   it("runAllMarketplaceProductResearch tags every marketplace independently, no cross-contamination", async () => {
-    const results = await runAllMarketplaceProductResearch(["etsy", "amazon", "shopify", "ebay"], {
+    // Batch 35: amazon and ebay both have a real, registered PUBLIC_WEB
+    // capability now (see the Amazon/TikTok Shop tests above), so with
+    // empty keywords they report AVAILABLE like Etsy, not NOT_IMPLEMENTED
+    // — the point of this test (independence, no cross-contamination) is
+    // unaffected by which exact status each one reports.
+    const results = await runAllMarketplaceProductResearch(["etsy", "amazon", "shopify", "ebay", "tiktok_shop"], {
       type: "products",
       keywords: [],
     });
     const byMarketplace = Object.fromEntries(results.map((r) => [r.marketplace, r.status]));
     assert.equal(byMarketplace.etsy, "AVAILABLE");
-    assert.equal(byMarketplace.amazon, "NOT_IMPLEMENTED");
+    assert.equal(byMarketplace.amazon, "AVAILABLE");
     assert.equal(byMarketplace.shopify, "PARTIAL");
-    assert.equal(byMarketplace.ebay, "NOT_IMPLEMENTED");
+    assert.equal(byMarketplace.ebay, "AVAILABLE");
+    assert.equal(byMarketplace.tiktok_shop, "NOT_IMPLEMENTED");
   });
 });
 
@@ -109,8 +127,17 @@ describe("All-Marketplaces research API route", () => {
     assert.ok(orgCheckIndex > -1 && researchCallIndex > -1 && orgCheckIndex < researchCallIndex, "auth check must happen before any research call");
   });
 
-  it("defaults to MarketplaceRegistry.listActive() when no marketplaces are specified, never a hardcoded list", () => {
+  it("defaults to every marketplace with a real research capability (official API OR public web) when none are specified, never a hardcoded list", () => {
+    // Batch 35: this used to default to MarketplaceRegistry.listActive(),
+    // which only reflects official API connector capability — Amazon and
+    // Walmart's official connectors are architecture-ready stubs, so
+    // "All Marketplaces" silently never attempted their real, working
+    // PUBLIC_WEB adapters. Fixed to compute the default from either
+    // capability source; verified functionally (not just textually) via
+    // src/tests/batch-35-independent-acquisition.test.ts.
     const code = readSrc("src/app/api/marketplaces/research/route.ts");
-    assert.ok(code.includes("MarketplaceRegistry.listActive()"));
+    assert.ok(!code.includes("listActive().map("), "must not fall back to the official-API-only helper as the default marketplace list");
+    assert.ok(code.includes("tryGetPublicWebAdapter"), "default marketplace computation must also consider public-web capability");
+    assert.ok(code.includes("researchCapableMarketplaces"), "must compute the default from real combined research capability");
   });
 });
