@@ -186,3 +186,14 @@ Observations are calibrated against metric-specific natural lifetimes:
 - Never executes in CI or automated unit test runs.
 - Runs small (5-item) sample requests against public adapters to verify live HTML markup compatibility.
 
+---
+
+## 13. Product Validation & Commercial Decision Layer
+
+The validation layer (`src/services/intelligence/product-validation-engine.ts`) sits above acquisition to provide deterministic feasibility assessment:
+- Evaluates demand signals, competition density, and empirical price percentiles (P10, P25, Median, P75, P90).
+- Assigns explainable verdicts (`STRONG_CANDIDATE`, `WORTH_INVESTIGATING`, `HIGH_COMPETITION`, `WEAK_DEMAND_SIGNAL`, `DECLINING_SIGNAL`, `INSUFFICIENT_DATA`).
+- Supports user-supplied unit economics with strict `USER_DERIVED` provenance separation.
+- Persists validations in `ProductValidation` model in PostgreSQL with multi-tenant `organizationId` isolation.
+
+

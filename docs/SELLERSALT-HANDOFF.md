@@ -4,43 +4,27 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 16 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 17 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 16
-(SellerSalt Market Intelligence & Opportunity Discovery Engine 2.0):
+condensed version of everything else in this file, current as of Batch 17
+(SellerSalt Product Validation & Commercial Decision Engine):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): End-to-end multi-domain opportunity orchestrator discovering structured, evidence-backed opportunities across Products, Keywords, Niches, Categories, Sellers, and Marketplaces.
-- **Opportunity Explanation Engine** (`opportunity-explanation.ts`): Deterministically generates headline verdicts, positive drivers, watch/risk friction points, unobserved signal disclosures, and recommended next actions.
-- **Unified Market Momentum Engine** (`momentum.ts`): Classifies empirical trajectories (`RISING`, `ACCELERATING`, `STABLE`, `COOLING`, `DECLINING`, `INSUFFICIENT_DATA`) from multi-snapshot time-series ($n \ge 2$ required; $n \le 1$ remains strictly `INSUFFICIENT_DATA` with `null` velocity).
-- **Opportunity Watchlist & Multi-Tenant Persistence** (`SavedOpportunity` Prisma model + `/api/opportunities/*`): Complete CRUD and live signal refresh with strict `organizationId` multi-tenant isolation.
-- **Interactive Opportunity Discovery Feed & Card System** (`OpportunityFeed.tsx`, `OpportunityCard.tsx`): Rich interactive UI with evidence drawers, confidence indicators, momentum badges, and next action recommendations.
-- **Longitudinal Intelligence Engine** (`longitudinal.ts`): Computes price deltas, review velocities, rating drift, catalog growth, and keyword momentum across persistent observation snapshots ($n \ge 2$ required; $n \le 1$ remains strictly `null`).
-- **Market Memory & Intelligence Snapshots** (`market-memory.ts`): Retains and indexes derived domain intelligence snapshots (`PRODUCT`, `KEYWORD`, `SELLER`, `CATEGORY`, `NICHE`, `RADAR`) with sample sizes, freshness ratings, confidence, and observation lineages.
-- **Product Demand Intelligence Engine** (`demand.ts`): Computes demand proxy scores from observable signals (reviews, ratings, favorites, velocity) with explicit classification (`OBSERVED`, `ESTIMATED`, `DERIVED`, `UNAVAILABLE`) and strictly zero fabricated search volume.
-- **Deep Category Intelligence** (`categories.ts`): Multi-percentile price distributions (10th, 25th, median, 75th, 90th), seller concentration index, freshness ratio, review barrier rating, and cross-category comparisons (`comparePublicCategories()`).
-- **Enhanced Public Seller Research** (`shops.ts`): Observed catalog size, category concentration breakdown, median price, and longitudinal catalog/review deltas.
-- **Keyword Intelligence 2.0** (`keywords.ts`): Listing prevalence %, seller prevalence %, price associations, intent classification, and keyword momentum (`RISING`, `STABLE`, `DECLINING`, `INSUFFICIENT_DATA`).
-- **Niche Discovery Market Profiles** (`niche-discovery.ts`): Evaluates market activity, dominant price bands, dominant keywords, dominant subcategories, and seller concentration.
-- **Centralized Acquisition Strategy Engine** (`strategy-engine.ts`): Prioritized multi-source strategy execution (`PUBLIC_SEARCH_HTML` -> `STRUCTURED_JSON_LD` -> `PRODUCT_DETAIL_CRAWL` -> `SECONDARY_OFFICIAL_API` -> `TERTIARY_HISTORICAL_DB`).
-- **Autonomous Acquisition Recovery Engine** (`recovery-engine.ts`): Graceful multi-tier fallback with compliance halts on `ACCESS_RESTRICTED`.
-- **Universal Pagination Engine** (`pagination.ts`): Bounded multi-page traversal with duplicate saturation detection and budget enforcement.
-- **Query Normalizer & Search Variants** (`query-normalizer.ts`): Semantic clean query tokens and bounded variant generation.
-- **Parser Health & Drift Detection** (`parser-health.ts`): Real-time field fill rate evaluation and DOM layout change detection.
-- **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`, `SavedOpportunity`.
-- **Observation Deduplication & Fingerprinting** (`deduplication.ts`): SHA-256 fingerprinting across all volatile/structural fields, preventing redundant snapshot creation.
-- **Research Budgets & Safety Bounds** (`research-budgets.ts`): Bounded execution (max 3 pages, max 50 listings, max 15 shops, max 20s timeout, max 5MB payload).
-- **Multi-Tier Research Cache** (`research-cache.ts`): In-memory TTL caching (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d).
-- **Unified Research Workbench Orchestrator** (`workbench.ts` & `/api/research/*`): `executeResearchRun` across `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR`.
-- **Interactive Research Center UI** (`/research`, `research-client.tsx`, `ResearchReportView.tsx`, `/research/runs/[id]`): Multi-domain research center executing live public ingestion without API credentials.
-- **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
+- **Product Validation & Commercial Decision Engine** (`product-validation-engine.ts`): End-to-end commercial feasibility validation combining Demand, Competition Density, Price Percentiles, Trajectory, and Differentiation into actionable verdicts (`STRONG_CANDIDATE`, `WORTH_INVESTIGATING`, `HIGH_COMPETITION`, etc.).
+- **Price Positioning Engine** (`price-positioning.ts`): Evaluates candidate product prices relative to empirical market percentiles (P10, P25, Median, P75, P90) into distinct strategic tiers (`BELOW_MARKET`, `LOWER_MID_MARKET`, `MID_MARKET`, `UPPER_MID_MARKET`, `PREMIUM`, `OUTSIDE_OBSERVED_RANGE`).
+- **User Unit Economics Calculator** (`unit-economics.ts`): Computes gross profit, contribution margin, break-even prices, and max allowable CAC with strict `USER_DERIVED` provenance separation.
+- **Differentiation Analysis Engine** (`differentiation-engine.ts`): Identifies common saturated attributes ($\ge 40\%$) and underrepresented attribute gaps ($15-25\%$) without synthetic customer mind-reading.
+- **Interactive Product Validation Studio** (`/validate`, `ValidationStudio.tsx`, `ValidationReportView.tsx`): Dedicated executive decision interface with factor scorecards, deep-dive tabs, and unit economics calculator.
+- **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): Multi-domain opportunity orchestrator with direct "Validate Product" handoffs.
+- **Unified Market Momentum Engine** (`momentum.ts`): Classifies empirical trajectories from multi-snapshot time-series ($n \ge 2$ required; $n \le 1$ remains strictly `INSUFFICIENT_DATA` with `null` velocity).
+- **First-Class Persistence in PostgreSQL** (`schema.prisma`): `ProductValidation`, `SavedOpportunity`, `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
 
 **Current Verified Baseline**:
-- Tests: **1014/1014 passing across 224 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1028/1028 passing across 231 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
-- Next.js: Clean production build (**168/168 routes compiled**)
+- Next.js: Clean production build (**168/168 static and dynamic routes compiled**)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,

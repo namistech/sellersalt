@@ -234,12 +234,20 @@ export function OpportunityCard({
               </div>
             )}
 
-            {/* Recommended Action */}
-            <div className="pt-2 border-t flex items-center justify-between text-[11px]">
-              <span className="font-semibold text-foreground">Next Action:</span>
-              <span className="text-primary font-medium text-right">
-                {opportunity.explanation.recommendedAction}
-              </span>
+            {/* Recommended Action & Validation Button */}
+            <div className="pt-2 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+              <div className="flex-1">
+                <span className="font-semibold text-foreground mr-1">Next Action:</span>
+                <span className="text-muted-foreground">{opportunity.explanation.recommendedAction}</span>
+              </div>
+              <a
+                href={`/validate?q=${encodeURIComponent(opportunity.title)}&marketplace=${encodeURIComponent(opportunity.marketplace)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded bg-primary text-primary-foreground font-semibold text-[10px] hover:brightness-110 transition-all shrink-0"
+              >
+                Validate Product
+                <ArrowRight className="w-3 h-3" />
+              </a>
             </div>
           </div>
         )}

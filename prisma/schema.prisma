@@ -44,6 +44,7 @@ model Organization {
   keywordObservations KeywordObservation[]
   categoryObservations CategoryObservation[]
   savedOpportunities SavedOpportunity[]
+  productValidations ProductValidation[]
 }
 
 enum Plan {
@@ -1182,6 +1183,7 @@ model ResearchRun {
 
   organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   observations    ProductObservation[]
+  validations     ProductValidation[]
 
   @@index([organizationId])
   @@index([type])
@@ -1345,6 +1347,51 @@ model SavedOpportunity {
   @@index([marketplace])
   @@index([score])
   @@index([createdAt])
+}
+
+model ProductValidation {
+  id                            String       @id @default(cuid())
+  organizationId                String
+  researchRunId                 String?
+  productId                     String?
+  productTitle                  String
+  query                         String
+  marketplace                   String       // "etsy" | "amazon" | "ebay" | "walmart" | "all"
+  category                      String?
+  niche                         String?
+  verdict                       String       // "STRONG_CANDIDATE" | "WORTH_INVESTIGATING" | "MIXED_SIGNALS" | "HIGH_COMPETITION" | "WEAK_DEMAND_SIGNAL" | "DECLINING_SIGNAL" | "INSUFFICIENT_DATA" | "UNAVAILABLE"
+  recommendation                String
+  validationScore               Float?
+  confidence                    Float        @default(0)
+  depth                         String       @default("STANDARD") // "QUICK" | "STANDARD" | "DEEP"
+  
+  // Structured Assessment Snapshots
+  demandAssessmentJson          Json?
+  competitionAssessmentJson     Json?
+  economicsAssessmentJson       Json?
+  momentumAssessmentJson        Json?
+  differentiationAssessmentJson Json?
+  evidenceJson                  Json?
+  risksJson                     Json?
+  unknownsJson                  Json?
+  limitationsJson               Json?
+  nextActionsJson               Json?
+  userEconomicsJson             Json?
+  
+  firstObservedAt               DateTime     @default(now())
+  lastObservedAt                DateTime     @default(now())
+  createdAt                     DateTime     @default(now())
+  updatedAt                     DateTime     @updatedAt
+
+  organization                  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  researchRun                   ResearchRun? @relation(fields: [researchRunId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([marketplace])
+  @@index([verdict])
+  @@index([validationScore])
+  @@index([createdAt])
+  @@index([productId])
 }
 
 

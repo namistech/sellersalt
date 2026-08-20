@@ -627,7 +627,31 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - `OpportunityFeed.tsx`: Filterable opportunity discovery feed supporting type filtering, marketplace switching, and saved watchlist filtering.
 - **Comprehensive Test Baseline**:
   - Created `src/tests/batch-16-opportunity-discovery.test.ts` (11 test cases).
-  - Full test suite: **1014/1014 passing across 224 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+## Batch 17: Product Validation & Commercial Decision Engine (2026-08-20)
+
+**Why**: Build a dedicated commercial feasibility validation layer above Opportunity Discovery to help merchants answer "Is this product worth spending time and money investigating?" with deterministic evidence, price positioning, differentiation vectors, and user-supplied unit economics.
+
+**What changed**:
+- **Canonical Product Validation Domain (`src/marketplaces/core/validation/types.ts`)**:
+  - Structured entities for `ProductValidationReport`, `ValidationVerdict` (`STRONG_CANDIDATE`, `WORTH_INVESTIGATING`, `HIGH_COMPETITION`, `WEAK_DEMAND_SIGNAL`, `DECLINING_SIGNAL`, `INSUFFICIENT_DATA`), `DemandAssessment`, `CompetitionAssessment`, `EconomicsAssessment`, `MomentumAssessment`, and `SaturationAssessment`.
+- **Price Positioning Engine (`src/services/intelligence/price-positioning.ts`)**:
+  - Maps candidate prices against empirical market percentiles (P10, P25, Median, P75, P90) into distinct strategic tiers (`BELOW_MARKET`, `LOWER_MID_MARKET`, `MID_MARKET`, `UPPER_MID_MARKET`, `PREMIUM`, `OUTSIDE_OBSERVED_RANGE`).
+- **User Unit Economics Calculator (`src/services/intelligence/unit-economics.ts`)**:
+  - Interactive calculator computing Gross Profit, Contribution Margin, Margin %, Break-Even Price, and Max Allowable CAC with strict `USER_DERIVED` provenance.
+- **Differentiation Analysis Engine (`src/services/intelligence/differentiation-engine.ts`)**:
+  - Identifies common attributes ($\ge 40\%$) and underrepresented gaps ($15-25\%$) without synthetic customer mind-reading.
+- **Product Validation Engine (`src/services/intelligence/product-validation-engine.ts`)**:
+  - End-to-end orchestrator executing bounded multi-marketplace validation with dynamic weight redistribution.
+- **PostgreSQL Persistence & API Routes**:
+  - Added `ProductValidation` model in `prisma/schema.prisma` with `organizationId` multi-tenant isolation.
+  - Implemented `/api/validation/product`, `/api/validation/product/[id]`, `/api/validation/product/[id]/refresh`, `/api/validation/unit-economics`, `/api/validation/price-position`, and `/api/validation/history`.
+- **Interactive UI Surfaces**:
+  - Created `/validate` and `/validate/product/[id]` pages.
+  - Implemented `ValidationStudio.tsx` and `ValidationReportView.tsx` with executive summary, scorecard, and tabbed deep dives.
+  - Integrated "Validate Product" direct handoff in `OpportunityCard.tsx`.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-17-product-validation.test.ts` (14 test cases).
+  - Full test suite: **1028/1028 passing across 231 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
   - TypeScript: Clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
