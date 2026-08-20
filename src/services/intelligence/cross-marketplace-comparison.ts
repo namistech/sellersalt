@@ -25,6 +25,7 @@ const MARKETPLACE_DISPLAY_NAMES: Record<MarketplaceId, string> = {
   etsy: "Etsy",
   amazon: "Amazon",
   ebay: "eBay",
+  walmart: "Walmart",
   tiktok_shop: "TikTok Shop",
   shopify: "Shopify",
   woocommerce: "WooCommerce",
@@ -70,8 +71,24 @@ export function buildCrossMarketplaceComparison(
     const displayName = connector?.displayName ?? MARKETPLACE_DISPLAY_NAMES[res.marketplace] ?? res.marketplace;
 
     if (res.status === "AVAILABLE" && res.products.length > 0) {
-      const oppScore = res.summary?.averageOpportunityScore ?? null;
-      const confidence = res.summary?.averageConfidence ?? null;
+      const oppScore =
+        res.summary?.averageOpportunityScore ??
+        (res.products.some((p) => p.opportunityScore?.score !== undefined)
+          ? Math.round(
+              res.products.reduce((acc, p) => acc + (p.opportunityScore?.score ?? 0), 0) /
+                res.products.length
+            )
+          : null);
+
+      const confidence =
+        res.summary?.averageConfidence ??
+        (res.products.some((p) => p.opportunityScore?.confidence !== undefined)
+          ? Math.round(
+              res.products.reduce((acc, p) => acc + (p.opportunityScore?.confidence ?? 0), 0) /
+                res.products.length
+            )
+          : null);
+
       const { verdict, verdictVariant } = getVerdictFromScore(oppScore);
 
       return {

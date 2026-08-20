@@ -1,8 +1,8 @@
 /**
- * SellerSalt eBay Public Web Acquisition Adapter
+ * SellerSalt Walmart Public Web Acquisition Adapter
  * 
- * Extracts structured commerce observations from eBay search and listing pages
- * (JSON-LD, OpenGraph, semantic search cards).
+ * Extracts structured commerce observations from Walmart search and item pages
+ * (JSON-LD, OpenGraph, structured product schemas).
  */
 
 import {
@@ -19,7 +19,6 @@ import type {
   PublicWebCapabilities,
   PublicSearchQuery,
   PublicAcquisitionResult,
-  PublicKeywordHarvestResult,
 } from "../core/acquisition/contracts";
 import {
   evaluateCanonicalOpportunity,
@@ -27,15 +26,14 @@ import {
 } from "@/services/intelligence/canonical-opportunity";
 import type {
   NormalizedProduct,
-  MarketplaceShopStats,
   SignalProvenance,
 } from "../core/types";
 
-export const EBAY_PUBLIC_WEB_CAPABILITIES: PublicWebCapabilities = {
+export const WALMART_PUBLIC_WEB_CAPABILITIES: PublicWebCapabilities = {
   productSearch: true,
   productDetail: true,
   shopResearch: false,
-  keywordDiscovery: true,
+  keywordDiscovery: false,
   categoryDiscovery: false,
   reviews: true,
   ratings: true,
@@ -47,58 +45,64 @@ export const EBAY_PUBLIC_WEB_CAPABILITIES: PublicWebCapabilities = {
 };
 
 /**
- * Extracts eBay search cards from search HTML.
+ * Extracts Walmart search cards from search HTML.
  */
-export function parseEbayListingCardsFromHtml(html: string): NormalizedProduct[] {
+export function parseWalmartListingCardsFromHtml(html: string): NormalizedProduct[] {
   if (!html || typeof html !== "string") return [];
 
   const products: NormalizedProduct[] = [];
-  const cardRegex = /<li[^>]*class=["'][^"']*s-item[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi;
+  const cardRegex = /<div[^>]*data-item-id=["']([0-9]+)["'][^>]*>([\s\S]*?)<\/div>/gi;
   const matches = Array.from(html.matchAll(cardRegex));
 
   for (const match of matches) {
-    const cardHtml = match[1];
-
-    // URL & External ID
-    const urlMatch = cardHtml.match(/href=["'](https:\/\/(?:www\.)?ebay\.com\/itm\/([0-9]+)[^"']*)["']/i);
-    if (!urlMatch) continue;
-    const url = urlMatch[1];
-    const externalId = urlMatch[2];
+    const itemId = match[1];
+    const cardChunk = match[2];
 
     // Title
-    const titleMatch =
-      cardHtml.match(/<div[^>]*class=["'][^"']*s-item__title[^"']*["'][^>]*>([\s\S]*?)<\/div>/i) ||
-      cardHtml.match(/<h3[^>]*class=["'][^"']*s-item__title[^"']*["'][^>]*>([\s\S]*?)<\/h3>/i);
+    const titleMatch = cardChunk.match(/<span[^>]*class=["'][^"']*w_iUH7[^"']*["'][^>]*>([\s\S]*?)<\/span>/i);
     const rawTitle = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim() : "";
-    if (!rawTitle || rawTitle.toLowerCase().includes("shop on ebay")) continue;
+    if (!rawTitle) continue;
 
     // Price
-    const priceMatch = cardHtml.match(/class=["'][^"']*s-item__price[^"']*["'][^>]*>\$([0-9,.]+)<\/span>/i);
+    const priceMatch = cardChunk.match(/class=["'][^"']*w_iUH7[^"']*["'][^>]*>\$([0-9,.]+)<\/span>/i) || cardChunk.match(/\$([0-9]+\.[0-9]{2})/);
     let price: number | null = null;
     if (priceMatch) {
       price = parseFloat(priceMatch[1].replace(/,/g, ""));
       if (isNaN(price)) price = null;
     }
 
+    // Rating
+    const ratingMatch = cardChunk.match(/([0-9.]+) out of 5 Stars/i);
+    let rating: number | null = null;
+    if (ratingMatch) {
+      rating = parseFloat(ratingMatch[1]);
+      if (isNaN(rating)) rating = null;
+    }
+
+    // Review Count
+    const reviewMatch = cardChunk.match(/\(([0-9,]+)\s*(?:reviews|ratings)\)/i);
+    let reviewCount: number | null = null;
+    if (reviewMatch) {
+      reviewCount = parseInt(reviewMatch[1].replace(/,/g, ""), 10);
+      if (isNaN(reviewCount)) reviewCount = null;
+    }
+
     // Image URL
-    const imgMatch = cardHtml.match(/<img[^>]*src=["']([^"']+)["']/i);
+    const imgMatch = cardChunk.match(/<img[^>]*src=["']([^"']+)["']/i);
     const imageUrl = imgMatch ? imgMatch[1] : undefined;
 
-    // Seller
-    const sellerMatch = cardHtml.match(/class=["'][^"']*s-item__seller-info-text[^"']*["'][^>]*>([^<]+)<\/span>/i);
-    const sellerName = sellerMatch ? sellerMatch[1].trim() : undefined;
+    const productUrl = `https://www.walmart.com/ip/${itemId}`;
 
     const normalized: NormalizedProduct = {
-      marketplace: "ebay",
-      externalId,
+      marketplace: "walmart",
+      externalId: itemId,
       title: rawTitle,
-      url,
+      url: productUrl,
       imageUrl,
       price,
       currency: "USD",
-      rating: null,
-      reviewCount: null,
-      shop: sellerName ? { name: sellerName } : undefined,
+      rating,
+      reviewCount,
       source: "ACTUAL_DATA" as SignalProvenance,
       acquisitionMethod: "PUBLIC_WEB",
       isHistorical: false,
@@ -125,11 +129,11 @@ export function parseEbayListingCardsFromHtml(html: string): NormalizedProduct[]
   return products;
 }
 
-export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
-  readonly marketplace = "ebay" as const;
-  readonly displayName = "eBay";
-  readonly domain = "ebay.com";
-  readonly capabilities = EBAY_PUBLIC_WEB_CAPABILITIES;
+export class WalmartPublicWebAdapter implements PublicWebAcquisitionAdapter {
+  readonly marketplace = "walmart" as const;
+  readonly displayName = "Walmart";
+  readonly domain = "walmart.com";
+  readonly capabilities = WALMART_PUBLIC_WEB_CAPABILITIES;
 
   private pageFetcher: PublicPageFetcher;
 
@@ -146,7 +150,7 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
     if (!queryTerm) {
       return {
         success: true,
-        marketplace: "ebay",
+        marketplace: "walmart",
         items: [],
         sourceType: "PUBLIC_WEB",
         provenance: "UNAVAILABLE",
@@ -154,33 +158,38 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
       };
     }
 
-    const searchUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(queryTerm)}`;
+    const searchUrl = `https://www.walmart.com/search?q=${encodeURIComponent(queryTerm)}`;
 
     try {
       const page = await this.pageFetcher.fetchPage(searchUrl);
 
-      if (page.statusCode !== 200 || !page.html) {
+      if (
+        page.statusCode !== 200 ||
+        !page.html ||
+        page.html.includes("Robot or human?") ||
+        page.html.includes("Verify your identity")
+      ) {
         return {
           success: false,
-          marketplace: "ebay",
+          marketplace: "walmart",
           items: [],
           sourceUrl: searchUrl,
           sourceType: "PUBLIC_WEB",
           provenance: "UNAVAILABLE",
           statusCode: page.statusCode,
-          failureReason: page.statusCode === 429 ? "RATE_LIMITED" : "ACCESS_RESTRICTED",
-          error: "eBay public search is unavailable.",
+          failureReason: "ACCESS_RESTRICTED",
+          error: "Walmart public search is restricted without dedicated proxy infrastructure.",
           fetchedAt,
         };
       }
 
-      // 1. Try semantic search card parser
-      const cardProducts = parseEbayListingCardsFromHtml(page.html);
+      // 1. Try card parser
+      const cardProducts = parseWalmartListingCardsFromHtml(page.html);
       if (cardProducts.length > 0) {
         const limit = query.limit ?? 20;
         return {
           success: true,
-          marketplace: "ebay",
+          marketplace: "walmart",
           items: cardProducts.slice(0, limit),
           sourceUrl: searchUrl,
           sourceType: "PUBLIC_WEB",
@@ -196,10 +205,10 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
       const items: NormalizedProduct[] = [];
 
       if (parsed && parsed.name) {
-        const externalId = extractListingIdFromUrl(page.url) || "ebay-1";
+        const itemId = extractListingIdFromUrl(page.url) || "walmart-1";
         const normalized: NormalizedProduct = {
-          marketplace: "ebay",
-          externalId,
+          marketplace: "walmart",
+          externalId: itemId,
           title: parsed.name,
           url: page.url,
           imageUrl: typeof parsed.image === "string" ? parsed.image : undefined,
@@ -232,7 +241,7 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
 
       return {
         success: items.length > 0,
-        marketplace: "ebay",
+        marketplace: "walmart",
         items,
         sourceUrl: searchUrl,
         sourceType: "PUBLIC_WEB",
@@ -244,12 +253,12 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
     } catch (err: any) {
       return {
         success: false,
-        marketplace: "ebay",
+        marketplace: "walmart",
         items: [],
         sourceUrl: searchUrl,
         sourceType: "PUBLIC_WEB",
         provenance: "UNAVAILABLE",
-        error: err.message || "Failed to fetch eBay search results",
+        error: err.message || "Failed to fetch Walmart search results",
         failureReason: "NETWORK_ERROR",
         fetchedAt,
       };
@@ -260,25 +269,30 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
     externalIdOrUrl: string
   ): Promise<PublicAcquisitionResult<NormalizedProduct>> {
     const fetchedAt = new Date();
-    const listingId = extractListingIdFromUrl(externalIdOrUrl) || externalIdOrUrl.trim();
+    const itemId = extractListingIdFromUrl(externalIdOrUrl) || externalIdOrUrl.trim();
     const productUrl = externalIdOrUrl.startsWith("http")
       ? externalIdOrUrl
-      : `https://www.ebay.com/itm/${listingId}`;
+      : `https://www.walmart.com/ip/${itemId}`;
 
     try {
       const page = await this.pageFetcher.fetchPage(productUrl);
 
-      if (page.statusCode !== 200 || !page.html) {
+      if (
+        page.statusCode !== 200 ||
+        !page.html ||
+        page.html.includes("Robot or human?") ||
+        page.html.includes("Verify your identity")
+      ) {
         return {
           success: false,
-          marketplace: "ebay",
+          marketplace: "walmart",
           items: [],
           sourceUrl: productUrl,
           sourceType: "PUBLIC_WEB",
           provenance: "UNAVAILABLE",
           statusCode: page.statusCode,
           failureReason: "ACCESS_RESTRICTED",
-          error: "eBay product page is unavailable.",
+          error: "Walmart product page is restricted without dedicated proxy infrastructure.",
           fetchedAt,
         };
       }
@@ -292,13 +306,13 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
       if (!title) {
         return {
           success: false,
-          marketplace: "ebay",
+          marketplace: "walmart",
           items: [],
           sourceUrl: productUrl,
           sourceType: "PUBLIC_WEB",
           provenance: "UNAVAILABLE",
           failureReason: "NO_DATA",
-          error: "No product metadata found on eBay page",
+          error: "No product metadata found on Walmart page",
           fetchedAt,
         };
       }
@@ -308,8 +322,8 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
         openGraph.image;
 
       const normalized: NormalizedProduct = {
-        marketplace: "ebay",
-        externalId: listingId,
+        marketplace: "walmart",
+        externalId: itemId,
         title,
         url: productUrl,
         imageUrl,
@@ -341,7 +355,7 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
 
       return {
         success: true,
-        marketplace: "ebay",
+        marketplace: "walmart",
         items: [normalized],
         sourceUrl: productUrl,
         sourceType: "PUBLIC_WEB",
@@ -352,77 +366,17 @@ export class EbayPublicWebAdapter implements PublicWebAcquisitionAdapter {
     } catch (err: any) {
       return {
         success: false,
-        marketplace: "ebay",
+        marketplace: "walmart",
         items: [],
         sourceUrl: productUrl,
         sourceType: "PUBLIC_WEB",
         provenance: "UNAVAILABLE",
-        error: err.message || "Failed to fetch eBay product page",
+        error: err.message || "Failed to fetch Walmart product page",
         failureReason: "NETWORK_ERROR",
         fetchedAt,
       };
     }
   }
-
-  async harvestPublicKeywords(
-    query: PublicSearchQuery
-  ): Promise<PublicAcquisitionResult<PublicKeywordHarvestResult>> {
-    const fetchedAt = new Date();
-    const queryTerm = query.query.trim();
-
-    const searchRes = await this.searchPublicProducts({ ...query, limit: 30 });
-    if (!searchRes.success || searchRes.items.length === 0) {
-      return {
-        success: false,
-        marketplace: "ebay",
-        items: [],
-        sourceType: "PUBLIC_WEB",
-        provenance: "UNAVAILABLE",
-        error: searchRes.error || "No search listings observed on eBay to harvest keywords from",
-        failureReason: searchRes.failureReason || "NO_DATA",
-        fetchedAt,
-      };
-    }
-
-    const words = new Map<string, number>();
-    for (const item of searchRes.items) {
-      const tokens = item.title.toLowerCase().split(/[^a-z0-9]+/i).filter((t) => t.length > 2);
-      for (const t of tokens) {
-        words.set(t, (words.get(t) || 0) + 1);
-      }
-    }
-
-    const relatedKeywords = Array.from(words.entries())
-      .map(([keyword, count]) => ({
-        keyword,
-        occurrenceCount: count,
-        listingFrequency: Math.round((count / searchRes.items.length) * 100),
-        demandProxy: Math.min(100, count * 15),
-        demandTier: count > 3 ? ("HIGH" as const) : count > 1 ? ("MEDIUM" as const) : ("LOW" as const),
-      }))
-      .sort((a, b) => b.occurrenceCount - a.occurrenceCount)
-      .slice(0, 15);
-
-    return {
-      success: true,
-      marketplace: "ebay",
-      items: [
-        {
-          query: queryTerm,
-          marketplace: "ebay",
-          relatedKeywords,
-          topTags: [],
-          observedListingsCount: searchRes.items.length,
-          averagePrice: null,
-          demandProxyScore: 60,
-          fetchedAt,
-        },
-      ],
-      sourceType: "PUBLIC_WEB",
-      provenance: "ACTUAL_DATA",
-      fetchedAt,
-    };
-  }
 }
 
-export const ebayPublicWebAdapter = new EbayPublicWebAdapter();
+export const walmartPublicWebAdapter = new WalmartPublicWebAdapter();

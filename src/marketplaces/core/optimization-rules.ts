@@ -60,6 +60,7 @@ const RULES: Record<MarketplaceId, MarketplaceOptimizationRules> = {
   amazon: unknownRules("amazon"),
   ebay: unknownRules("ebay"),
   tiktok_shop: unknownRules("tiktok_shop"),
+  walmart: unknownRules("walmart"),
 };
 
 export function getOptimizationRules(marketplace: MarketplaceId): MarketplaceOptimizationRules {

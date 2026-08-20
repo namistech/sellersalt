@@ -283,37 +283,73 @@ export async function fetchStandaloneKeywordResearch(
     throw new Error("Search query keyword is required.");
   }
 
-  const active = await getActiveConnectorWithCredentials(organizationId, "ETSY");
+  const active = await getActiveConnectorWithCredentials(organizationId, "ETSY").catch(() => null);
   const apiKey = active?.credentials?.apiKey || process.env.ETSY_API_KEY || "";
   const sharedSecret = active?.credentials?.sharedSecret || process.env.ETSY_SHARED_SECRET || "";
 
-  if (!apiKey) {
-    throw new Error("No active Etsy API credentials configured. Please configure an Etsy connector in Settings.");
+  let listings: any[] = [];
+  let totalEtsySupply = 0;
+
+  if (apiKey) {
+    try {
+      const client = createEtsyClient(apiKey, sharedSecret);
+      const limit = Math.min(100, Math.max(10, request.limit || 50));
+      const searchParams: any = {
+        keywords: query,
+        limit,
+        sort_on: "score",
+        sort_order: "desc",
+      };
+
+      if (request.categoryTaxonomyId) {
+        searchParams.taxonomy_id = request.categoryTaxonomyId;
+      }
+      if (request.minPrice !== undefined && request.minPrice > 0) {
+        searchParams.min_price = request.minPrice;
+      }
+      if (request.maxPrice !== undefined && request.maxPrice > 0) {
+        searchParams.max_price = request.maxPrice;
+      }
+
+      const rawSearch = await client.searchListings(searchParams);
+      listings = rawSearch?.results ?? [];
+      totalEtsySupply = rawSearch?.count ?? listings.length;
+    } catch {
+      // Fall through to public web acquisition
+    }
   }
 
-  const client = createEtsyClient(apiKey, sharedSecret);
+  if (listings.length === 0) {
+    try {
+      const { etsyPublicWebAdapter } = await import("@/marketplaces/etsy/public-adapter");
+      const publicRes = await etsyPublicWebAdapter.searchPublicProducts({
+        query,
+        limit: request.limit || 50,
+        minPrice: request.minPrice,
+        maxPrice: request.maxPrice,
+      });
 
-  const limit = Math.min(100, Math.max(10, request.limit || 50));
-  const searchParams: any = {
-    keywords: query,
-    limit,
-    sort_on: "score",
-    sort_order: "desc",
-  };
+      if (publicRes.success && publicRes.items.length > 0) {
+        listings = publicRes.items.map((p) => ({
+          listing_id: p.externalId,
+          title: p.title,
+          price: { amount: Math.round((p.price ?? 0) * 100), divisor: 100 },
+          num_favorers: p.favoritesCount ?? 0,
+          url: p.url,
+          image_url: p.imageUrl,
+          shop_name: p.shop?.name || "Etsy Shop",
+          tags: p.keywordSignals?.map((k) => k.term) || [],
+        }));
+        totalEtsySupply = publicRes.items.length;
+      }
+    } catch {
+      // Ignore public web errors
+    }
+  }
 
-  if (request.categoryTaxonomyId) {
-    searchParams.taxonomy_id = request.categoryTaxonomyId;
+  if (listings.length === 0 && !apiKey) {
+    throw new Error("No active Etsy credentials or public web observations found for this search.");
   }
-  if (request.minPrice !== undefined && request.minPrice > 0) {
-    searchParams.min_price = request.minPrice;
-  }
-  if (request.maxPrice !== undefined && request.maxPrice > 0) {
-    searchParams.max_price = request.maxPrice;
-  }
-
-  const rawSearch = await client.searchListings(searchParams);
-  const listings = rawSearch?.results ?? [];
-  const totalEtsySupply = rawSearch?.count ?? listings.length;
 
   // Calculate pricing & engagement aggregates across sample
   let priceSum = 0;

@@ -17,6 +17,7 @@ import {
 } from "../core/acquisition";
 import type {
   PublicWebAcquisitionAdapter,
+  PublicWebCapabilities,
   PublicSearchQuery,
   PublicAcquisitionResult,
 } from "../core/acquisition/contracts";
@@ -30,10 +31,26 @@ import type {
   SignalProvenance,
 } from "../core/types";
 
+export const ETSY_PUBLIC_WEB_CAPABILITIES: PublicWebCapabilities = {
+  productSearch: true,
+  productDetail: true,
+  shopResearch: true,
+  keywordDiscovery: true,
+  categoryDiscovery: true,
+  reviews: true,
+  ratings: true,
+  pricing: true,
+  images: true,
+  taxonomy: true,
+  engagement: true,
+  salesEstimation: true,
+};
+
 export class EtsyPublicWebAdapter implements PublicWebAcquisitionAdapter {
   readonly marketplace = "etsy" as const;
   readonly displayName = "Etsy";
   readonly domain = "etsy.com";
+  readonly capabilities = ETSY_PUBLIC_WEB_CAPABILITIES;
 
   private pageFetcher: PublicPageFetcher;
 

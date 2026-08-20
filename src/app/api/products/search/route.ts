@@ -7,7 +7,7 @@ import type { MarketplaceId } from "@/marketplaces/core/types";
 import { checkQuota } from "@/services/plans/quota-enforcement";
 
 function resolveMarketplace(raw: string | null): MarketplaceId {
-  const supported: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop"];
+  const supported: MarketplaceId[] = ["etsy", "shopify", "woocommerce", "amazon", "ebay", "tiktok_shop", "walmart"];
   return supported.includes(raw as MarketplaceId) ? (raw as MarketplaceId) : "etsy";
 }
 

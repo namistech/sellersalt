@@ -15,7 +15,7 @@ import type { MarketplaceListItem } from "@/app/api/marketplaces/route";
 // channels (own-store connect), not public-research marketplaces, so they
 // are intentionally excluded from this picker even though they're
 // registered connectors.
-const RESEARCH_MARKETPLACE_IDS = ["etsy", "amazon", "ebay", "tiktok_shop"] as const;
+const RESEARCH_MARKETPLACE_IDS = ["etsy", "amazon", "ebay", "walmart", "tiktok_shop"] as const;
 export type ResearchMarketplaceId = (typeof RESEARCH_MARKETPLACE_IDS)[number];
 /** "all" is a first-class selector value, not a registry entry — it means
  * "fan this request out across every research-capable marketplace" (see
@@ -26,6 +26,7 @@ const ICONS: Record<ResearchMarketplaceId, string> = {
   etsy: "🛍️",
   amazon: "📦",
   ebay: "🏷️",
+  walmart: "🏪",
   tiktok_shop: "📱",
 };
 

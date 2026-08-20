@@ -20,7 +20,8 @@ export type MarketplaceId =
   | "woocommerce"
   | "amazon"
   | "ebay"
-  | "tiktok_shop";
+  | "tiktok_shop"
+  | "walmart";
 
 /** Maps a connected `SellerChannel.platform` (Prisma's `SellerChannelPlatform`
  * enum, e.g. from `getServerSession`-scoped DB reads) to the `MarketplaceId`
@@ -34,6 +35,7 @@ export const SELLER_CHANNEL_PLATFORM_TO_MARKETPLACE: Record<string, MarketplaceI
   AMAZON_SELLER: "amazon",
   EBAY_SELLER: "ebay",
   TIKTOK_SHOP_SELLER: "tiktok_shop",
+  WALMART_SELLER: "walmart",
 };
 
 export function marketplaceFromSellerChannelPlatform(platform: string): MarketplaceId | null {

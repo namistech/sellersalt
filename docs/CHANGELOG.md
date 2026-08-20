@@ -386,14 +386,35 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Created `persistPublicProductObservations` saving normalized research observations into PostgreSQL (`Prospect` table) to build longitudinal datasets.
 - **Etsy Public Web Adapter (`src/marketplaces/etsy/public-adapter.ts`)**:
   - Implemented `EtsyPublicWebAdapter` supporting `searchPublicProducts`, `fetchPublicProduct`, `fetchPublicShop`, and `harvestPublicKeywords` with canonical opportunity score evaluation.
-- **Amazon, eBay & TikTok Shop Public Web Stubs (`src/marketplaces/amazon/public-adapter.ts`, `src/marketplaces/ebay/public-adapter.ts`, `src/marketplaces/tiktok-shop/public-adapter.ts`)**:
-  - Created architecture-ready public adapter contracts for Amazon, eBay, and TikTok Shop.
-- **Acquisition Router Priority Upgrade (`src/marketplaces/core/acquisition.ts`)**:
-  - Configured `acquireProductObservations` with primary `PUBLIC_WEB` strategy, `MARKETPLACE_API` secondary enrichment, and `HISTORICAL_OBSERVATION` tertiary fallback.
+## Marketplace-Independent Web Acquisition Expansion & Source Orchestrator — Batch 9C (2026-08-20)
+
+**Why**: To expand SellerSalt's marketplace-independent data acquisition layer across Amazon, eBay, Walmart, and TikTok Shop, establish a formal Research Source Policy with multi-source orchestration, introduce temporal freshness calibration with domain-specific degradation rules, and build empirical keyword observation capabilities without requiring official keyword API dependencies.
+
+**What changed**:
+- **Walmart First-Class Integration**:
+  - Registered `walmart` in `MarketplaceId`, `SELLER_CHANNEL_PLATFORM_TO_MARKETPLACE`, `MarketplaceRegistry`, `MarketplaceSelector`, and `cross-marketplace-comparison`.
+  - Implemented `WalmartPublicWebAdapter` (`src/marketplaces/walmart/public-adapter.ts`) with semantic search card parser (`data-item-id`) and JSON-LD structured product extraction.
+- **Amazon & eBay Public Web Semantic Parsers**:
+  - Enhanced `AmazonPublicWebAdapter` (`src/marketplaces/amazon/public-adapter.ts`) with card-level ASIN (`data-asin`), price, rating, and review extraction, alongside keyword harvesting.
+  - Enhanced `EbayPublicWebAdapter` (`src/marketplaces/ebay/public-adapter.ts`) with `.s-item` card extraction and keyword harvesting.
+- **MarketplaceRegistry Single Entry Point**:
+  - Upgraded `MarketplaceRegistry` (`src/marketplaces/core/registry/index.ts`) to manage both official `MarketplaceConnector` instances and `PublicWebAcquisitionAdapter` instances.
+- **Research Source Orchestrator (`src/marketplaces/core/acquisition/orchestrator.ts`)**:
+  - Implemented `orchestrateProductResearch` with configurable `ResearchSourcePolicy` supporting `preferredSources`, `allowHistoricalFallback`, `minimumFreshness`, and observation merging.
+- **Standardized Freshness Model (`src/marketplaces/core/acquisition/freshness.ts`)**:
+  - Standardized observation validity statuses: `LIVE`, `FRESH`, `STALE`, `HISTORICAL`, `UNKNOWN` with domain-specific lifetime windows (Price: 6h, Reviews: 48h, Taxonomy: 7d).
+- **Empirical Keyword Research Pipeline (`src/marketplaces/core/acquisition/keywords.ts`)**:
+  - Built marketplace-independent keyword harvester calculating listing frequencies, price distributions, and demand proxy scores.
+  - Strictly preserves `exactSearchVolume = null` unless backed by licensed external volume providers.
+- **Centralized Compliance Safeguards (`src/marketplaces/core/acquisition/compliance.ts`)**:
+  - Added SSRF guards and authenticated seller dashboard protection (`/your/shops`, `sellercentral.amazon.com`, `seller.walmart.com`).
+- **Comprehensive Documentation**:
+  - Created `docs/DATA-ACQUISITION.md` detailing the complete acquisition architecture.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-9b-public-web-acquisition.test.ts` (22 tests across 7 suites).
-  - Full test baseline: **851/851 passing across 139 suites**.
+  - Created `src/tests/batch-9c-marketplace-independent-acquisition.test.ts` (28 tests across 12 suites).
+  - Full test baseline: **879/879 passing across 151 suites**.
   - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
 

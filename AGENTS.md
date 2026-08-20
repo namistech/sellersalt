@@ -41,6 +41,7 @@ Currently registered in `src/marketplaces/core/registry/`:
 | WooCommerce | PARTIAL (account + orders only) |
 | Amazon | ARCHITECTURE READY (no credentials) |
 | eBay | ARCHITECTURE READY (no credentials) |
+| Walmart | ARCHITECTURE READY (no credentials) |
 | TikTok Shop | ARCHITECTURE READY (no credentials) |
 
 The architecture must remain extensible to Walmart, Noon, Flipkart, Amazon
@@ -334,7 +335,7 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      851/851 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 139 suites)
+Tests:      879/879 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 151 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, up to date (npx prisma validate && npx prisma migrate status — 29 migrations)
 Next.js:    clean build      (npx next build — 161/161 static and dynamic routes compiled)

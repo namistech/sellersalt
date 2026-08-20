@@ -201,21 +201,7 @@ export async function acquireProductObservations(
   if (preferredSources.includes("PUBLIC_WEB")) {
     sourcesAttempted.push("PUBLIC_WEB");
     try {
-      let publicAdapter: import("./acquisition/contracts").PublicWebAcquisitionAdapter | null = null;
-
-      if (request.marketplace === "etsy") {
-        const { etsyPublicWebAdapter } = await import("../etsy/public-adapter");
-        publicAdapter = etsyPublicWebAdapter;
-      } else if (request.marketplace === "amazon") {
-        const { amazonPublicWebAdapter } = await import("../amazon/public-adapter");
-        publicAdapter = amazonPublicWebAdapter;
-      } else if (request.marketplace === "ebay") {
-        const { ebayPublicWebAdapter } = await import("../ebay/public-adapter");
-        publicAdapter = ebayPublicWebAdapter;
-      } else if (request.marketplace === "tiktok_shop") {
-        const { tiktokShopPublicWebAdapter } = await import("../tiktok-shop/public-adapter");
-        publicAdapter = tiktokShopPublicWebAdapter;
-      }
+      const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
 
       if (publicAdapter) {
         const publicRes = await publicAdapter.searchPublicProducts({

@@ -6,13 +6,12 @@
  */
 
 import { globalRateLimiter, DomainRateLimiter } from "./rate-limiter";
+import { validateAcquisitionCompliance, CENTRAL_COMPLIANCE_POLICY } from "./compliance";
 import type { PageFetchOptions, PageFetchResponse } from "./contracts";
 
-const DEFAULT_USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 (SellerSalt Commerce Research Bot/1.0; +https://sellersalt.com/bot)";
-
+const DEFAULT_USER_AGENT = CENTRAL_COMPLIANCE_POLICY.defaultUserAgent;
 const DEFAULT_TIMEOUT_MS = 8000;
-const DEFAULT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const DEFAULT_MAX_BYTES = CENTRAL_COMPLIANCE_POLICY.maxResponseBytes;
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 interface CacheEntry {
@@ -36,6 +35,8 @@ export class PublicPageFetcher {
    * Fetches a public page with rate limiting, caching, and retry.
    */
   async fetchPage(url: string, options: PageFetchOptions = {}): Promise<PageFetchResponse> {
+    validateAcquisitionCompliance(url, options.headers);
+
     const cacheKey = this.getCacheKey(url);
     const now = Date.now();
 

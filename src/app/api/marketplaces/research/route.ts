@@ -6,7 +6,7 @@ import { buildCrossMarketplaceComparison } from "@/services/intelligence/cross-m
 import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 
-const ALL_MARKETPLACE_IDS: MarketplaceId[] = ["etsy", "amazon", "ebay", "tiktok_shop", "shopify", "woocommerce"];
+const ALL_MARKETPLACE_IDS: MarketplaceId[] = ["etsy", "amazon", "ebay", "walmart", "tiktok_shop", "shopify", "woocommerce"];
 
 /**
  * "ALL MARKETPLACES" product research — fans a single search intent out

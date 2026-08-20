@@ -289,7 +289,9 @@ export function parseEtsyListingCardsFromHtml(html: string): ParsedListingCard[]
     // Extract price
     let price: number | undefined;
     let currency = "USD";
-    const priceMatch = innerHtml.match(/(?:[$€£¥₹])\s*([0-9]+(?:\.[0-9]{2})?)/);
+    const priceMatch =
+      innerHtml.match(/(?:[$€£¥₹])\s*([0-9]+(?:\.[0-9]{2})?)/) ||
+      innerHtml.match(/class=["'][^"']*currency-value[^"']*["'][^>]*>([0-9]+(?:\.[0-9]{2})?)/i);
     if (priceMatch?.[1]) {
       const p = parseFloat(priceMatch[1]);
       if (!isNaN(p)) price = p;

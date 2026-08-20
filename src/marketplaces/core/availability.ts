@@ -23,6 +23,7 @@ const HUMAN_LABEL: Record<MarketplaceId, string> = {
   amazon: "Amazon",
   ebay: "eBay",
   tiktok_shop: "TikTok Shop",
+  walmart: "Walmart",
 };
 
 /**

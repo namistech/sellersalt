@@ -2,7 +2,7 @@
  * SellerSalt Public Web Acquisition Contracts
  * 
  * Defines standard interfaces for marketplace-independent public web observation adapters,
- * rate limiters, structured data parsers, and page fetchers.
+ * fine-grained capability flags, rate limiters, structured data parsers, and page fetchers.
  */
 
 import type {
@@ -11,7 +11,23 @@ import type {
   MarketplaceShopStats,
   SignalProvenance,
   DataSourceType,
+  Category,
 } from "../types";
+
+export interface PublicWebCapabilities {
+  productSearch: boolean;
+  productDetail: boolean;
+  shopResearch: boolean;
+  keywordDiscovery: boolean;
+  categoryDiscovery: boolean;
+  reviews: boolean;
+  ratings: boolean;
+  pricing: boolean;
+  images: boolean;
+  taxonomy: boolean;
+  engagement: boolean;
+  salesEstimation: boolean;
+}
 
 export interface PublicSearchQuery {
   query: string;
@@ -23,6 +39,17 @@ export interface PublicSearchQuery {
   organizationId?: string;
 }
 
+export type AcquisitionFailureReason =
+  | "ACCESS_RESTRICTED"
+  | "RATE_LIMITED"
+  | "PARSE_FAILURE"
+  | "TIMEOUT"
+  | "UNSUPPORTED_PAGE"
+  | "NO_DATA"
+  | "MALFORMED_RESPONSE"
+  | "NETWORK_ERROR"
+  | "NOT_IMPLEMENTED";
+
 export interface PublicAcquisitionResult<T> {
   success: boolean;
   marketplace: MarketplaceId;
@@ -32,6 +59,7 @@ export interface PublicAcquisitionResult<T> {
   provenance: SignalProvenance;
   rateLimitRemaining?: number;
   error?: string;
+  failureReason?: AcquisitionFailureReason;
   statusCode?: number;
   fetchedAt: Date;
 }
@@ -127,6 +155,7 @@ export interface PublicWebAcquisitionAdapter {
   readonly marketplace: MarketplaceId;
   readonly displayName: string;
   readonly domain: string;
+  readonly capabilities: PublicWebCapabilities;
 
   /**
    * Searches public marketplace listings via public search pages / structured metadata.
@@ -147,5 +176,9 @@ export interface PublicWebAcquisitionAdapter {
    * Harvests keyword signals, co-occurring phrases, and tags from public search results.
    */
   harvestPublicKeywords?(query: PublicSearchQuery): Promise<PublicAcquisitionResult<PublicKeywordHarvestResult>>;
-}
 
+  /**
+   * Discovers category nodes from public category pages.
+   */
+  discoverPublicCategories?(queryOrNodeId?: string): Promise<PublicAcquisitionResult<Category>>;
+}
