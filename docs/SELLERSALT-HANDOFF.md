@@ -4,23 +4,22 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 29 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 30 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 29
-(Production Operations, Observability, Reliability & Real-World Launch Hardening):
+condensed version of everything else in this file, current as of Batch 30
+(Real-World Production Activation & Launch Readiness Audit):
 
-**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` & `src/lib/observability/` — canonical, don't rebuild):
+**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` & `src/lib/config/` — canonical, don't rebuild):
+- **Production Environment Configuration Validator** (`environment-validator.ts`, `PRODUCTION-ENVIRONMENT.md`): Strict categorization and startup validation of all boot, billing, email, and marketplace credentials without secret leakage.
+- **Transactional Email Service & Simulation Capture** (`transactional-email.ts`): Unified outbound communication layer with Nodemailer SMTP, AWS SES, and local simulation capture buffers.
+- **Real-Data Acquisition Smoke Test Framework** (`acquisition-smoke-test.ts`): Non-aggressive sanity check harness testing domain whitelisting, SSRF protections, and Data Trust calculations.
+- **Etsy Integration Readiness Package** (`ETSY-INTEGRATION-READINESS.md`): Forensic verification of OpenAPI v3, OAuth PKCE, least-privilege scopes, and public vs seller data separation.
 - **Canonical Error Taxonomy & Safe Serializer** (`app-error.ts`): Unified error taxonomy across 18 machine-readable codes with strict PII/stack trace protection.
-- **Correlation & Distributed Tracing** (`correlation.ts`): End-to-end request tracing via `CorrelationManager`.
-- **Structured Production Logger** (`structured-logger.ts`): JSON telemetry with automatic redaction of credentials, tokens, and PII.
 - **Production Health Endpoints** (`/api/health/live`, `/api/health/ready`): Fast process liveness and database readiness probes.
-- **Application Rate Limiter** (`rate-limiter.ts`): Sliding-window token bucket rate limiter for auth, public, research, AI, and billing routes.
-- **Operational Diagnostics & Stale Run Recovery** (`operational-diagnostics.ts`, `/api/admin/diagnostics`): Diagnostic engine with automated stale research run recovery.
-- **Authoritative Entitlement Engine & Billing Ledger** (`entitlement-engine.ts`, `billing-event-ledger.ts`): Plan feature gating and webhook idempotency.
 
 **Current Verified Baseline**:
-- Tests: **1158/1158 passing across 322 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1161/1161 passing across 326 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**173/173 static and dynamic routes compiled**)

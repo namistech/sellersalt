@@ -988,3 +988,25 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**173/173 routes compiled**).
+
+## Batch 30: Real-World Production Activation & Launch Readiness Audit (2026-08-20)
+
+**Why**: Complete the production activation pass moving SellerSalt from a production-ready codebase to an actually deployable, externally connectable, operationally verified SaaS with startup configuration validation, transactional email simulation, bounded acquisition smoke testing, and pre-flight launch checklists.
+
+**What changed**:
+- **Production Environment Configuration Validator (`src/lib/config/environment-validator.ts`)**:
+  - Implemented `EnvironmentValidator` auditing required vs optional environment variables across Boot, Core Research, Billing, Email, and Marketplace integrations without leaking secrets.
+- **Transactional Email Service & Simulation Buffer (`src/services/email/transactional-email.ts`)**:
+  - Built unified transactional communication layer supporting Nodemailer SMTP, AWS SES, and local simulation capture buffers for test and development runs.
+- **Real-Data Acquisition Smoke Test Framework (`src/services/acquisition/acquisition-smoke-test.ts`)**:
+  - Created bounded, non-aggressive sanity check harness verifying domain whitelisting, SSRF protections, Data Trust calculations, and research run persistence without prohibited scraping or anti-bot bypass.
+- **Canonical Launch Readiness Specifications**:
+  - Created `docs/PRODUCTION-ENVIRONMENT.md`.
+  - Created `docs/ETSY-INTEGRATION-READINESS.md`.
+  - Created `docs/PRODUCTION-LAUNCH-CHECKLIST.md`.
+  - Created `docs/V1-LAUNCH-BLOCKERS.md`.
+- **Verification Baseline**:
+  - Full test suite: **1161/1161 passing across 326 suites** (`src/tests/batch-30-production-activation.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**173/173 routes compiled**).

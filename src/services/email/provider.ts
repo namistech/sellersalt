@@ -10,15 +10,19 @@ export class SmtpEmailProvider implements EmailProvider {
     const settings = await prisma.emailSettings.findFirst({ where: { isActive: true } });
     if (!settings) return null;
 
-    const password = decrypt(settings.encryptedPassword);
-    const transporter = nodemailer.createTransport({
-      host: settings.host,
-      port: settings.port,
-      secure: settings.secure,
-      auth: { user: settings.username, pass: password },
-    });
+    try {
+      const password = decrypt(settings.encryptedPassword);
+      const transporter = nodemailer.createTransport({
+        host: settings.host,
+        port: settings.port,
+        secure: settings.secure,
+        auth: { user: settings.username, pass: password },
+      });
 
-    return { transporter, settings };
+      return { transporter, settings };
+    } catch {
+      return null;
+    }
   }
 
   async send(msg: EmailMessage): Promise<SendEmailResult> {
