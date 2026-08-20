@@ -55,6 +55,14 @@ export async function addProductToPlanner(
         reviewCount: product.shop.reviewCount,
         activeListings: product.shop.activeListings,
         shopAgeMonths: product.shop.shopAgeMonths,
+        // Whether totalSales/reviewCount/activeListings/shopAgeMonths (and
+        // the estDailySales/avgSellingRatio derived from them) above are
+        // real observations or placeholder inputs to the (already
+        // disclosed-as-derived) Opportunity Score heuristic — Amazon/
+        // Walmart's public search results carry no shop-level aggregate
+        // data at all. The Planner UI must not render these as if
+        // directly observed when this is false.
+        shopMetricsObserved: product.shop.shopMetricsObserved,
         opportunityScore: product.opportunity.opportunityScore,
         opportunityClassification: product.opportunity.classification,
         extractedTags: product.listing.tags,

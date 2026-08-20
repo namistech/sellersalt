@@ -691,6 +691,96 @@ unchanged. The full downstream `RESEARCH → VALIDATE → PLAN` chain was
 batch — that's the next concrete step toward a `PRIVATE_BETA_READY`
 claim, and the data now exists to actually perform that test.
 
+**End-to-end commercial intelligence validation (2026-08-21, Batch
+36)** — traced Batch 35's real Amazon/Walmart data all the way through
+SEARCH → RESEARCH → VALIDATE → PLAN, per an explicit "prove it, don't
+just pass tests" mandate. Full detail and evidence in
+`BATCH-36-END-TO-END-COMMERCIAL-INTELLIGENCE-VALIDATION.md`. Found and
+fixed four real Zero-Fabrication Contract violations — all latent until
+Batch 35 made non-Etsy data real, since these code paths previously
+never received real observations at all:
+- **Fabricated `$0.00` price and fabricated shop stats** ("~0.0
+  sales/day · 0 reviews") shown for Amazon/Walmart search results whose
+  real price/shop-level data genuinely isn't in the source markup.
+  Root cause: `p.price ?? 0`, `p.shop?.activeListings ?? 1`, etc. in
+  `src/services/product-hunting.ts`'s results mapping silently
+  defaulted unobserved fields to plausible-looking numbers. Fixed by
+  widening `NormalizedProductListing.price` to `number | null` and
+  adding a new `shopMetricsObserved: boolean` to `NormalizedShopProfile`
+  that gates whether shop-level stats render at all — now correctly
+  shows "Price unavailable" / hides the stats block instead of a fake
+  number. Threaded through ~9 render sites (`live-search-tab.tsx`,
+  `ProductComparisonModal.tsx`, `ProductResearchDrawer.tsx`,
+  `category-hunting-client.tsx`, `product-detail-client.tsx`,
+  `planner-client.tsx`) and every `NormalizedShopProfile` construction
+  site.
+- **Hardcoded `[ACTUAL ETSY DATA]` badge shown for Amazon/Walmart
+  results** — a direct violation of non-negotiable rule #2 above. Fixed
+  by making the badge marketplace-aware everywhere in the real
+  Amazon/Walmart-reachable path (`marketplace === "etsy" ?
+  ACTUAL_ETSY_DATA : EXTERNAL_DATA`); `ProductComparisonModal`/
+  `ProductResearchDrawer` gained an explicit `marketplace` prop for
+  this since they didn't previously receive per-item marketplace
+  context.
+- **Hardcoded `2.0` sales/day fallback in the Planner's Unit Economics
+  calculator** (`planner-client.tsx`) silently turned "we don't know
+  the real sales velocity" into a specific, believable monthly-profit
+  dollar figure with zero disclosure. Assessed as this batch's most
+  severe finding. Fixed: the fallback is gone; monthly profit now shows
+  "Unavailable" unless a real (`shopMetricsObserved`) velocity exists.
+- **Walmart's public search page genuinely serves a `"price not yet
+  loaded"` sentinel** (`priceInfo: { linePrice: "", minPrice: 0 }`,
+  confirmed live under repeated-request load) that the Batch 35 parser
+  accepted as a real `$0` price. Fixed in
+  `src/marketplaces/walmart/public-adapter.ts` with `> 0` guards on
+  both `linePrice` and `minPrice` acceptance — verified this does not
+  over-correct and still accepts genuine low real prices (e.g. $0.99).
+- Also fixed: `product-detail-client.tsx` had literal hardcoded
+  `activeListings: 45, reviewAverage: 4.8` constants (not even a `??`
+  fallback) that were getting persisted into a real
+  `PlannerItem.researchSnapshot` on "Add to Planner" — replaced with
+  honest zero/null + `shopMetricsObserved: false`.
+
+**Proven working end-to-end, with real runtime evidence** (script
+calls, a real authenticated browser session, and the diagnostic
+command below — not just passing tests): real Amazon/Walmart search
+results → real `ProductValidationEngine` verdicts with disclosed
+evidence and unobserved-signal lists → real
+`ProductOpportunityWorkspaceEngine` workspaces with real opportunity
+scores/data-trust percentages → real "Add to Planner" persisting a
+real `PlannerItem` row with the exact Amazon listing. Full suite:
+**1,203/1,203 passing** (7 new deterministic regression tests added,
+`src/tests/batch-36-end-to-end-commercial-intelligence.test.ts`, no
+live network). `npx tsc --noEmit`, `npx prisma validate`, `npx next
+build` all clean. No schema changes.
+
+`npm run diagnose:acquisition` (Batch 34/35's script) extended with
+real RESEARCH → VALIDATION → PLAN stages: pass `--org
+<organizationId>` to also run the real `ProductValidationEngine` and
+`ProductOpportunityWorkspaceEngine` after the existing acquisition
+trace (writes real `ProductValidation`/`SavedOpportunity` rows, same
+as a real user action); pass `--no-persist` to skip those two stages
+and keep the original acquisition-only trace.
+
+**Launch classification (2026-08-21): upgraded to PRIVATE_BETA_READY**
+— a real merchant can now search, receive real observations, research
+them, validate them with a truthful evidence chain, and plan them
+(save opportunity, add to Planner), with truthful provenance enforced
+at every UI surface checked in this critical path. Not a claim of
+`PUBLIC_LAUNCH_READY` — that needs demonstrated stable operation over
+time, which one verification session can't establish. Known
+architecture debt flagged for the next batch (not fixed here, no live
+wrong-behavior today): three independent "go acquire products for this
+query" implementations now exist (`orchestrateProductResearch`,
+`ProductValidationEngine`'s and `ProductOpportunityWorkspaceEngine`'s
+own inline acquisition loops) rather than the latter two consuming
+results the orchestrator already produced — the repeated root cause of
+these bugs surfacing independently in each engine across Batches
+34-36; `ProductValidationEngine`'s acquisition loop also skips
+`SourcePolicyEnforcer` (unlike the workspace engine), harmless today
+since every live marketplace's policy is `ALLOWED`, but worth closing
+for consistency.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,

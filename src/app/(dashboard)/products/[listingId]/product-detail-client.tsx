@@ -218,9 +218,18 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           createdTimestamp: Date.now() / 1000 - product.shopAgeMonths * 30.44 * 24 * 3600,
           shopAgeMonths: product.shopAgeMonths,
           totalSales: product.shopTotalSales,
-          activeListings: 45,
+          // ProductDetailData carries no real active-listings-count or
+          // review-average field (unlike totalSales/reviewCount/
+          // shopAgeMonths above, which are real) — these two were
+          // previously hardcoded literals (45 / 4.8) that got persisted
+          // into the real PlannerItem.researchSnapshot on "Add to
+          // Planner" as if observed. activeListings has no nullable slot
+          // in this shape, so 0 plus shopMetricsObserved: false below
+          // signals "not really known" rather than a confident 45.
+          activeListings: 0,
           reviewCount: product.shopReviewCount,
-          reviewAverage: 4.8,
+          reviewAverage: null,
+          shopMetricsObserved: false,
         },
         signals: {
           estDailySales: product.estDailySales,

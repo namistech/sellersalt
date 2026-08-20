@@ -91,14 +91,24 @@ function parseWalmartListingCardsFromNextData(html: string): NormalizedProduct[]
       // linePrice ("Now $X.XX") is the current buyable single-variant
       // price when present; minPrice is the numeric lowest-variant price
       // for multi-option items ("Options from $X.XX") — both are real,
-      // server-provided values, never estimated.
+      // server-provided values, never estimated. Walmart's search page
+      // sometimes serves a variant (observed live, 2/3 consecutive real
+      // requests during Batch 36's verification) where every item's
+      // priceInfo is a "not yet loaded" placeholder — linePrice: "" and
+      // minPrice: 0 — for every single item on the page. `0` there is a
+      // sentinel, never a genuine product price, so it must be rejected
+      // the same as a missing value (`> 0`, not just `typeof === "number"`)
+      // or every downstream engine that filters `price > 0` gets an
+      // honest zero-sample result, but every one that only checks
+      // `typeof price === "number"` silently treats a real $0.00 as
+      // observed data instead of unavailable.
       let price: number | null = null;
       const linePrice = item?.priceInfo?.linePrice;
       if (typeof linePrice === "string" && linePrice.trim()) {
         const parsed = parseFloat(linePrice.replace(/[^0-9.]/g, ""));
-        if (!isNaN(parsed)) price = parsed;
+        if (!isNaN(parsed) && parsed > 0) price = parsed;
       }
-      if (price === null && typeof item?.priceInfo?.minPrice === "number") {
+      if (price === null && typeof item?.priceInfo?.minPrice === "number" && item.priceInfo.minPrice > 0) {
         price = item.priceInfo.minPrice;
       }
 

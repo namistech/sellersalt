@@ -471,6 +471,7 @@ export async function fetchCategoryIntelligence(
         activeListings,
         reviewCount,
         reviewAverage,
+        shopMetricsObserved: true,
       },
       signals: {
         estDailySales,

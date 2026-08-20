@@ -352,12 +352,22 @@ export async function searchMarketplaceProducts(
 
     const results: ProductHuntingResult[] = orchRes.items.map((p) => {
       const listingAgeDays = 30;
+      // Real, per-listing shop-aggregate stats (age/active listings) only
+      // exist for Etsy's research connector today — Amazon/Walmart's
+      // public search results carry no shop-level data at all. When
+      // absent, shopAgeMonths/totalSales/activeListings/reviewCount below
+      // are placeholder inputs for the (already-disclosed-as-derived)
+      // SellerSalt Opportunity Score heuristic ONLY — shopMetricsObserved
+      // tells the UI never to render them as if directly observed.
+      const shopMetricsObserved = p.shop?.ageMonths !== undefined && p.shop?.activeListings !== undefined;
       const shopAgeMonths = p.shop?.ageMonths ?? 12;
       const totalSales = p.salesCount ?? 0;
       const activeListings = p.shop?.activeListings ?? 1;
       const reviewCount = p.reviewCount ?? 0;
       const reviewAverage = p.rating ?? null;
-      const priceAmount = p.price ?? 0;
+      // Never coerced to 0 for display — a real, unobserved price must
+      // never render as a directly-observed "$0.00".
+      const priceAmount: number | null = typeof p.price === "number" ? p.price : null;
 
       const normalizedListing: NormalizedProductListing = {
         listingId: p.externalId,
@@ -392,6 +402,7 @@ export async function searchMarketplaceProducts(
         totalSales,
         reviewCount,
         reviewAverage,
+        shopMetricsObserved,
       };
 
       const estDailySales = totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0;
@@ -410,8 +421,14 @@ export async function searchMarketplaceProducts(
         reviewConversionRate,
       };
 
+      // The composite Opportunity Score is already disclosed to the user
+      // as a derived "[SELLERSALT SCORE]", not a marketplace fact — it's
+      // fine for its internal heuristic to fall back to 0 for a genuinely
+      // unobserved price, the same way it already does for shop metrics.
+      // What must never happen is *displaying* that fallback as if it
+      // were the real observed price — see normalizedListing.price above.
       const opportunity: ProductOpportunityScore = computeProductOpportunity({
-        price: priceAmount,
+        price: priceAmount ?? 0,
         listingAgeDays,
         shopAgeMonths,
         totalSales,
@@ -613,6 +630,7 @@ export async function searchEtsyMarketplaceProducts(
       activeListings,
       reviewCount,
       reviewAverage,
+      shopMetricsObserved: true,
     };
 
     // Calculated Signals
@@ -714,11 +732,17 @@ export function compareProducts(items: ProductHuntingResult[]): ProductCompariso
     (a, b) => b.opportunity.opportunityScore - a.opportunity.opportunityScore
   )[0];
 
-  // Price calculations
-  const prices = items.map((i) => i.listing.price);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const averagePrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+  // Price calculations — only over items with a real observed price;
+  // never coerce an unavailable price into 0 before computing a range.
+  const prices = items.map((i) => i.listing.price).filter((p): p is number => p !== null);
+  const priceRange =
+    prices.length > 0
+      ? {
+          min: Math.min(...prices),
+          max: Math.max(...prices),
+          average: Math.round((prices.reduce((a, b) => a + b, 0) / prices.length) * 100) / 100,
+        }
+      : null;
 
   return {
     items,
@@ -727,10 +751,6 @@ export function compareProducts(items: ProductHuntingResult[]): ProductCompariso
     highestVelocityProduct,
     lowestCompetitionProduct,
     highestOpportunityProduct,
-    priceRange: {
-      min: minPrice,
-      max: maxPrice,
-      average: Math.round(averagePrice * 100) / 100,
-    },
+    priceRange,
   };
 }

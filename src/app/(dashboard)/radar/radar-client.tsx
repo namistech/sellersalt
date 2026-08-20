@@ -159,6 +159,7 @@ export function RadarClient({
         activeListings: opp.activeListings,
         reviewCount: opp.reviewCount,
         reviewAverage: opp.reviewAverage,
+        shopMetricsObserved: true,
       },
       signals: {
         estDailySales: opp.estDailySales,
@@ -1182,6 +1183,7 @@ export function RadarClient({
         product={activeDrawerProduct}
         open={!!activeDrawerProduct}
         onClose={() => setActiveDrawerProduct(null)}
+        marketplace={marketplace === "all" ? "etsy" : marketplace}
         onPlannerAdded={(prod) => {
           setSavedPlannerMap((prev) => ({ ...prev, [prod.id]: true }));
         }}

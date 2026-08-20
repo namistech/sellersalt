@@ -30,7 +30,10 @@ export interface NormalizedProductListing {
   listingId: string;
   title: string;
   description?: string;
-  price: number;
+  /** null when the source page didn't expose a price statically (e.g.
+   * Amazon's current search-result markup renders price client-side) —
+   * never coerced to 0, which would render as a real, observed "$0.00". */
+  price: number | null;
   currency: string;
   images: string[];
   imageUrl: string | null;
@@ -60,6 +63,13 @@ export interface NormalizedShopProfile {
   activeListings: number;
   reviewCount: number;
   reviewAverage: number | null;
+  /** false when shopAgeMonths/totalSales/activeListings/reviewCount above
+   * are placeholder defaults, not real observations — true only for
+   * marketplaces (Etsy today) whose research connector actually exposes
+   * shop-level aggregate stats. Amazon/Walmart's public search results
+   * carry no such shop-level data at all; UI must not render these
+   * fields as if directly observed when this is false. */
+  shopMetricsObserved: boolean;
 }
 
 export interface ProductCalculatedSignals {
@@ -117,5 +127,8 @@ export interface ProductComparisonSummary {
   highestVelocityProduct: ProductHuntingResult;
   lowestCompetitionProduct: ProductHuntingResult;
   highestOpportunityProduct: ProductHuntingResult;
-  priceRange: { min: number; max: number; average: number };
+  /** null when none of the compared items had an observed price
+   * (e.g. all Amazon results, whose current search-card markup doesn't
+   * expose price statically) — never a fabricated 0. */
+  priceRange: { min: number; max: number; average: number } | null;
 }

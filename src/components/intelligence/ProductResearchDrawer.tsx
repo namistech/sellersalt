@@ -31,6 +31,11 @@ export interface ProductResearchDrawerProps {
   open: boolean;
   onClose: () => void;
   onPlannerAdded?: (product: ProductHuntingResult, plannerItemId: string) => void;
+  /** The single marketplace this product came from — ProductHuntingResult
+   * carries no per-item marketplace field, so the caller (always a
+   * single-marketplace search context) supplies it for correct
+   * provenance badging. Defaults to Etsy for existing callers. */
+  marketplace?: string;
 }
 
 export function ProductResearchDrawer({
@@ -38,6 +43,7 @@ export function ProductResearchDrawer({
   open,
   onClose,
   onPlannerAdded,
+  marketplace = "etsy",
 }: ProductResearchDrawerProps) {
   const [savingToPlanner, setSavingToPlanner] = useState(false);
   const [plannerSuccess, setPlannerSuccess] = useState<string | null>(null);
@@ -120,9 +126,9 @@ export function ProductResearchDrawer({
             <div className="flex-1 min-w-0 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xl font-bold text-ink">
-                  ${listing.price.toFixed(2)}
+                  {listing.price !== null ? `$${listing.price.toFixed(2)}` : "Price unavailable"}
                 </span>
-                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                 {listing.taxonomyPath && (
                   <Badge variant="neutral" className="text-xs">
                     {listing.taxonomyPath}
@@ -279,53 +285,59 @@ export function ProductResearchDrawer({
             </div>
           </Card>
 
-          {/* Section 3: Parent Shop Profile */}
-          <Card padding="md" className="border-line shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Store className="h-4 w-4 text-ink" />
-                <Heading as="h3" size="h4">
-                  Shop Benchmark Profile
-                </Heading>
+          {/* Section 3: Parent Shop Profile — only rendered when real
+              shop-aggregate stats were actually observed (Etsy today).
+              Amazon/Walmart's public search results carry no shop-level
+              data at all, so this section must not show fabricated
+              placeholder numbers for them. */}
+          {shop.shopMetricsObserved && (
+            <Card padding="md" className="border-line shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Store className="h-4 w-4 text-ink" />
+                  <Heading as="h3" size="h4">
+                    Shop Benchmark Profile
+                  </Heading>
+                </div>
+                <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
-              <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
-              <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                <div className="text-[10px] text-ink-tertiary">Lifetime Sales</div>
-                <div className="font-bold font-mono text-sm text-ink mt-0.5">
-                  {shop.totalSales.toLocaleString()}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
+                <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
+                  <div className="text-[10px] text-ink-tertiary">Lifetime Sales</div>
+                  <div className="font-bold font-mono text-sm text-ink mt-0.5">
+                    {shop.totalSales.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
+                  <div className="text-[10px] text-ink-tertiary">Active Listings</div>
+                  <div className="font-bold font-mono text-sm text-ink mt-0.5">
+                    {shop.activeListings}
+                  </div>
+                </div>
+                <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
+                  <div className="text-[10px] text-ink-tertiary">Reviews / Rating</div>
+                  <div className="font-bold font-mono text-sm text-ink mt-0.5">
+                    {shop.reviewCount} ★ {shop.reviewAverage ? shop.reviewAverage.toFixed(1) : "—"}
+                  </div>
+                </div>
+                <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
+                  <div className="text-[10px] text-ink-tertiary">Shop Age</div>
+                  <div className="font-bold font-mono text-sm text-ink mt-0.5">
+                    {Math.round(shop.shopAgeMonths)} mos
+                  </div>
                 </div>
               </div>
-              <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                <div className="text-[10px] text-ink-tertiary">Active Listings</div>
-                <div className="font-bold font-mono text-sm text-ink mt-0.5">
-                  {shop.activeListings}
-                </div>
-              </div>
-              <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                <div className="text-[10px] text-ink-tertiary">Reviews / Rating</div>
-                <div className="font-bold font-mono text-sm text-ink mt-0.5">
-                  {shop.reviewCount} ★ {shop.reviewAverage ? shop.reviewAverage.toFixed(1) : "—"}
-                </div>
-              </div>
-              <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                <div className="text-[10px] text-ink-tertiary">Shop Age</div>
-                <div className="font-bold font-mono text-sm text-ink mt-0.5">
-                  {Math.round(shop.shopAgeMonths)} mos
-                </div>
-              </div>
-            </div>
 
-            <div className="pt-2 flex justify-end">
-              <Link href={`/shops/${shop.shopId}`} target="_blank">
-                <Button variant="secondary" size="compact" className="text-xs">
-                  Inspect Shop Intelligence →
-                </Button>
-              </Link>
-            </div>
-          </Card>
+              <div className="pt-2 flex justify-end">
+                <Link href={`/shops/${shop.shopId}`} target="_blank">
+                  <Button variant="secondary" size="compact" className="text-xs">
+                    Inspect Shop Intelligence →
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
 
           {/* Section 4: Tags & Keywords */}
           {listing.tags.length > 0 && (

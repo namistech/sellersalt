@@ -179,6 +179,7 @@ describe("Phase C: Multi-Product Comparison Engine", () => {
         activeListings: 20,
         reviewCount,
         reviewAverage: 4.9,
+        shopMetricsObserved: true,
       },
       signals: {
         estDailySales,
@@ -230,6 +231,7 @@ describe("Phase C: Multi-Product Comparison Engine", () => {
     assert.equal(comparison.lowestCompetitionProduct.id, "102");
 
     // Price stats
+    assert.ok(comparison.priceRange !== null);
     assert.equal(comparison.priceRange.min, 20.0);
     assert.equal(comparison.priceRange.max, 35.0);
     assert.equal(comparison.priceRange.average, 26.67);

@@ -812,7 +812,7 @@ export function CategoryHuntingClient({
                             </Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-ink-secondary mt-1">
-                            <span className="font-bold text-ink tabular-nums">${product.listing.price.toFixed(2)}</span>
+                            <span className="font-bold text-ink tabular-nums">{product.listing.price !== null ? `$${product.listing.price.toFixed(2)}` : "Price unavailable"}</span>
                             <span className="text-[#0E8F5D] font-bold tabular-nums">~{product.signals.estDailySales.toFixed(1)} / day</span>
                           </div>
                         </div>

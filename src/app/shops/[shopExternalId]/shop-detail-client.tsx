@@ -490,6 +490,7 @@ export function ShopDetailClient({
           activeListings,
           reviewCount,
           reviewAverage,
+          shopMetricsObserved: true,
         },
         signals: {
           estDailySales: listing.estDailySales,

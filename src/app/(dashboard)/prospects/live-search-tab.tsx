@@ -349,7 +349,10 @@ export function LiveSearchTab() {
                 Product Research Results ({searchResponse.results.length})
               </Heading>
               <Badge variant="neutral">{MARKETPLACE_LABELS[marketplace] ?? marketplace}</Badge>
-              <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+              {/* Real observations, but only actually verbatim Etsy API
+                  data when Etsy was the marketplace searched — this badge
+                  must never claim "Etsy" for Amazon/Walmart results. */}
+              <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               <span className="text-xs text-ink-tertiary">
                 in {searchResponse.executionDurationMs}ms (8 req/s queue & Redis cache)
               </span>
@@ -417,11 +420,17 @@ export function LiveSearchTab() {
                       </h3>
 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
-                        <span>Price: <strong className="font-mono text-ink">${topItem.listing.price.toFixed(2)}</strong></span>
-                        <span>·</span>
-                        <span>Velocity: <strong className="text-[#0E8F5D] font-mono">~{topItem.signals.estDailySales.toFixed(1)} sales/day</strong></span>
-                        <span>·</span>
-                        <span>Moat: <strong className="text-ink">{topItem.shop.reviewCount.toLocaleString()} reviews</strong></span>
+                        <span>Price: <strong className="font-mono text-ink">
+                          {topItem.listing.price !== null ? `$${topItem.listing.price.toFixed(2)}` : "Unavailable"}
+                        </strong></span>
+                        {topItem.shop.shopMetricsObserved && (
+                          <>
+                            <span>·</span>
+                            <span>Velocity: <strong className="text-[#0E8F5D] font-mono">~{topItem.signals.estDailySales.toFixed(1)} sales/day</strong></span>
+                            <span>·</span>
+                            <span>Moat: <strong className="text-ink">{topItem.shop.reviewCount.toLocaleString()} reviews</strong></span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -613,7 +622,7 @@ export function LiveSearchTab() {
                     </button>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-mono text-base font-bold text-ink">
-                        ${item.listing.price.toFixed(2)}
+                        {item.listing.price !== null ? `$${item.listing.price.toFixed(2)}` : "Price unavailable"}
                       </span>
                       <span className="text-[11px] text-ink-tertiary truncate">
                         {item.shop.shopName}
@@ -621,21 +630,27 @@ export function LiveSearchTab() {
                     </div>
                   </div>
 
-                  {/* Opportunity & Signals Summary */}
-                  <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-xs">
-                    <div>
-                      <div className="text-[10px] text-ink-tertiary">Est. Velocity</div>
-                      <div className="font-bold font-mono text-[#0E8F5D]">
-                        {item.signals.estDailySales.toFixed(1)} <span className="text-[10px] font-normal text-ink-tertiary">sales/day</span>
+                  {/* Opportunity & Signals Summary — only rendered when
+                      real shop-aggregate data was actually observed
+                      (Etsy today); Amazon/Walmart's public search results
+                      carry no such data, so this must not show fabricated
+                      placeholder numbers. */}
+                  {item.shop.shopMetricsObserved && (
+                    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-xs">
+                      <div>
+                        <div className="text-[10px] text-ink-tertiary">Est. Velocity</div>
+                        <div className="font-bold font-mono text-[#0E8F5D]">
+                          {item.signals.estDailySales.toFixed(1)} <span className="text-[10px] font-normal text-ink-tertiary">sales/day</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-ink-tertiary">Shop Reviews</div>
+                        <div className="font-bold font-mono text-ink">
+                          {item.shop.reviewCount} <span className="text-[10px] font-normal text-ink-tertiary">({item.shop.activeListings} listings)</span>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <div className="text-[10px] text-ink-tertiary">Shop Reviews</div>
-                      <div className="font-bold font-mono text-ink">
-                        {item.shop.reviewCount} <span className="text-[10px] font-normal text-ink-tertiary">({item.shop.activeListings} listings)</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   {/* Classification Pill */}
                   <div className="flex items-center justify-between text-xs pt-1">
@@ -715,6 +730,7 @@ export function LiveSearchTab() {
         product={activeDrawerProduct}
         open={!!activeDrawerProduct}
         onClose={() => setActiveDrawerProduct(null)}
+        marketplace={marketplace === "all" ? "etsy" : marketplace}
         onPlannerAdded={(prod) => {
           setSavedPlannerMap((prev) => ({ ...prev, [prod.id]: true }));
         }}
@@ -727,6 +743,7 @@ export function LiveSearchTab() {
           comparison={comparisonSummary}
           open={!!comparisonSummary}
           onClose={() => setComparisonSummary(null)}
+          marketplace={marketplace === "all" ? "etsy" : marketplace}
         />
       )}
     </div>

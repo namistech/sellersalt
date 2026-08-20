@@ -23,6 +23,12 @@ export interface ProductComparisonModalProps {
   comparison: ProductComparisonSummary;
   open: boolean;
   onClose: () => void;
+  /** All compared items come from the same single-marketplace search
+   * context (the caller only ever compares within one search's results),
+   * so this is enough to badge provenance correctly without needing a
+   * per-item marketplace field. Defaults to Etsy for existing callers
+   * that don't pass it. */
+  marketplace?: string;
 }
 
 export function ProductComparisonModal({
@@ -30,6 +36,7 @@ export function ProductComparisonModal({
   comparison,
   open,
   onClose,
+  marketplace = "etsy",
 }: ProductComparisonModalProps) {
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -107,12 +114,18 @@ export function ProductComparisonModal({
 
             <div>
               <div className="text-[11px] font-bold text-ink-tertiary uppercase">Price Sweet Spot</div>
-              <div className="font-mono font-bold text-sm text-ink mt-0.5">
-                ${comparison.priceRange.min.toFixed(2)} – ${comparison.priceRange.max.toFixed(2)}
-              </div>
-              <div className="text-xs text-ink-secondary">
-                Avg: ${comparison.priceRange.average.toFixed(2)}
-              </div>
+              {comparison.priceRange ? (
+                <>
+                  <div className="font-mono font-bold text-sm text-ink mt-0.5">
+                    ${comparison.priceRange.min.toFixed(2)} – ${comparison.priceRange.max.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-ink-secondary">
+                    Avg: ${comparison.priceRange.average.toFixed(2)}
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-ink-tertiary mt-0.5">Price unavailable for this sample</div>
+              )}
             </div>
           </div>
 
@@ -187,9 +200,9 @@ export function ProductComparisonModal({
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="font-mono text-base font-bold text-ink">
-                          ${item.listing.price.toFixed(2)}
+                          {item.listing.price !== null ? `$${item.listing.price.toFixed(2)}` : "Unavailable"}
                         </span>
-                        <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                        <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                       </div>
                     </div>
 

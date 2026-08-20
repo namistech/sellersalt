@@ -557,7 +557,7 @@ export function PlannerClient() {
                               SEO: <strong className="text-[#FFB020] font-mono">{snap.overallScore}/100</strong>
                             </div>
                           )}
-                          {snap.estDailySales !== undefined && (
+                          {snap.estDailySales !== undefined && snap.shopMetricsObserved && (
                             <div className="text-ink-secondary">
                               Sales: <strong className="text-ink font-mono">{snap.estDailySales.toFixed(1)}/d</strong>
                             </div>
@@ -820,7 +820,7 @@ export function PlannerClient() {
                         <span className="text-xs font-bold text-ink uppercase tracking-wide">
                           Frozen Research Snapshot
                         </span>
-                        <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                        <DataProvenanceBadge type={detailItem.researchSnapshot.shopMetricsObserved === false ? "EXTERNAL_DATA" : "ACTUAL_ETSY_DATA"} />
                       </div>
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
@@ -832,7 +832,14 @@ export function PlannerClient() {
                             </div>
                           </div>
                         )}
-                        {detailItem.researchSnapshot.estDailySales !== undefined && (
+                        {/* Shop-level aggregate stats (velocity, store
+                            orders, review moat) are real observations only
+                            for marketplaces whose research connector
+                            exposes shop-level data (Etsy today) — Amazon/
+                            Walmart's public search results carry none of
+                            this, so these tiles must not show fabricated
+                            placeholder numbers for them. */}
+                        {detailItem.researchSnapshot.estDailySales !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
                             <div className="text-[9px] text-ink-tertiary uppercase">Velocity</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
@@ -840,7 +847,7 @@ export function PlannerClient() {
                             </div>
                           </div>
                         )}
-                        {detailItem.researchSnapshot.totalSales !== undefined && (
+                        {detailItem.researchSnapshot.totalSales !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
                             <div className="text-[9px] text-ink-tertiary uppercase">Store Orders</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
@@ -848,7 +855,7 @@ export function PlannerClient() {
                             </div>
                           </div>
                         )}
-                        {detailItem.researchSnapshot.reviewCount !== undefined && (
+                        {detailItem.researchSnapshot.reviewCount !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
                             <div className="text-[9px] text-ink-tertiary uppercase">Review Moat</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
@@ -869,7 +876,7 @@ export function PlannerClient() {
                             rel="noopener noreferrer"
                             className="text-xs font-semibold text-[#0E8F5D] inline-flex items-center gap-1 hover:underline shrink-0"
                           >
-                            <span>View on Etsy</span>
+                            <span>View Source</span>
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
@@ -914,8 +921,21 @@ export function PlannerClient() {
                       const etsyFee = price > 0 ? price * 0.095 + 0.20 : 0;
                       const netMargin = price > 0 ? Math.max(0, price - cogs - etsyFee) : 0;
                       const marginPct = price > 0 ? ((netMargin / price) * 100).toFixed(1) : "0";
-                      const dailyVel = detailItem.researchSnapshot?.estDailySales || 2.0;
-                      const monthlyProfit = (dailyVel * 30.44 * netMargin).toFixed(0);
+                      // A real observed sales velocity only exists when
+                      // shopMetricsObserved is true (Etsy today) — this
+                      // used to silently fall back to a hardcoded "2.0
+                      // sales/day" whenever the real value was unknown or
+                      // zero, turning "we don't know the sales rate" into
+                      // a specific, believable-looking monthly profit
+                      // dollar figure the merchant had no way to know was
+                      // invented. Now: no fabricated monthly projection
+                      // without a real or user-provided velocity.
+                      const hasRealVelocity =
+                        detailItem.researchSnapshot?.shopMetricsObserved &&
+                        typeof detailItem.researchSnapshot?.estDailySales === "number" &&
+                        detailItem.researchSnapshot.estDailySales > 0;
+                      const dailyVel = hasRealVelocity ? detailItem.researchSnapshot.estDailySales : null;
+                      const monthlyProfit = dailyVel !== null ? (dailyVel * 30.44 * netMargin).toFixed(0) : null;
 
                       return (
                         <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line grid grid-cols-3 gap-2 text-center text-xs">
@@ -929,7 +949,9 @@ export function PlannerClient() {
                           </div>
                           <div>
                             <div className="text-[10px] text-ink-tertiary uppercase">Est. Monthly Profit</div>
-                            <div className="font-mono font-extrabold text-ink">${monthlyProfit}/mo</div>
+                            <div className="font-mono font-extrabold text-ink">
+                              {monthlyProfit !== null ? `$${monthlyProfit}/mo` : "Unavailable"}
+                            </div>
                           </div>
                         </div>
                       );
