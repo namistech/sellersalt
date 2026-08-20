@@ -14,6 +14,8 @@
  * provenance, eliminating hard runtime coupling to any single external API.
  */
 
+export * from "./acquisition/index";
+
 import { prisma } from "@/lib/db";
 import { MarketplaceRegistry, registerAllConnectors } from "./registry";
 import {
@@ -190,31 +192,142 @@ export async function acquireProductObservations(
     };
   }
 
-  // If connector is purely architecture-ready (e.g. Amazon, eBay, TikTok Shop)
-  if (!connector.capabilities.research || !connector.searchProducts) {
-    sourcesAttempted.push("MARKETPLACE_API");
+  const preferredSources = request.preferredSources || ["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"];
 
-    // Check if historical observations exist in DB for this marketplace
-    if (request.allowHistoricalFallback !== false) {
-      sourcesAttempted.push("HISTORICAL_OBSERVATION");
-      const historical = await acquireHistoricalProductObservations(request);
-      if (historical.length > 0) {
-        sourcesSucceeded.push("HISTORICAL_OBSERVATION");
+  // 1. Attempt PUBLIC_WEB acquisition if preferred and available for this marketplace
+  if (preferredSources.includes("PUBLIC_WEB") && request.marketplace === "etsy") {
+    sourcesAttempted.push("PUBLIC_WEB");
+    try {
+      const { etsyPublicWebAdapter } = await import("../etsy/public-adapter");
+      const publicRes = await etsyPublicWebAdapter.searchPublicProducts({
+        query: request.query || request.keywords?.[0] || "",
+        limit: request.limit,
+      });
+
+      if (publicRes.success && publicRes.items.length > 0) {
+        sourcesSucceeded.push("PUBLIC_WEB");
+        const observations: Array<NormalizedObservation<NormalizedProduct>> = publicRes.items.map((p) => ({
+          id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
+          data: p,
+          metadata: {
+            sourceType: "PUBLIC_WEB",
+            sourceIdentifier: "etsy:public_web",
+            marketplace: p.marketplace,
+            observedAt: generatedAt,
+            provenance: p.source,
+            confidenceScore: p.opportunityScore?.confidence ?? 75,
+            isHistorical: false,
+          },
+        }));
+
         return {
           marketplace: request.marketplace,
           status: "AVAILABLE",
-          observations: historical,
-          products: historical.map((o) => o.data),
+          observations,
+          products: observations.map((o) => o.data),
           sourcesAttempted,
           sourcesSucceeded,
-          hasLiveCoverage: false,
-          hasHistoricalCoverage: true,
-          message: `${connector.displayName} live API is not configured; serving verified historical SellerSalt observations.`,
+          hasLiveCoverage: true,
+          hasHistoricalCoverage: false,
           generatedAt,
         };
       }
+    } catch {
+      // Fall through to secondary acquisition strategies
     }
+  }
 
+  // 2. Attempt OFFICIAL MARKETPLACE API if connector claims research capability
+  if (preferredSources.includes("MARKETPLACE_API") && connector.capabilities.research && connector.searchProducts) {
+    sourcesAttempted.push("MARKETPLACE_API");
+
+    try {
+      const researchQuery: MarketplaceResearchQuery = {
+        keywords: request.keywords ?? (request.query ? [request.query] : []),
+        limit: request.limit ?? 25,
+        minPrice: request.minPrice,
+        maxPrice: request.maxPrice,
+        organizationId: request.organizationId,
+      };
+
+      const liveProducts = await connector.searchProducts(researchQuery);
+      sourcesSucceeded.push("MARKETPLACE_API");
+
+      // Normalize observations and score canonical opportunity
+      const liveObservations: Array<NormalizedObservation<NormalizedProduct>> = liveProducts.map((p) => {
+        p.acquisitionMethod = "MARKETPLACE_API";
+        p.observedAt = generatedAt;
+        p.isHistorical = false;
+
+        const oppInput = extractOpportunityInputFromNormalizedProduct(p);
+        const report = evaluateCanonicalOpportunity(oppInput);
+        if (report.overallScore !== null) {
+          p.opportunityScore = {
+            score: report.overallScore,
+            confidence: report.confidenceScore,
+            tier: report.tier,
+            verdict: report.verdictLabel,
+            verdictVariant: report.verdictVariant,
+            availableSignals: report.signals.available.map((s) => s.id),
+            unavailableSignals: report.signals.unavailable.map((s) => s.id),
+          };
+        }
+
+        return {
+          id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
+          data: p,
+          metadata: {
+            sourceType: "MARKETPLACE_API",
+            sourceIdentifier: `${p.marketplace}:api`,
+            marketplace: p.marketplace,
+            observedAt: generatedAt,
+            provenance: (p.source as SignalProvenance) || "ACTUAL_DATA",
+            confidenceScore: report.confidenceScore,
+            isHistorical: false,
+          },
+        };
+      });
+
+      return {
+        marketplace: request.marketplace,
+        status: "AVAILABLE",
+        observations: liveObservations,
+        products: liveObservations.map((o) => o.data),
+        sourcesAttempted,
+        sourcesSucceeded,
+        hasLiveCoverage: true,
+        hasHistoricalCoverage: false,
+        generatedAt,
+      };
+    } catch {
+      // Live API failed, continue to historical fallback
+    }
+  }
+
+  // 3. Attempt HISTORICAL OBSERVATIONS from database
+  if (preferredSources.includes("HISTORICAL_OBSERVATION") && request.allowHistoricalFallback !== false) {
+    sourcesAttempted.push("HISTORICAL_OBSERVATION");
+    const historical = await acquireHistoricalProductObservations(request);
+
+    if (historical.length > 0) {
+      sourcesSucceeded.push("HISTORICAL_OBSERVATION");
+      return {
+        marketplace: request.marketplace,
+        status: "AVAILABLE",
+        observations: historical,
+        products: historical.map((o) => o.data),
+        sourcesAttempted,
+        sourcesSucceeded,
+        hasLiveCoverage: false,
+        hasHistoricalCoverage: true,
+        message: `Live ${connector.displayName} acquisition unavailable; serving verified historical SellerSalt observations.`,
+        generatedAt,
+      };
+    }
+  }
+
+  // If connector is purely architecture-ready (e.g. Amazon, eBay, TikTok Shop)
+  if (!connector.capabilities.research) {
     const isPartial = Object.values(connector.capabilities).some(Boolean);
     return {
       marketplace: request.marketplace,
@@ -225,108 +338,22 @@ export async function acquireProductObservations(
       sourcesSucceeded,
       hasLiveCoverage: false,
       hasHistoricalCoverage: false,
-      message: `${connector.displayName} public research is not available.`,
+      message: `${connector.displayName} public research is not available yet.`,
       generatedAt,
     };
   }
 
-  // Connector claims research capability (e.g. Etsy)
-  sourcesAttempted.push("MARKETPLACE_API");
-
-  try {
-    const researchQuery: MarketplaceResearchQuery = {
-      keywords: request.keywords ?? (request.query ? [request.query] : []),
-      limit: request.limit ?? 25,
-      minPrice: request.minPrice,
-      maxPrice: request.maxPrice,
-      organizationId: request.organizationId,
-    };
-
-    const liveProducts = await connector.searchProducts(researchQuery);
-    sourcesSucceeded.push("MARKETPLACE_API");
-
-    // Normalize observations and score canonical opportunity
-    const liveObservations: Array<NormalizedObservation<NormalizedProduct>> = liveProducts.map((p) => {
-      p.acquisitionMethod = "MARKETPLACE_API";
-      p.observedAt = generatedAt;
-      p.isHistorical = false;
-
-      const oppInput = extractOpportunityInputFromNormalizedProduct(p);
-      const report = evaluateCanonicalOpportunity(oppInput);
-      if (report.overallScore !== null) {
-        p.opportunityScore = {
-          score: report.overallScore,
-          confidence: report.confidenceScore,
-          tier: report.tier,
-          verdict: report.verdictLabel,
-          verdictVariant: report.verdictVariant,
-          availableSignals: report.signals.available.map((s) => s.id),
-          unavailableSignals: report.signals.unavailable.map((s) => s.id),
-        };
-      }
-
-      return {
-        id: `obs:${p.marketplace}:${p.externalId}:${generatedAt.toISOString()}`,
-        data: p,
-        metadata: {
-          sourceType: "MARKETPLACE_API",
-          sourceIdentifier: `${p.marketplace}:api`,
-          marketplace: p.marketplace,
-          observedAt: generatedAt,
-          provenance: (p.source as SignalProvenance) || "ACTUAL_DATA",
-          confidenceScore: report.confidenceScore,
-          isHistorical: false,
-        },
-      };
-    });
-
-    return {
-      marketplace: request.marketplace,
-      status: "AVAILABLE",
-      observations: liveObservations,
-      products: liveObservations.map((o) => o.data),
-      sourcesAttempted,
-      sourcesSucceeded,
-      hasLiveCoverage: true,
-      hasHistoricalCoverage: false,
-      generatedAt,
-    };
-  } catch (err: any) {
-    // Live API failed (e.g. no credentials configured, network timeout, rate limit)
-    // Fall back to historical observations if permitted
-    if (request.allowHistoricalFallback !== false) {
-      sourcesAttempted.push("HISTORICAL_OBSERVATION");
-      const historical = await acquireHistoricalProductObservations(request);
-
-      if (historical.length > 0) {
-        sourcesSucceeded.push("HISTORICAL_OBSERVATION");
-        return {
-          marketplace: request.marketplace,
-          status: "AVAILABLE",
-          observations: historical,
-          products: historical.map((o) => o.data),
-          sourcesAttempted,
-          sourcesSucceeded,
-          hasLiveCoverage: false,
-          hasHistoricalCoverage: true,
-          message: `Live ${connector.displayName} research is temporarily unavailable (${err?.message || "error"}); serving verified historical SellerSalt observations.`,
-          generatedAt,
-        };
-      }
-    }
-
-    // Neither live nor historical observations are available
-    return {
-      marketplace: request.marketplace,
-      status: "UNAVAILABLE",
-      observations: [],
-      products: [],
-      sourcesAttempted,
-      sourcesSucceeded,
-      hasLiveCoverage: false,
-      hasHistoricalCoverage: false,
-      message: err?.message || `${connector.displayName} research failed.`,
-      generatedAt,
-    };
-  }
+  // All acquisition strategies failed
+  return {
+    marketplace: request.marketplace,
+    status: "UNAVAILABLE",
+    observations: [],
+    products: [],
+    sourcesAttempted,
+    sourcesSucceeded,
+    hasLiveCoverage: false,
+    hasHistoricalCoverage: false,
+    message: `${connector.displayName} research failed across all available acquisition channels.`,
+    generatedAt,
+  };
 }

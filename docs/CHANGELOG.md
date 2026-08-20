@@ -367,10 +367,30 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Research Pipeline Integration**:
   - Updated `src/marketplaces/core/research-pipeline.ts`'s `ResearchRequest` to support `allowHistoricalFallback` and `preferredSources`.
   - Wired `runProductResearch` to return historical observations on connector failure when fallback is enabled, eliminating unnecessary `UNAVAILABLE` errors.
+## Public Web Data Acquisition Engine — Batch 9B (2026-08-20)
+
+**Why**: To build SellerSalt's primary marketplace-independent public web acquisition layer, extracting legitimate public commerce observations from public web pages, JSON-LD structured schemas (`schema.org/Product`, `BreadcrumbList`, `AggregateRating`, `Offer`), and OpenGraph metadata without requiring official marketplace API keys.
+
+**What changed**:
+- **Public Web Acquisition Contracts (`src/marketplaces/core/acquisition/contracts.ts`)**:
+  - Defined `PublicWebAcquisitionAdapter`, `PublicSearchQuery`, `PublicAcquisitionResult<T>`, `PageFetchOptions`, `ParsedJsonLdProduct`, `ParsedOpenGraphData`, and `ParsedListingCard`.
+- **Responsible Rate Limiting & Throttling (`src/marketplaces/core/acquisition/rate-limiter.ts`)**:
+  - Implemented `DomainRateLimiter` with token-bucket algorithm, per-domain request concurrency limits, and exponential backoff with jitter.
+- **Safe Public Page Fetcher (`src/marketplaces/core/acquisition/page-fetcher.ts`)**:
+  - Implemented `PublicPageFetcher` with honest `User-Agent: SellerSaltBot/1.0`, timeout management, response size limits (5MB max), transparent in-memory/Redis response caching (6-hour TTL), and transient error retries.
+- **Structured Data & HTML Parser (`src/marketplaces/core/acquisition/structured-parser.ts`)**:
+  - Implemented `extractJsonLdBlocks`, `parseProductFromJsonLd`, `parseCategoryBreadcrumbsFromJsonLd`, `parseOpenGraphData`, `extractListingIdFromUrl`, and `parseEtsyListingCardsFromHtml`.
+- **Etsy Public Web Adapter (`src/marketplaces/etsy/public-adapter.ts`)**:
+  - Created `EtsyPublicWebAdapter` implementing `PublicWebAcquisitionAdapter` for `searchPublicProducts`, `fetchPublicProduct`, and `fetchPublicShop` with canonical opportunity score evaluation.
+- **Amazon & eBay Public Web Stubs (`src/marketplaces/amazon/public-adapter.ts`, `src/marketplaces/ebay/public-adapter.ts`)**:
+  - Created architecture-ready public adapter contracts for Amazon and eBay.
+- **Acquisition Router Priority Upgrade (`src/marketplaces/core/acquisition.ts`)**:
+  - Configured `acquireProductObservations` with primary `PUBLIC_WEB` strategy, falling back to `MARKETPLACE_API`, then `HISTORICAL_OBSERVATION`.
 - **Regression Test Coverage & Baseline**:
-  - Created `src/tests/batch-9a-data-acquisition-foundation.test.ts` (9 tests).
-  - Full test baseline: **830/830 passing across 132 suites**.
+  - Created `src/tests/batch-9b-public-web-acquisition.test.ts` (10 tests).
+  - Full test baseline: **840/840 passing across 137 suites**.
   - TypeScript clean, Prisma valid (29 migrations), Next.js clean build (161/161 routes).
+
 
 
 
