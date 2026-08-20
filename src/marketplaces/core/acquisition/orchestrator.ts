@@ -170,68 +170,74 @@ export async function orchestrateProductResearch(
   if (mergedProducts.length === 0 && policy.allowHistoricalFallback) {
     sourcesAttempted.push("HISTORICAL_OBSERVATION");
     try {
-      const connectorType = request.marketplace.toUpperCase() as any;
-      const historicalRecords = await prisma.prospect.findMany({
-        where: {
-          marketplace: connectorType,
-          ...(request.query
-            ? {
-                listingTitle: {
-                  contains: request.query,
-                  mode: "insensitive",
-                },
-              }
-            : {}),
-        },
-        orderBy: { createdAt: "desc" },
-        take: request.limit ?? 20,
-      });
+      const connectorType = request.marketplace.toUpperCase();
+      const validConnectorTypes = ["ETSY", "AMAZON", "EBAY", "SHOPIFY", "WOOCOMMERCE"];
 
-      if (historicalRecords.length > 0) {
-        sourcesSucceeded.push("HISTORICAL_OBSERVATION");
-        historicalObservations = historicalRecords.map((rec) => {
-          const norm: NormalizedProduct = {
-            marketplace: request.marketplace,
-            externalId: rec.listingExternalId,
-            title: rec.listingTitle,
-            url: rec.listingUrl,
-            imageUrl: rec.listingImageUrl ?? undefined,
-            price: rec.price,
-            currency: "USD",
-            rating: rec.reviewAverage ?? null,
-            reviewCount: rec.totalSales ?? null,
-            favoritesCount: rec.numFavorers ?? null,
-            shop: {
-              name: rec.shopName,
-              activeListings: rec.activeListings,
-              ageMonths: rec.shopAgeMonths,
-              reviewRatio: rec.reviewRatio,
-              reviewVelocity: rec.reviewVelocity,
-            },
-            source: "ACTUAL_DATA" as SignalProvenance,
-            acquisitionMethod: "HISTORICAL_OBSERVATION",
-            isHistorical: true,
-            capturedAt: rec.createdAt,
-          };
-
-          const oppInput = extractOpportunityInputFromNormalizedProduct(norm);
-          const report = evaluateCanonicalOpportunity(oppInput);
-          if (report.overallScore !== null) {
-            norm.opportunityScore = {
-              score: report.overallScore,
-              confidence: report.confidenceScore,
-              tier: report.tier,
-              verdict: report.verdictLabel,
-              verdictVariant: report.verdictVariant,
-              availableSignals: report.signals.available.map((s) => s.id),
-              unavailableSignals: report.signals.unavailable.map((s) => s.id),
-            };
-          }
-
-          return norm;
+      if (validConnectorTypes.includes(connectorType)) {
+        const historicalRecords = await prisma.prospect.findMany({
+          where: {
+            marketplace: connectorType as any,
+            ...(request.query
+              ? {
+                  listingTitle: {
+                    contains: request.query,
+                    mode: "insensitive",
+                  },
+                }
+              : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          take: request.limit ?? 20,
         });
 
-        mergedProducts = historicalObservations;
+        if (historicalRecords.length > 0) {
+          sourcesSucceeded.push("HISTORICAL_OBSERVATION");
+          historicalObservations = historicalRecords.map((rec) => {
+            const norm: NormalizedProduct = {
+              marketplace: request.marketplace,
+              externalId: rec.listingExternalId,
+              title: rec.listingTitle,
+              url: rec.listingUrl,
+              imageUrl: rec.listingImageUrl ?? undefined,
+              price: rec.price,
+              currency: "USD",
+              rating: rec.reviewAverage ?? null,
+              reviewCount: rec.totalSales ?? null,
+              favoritesCount: rec.numFavorers ?? null,
+              shop: {
+                name: rec.shopName,
+                activeListings: rec.activeListings,
+                ageMonths: rec.shopAgeMonths,
+                reviewRatio: rec.reviewRatio,
+                reviewVelocity: rec.reviewVelocity,
+              },
+              source: "ACTUAL_DATA" as SignalProvenance,
+              acquisitionMethod: "HISTORICAL_OBSERVATION",
+              isHistorical: true,
+              capturedAt: rec.createdAt,
+            };
+
+            const oppInput = extractOpportunityInputFromNormalizedProduct(norm);
+            const report = evaluateCanonicalOpportunity(oppInput);
+            if (report.overallScore !== null) {
+              norm.opportunityScore = {
+                score: report.overallScore,
+                confidence: report.confidenceScore,
+                tier: report.tier,
+                verdict: report.verdictLabel,
+                verdictVariant: report.verdictVariant,
+                availableSignals: report.signals.available.map((s) => s.id),
+                unavailableSignals: report.signals.unavailable.map((s) => s.id),
+              };
+            }
+
+            return norm;
+          });
+
+          mergedProducts = historicalObservations;
+        } else {
+          sourcesFailed.push("HISTORICAL_OBSERVATION");
+        }
       } else {
         sourcesFailed.push("HISTORICAL_OBSERVATION");
       }

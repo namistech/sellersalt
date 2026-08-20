@@ -55,6 +55,7 @@ const DASHBOARD_ITEMS: NavigationItem[] = [
 ];
 
 const RESEARCH_ITEMS: NavigationItem[] = [
+  { id: "command-center", label: "Command Center", href: "/research-center", icon: Compass },
   { id: "research", label: "Research Center", href: "/research", icon: Compass },
   { id: "discovery", label: "Discovery Hub", href: "/discovery", icon: Compass },
   { id: "prospects", label: "Product Research", href: "/prospects", icon: Search },

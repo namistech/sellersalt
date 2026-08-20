@@ -4,24 +4,23 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 17 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 18 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 17
-(SellerSalt Product Validation & Commercial Decision Engine):
+condensed version of everything else in this file, current as of Batch 18
+(SellerSalt Product Research Command Center & Research-to-Decision Workflow):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Product Validation & Commercial Decision Engine** (`product-validation-engine.ts`): End-to-end commercial feasibility validation combining Demand, Competition Density, Price Percentiles, Trajectory, and Differentiation into actionable verdicts (`STRONG_CANDIDATE`, `WORTH_INVESTIGATING`, `HIGH_COMPETITION`, etc.).
-- **Price Positioning Engine** (`price-positioning.ts`): Evaluates candidate product prices relative to empirical market percentiles (P10, P25, Median, P75, P90) into distinct strategic tiers (`BELOW_MARKET`, `LOWER_MID_MARKET`, `MID_MARKET`, `UPPER_MID_MARKET`, `PREMIUM`, `OUTSIDE_OBSERVED_RANGE`).
-- **User Unit Economics Calculator** (`unit-economics.ts`): Computes gross profit, contribution margin, break-even prices, and max allowable CAC with strict `USER_DERIVED` provenance separation.
-- **Differentiation Analysis Engine** (`differentiation-engine.ts`): Identifies common saturated attributes ($\ge 40\%$) and underrepresented attribute gaps ($15-25\%$) without synthetic customer mind-reading.
-- **Interactive Product Validation Studio** (`/validate`, `ValidationStudio.tsx`, `ValidationReportView.tsx`): Dedicated executive decision interface with factor scorecards, deep-dive tabs, and unit economics calculator.
-- **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): Multi-domain opportunity orchestrator with direct "Validate Product" handoffs.
-- **Unified Market Momentum Engine** (`momentum.ts`): Classifies empirical trajectories from multi-snapshot time-series ($n \ge 2$ required; $n \le 1$ remains strictly `INSUFFICIENT_DATA` with `null` velocity).
-- **First-Class Persistence in PostgreSQL** (`schema.prisma`): `ProductValidation`, `SavedOpportunity`, `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
+- **Product Research Command Center** (`product-research-command-center.ts`, `/research-center`): Unified command center orchestrating Query Normalization $\to$ Multi-Marketplace Public Ingestion $\to$ Deduplication $\to$ Market Overview $\to$ Keyword Clustering $\to$ Dominant Seller Profiling $\to$ Opportunity Discovery 2.0 $\to$ Product Validation $\to$ Commercial Decision Verdict $\to$ PostgreSQL Persistence in `ResearchRun` and `ProductObservation`.
+- **Research Comparison Engine** (`research-comparison-engine.ts`): Side-by-side comparisons of products, keywords, and merchants with null-safe handling.
+- **Unified Research Queue Manager** (`research-queue.ts`): Organization-scoped saved watchlist and queue across products, keywords, and opportunities backed by `SavedOpportunity`.
+- **Product Validation & Commercial Decision Engine** (`product-validation-engine.ts`, `/validate`): Multi-factor commercial feasibility validation with dynamic score weight redistribution.
+- **Price Positioning Engine** (`price-positioning.ts`): Percentile-based strategic tier classification.
+- **User Unit Economics Calculator** (`unit-economics.ts`): Deterministic margin, profit, break-even, and max allowable CAC with `USER_DERIVED` provenance.
+- **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): Structured multi-domain opportunity scoring.
 
 **Current Verified Baseline**:
-- Tests: **1032/1032 passing across 233 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1043/1043 passing across 243 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)

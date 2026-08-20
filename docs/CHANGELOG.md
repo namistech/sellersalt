@@ -656,15 +656,28 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
 
+## Batch 18: Product Research Command Center & Research-to-Decision Workflow (2026-08-20)
 
+**Why**: Unify all disjoint research, discovery, validation, and competition tools into a singular, high-performance Product Research Command Center where one search initiates the complete evidence-based research-to-decision pipeline.
 
-
-
-
-
-
-
-
-
-
-
+**What changed**:
+- **Domain Types & Contracts (`src/marketplaces/core/research-command-types.ts`)**:
+  - Defined types for `ProductResearchSessionRequest`, `ProductResearchSessionResult`, `MarketOverviewStats`, `MarketplaceResearchStatus`, `KeywordClusterItem`, `CompetitionIntelligenceSummary`, `DominantSellerProfile`, `AcquisitionTraceStep`, `CommercialDecisionSummary`, and `ResearchQueueItem`.
+- **Command Center Orchestrator (`src/services/intelligence/product-research-command-center.ts`)**:
+  - Full research-to-decision pipeline orchestrating Query Normalization $\to$ Multi-Marketplace Public Ingestion $\to$ Deduplication $\to$ Market Overview Statistics $\to$ Keyword Clustering $\to$ Dominant Seller Profiling $\to$ Opportunity Discovery 2.0 $\to$ Product Validation $\to$ Commercial Decision Verdict $\to$ PostgreSQL Persistence in `ResearchRun` and `ProductObservation`.
+- **Research Comparison Engine (`src/services/intelligence/research-comparison-engine.ts`)**:
+  - Side-by-side product comparisons across Price, Rating, Reviews, and Marketplace with clean handling of unobserved metrics.
+- **Unified Research Queue Manager (`src/services/intelligence/research-queue.ts`)**:
+  - Allows merchants to save opportunities, products, and keywords into an organization-scoped queue backed by `SavedOpportunity`.
+- **Full API Route Suite**:
+  - `POST /api/research/session`, `GET /api/research/session/[id]`, `POST /api/research/session/[id]/refresh`, `POST /api/research/compare`, `GET /api/research/queue`, `POST /api/research/queue`, `DELETE /api/research/queue/[id]`.
+- **Command Center Interactive UI (`src/components/research/ProductResearchCommandCenter.tsx`)**:
+  - Command Bar with depth switcher (`QUICK`, `STANDARD`, `DEEP`) and marketplace toggles.
+  - Market Overview KPIs (Price bands, Opportunity, Demand, Competition, Momentum).
+  - 7 interactive deep-dive tabs: Observed Products, Keyword Clusters, Competition & Merchants, Opportunities, Decision & Risks, Data Quality & Trust, and Compliant Acquisition Trace.
+  - Dedicated `/research-center` route with navigation link.
+- **Verification Baseline**:
+  - Full test suite: **1043/1043 passing across 243 suites** (`src/tests/batch-18-product-research-command-center.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).
