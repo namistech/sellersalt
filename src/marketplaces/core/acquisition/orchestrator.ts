@@ -240,6 +240,29 @@ export async function orchestrateProductResearch(
     }
   }
 
+  // 4.5. Compute Canonical Opportunity Scores for all observations
+  for (const prod of mergedProducts) {
+    if (!prod.opportunityScore) {
+      try {
+        const oppInput = extractOpportunityInputFromNormalizedProduct(prod);
+        const report = evaluateCanonicalOpportunity(oppInput);
+        if (report.overallScore !== null) {
+          prod.opportunityScore = {
+            score: report.overallScore,
+            confidence: report.confidenceScore,
+            tier: report.tier,
+            verdict: report.verdictLabel,
+            verdictVariant: report.verdictVariant,
+            availableSignals: report.signals.available.map((s) => s.id),
+            unavailableSignals: report.signals.unavailable.map((s) => s.id),
+          };
+        }
+      } catch {
+        // Non-blocking scoring
+      }
+    }
+  }
+
   // 5. Freshness & Confidence Evaluation
   const primarySourceUsed: DataSourceType | undefined =
     sourcesSucceeded.includes("PUBLIC_WEB")

@@ -4,11 +4,11 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 11 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 12 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 11
-(Production Research Workbench + Persistent Observation Intelligence):
+condensed version of everything else in this file, current as of Batch 12
+(Research Workbench → Real Ecommerce Intelligence Center):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
 - **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
@@ -18,13 +18,14 @@ condensed version of everything else in this file, current as of Batch 11
 - **Multi-Tier Research Cache** (`research-cache.ts`): In-memory TTL caching (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d).
 - **Acquisition Source Health Engine** (`source-health.ts`): Live operational health and rate limit / access restriction tracker.
 - **Unified Research Workbench Orchestrator** (`workbench.ts` & `/api/research/*`): `executeResearchRun` across `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR`.
-- **Research Transparency Card** (`ResearchWorkbenchCard.tsx`): UI component rendering signal provenance, source badges, freshness tiers, and diff metrics.
+- **Interactive Research Center UI** (`/research`, `research-client.tsx`, `ResearchReportView.tsx`, `/research/runs/[id]`): Multi-domain research center executing live public ingestion without API credentials.
+- **Marketplace Capability Matrix** (`src/lib/marketplace-capability-matrix.ts`): Canonical single source of truth for public ingestion vs official API capability readiness.
 
 **Current Verified Baseline**:
-- Tests: **935/935 passing across 179 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **949/949 passing across 186 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
-- Next.js: Clean production build (**166/166 routes compiled**)
+- Next.js: Clean production build (**168/168 routes compiled**)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,

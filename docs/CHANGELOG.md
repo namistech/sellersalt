@@ -488,6 +488,32 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**166/166 routes compiled**).
 
+## Research Workbench → Real Ecommerce Intelligence Center — Batch 12 (2026-08-20)
+
+**Why**: To productize SellerSalt's marketplace-independent research architecture into a full-featured, production-grade application surface (`/research`, `/research/runs/[id]`, `/research/history`, `/research/compare`), providing interactive research across all 6 commerce domains (Product, Keyword, Shop, Category, Niche, Radar) with full provenance transparency, honest capability matrices, and zero synthetic defaults.
+
+**What changed**:
+- **Full Interactive Research Center UI (`/research` & `src/app/(dashboard)/research/research-client.tsx`)**:
+  - Interactive modal-less workspace for executing `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR` research runs.
+  - Dynamic forms with query guidance, result limit options, price filtering, and cache bypass controls.
+  - Deterministic progressive stage timeline (`PREPARING` → `CHECKING_SOURCES` → `ACQUIRING_DATA` → `NORMALIZING` → `EVALUATING_INTELLIGENCE` → `PERSISTING` → `COMPLETED`).
+- **Dedicated Multi-Domain Research Report Component (`src/components/research/ResearchReportView.tsx`)**:
+  - Renders domain-specific intelligence views for Product Research (cards/grid with canonical opportunity scores and rating breakdown), Keyword Intelligence (empirical listing prevalence %, demand proxy, intent categories, and explicit zero-fabrication search volume status), Shop Research (competition barrier ratings, catalog yield, review pace), Category Taxonomy (percentile price distribution and opportunity score distribution), Niche Discovery (sub-niche opportunities and momentum), and Opportunity Radar (cross-marketplace comparison matrix with Best Available Channel recommendation).
+- **Dedicated Run Detail Server & Client Page (`/research/runs/[id]`)**:
+  - Direct deep-linking to historical research runs with full observation lineage, snapshots, and signal breakdown.
+- **Canonical Marketplace Capability Matrix (`src/lib/marketplace-capability-matrix.ts`)**:
+  - Single source of truth for public web and official API capability readiness across Etsy, Amazon, eBay, Walmart, Shopify, WooCommerce, and TikTok Shop.
+- **Run History, Comparison, and Source Health Panels**:
+  - Embedded history view with search, filter, and quick report inspection.
+  - Side-by-side run diff engine (`/research` compare mode) computing appearing/disappearing items and price drops.
+  - Real-time acquisition source health monitor backed by `SourceHealthTracker`.
+- **Comprehensive Quality & Test Baseline**:
+  - Created `src/tests/batch-12-research-center.test.ts` (14 comprehensive test cases).
+  - Test suite: **949/949 tests passing across 186 suites**.
+  - TypeScript: Clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 static and dynamic routes compiled**).
+
 
 
 
