@@ -27,6 +27,7 @@ import type {
   ProductValidationReport,
   UserUnitEconomicsReport,
 } from "@/marketplaces/core/validation/types";
+import { NextCommercialActionBar } from "@/components/workspace/NextCommercialActionBar";
 
 interface ValidationReportViewProps {
   report: ProductValidationReport;
@@ -557,6 +558,15 @@ export function ValidationReportView({
           </div>
         </Card>
       )}
+
+      {/* Commercial Workflow Handoff */}
+      <NextCommercialActionBar
+        currentStage="VALIDATION"
+        query={report.query}
+        verdict={report.verdict}
+        trustScore={report.researchQuality.score}
+        marketplaces={[report.marketplace]}
+      />
     </div>
   );
 }

@@ -857,3 +857,25 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 24: SellerSalt V1 — Unified Merchant Experience & Product Shell (2026-08-20)
+
+**Why**: Turn the accumulated backend intelligence systems into a unified, intuitive, and cohesive merchant product centered around the 5-step journey (Discover → Research → Validate → Plan → Launch).
+
+**What changed**:
+- **Workflow-First Information Architecture (`src/services/navigation.ts`)**:
+  - Reorganized primary navigation into job-to-be-done domains (`DASHBOARD`, `DISCOVER`, `RESEARCH`, `DECIDE & VALIDATE`, `BUILD & OPTIMIZE`, `CHANNELS & GOVERNANCE`, `MANAGE & TRUST`) with direct access to `/product-workspaces`.
+- **Unified Search Console (`src/components/research/UnifiedSearchEntry.tsx`)**:
+  - Central interactive input (*"What are you thinking of selling?"*) with trending sample suggestions, live multi-marketplace capability indicators, and mode selection (Research, Validation, Workspace, Radar).
+- **Personalized Continuation & First-Time Experience (`src/components/dashboard/`)**:
+  - `PersonalizedContinuationSection.tsx`: Automatically surfaces recent `ResearchRun`, `ProductValidation`, and `SavedOpportunity` records for immediate resumption.
+  - `FirstTimeMerchantGuide.tsx`: Friendly 4-phase launchpad for new merchants without fabricating mock data.
+- **Seamless Commercial Workflow Connectors (`src/components/workspace/NextCommercialActionBar.tsx`)**:
+  - Eliminates dead-ends across `/discovery`, `/research-center`, `/validate`, and `/product-workspaces` with evidence-grounded next actions.
+- **Product Specification & Documentation**:
+  - Created `docs/SELLERSALT-V1-PRODUCT.md`.
+- **Verification Baseline**:
+  - Full test suite: **1118/1118 passing across 294 suites** (`src/tests/batch-24-unified-product-shell.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).

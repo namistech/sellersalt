@@ -4,23 +4,22 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 23 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 24 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 23
-(Production Trust, Marketplace-Compliant Acquisition Separation & Intelligence Productization):
+condensed version of everything else in this file, current as of Batch 24
+(SellerSalt V1 — Unified Merchant Experience & Product Shell):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Marketplace Access Resolver & Anti-Circumvention** (`src/marketplaces/core/governance/access-modes.ts`, `anti-circumvention.ts`): Resolves 9 explicit data access modes across 10 capabilities. Enforces zero automated scraping fallback after API restrictions unless independently policy-permitted.
-- **Etsy Capability & Compliance Matrix** (`etsy-capability-matrix.ts`): Formalized rules for all 10 capabilities, least-privilege OAuth scopes, rate limits (60/min), and mandatory trademark disclaimers.
-- **Signal Classification Framework** (`signal-classification.ts`): Rigorous provenance tagging across `OBSERVED`, `DERIVED`, `ESTIMATED`, `USER_DERIVED`, and `UNAVAILABLE` signals with transparent Zero-Fabrication disclosures.
-- **Trust Center & Unavailable UX** (`/trust`, `UnavailableSignalCard.tsx`, `MarketplaceAttributionBadge.tsx`): Public transparency center and evidence-grounded UX explaining why private metrics remain unavailable.
-- **Safe Retention Pruning** (`retention-governance-service.ts`): Dry-run auditing and marketplace-scoped snapshot deletion.
-- **Marketplace Data Governance Registry & Policies** (`registry.ts`, `/marketplaces/governance`): Canonical policy registry across all 7 registered platforms.
-- **Product Opportunity Workspace & Launch Cockpit** (`product-opportunity-workspace-engine.ts`, `/product-workspaces`, `/product-workspaces/[id]`): Converts discovered opportunities into an actionable decision cockpit.
+- **Unified Product Shell & Navigation** (`src/services/navigation.ts`): Workflow-first navigation organized by merchant job-to-be-done (`DASHBOARD`, `DISCOVER`, `RESEARCH`, `DECIDE & VALIDATE`, `BUILD & OPTIMIZE`, `CHANNELS & GOVERNANCE`, `MANAGE & TRUST`) with direct access to `/product-workspaces`.
+- **Command Dashboard & Unified Search** (`src/app/(dashboard)/dashboard/`, `src/components/research/UnifiedSearchEntry.tsx`): Interactive hero search console with trending suggestions, multi-marketplace capability toggles, and direct workflow routing.
+- **Personalized Continuation & First-Time Launchpad** (`PersonalizedContinuationSection.tsx`, `FirstTimeMerchantGuide.tsx`): Real Postgres-backed activity resumption (`ResearchRun`, `ProductValidation`, `SavedOpportunity`) or friendly 4-phase merchant onboarding.
+- **Commercial Workflow Connectors** (`NextCommercialActionBar.tsx`): Seamless, evidence-grounded action handoffs linking Discover → Research → Validate → Plan → Launch.
+- **Marketplace Access Resolver & Anti-Circumvention** (`access-modes.ts`, `anti-circumvention.ts`): Resolves 9 explicit data access modes with zero scraping fallback after API restrictions.
+- **Trust Center & Unavailable UX** (`/trust`, `UnavailableSignalCard.tsx`): Public methodology hub and zero-fabrication disclosures.
 
 **Current Verified Baseline**:
-- Tests: **1112/1112 passing across 289 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1118/1118 passing across 294 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)

@@ -32,6 +32,7 @@ import type {
   ResearchDepthMode,
 } from "@/marketplaces/core/research-command-types";
 import type { MarketplaceId } from "@/marketplaces/core/types";
+import { NextCommercialActionBar } from "@/components/workspace/NextCommercialActionBar";
 
 interface CommandCenterProps {
   initialQuery?: string;
@@ -563,6 +564,15 @@ export function ProductResearchCommandCenter({
               </div>
             </Card>
           )}
+
+          {/* Workflow Next Step Handoff */}
+          <NextCommercialActionBar
+            currentStage="RESEARCH"
+            query={result.query}
+            verdict={result.commercialDecision.verdict}
+            trustScore={result.researchQuality.qualityScore}
+            marketplaces={result.marketplaces}
+          />
         </div>
       ) : null}
     </div>

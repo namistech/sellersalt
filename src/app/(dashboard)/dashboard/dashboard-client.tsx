@@ -18,6 +18,11 @@ import { DashboardStreams } from "./dashboard-streams";
 import { DashboardOnboardingGuide } from "./dashboard-onboarding-guide";
 import { AssistantDailyBriefing } from "./assistant-daily-briefing";
 import { DashboardCommandCenter } from "./dashboard-command-center";
+import { UnifiedSearchEntry } from "@/components/research/UnifiedSearchEntry";
+import {
+  PersonalizedContinuationSection,
+  type ActivityItem,
+} from "@/components/dashboard/PersonalizedContinuationSection";
 
 interface DashboardClientProps {
   initialData: DashboardData;
@@ -25,12 +30,10 @@ interface DashboardClientProps {
   userName: string;
   organizationId?: string;
   planUsage: PlanUsageSummary | null;
-  /** Real, server-derived onboarding activation state — see
-   * src/app/(dashboard)/dashboard/page.tsx (User.onboarding* fields +
-   * a real ListingDraft count). Never localStorage. */
   onboardingCategory: string | null;
   onboardingGoal: string | null;
   hasListingDraft: boolean;
+  recentActivities?: ActivityItem[];
 }
 
 export function DashboardClient({
@@ -42,6 +45,7 @@ export function DashboardClient({
   onboardingCategory,
   onboardingGoal,
   hasListingDraft,
+  recentActivities = [],
 }: DashboardClientProps) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -57,7 +61,7 @@ export function DashboardClient({
   const statusSubtitle =
     pulse.activeSearches > 0 || pulse.pendingProspects > 0
       ? `${pulse.activeSearches} active saved search${pulse.activeSearches === 1 ? "" : "es"} · ${pulse.pendingProspects} prospect${pulse.pendingProspects === 1 ? "" : "s"} awaiting review`
-      : "Start discovering high-velocity Etsy products and tracking competitor momentum.";
+      : "Turn observable marketplace signals into profitable product decisions.";
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,8 +70,8 @@ export function DashboardClient({
         description={statusSubtitle}
         primaryAction={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" leadingIcon={<Radar className="h-4 w-4 text-accent" />} href="/spy">
-              Market Research
+            <Button variant="secondary" leadingIcon={<Radar className="h-4 w-4 text-accent" />} href="/discovery">
+              Discover Opportunities
             </Button>
             <Button variant="primary" leadingIcon={<Plus className="h-4 w-4" />} onClick={() => setDrawerOpen(true)}>
               New search
@@ -76,7 +80,10 @@ export function DashboardClient({
         }
       />
 
-      {/* Onboarding Guide / Fast-Start Launchpad */}
+      {/* Central Unified Search Console */}
+      <UnifiedSearchEntry />
+
+      {/* Real Activation & Onboarding Guide */}
       <DashboardOnboardingGuide
         hasActiveSearches={pulse.activeSearches > 0}
         hasTrackedShops={data.competitorRadar.length > 0}
@@ -86,51 +93,10 @@ export function DashboardClient({
         hasListingDraft={hasListingDraft}
       />
 
-      {/* Quick Actions Command Center Bar */}
-      <div className="p-3.5 rounded-2xl bg-white border border-line shadow-xs flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="font-bold text-ink flex items-center gap-1.5 px-2 text-[11px] uppercase tracking-wider text-ink-tertiary">
-          ⚡ Quick Intelligence:
-        </span>
-        <div className="flex flex-wrap items-center gap-2 flex-1 justify-end">
-          <Link
-            href="/radar"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
-          >
-            <span>🔥</span> Find Products
-          </Link>
-          <Link
-            href="/categories"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
-          >
-            <span>📁</span> Explore Categories
-          </Link>
-          <Link
-            href="/keyword-research"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
-          >
-            <span>#</span> Keyword Research
-          </Link>
-          <Link
-            href="/spy"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
-          >
-            <span>📊</span> Market Research
-          </Link>
-          <Link
-            href="/planner"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-ink font-semibold transition-all shadow-2xs"
-          >
-            <span>📑</span> Open Planner
-          </Link>
-        </div>
-      </div>
-
-      {/* Seller Assistant Daily Intelligence Briefing */}
-      <AssistantDailyBriefing
+      {/* Personalized Continuation & Real Activity Hub */}
+      <PersonalizedContinuationSection
+        recentActivities={recentActivities}
         userName={userName}
-        activeSearchesCount={pulse.activeSearches}
-        trackedCompetitorsCount={data.competitorRadar.length}
-        topOpportunityCount={data.topOpportunities.length}
       />
 
       {/* Seller Intelligence Operating System 2.0 Command Center */}

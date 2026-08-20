@@ -68,9 +68,10 @@ const RESEARCH_ITEMS: NavigationItem[] = [
 ];
 
 const INTELLIGENCE_ITEMS: NavigationItem[] = [
-  { id: "intelligence-graph", label: "Intelligence Graph", href: "/intelligence", icon: Layers },
+  { id: "product-workspaces", label: "Product Workspaces", href: "/product-workspaces", icon: Layers },
   { id: "validate", label: "Product Validation", href: "/validate", icon: Compass },
   { id: "radar", label: "Opportunity Radar", href: "/radar", icon: Flame },
+  { id: "intelligence-graph", label: "Intelligence Graph", href: "/intelligence", icon: Layers },
   { id: "spy", label: "Market Research", href: "/spy", icon: Search },
   { id: "tracked-shops", label: "Demand Signals", href: "/spy/tracked", icon: Store },
 ];

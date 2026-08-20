@@ -28,6 +28,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { NextCommercialActionBar } from "./NextCommercialActionBar";
 import type {
   ProductOpportunityWorkspace,
   UserEconomicsInput,
@@ -697,6 +698,15 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
           </Card>
         </div>
       </div>
+
+      {/* Commercial Workflow Next Best Action Handoff */}
+      <NextCommercialActionBar
+        currentStage="WORKSPACE"
+        query={workspace.title}
+        verdict={workspace.commercialDecision.verdict}
+        trustScore={workspace.dataTrust.overallTrustScore}
+        marketplaces={workspace.dataTrust.sourcesUsed}
+      />
     </div>
   );
 }

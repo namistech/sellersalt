@@ -181,17 +181,25 @@ export const SETTING_DEFINITIONS = [
 export type SettingKey = (typeof SETTING_DEFINITIONS)[number]["key"];
 
 export async function getSetting(key: SettingKey): Promise<string | null> {
-  const row = await prisma.appSetting.findUnique({ where: { key } });
-  if (!row) return null;
-  return row.isSecret ? decrypt(row.value) : row.value;
+  try {
+    const row = await prisma.appSetting.findUnique({ where: { key } });
+    if (!row) return null;
+    return row.isSecret ? decrypt(row.value) : row.value;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSettings(keys: SettingKey[]): Promise<Record<string, string | null>> {
-  const rows = await prisma.appSetting.findMany({ where: { key: { in: keys } } });
   const result: Record<string, string | null> = {};
   for (const key of keys) result[key] = null;
-  for (const row of rows) {
-    result[row.key] = row.isSecret ? decrypt(row.value) : row.value;
+  try {
+    const rows = await prisma.appSetting.findMany({ where: { key: { in: keys } } });
+    for (const row of rows) {
+      result[row.key] = row.isSecret ? decrypt(row.value) : row.value;
+    }
+  } catch {
+    // Return empty defaults if database is unreachable
   }
   return result;
 }

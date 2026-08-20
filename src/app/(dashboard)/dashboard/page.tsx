@@ -29,24 +29,42 @@ export default async function OverviewPage() {
     );
   }
 
-  const [data, rawConnectors, planUsage, onboardingUser, listingDraftCount] = await Promise.all([
+  const [
+    data,
+    rawConnectors,
+    planUsage,
+    onboardingUser,
+    listingDraftCount,
+    rawResearchRuns,
+    rawValidations,
+    rawSavedOpportunities,
+  ] = await Promise.all([
     getDashboardData(organizationId),
     prisma.connector.findMany({
       where: { OR: [{ organizationId }, { organizationId: null }] },
       orderBy: [{ organizationId: "desc" }, { createdAt: "desc" }],
       select: { id: true, type: true, label: true, status: true, organizationId: true },
     }),
-    // Real plan/usage data for PlanUsageCard — never fabricated. A lookup
-    // failure renders an explicit unavailable state (see PlanUsageCard),
-    // not fake numbers.
     getPlanUsageSummary(organizationId).catch(() => null),
-    // Real onboarding activation state (User.onboarding*, set only by
-    // POST /api/onboarding/complete) — never localStorage, see
-    // dashboard-onboarding-guide.tsx.
     userId
       ? prisma.user.findUnique({ where: { id: userId }, select: { onboardingCategory: true, onboardingGoal: true } })
       : Promise.resolve(null),
     prisma.listingDraft.count({ where: { organizationId } }),
+    prisma.researchRun.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }).catch(() => []),
+    prisma.productValidation.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }).catch(() => []),
+    prisma.savedOpportunity.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+    }).catch(() => []),
   ]);
 
   const connectors = rawConnectors.map((c) => ({
@@ -56,6 +74,42 @@ export default async function OverviewPage() {
     status: c.status,
     scope: (c.organizationId ? "own" : "platform") as "own" | "platform",
   }));
+
+  // Compile real recent activity items for personalized continuation
+  const recentActivities = [
+    ...rawValidations.map((v) => ({
+      id: v.id,
+      type: "VALIDATION" as const,
+      title: v.productTitle || v.query,
+      subtitle: v.recommendation || `Validated on ${v.marketplace}`,
+      marketplace: v.marketplace,
+      verdict: v.verdict,
+      score: v.validationScore ?? undefined,
+      timestamp: v.createdAt,
+      href: `/validate?q=${encodeURIComponent(v.query)}`,
+    })),
+    ...rawSavedOpportunities.map((o) => ({
+      id: o.id,
+      type: "SAVED_OPPORTUNITY" as const,
+      title: o.title,
+      subtitle: o.subtitle || `${o.type} Opportunity on ${o.marketplace}`,
+      marketplace: o.marketplace,
+      verdict: o.verdict,
+      score: o.score ?? undefined,
+      timestamp: o.createdAt,
+      href: `/favorites`,
+    })),
+    ...rawResearchRuns.map((r) => ({
+      id: r.id,
+      type: "RESEARCH_RUN" as const,
+      title: r.query,
+      subtitle: `${r.itemCount} observations · ${r.marketplaces.join(", ")}`,
+      marketplace: r.marketplaces[0] || "etsy",
+      verdict: r.status,
+      timestamp: r.createdAt,
+      href: `/research-center?q=${encodeURIComponent(r.query)}`,
+    })),
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
     <DashboardClient
@@ -67,6 +121,7 @@ export default async function OverviewPage() {
       onboardingCategory={onboardingUser?.onboardingCategory ?? null}
       onboardingGoal={onboardingUser?.onboardingGoal ?? null}
       hasListingDraft={listingDraftCount > 0}
+      recentActivities={recentActivities}
     />
   );
 }
