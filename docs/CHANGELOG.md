@@ -449,12 +449,44 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
 - **Public Adapters & Parsers Hardening (`structured-parser.ts`, `amazon`, `ebay`, `walmart`, `etsy`)**:
   - Hardened semantic listing card and container parsers supporting both `data-listing-id` container blocks and standard link anchors.
   - Enhanced category aggregation with overloaded parameter signatures and exact catalog counting.
-- **Comprehensive Test Suite & Verified Quality Baseline**:
-  - Added `src/tests/batch-10-production-acquisition-hardening.test.ts` with 24 thorough test cases.
-  - Test suite: **919/919 passing across 170 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
+## Production Research Workbench & Persistent Observation Intelligence — Batch 11 (2026-08-20)
+
+**Why**: To move SellerSalt from having a marketplace-independent acquisition architecture to operating a production-grade persistent research workbench that acquires, normalizes, stores, refreshes, compares, and analyzes marketplace observations over time with deterministic deduplication, automated change detection, execution budgets, and UI transparency.
+
+**What changed**:
+- **First-Class Observation Store in PostgreSQL (`prisma/schema.prisma`)**:
+  - Added `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, and `AcquisitionSourceHealth` models.
+  - Cleaned up historical staging database anomalies and synchronized schema (`db push`).
+- **Observation Identity & Deduplication (`src/marketplaces/core/acquisition/deduplication.ts`)**:
+  - Implemented SHA-256 fingerprinting (`computeProductObservationFingerprint`) across normalized price, currency, rating, reviews, favorites, sales, title, shop, and status.
+  - Implemented `evaluateObservationChange` to avoid redundant snapshot creation when metrics are unchanged.
+- **Product & Query Change Detection Engine (`src/marketplaces/core/acquisition/diff-engine.ts`)**:
+  - Implemented `calculateProductObservationDiff` calculating exact price drops, dollar deltas, review gains, and monthly review velocity across snapshots.
+  - Implemented `compareResearchRuns` computing appearing, disappearing, and persisting listing sets across research runs.
+  - Strictly enforces the Zero-Fabrication Rule: if $n \le 1$ observation, deltas and velocities remain `null`.
+- **Research Budgets & Safety Bounds (`src/marketplaces/core/acquisition/research-budgets.ts`)**:
+  - Implemented `ResearchBudgetTracker` enforcing pagination limits (max 3 pages), listing quotas (max 50 listings), shop quotas (max 15 shops), timeout bounds (max 20s), and payload size limits (max 5MB).
+- **Multi-Tier Research Cache (`src/marketplaces/core/acquisition/research-cache.ts`)**:
+  - Implemented `ResearchCache` with domain-specific TTLs (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d) and targeted invalidation by marketplace and query.
+- **Acquisition Source Health Engine (`src/marketplaces/core/acquisition/source-health.ts`)**:
+  - Implemented `SourceHealthTracker` tracking success rates, latencies, rate limits, and access restrictions per marketplace and source type.
+- **Unified Research Workbench Orchestrator (`src/marketplaces/core/acquisition/workbench.ts`)**:
+  - Implemented `executeResearchRun` supporting `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR` runs.
+  - Handles cache checks, execution budgets, dual persistence (populating both new observation tables and backwards-compatible prospects), and automated diff comparisons.
+- **New REST API Endpoints**:
+  - `POST /api/research/run`: Execute unified research run with caching and persistence.
+  - `GET /api/research/runs`: List historical research runs for an organization.
+  - `GET /api/research/runs/[id]`: Retrieve run details and associated product observations with snapshots.
+  - `GET /api/research/sources/health`: Inspect live operational health across all marketplace sources.
+  - `POST /api/research/compare`: Compare two research runs or fetch longitudinal product diffs.
+- **Research Workbench UI Transparency Card (`src/components/research/ResearchWorkbenchCard.tsx`)**:
+  - Renders signal provenance, source badges, temporal freshness tiers, confidence scores, and diff highlights.
+- **Comprehensive Test Baseline**:
+  - Created `src/tests/batch-11-research-workbench.test.ts` (16 test cases).
+  - Test suite: **935/935 passing across 179 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`).
   - TypeScript: Clean (`npx tsc --noEmit`).
-  - Prisma: Valid, 29 migrations up to date.
-  - Next.js: Clean production build (**161/161 routes compiled**).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**166/166 routes compiled**).
 
 
 

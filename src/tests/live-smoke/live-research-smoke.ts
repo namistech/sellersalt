@@ -13,6 +13,7 @@ import { orchestrateProductResearch } from "@/marketplaces/core/acquisition/orch
 import { harvestPublicMarketplaceKeywords } from "@/marketplaces/core/acquisition/keywords";
 import { fetchPublicShopResearch } from "@/marketplaces/core/acquisition/shops";
 import { aggregatePublicCategoryIntelligence } from "@/marketplaces/core/acquisition/categories";
+import { executeResearchRun } from "@/marketplaces/core/acquisition/workbench";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 
 async function runLiveSmokeSuite() {
@@ -35,11 +36,10 @@ async function runLiveSmokeSuite() {
     console.log(`\n--- [1] Live Product Research Smoke: ${m.toUpperCase()} ("${testQuery}") ---`);
     try {
       const res = await orchestrateProductResearch(
-        { query: testQuery, marketplace: m, limit: 5 },
+        { marketplace: m, query: testQuery, limit: 5 },
         { preferredSources: ["PUBLIC_WEB"] }
       );
-      console.log(`Status: ${res.report.status}`);
-      console.log(`Primary Source Used: ${res.report.primarySourceUsed}`);
+      console.log(`Freshness: ${res.report.freshness.status}`);
       console.log(`Items Acquired: ${res.items.length}`);
       if (res.items.length > 0) {
         console.log(`Sample item: "${res.items[0].title}" | Price: $${res.items[0].price} | Rating: ${res.items[0].rating}`);
@@ -48,14 +48,14 @@ async function runLiveSmokeSuite() {
         console.log(`Limitations: ${res.report.limitations.join(", ")}`);
       }
     } catch (err: any) {
-      console.log(`Error: ${err.message}`);
+      console.log(`Result: ${err.message}`);
     }
 
     console.log(`\n--- [2] Live Keyword Harvesting Smoke: ${m.toUpperCase()} ("${testQuery}") ---`);
     try {
       const kwRes = await harvestPublicMarketplaceKeywords({
-        query: testQuery,
         marketplace: m,
+        query: testQuery,
         limit: 5,
       });
       console.log(`Observed Listings: ${kwRes.totalListingsObserved}`);
@@ -65,7 +65,23 @@ async function runLiveSmokeSuite() {
         console.log(`Sample top keyword: "${kwRes.topKeywords[0].keyword}" (freq: ${kwRes.topKeywords[0].listingFrequencyPercent}%, demandProxy: ${kwRes.topKeywords[0].demandProxyScore})`);
       }
     } catch (err: any) {
-      console.log(`Error: ${err.message}`);
+      console.log(`Result: ${err.message}`);
+    }
+
+    console.log(`\n--- [3] Live Category Aggregation Smoke: ${m.toUpperCase()} ("Mugs") ---`);
+    try {
+      const catRes = await aggregatePublicCategoryIntelligence("mugs", m);
+      if ("available" in catRes && !catRes.available) {
+        console.log(`Category research unavailable: ${catRes.message}`);
+      } else {
+        const cat = catRes as any;
+        console.log(`Category: ${cat.categoryName}`);
+        console.log(`Observed Sample: ${cat.observedCatalogCount || cat.totalListings}`);
+        console.log(`Median Price: $${cat.priceDistribution?.median}`);
+        console.log(`Avg Opportunity Score: ${cat.opportunityDistribution?.averageScore}`);
+      }
+    } catch (err: any) {
+      console.log(`Result: ${err.message}`);
     }
   }
 

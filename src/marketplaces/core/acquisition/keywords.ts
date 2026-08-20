@@ -23,6 +23,7 @@ export interface PublicKeywordQuery {
 
 export interface CanonicalKeywordObservation {
   keyword: string;
+  term?: string; // ergonomic alias
   marketplace: MarketplaceId;
   occurrenceCount: number;
   listingFrequencyPercent: number; // 0-100% of analyzed listings containing this term
@@ -49,9 +50,11 @@ export interface KeywordResearchSummary {
   query: string;
   marketplace: MarketplaceId;
   totalListingsObserved: number;
+  observedListingsCount?: number; // ergonomic alias
   averageObservedPrice: number | null;
   demandProxyScore: number | null;
   topKeywords: CanonicalKeywordObservation[];
+  keywords?: CanonicalKeywordObservation[]; // ergonomic alias
   clusters: KeywordCluster[];
   tags: Array<{ tag: string; count: number }>;
   freshness: FreshnessEvaluation;

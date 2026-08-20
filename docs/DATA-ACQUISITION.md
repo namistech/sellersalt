@@ -127,25 +127,59 @@ Observations are calibrated against metric-specific natural lifetimes:
 
 ---
 
-## 8. Longitudinal Trend & Observation Tracking Foundation
+## 8. Longitudinal Trend & Persistent Observation Store (Batch 11)
 
-- Persists legitimate public observations into PostgreSQL (`Prospect` table and `ListingSnapshot` time-series).
-- `computeObservationTrendsFromPoints` calculates empirical deltas:
-  - **Price Deltas**: Initial price, current price, dollar delta, percentage delta, price drop detection.
-  - **Review Velocity**: Initial reviews, latest reviews, review delta, monthly review velocity.
-  - **Persistence Lifecycle**: `NEW` (< 7 days), `PERSISTENT` (repeated observations over time), `STALE` (> 30 days without update).
-- **Zero Fabrication Guarantee**: If `observationCount <= 1`, historical deltas are strictly `null` (never manufactured).
+### Database Observation Schema:
+- **`ResearchRun`**: First-class record of research executions across domains (`PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, `RADAR`), tracking sources attempted, status, item counts, duration, and diff summaries.
+- **`ProductObservation`**: Canonical persistent observation table with SHA-256 fingerprinting for deterministic deduplication.
+- **`ProductObservationSnapshot`**: Longitudinal time-series snapshot capturing historical metric shifts (price, rating, reviews, favorites, sales) only when values change.
+- **`KeywordObservation`**: Persistent keyword prevalence, average prices, and intent clusters.
+- **`CategoryObservation`**: Persistent category catalog yield, price distributions, and opportunity score distributions.
+- **`AcquisitionSourceHealth`**: Live operational health metrics per marketplace and source type (consecutive failures, latencies, rate limits, access restrictions).
+
+### Longitudinal Diff & Change Detection:
+- `computeProductObservationFingerprint`: SHA-256 hash of normalized price, currency, rating, reviews, favorites, sales, title, shop, and status.
+- `evaluateObservationChange`: Distinguishes unchanged observations (which only touch `observedAt`) from changed records (which trigger a new `ProductObservationSnapshot`).
+- `calculateProductObservationDiff`: Calculates exact price drops, dollar deltas, review gains, and monthly review velocity across snapshots.
+- `compareResearchRuns`: Computes appearing, disappearing, and persisting listing sets between two runs of a query.
+- **Zero Fabrication Rule**: Strictly returns `null` for price deltas, review velocities, or historical trends when $n \le 1$ observations exist.
 
 ---
 
-## 9. Public Shop & Category Research Aggregation
+## 9. Research Budgets, Safety Bounds & Cache
 
-- **Public Shop Research (`fetchPublicShopResearch`)**: Normalizes storefront profile metrics, extracts sample listings, calculates price distributions, and evaluates canonical competition barriers (`scoreShopCompetition`) without requiring seller OAuth.
-- **Public Category Aggregation (`aggregatePublicCategoryIntelligence`)**: Calculates empirical price percentiles (min, max, median, 10th percentile, 90th percentile) and canonical opportunity score distributions across catalog samples.
+- **Research Budgets (`ResearchBudgetTracker`)**: Enforces strict execution bounds to prevent runaway crawling (max 3 pages, max 50 listings, max 15 shops, max 20s timeout, max 5MB payload).
+- **Multi-Tier Research Cache (`ResearchCache`)**: Domain-specific in-memory TTLs:
+  - Product Research: 6 hours
+  - Keyword Research: 12 hours
+  - Shop Research: 24 hours
+  - Category Intelligence: 7 days
+- **Acquisition Source Health Engine (`SourceHealthTracker`)**: Tracks per-source success rates and flags `RATE_LIMITED` or `ACCESS_RESTRICTED` statuses to inform orchestrator routing.
 
 ---
 
-## 10. Live Smoke Testing Facility
+## 10. Unified Research Workbench Orchestration
+
+`executeResearchRun()` in `src/marketplaces/core/acquisition/workbench.ts`:
+- Unified entry point for executing `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR` research runs.
+- Handles cache checks, execution budgets, source health tracking, dual persistence, and diff comparisons.
+
+### Research API Endpoints:
+- `POST /api/research/run`: Execute on-demand research runs.
+- `GET /api/research/runs`: List historical research runs with item counts and statuses.
+- `GET /api/research/runs/[id]`: Retrieve run details and associated product observations with historical snapshots.
+- `GET /api/research/sources/health`: Inspect live health and status across all marketplace acquisition sources.
+- `POST /api/research/compare`: Compare two research runs or fetch longitudinal observation deltas.
+
+---
+
+## 11. UI Transparency & Provenance Card
+
+- **`ResearchWorkbenchCard.tsx`**: Renders signal availability, source badges (`PUBLIC_WEB`, `MARKETPLACE_API`, `HISTORICAL_OBSERVATION`), temporal freshness tiers (`LIVE`, `FRESH`, `STALE`, `HISTORICAL`), confidence scores, and longitudinal diff highlights.
+
+---
+
+## 12. Live Smoke Testing Facility
 
 - Dedicated development/manual testing harness at `src/tests/live-smoke/live-research-smoke.ts`.
 - Gated behind `SELLERSALT_LIVE_RESEARCH_SMOKE=true`.

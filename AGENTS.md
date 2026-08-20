@@ -297,6 +297,7 @@ source of truth, this is a map, not a copy):
   generalize this model without a real second-marketplace write path to
   back it.
 - `SellerOrder` — synced orders, cascades from `SellerChannel`.
+- `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth` — first-class persistent observation workbench models with SHA-256 fingerprinting and longitudinal snapshot time-series.
 - `ShopSnapshot` / `ListingSnapshot` — periodic public research captures,
   pruned per §12.
 - `Prospect` — product research results, `marketplace` field tags which
@@ -335,10 +336,10 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      919/919 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 170 suites)
+Tests:      935/935 passing  (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 179 suites)
 TypeScript: clean            (npx tsc --noEmit)
-Prisma:     valid, up to date (node --env-file=.env.local node_modules/prisma/build/index.js validate — 29 migrations)
-Next.js:    clean build      (npx next build — 161/161 static and dynamic routes compiled)
+Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
+Next.js:    clean build      (npx next build — 166/166 static and dynamic routes compiled)
 ```
 
 ## 19. Known Technical Debt

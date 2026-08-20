@@ -39,6 +39,10 @@ model Organization {
   etsyExecutionLogs EtsyExecutionLog[]
   listingWatches ListingWatch[]
   trackingAlerts TrackingAlert[]
+  researchRuns   ResearchRun[]
+  productObservations ProductObservation[]
+  keywordObservations KeywordObservation[]
+  categoryObservations CategoryObservation[]
 }
 
 enum Plan {
@@ -1152,4 +1156,163 @@ enum EtsyExecutionStatus {
   FAILED
   RETRYING
 }
+
+// ---------- Observation & Research Workbench Subsystem ----------
+
+model ResearchRun {
+  id              String                @id @default(cuid())
+  organizationId  String
+  type            String                // "PRODUCT" | "KEYWORD" | "SHOP" | "CATEGORY" | "NICHE" | "RADAR"
+  query           String
+  marketplaces    String[]              @default(["etsy"])
+  status          String                @default("COMPLETED") // "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED"
+  sourcePriority  String[]              @default(["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"])
+  sourcesUsed     String[]              @default([])
+  itemCount       Int                   @default(0)
+  liveCount       Int                   @default(0)
+  historicalCount Int                   @default(0)
+  freshnessStatus String?
+  confidence      Int?
+  durationMs      Int                   @default(0)
+  reportJson      String?
+  error           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  observations    ProductObservation[]
+
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model ProductObservation {
+  id                String                     @id @default(cuid())
+  organizationId    String
+  researchRunId     String?
+  marketplace       String                     // "etsy" | "amazon" | "ebay" | "walmart" | "tiktok_shop" | "shopify" | "woocommerce"
+  externalId        String
+  fingerprint       String
+  title             String
+  price             Float?
+  currency          String?                    @default("USD")
+  rating            Float?
+  reviewCount       Int?
+  favoritesCount    Int?
+  salesCount        Int?
+  estimatedDemand   Float?
+  shopName          String?
+  shopExternalId    String?
+  categoryPath      String[]                   @default([])
+  sourceType        String                     @default("PUBLIC_WEB") // "PUBLIC_WEB" | "MARKETPLACE_API" | "HISTORICAL_OBSERVATION"
+  sourceUrl         String?
+  provenance        String                     @default("ACTUAL_DATA")
+  confidence        Int?
+  fieldLineageJson  String?
+  observedAt        DateTime                   @default(now())
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  researchRun       ResearchRun?               @relation(fields: [researchRunId], references: [id], onDelete: SetNull)
+  snapshots         ProductObservationSnapshot[]
+
+  @@unique([organizationId, marketplace, externalId])
+  @@index([organizationId])
+  @@index([marketplace])
+  @@index([externalId])
+  @@index([fingerprint])
+  @@index([observedAt])
+}
+
+model ProductObservationSnapshot {
+  id                    String              @id @default(cuid())
+  productObservationId String
+  fingerprint           String
+  price                 Float?
+  currency              String?             @default("USD")
+  rating                Float?
+  reviewCount           Int?
+  favoritesCount        Int?
+  salesCount            Int?
+  observedAt            DateTime            @default(now())
+  createdAt             DateTime            @default(now())
+
+  productObservation   ProductObservation  @relation(fields: [productObservationId], references: [id], onDelete: Cascade)
+
+  @@index([productObservationId])
+  @@index([fingerprint])
+  @@index([observedAt])
+}
+
+model KeywordObservation {
+  id                      String       @id @default(cuid())
+  organizationId          String
+  marketplace             String       // "etsy" | "amazon" | "ebay" | "walmart"
+  keyword                 String
+  listingFrequencyPercent Float        @default(0)
+  occurrenceCount         Int          @default(1)
+  observedAveragePrice    Float?
+  demandProxyScore        Float        @default(50)
+  competitionProxy        String       @default("UNAVAILABLE")
+  intentCategory          String       @default("GENERAL")
+  source                  String       @default("PUBLIC_WEB")
+  observedAt              DateTime     @default(now())
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, marketplace, keyword])
+  @@index([organizationId])
+  @@index([marketplace])
+  @@index([keyword])
+  @@index([observedAt])
+}
+
+model CategoryObservation {
+  id                      String       @id @default(cuid())
+  organizationId          String
+  marketplace             String
+  categoryName            String
+  observedCatalogCount    Int          @default(0)
+  minPrice                Float?
+  maxPrice                Float?
+  medianPrice             Float?
+  averagePrice            Float?
+  averageOpportunityScore Float?
+  highOpportunityCount    Int          @default(0)
+  freshnessStatus         String       @default("LIVE")
+  observedAt              DateTime     @default(now())
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, marketplace, categoryName])
+  @@index([organizationId])
+  @@index([marketplace])
+  @@index([categoryName])
+  @@index([observedAt])
+}
+
+model AcquisitionSourceHealth {
+  id                 String    @id @default(cuid())
+  marketplace        String
+  sourceType         String    // "PUBLIC_WEB" | "MARKETPLACE_API" | "EXTERNAL_PROVIDER"
+  status             String    @default("LIVE") // "LIVE" | "ACCESS_RESTRICTED" | "RATE_LIMITED" | "UNAVAILABLE"
+  successCount       Int       @default(0)
+  failureCount       Int       @default(0)
+  lastSuccessAt      DateTime?
+  lastFailureAt      DateTime?
+  lastFailureReason  String?
+  avgLatencyMs       Int       @default(0)
+  updatedAt          DateTime  @updatedAt
+
+  @@unique([marketplace, sourceType])
+  @@index([marketplace])
+  @@index([status])
+}
+
 

@@ -5,6 +5,7 @@
  * fine-grained capability flags, rate limiters, structured data parsers, and page fetchers.
  */
 
+export type { DataSourceType } from "../types";
 import type {
   MarketplaceId,
   NormalizedProduct,

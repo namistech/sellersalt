@@ -472,7 +472,7 @@ export function discoverNichesFromProducts(
 }
 
 /**
- * Discovers and aggregates niches from the organization's stored Prospect records.
+ * Discovers and aggregates niches from the organization's stored ProductObservation and Prospect records.
  */
 export async function discoverNichesFromDatabase(
   organizationId: string,
@@ -480,17 +480,58 @@ export async function discoverNichesFromDatabase(
   query?: string,
   limit = 100
 ): Promise<NicheDiscoverySummary> {
-  const where: any = { organizationId };
+  const whereObs: any = { organizationId, marketplace };
   if (query && query.trim()) {
-    where.OR = [
-      { keyword: { contains: query.trim(), mode: "insensitive" } },
+    whereObs.OR = [
       { title: { contains: query.trim(), mode: "insensitive" } },
-      { category: { contains: query.trim(), mode: "insensitive" } },
+      { shopName: { contains: query.trim(), mode: "insensitive" } },
+    ];
+  }
+
+  const observations = await prisma.productObservation.findMany({
+    where: whereObs,
+    take: limit,
+    orderBy: [{ reviewCount: "desc" }, { observedAt: "desc" }],
+  });
+
+  if (observations.length > 0) {
+    const normalizedProducts: NormalizedProduct[] = observations.map((obs) => ({
+      marketplace: (obs.marketplace as MarketplaceId) || marketplace,
+      externalId: obs.externalId,
+      title: obs.title,
+      price: obs.price,
+      currency: obs.currency || "USD",
+      rating: obs.rating,
+      reviewCount: obs.reviewCount,
+      favoritesCount: obs.favoritesCount,
+      salesCount: obs.salesCount,
+      estimatedDemand: obs.estimatedDemand,
+      url: obs.sourceUrl || "",
+      categoryPath: obs.categoryPath || [],
+      shop: {
+        id: obs.shopExternalId || undefined,
+        name: obs.shopName || undefined,
+      },
+      acquisitionMethod: (obs.sourceType as any) || "PUBLIC_WEB",
+      source: "ACTUAL_DATA",
+      capturedAt: obs.observedAt || new Date(),
+      observedAt: obs.observedAt,
+    }));
+
+    return discoverNichesFromProducts(normalizedProducts, marketplace, query);
+  }
+
+  // Fallback to legacy Prospect records if no ProductObservation entries exist yet
+  const whereProspect: any = { organizationId };
+  if (query && query.trim()) {
+    whereProspect.OR = [
+      { keyword: { contains: query.trim(), mode: "insensitive" } },
+      { listingTitle: { contains: query.trim(), mode: "insensitive" } },
     ];
   }
 
   const prospects = await prisma.prospect.findMany({
-    where,
+    where: whereProspect,
     take: limit,
     orderBy: [{ estDailySales: "desc" }, { createdAt: "desc" }],
   });

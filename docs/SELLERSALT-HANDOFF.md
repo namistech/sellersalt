@@ -4,27 +4,27 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 10 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 11 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 10
-(Production-Grade Marketplace-Independent Research Acquisition Hardening):
+condensed version of everything else in this file, current as of Batch 11
+(Production Research Workbench + Persistent Observation Intelligence):
 
 **Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` — canonical, don't rebuild):
-- **Centralized SSRF Guard & Domain Policy** (`compliance.ts`): Rejects loopbacks, IP literals, metadata IPs (`169.254.169.254`), bad protocols/ports, and private seller portals.
-- **Production-Hardened Page Fetcher** (`page-fetcher.ts`): Safe manual redirect validation (`redirect: "manual"`), exponential backoff with randomized jitter on 429/5xx, payload truncation (5MB).
-- **Field-Level Lineage & Merger** (`types.ts`, `merger.ts`): Granular `fieldLineage` and `fieldProvenance` tracking per metric, non-destructive merging of volatile and structural signals.
-- **Research Source Orchestrator** (`orchestrator.ts`): Product research and product detail cascades (`PUBLIC_WEB` $\to$ `MARKETPLACE_API` $\to$ `HISTORICAL_OBSERVATION`), freshness degradation, automatic persistence into PostgreSQL.
-- **Longitudinal Trend Intelligence** (`trends.ts`): Calculates empirical price and review deltas; strictly enforces Zero Fabrication ($n \le 1 \implies \text{null}$).
-- **Empirical Keyword Harvester** (`keywords.ts`): Intent clustering (`MATERIAL_STYLE`, `RECIPIENT_OCCASION`, `PRODUCT_MODIFIER`, `GENERAL`) with strict `searchVolume = null` provenance.
-- **Public Shop & Category Engines** (`shops.ts`, `categories.ts`): Competition scoring (`scoreShopCompetition`) and price percentiles (min, max, median, 10th/90th).
-- **Public Web Adapters** (`amazon`, `ebay`, `walmart`, `etsy`): Semantic HTML and JSON-LD parsers.
+- **First-Class Observation Store in PostgreSQL** (`schema.prisma`): `ResearchRun`, `ProductObservation`, `ProductObservationSnapshot`, `KeywordObservation`, `CategoryObservation`, `AcquisitionSourceHealth`.
+- **Observation Deduplication & Fingerprinting** (`deduplication.ts`): SHA-256 fingerprinting across all volatile/structural fields, preventing redundant snapshot creation.
+- **Product & Query Diff Engine** (`diff-engine.ts`): Calculates empirical price drops, review velocities, and run comparisons (appearing/disappearing/persisting items); strictly preserves `null` for $n \le 1$ observations.
+- **Research Budgets & Safety Bounds** (`research-budgets.ts`): Bounded execution (max 3 pages, max 50 listings, max 15 shops, max 20s timeout, max 5MB payload).
+- **Multi-Tier Research Cache** (`research-cache.ts`): In-memory TTL caching (Product: 6h, Keyword: 12h, Shop: 24h, Category: 7d).
+- **Acquisition Source Health Engine** (`source-health.ts`): Live operational health and rate limit / access restriction tracker.
+- **Unified Research Workbench Orchestrator** (`workbench.ts` & `/api/research/*`): `executeResearchRun` across `PRODUCT`, `KEYWORD`, `SHOP`, `CATEGORY`, `NICHE`, and `RADAR`.
+- **Research Transparency Card** (`ResearchWorkbenchCard.tsx`): UI component rendering signal provenance, source badges, freshness tiers, and diff metrics.
 
 **Current Verified Baseline**:
-- Tests: **919/919 passing across 170 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **935/935 passing across 179 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
-- Prisma: Valid, 29 migrations up to date
-- Next.js: Clean production build (**161/161 routes compiled**)
+- Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
+- Next.js: Clean production build (**166/166 routes compiled**)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,
