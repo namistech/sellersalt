@@ -1030,3 +1030,25 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**173/173 routes compiled**).
+
+## Batch 32: Private Beta Activation, Real Merchant Validation & Product-Market Readiness (2026-08-20)
+
+**Why**: Equip SellerSalt to safely onboard real merchants during closed private beta, measure deterministic activation progression across the 5-step commercial journey, record user-reported decision impact, monitor data quality, and prioritize improvements via the Beta Learning Loop.
+
+**What changed**:
+- **Beta Merchant Milestone Engine (`src/services/beta/beta-merchant.ts`)**:
+  - Implemented `BetaMerchantService` evaluating progression across `ONBOARDED` $\to$ `ACTIVATED` $\to$ `ENGAGED` $\to$ `VALUE_REALIZED` $\to$ `PAID` with conversion telemetry.
+- **In-App Merchant Feedback & Decision Validation (`src/services/beta/beta-feedback.ts` & `/api/beta/feedback`)**:
+  - Created feedback service and API route capturing 1-5 usefulness ratings and 10 commercial decision impact categories (`IDEA_REJECTION`, `DIFFERENTIATION_DISCOVERY`, `PRICE_POSITIONING`, etc.) with zero PII leakage.
+- **Data Quality & Acquisition Diagnostics (`src/services/ops/data-quality.ts`)**:
+  - Implemented empirical data quality telemetry measuring acquisition success rates, failure rates, duration, and marketplace breakdowns without fabricated estimates.
+- **Admin Beta Control Center (`/api/admin/beta`)**:
+  - Created operational endpoint returning aggregated beta funnel conversion metrics, feedback analytics, and data quality telemetry.
+- **Canonical Specifications**:
+  - Created `docs/BETA-LEARNING-LOOP.md`.
+  - Created `docs/BATCH-32-PRIVATE-BETA-AND-MERCHANT-VALIDATION.md`.
+- **Verification Baseline**:
+  - Full test suite: **1169/1169 passing across 334 suites** (`src/tests/batch-32-private-beta-and-validation.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**173/173 routes compiled**).

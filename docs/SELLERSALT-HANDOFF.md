@@ -4,22 +4,23 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 31 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 32 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 31
-(Production Deployment, External Integration Activation & Private Beta Readiness):
+condensed version of everything else in this file, current as of Batch 32
+(Private Beta Activation, Real Merchant Validation & Product-Market Readiness):
 
-**Architecture** (`src/marketplaces/core/` & `src/services/ops/` & `src/lib/security/` — canonical, don't rebuild):
-- **Production Smoke Test Harness** (`production-smoke-test.ts`): End-to-end, non-destructive diagnostic suite validating environment, database, health probes, tenant isolation, error handling, rate limiting, and Data Trust calculations.
+**Architecture** (`src/marketplaces/core/` & `src/services/beta/` & `src/services/ops/` — canonical, don't rebuild):
+- **Beta Merchant Milestone Engine** (`beta-merchant.ts`): Computes deterministic progression across `ONBOARDED` $\to$ `ACTIVATED` $\to$ `ENGAGED` $\to$ `VALUE_REALIZED` $\to$ `PAID` with empirical conversion rates.
+- **In-App Merchant Feedback & Decision Validation** (`beta-feedback.ts`, `/api/beta/feedback`): Captures structured usefulness ratings and 10 commercial decision impact categories with zero PII leakage.
+- **Data Quality & Acquisition Diagnostics** (`data-quality.ts`): Empirical telemetry measuring acquisition success/failure rates, source diversity, and signal coverage.
+- **Admin Beta Control Center** (`/api/admin/beta`): Aggregated operational dashboard for merchant activation, feedback distribution, and data quality telemetry.
+- **Beta Learning Loop Framework** (`BETA-LEARNING-LOOP.md`): Structured 7-step triage and prioritization model ($Impact \times Frequency \times Commercial$).
 - **Private Beta Access Control** (`private-beta.ts`): Configurable invite code allowlist and admission system (`PRIVATE_BETA_MODE=true`, `BETA_INVITE_CODES`).
-- **Production Deployment Foundation** (`.env.example`, `PRODUCTION-DEPLOYMENT.md`): Standalone build guides, PostgreSQL connection pooling specs, and migration procedures.
-- **Marketplace Connection Center** (`/settings/channels`): Customer-facing channel management with explicit capability and policy states for all 7 marketplaces.
-- **Production Environment Configuration Validator** (`environment-validator.ts`, `PRODUCTION-ENVIRONMENT.md`): Strict categorization and startup validation of all boot, billing, email, and marketplace credentials without secret leakage.
-- **Transactional Email Service & Simulation Capture** (`transactional-email.ts`): Unified outbound communication layer with Nodemailer SMTP, AWS SES, and local simulation capture buffers.
+- **Production Smoke Test Harness** (`production-smoke-test.ts`): End-to-end operational diagnostic suite.
 
 **Current Verified Baseline**:
-- Tests: **1165/1165 passing across 330 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1169/1169 passing across 334 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**173/173 static and dynamic routes compiled**)
