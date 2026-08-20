@@ -681,3 +681,40 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**168/168 routes compiled**).
+
+## Batch 19: Proprietary Market Intelligence Graph & Continuous Market Memory Engine (2026-08-20)
+
+**Why**: Transform accumulated multi-marketplace observations into an interconnected proprietary market intelligence graph that gets smarter from every observation it collects, supporting cross-marketplace entity resolution, continuous market memory, "What Changed?" change detection, and multi-timeframe momentum.
+
+**What changed**:
+- **Canonical Market Entity Model (`src/marketplaces/core/graph/entities.ts`)**:
+  - Structured canonical entity models for `PRODUCT`, `SELLER`, `CATEGORY`, `KEYWORD`, `NICHE`, and `MARKETPLACE`.
+  - Deterministic ID resolution (`prod:mp:extId`, `seller:mp:shop`, `cat:mp:path`, `kw:term`, `niche:name`).
+- **Entity Resolution Engine (`src/services/intelligence/entity-resolution-engine.ts`)**:
+  - Deterministic cross-marketplace product disambiguation based on Jaccard title token overlap, price band alignment ($\le 15\%$), and brand match (`EXACT`, `HIGH_CONFIDENCE`, `PROBABLE`, `POSSIBLE`, `UNRESOLVED`).
+- **Market Intelligence Relationship Graph (`src/marketplaces/core/graph/relationships.ts` & `src/services/intelligence/market-graph-engine.ts`)**:
+  - Maintains directed graph connecting Products, Dominant Sellers, Category Taxonomies, and Keywords.
+  - Supports interactive subgraph extraction and neighborhood traversal.
+- **Continuous Market Memory Engine (`src/services/intelligence/continuous-market-memory.ts`)**:
+  - Captures and stores full empirical market snapshots ($P_{10}, P_{25}, P_{50}, P_{75}, P_{90}$, median reviews, seller concentration HHI).
+  - Append-only time-series memory ensuring historical integrity.
+- **Market Change Detection Engine (`src/services/intelligence/market-change-detection.ts`)**:
+  - Evaluates consecutive research runs/snapshots to power the "What Changed?" experience (new products, price movers, review gains, keyword shifts).
+  - Zero-Fabrication Contract: For $n < 2$ snapshots, returns `null` / `INSUFFICIENT_DATA` (never 0%).
+- **Market Momentum 2.0 (`src/services/intelligence/market-momentum-2.ts`)**:
+  - Classifies trajectory into `RISING`, `ACCELERATING`, `STABLE`, `COOLING`, `DECLINING`, or `INSUFFICIENT_DATA` across short-term (<7d), medium-term (7-30d), and long-term (>30d) depths.
+- **Opportunity Persistence Engine (`src/services/intelligence/opportunity-persistence.ts`)**:
+  - Distinguishes transient score spikes from verified `PERSISTENT_OPPORTUNITY` ($\ge 70$ maintained over $\ge 7$ days).
+- **Cross-Marketplace Synthesis & Graph Confidence**:
+  - `src/services/intelligence/cross-marketplace-graph.ts` (cross-marketplace price spread and seller overlap).
+  - `src/services/intelligence/graph-confidence.ts` (deterministic multi-factor confidence scoring).
+- **API Endpoints**:
+  - `/api/intelligence/products/[id]`, `/api/intelligence/products/[id]/history`, `/api/intelligence/market/[marketplace]/history`, `/api/intelligence/changes`, `/api/intelligence/cross-marketplace/[id]`, `/api/intelligence/graph`.
+- **UI Surfaces**:
+  - `/intelligence` page with `MarketIntelligenceGraphView.tsx` and `WhatChangedView.tsx`.
+  - Registered in primary navigation.
+- **Verification Baseline**:
+  - Full test suite: **1060/1060 passing across 254 suites** (`src/tests/batch-19-market-intelligence-graph.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**168/168 routes compiled**).

@@ -24,6 +24,8 @@ import { OpportunityDiscoveryEngine } from "./opportunity-discovery-engine";
 import { ProductValidationEngine } from "./product-validation-engine";
 import { MarketMomentumEngine } from "@/marketplaces/core/acquisition/momentum";
 import { persistPublicProductObservations } from "@/marketplaces/core/acquisition/persistence";
+import { MarketGraphEngine } from "./market-graph-engine";
+import { ContinuousMarketMemoryEngine } from "./continuous-market-memory";
 import type {
   ProductResearchSessionRequest,
   ProductResearchSessionResult,
@@ -451,6 +453,52 @@ export class ProductResearchCommandCenter {
       } catch {
         // Degrade safely
       }
+    }
+
+    // Step 8: Ingest into Market Graph & Continuous Market Memory
+    try {
+      MarketGraphEngine.ingestProducts(allProducts, {
+        researchRunId,
+        organizationId: request.organizationId,
+      });
+
+      const observedPrices = allProducts
+        .map((p) => p.price)
+        .filter((p): p is number => p !== null && p !== undefined);
+
+      const priceDist = ContinuousMarketMemoryEngine.computePriceDistribution(observedPrices);
+
+      ContinuousMarketMemoryEngine.captureSnapshot({
+        snapshotKey: `query:${normalizedQuery}`,
+        marketplace: requestedMarketplaces.length === 1 ? requestedMarketplaces[0] : "all",
+        query: rawQuery,
+        observedProductCount: allProducts.length,
+        observedSellerCount: uniqueSellersCount,
+        priceDistribution: priceDist,
+        reviewDistribution: {
+          medianReviews: observedMedianReviews,
+          p75Reviews: null,
+          maxReviews: null,
+        },
+        ratingDistribution: {
+          averageRating: null,
+          medianRating: null,
+        },
+        sellerConcentrationHHI: sellerConcentrationIndex,
+        topKeywords: keywords.slice(0, 10).map((k) => ({ term: k.term, prevalencePercent: k.listingPrevalencePercent })),
+        topSellers: competition.dominantSellers.map((s) => ({ sellerName: s.name, catalogSharePercent: s.shareOfObservedCatalogPercent })),
+        opportunitySummary: {
+          averageOpportunityScore: overview.overallOpportunityScore,
+          highOpportunityCount: opportunities.filter((o) => (o.score || 0) >= 70).length,
+          strongCandidateCount: validation?.verdict === "STRONG_CANDIDATE" ? 1 : 0,
+        },
+        fieldCompletenessPercent: researchQuality.qualityScore,
+        confidence: overview.overallConfidence,
+        provenance: "ACTUAL_DATA",
+        organizationId: request.organizationId,
+      });
+    } catch {
+      // Non-blocking graph ingestion
     }
 
     return {

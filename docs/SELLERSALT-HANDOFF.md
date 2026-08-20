@@ -18,9 +18,10 @@ condensed version of everything else in this file, current as of Batch 18
 - **Price Positioning Engine** (`price-positioning.ts`): Percentile-based strategic tier classification.
 - **User Unit Economics Calculator** (`unit-economics.ts`): Deterministic margin, profit, break-even, and max allowable CAC with `USER_DERIVED` provenance.
 - **Canonical Opportunity Discovery Engine 2.0** (`opportunity-discovery-engine.ts`): Structured multi-domain opportunity scoring.
+- **Proprietary Market Intelligence Graph & Continuous Memory** (`src/services/intelligence/market-graph-engine.ts`, `continuous-market-memory.ts`, `market-change-detection.ts`): Longitudinal snapshotting, "What Changed?" differential comparison, and cross-marketplace entity resolution.
 
 **Current Verified Baseline**:
-- Tests: **1043/1043 passing across 243 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1060/1060 passing across 254 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
 - Next.js: Clean production build (**168/168 static and dynamic routes compiled**)
