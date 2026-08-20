@@ -963,3 +963,28 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**170/170 routes compiled**).
+
+## Batch 29: Production Operations, Observability, Reliability & Real-World Launch Hardening (2026-08-20)
+
+**Why**: Equip SellerSalt with enterprise-grade operational observability, canonical error taxonomy, end-to-end trace correlation, health probes, application rate limiting, and automated stale run recovery for launch reliability.
+
+**What changed**:
+- **Canonical Error Taxonomy & Safe Serializer (`src/lib/errors/app-error.ts`)**:
+  - Created structured `AppError` class with 18 machine-readable error codes (`AUTHENTICATION_REQUIRED`, `RATE_LIMITED`, `SOURCE_UNAVAILABLE`, `DATABASE_ERROR`, etc.), HTTP status mapping, severity levels, retryability flags, and safe JSON serialization that never leaks stack traces or credentials.
+- **Correlation & Distributed Tracing (`src/lib/observability/correlation.ts`)**:
+  - Built `CorrelationManager` generating high-entropy trace IDs and extracting `x-sellersalt-correlation-id` / `x-request-id` headers across API routes and services.
+- **Structured Production Logger (`src/lib/observability/structured-logger.ts`)**:
+  - Implemented `StructuredLogger` emitting JSON logs with automatic recursion-safe redaction of passwords, tokens, API keys, and card numbers.
+- **Production Health Endpoints (`src/app/api/health/live/` & `src/app/api/health/ready/`)**:
+  - Created `/api/health/live` (process responsiveness and uptime) and `/api/health/ready` (PostgreSQL connectivity check and schema probe).
+- **Application Rate Limiter (`src/lib/security/rate-limiter.ts`)**:
+  - Built sliding-window token bucket rate limiter with standard tiers for public, auth, research, AI, and billing routes.
+- **Operational Diagnostics & Stale Run Recovery (`src/services/admin/operational-diagnostics.ts`) & Endpoint (`/api/admin/diagnostics`)**:
+  - Built diagnostic service and endpoint providing health metrics, memory usage, database latency, recent logs, and automated recovery of research runs stuck in `RUNNING` for $>10$ minutes to `TIMED_OUT`.
+- **Documentation & Specifications**:
+  - Created `docs/BATCH-29-PRODUCTION-OPERATIONS-AND-LAUNCH-HARDENING.md`.
+- **Verification Baseline**:
+  - Full test suite: **1158/1158 passing across 322 suites** (`src/tests/batch-29-production-operations.test.ts`).
+  - TypeScript: 100% clean (`npx tsc --noEmit`).
+  - Prisma: Valid (`prisma validate`).
+  - Next.js: Clean production build (**173/173 routes compiled**).

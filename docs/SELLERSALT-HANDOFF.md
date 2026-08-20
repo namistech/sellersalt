@@ -4,25 +4,26 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 28 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 29 COMPLETE)
 
 Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 28
-(Production Billing, Subscription Lifecycle & Commercial Entitlements):
+condensed version of everything else in this file, current as of Batch 29
+(Production Operations, Observability, Reliability & Real-World Launch Hardening):
 
-**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` & `src/services/billing/` — canonical, don't rebuild):
-- **Authoritative Entitlement Engine** (`entitlement-engine.ts`): Server-side resolver for plan features, marketplace research permissions (Etsy, Amazon, eBay, Walmart, TikTok Shop), discovery depth, and monthly quota counters with exact UTC reset dates.
-- **Immutable Billing Event Ledger & Idempotency** (`billing-event-ledger.ts`): Webhook deduplication and multi-tenant audit trail.
-- **Billing Reconciliation Service** (`billing-reconciliation.ts`, `/api/billing/reconcile`): Diagnostic engine detecting package mismatches and expired subscriptions.
-- **Deterministic Billing Simulation Harness** (`billing-simulator.ts`): End-to-end integration test harness for Free → Starter → Pro → Cancellation lifecycles.
-- **Activation & Dashboard Continuation** (`dashboard-client.tsx`, `PersonalizedContinuationSection.tsx`): Real Postgres activity hub surfacing active research, validations, and workspaces.
-- **Quota & Plan Enforcement** (`quota-enforcement.ts`, `PLAN_DEFINITIONS`): Multi-tier enforcement across Free, Starter, Pro, Agency.
+**Architecture** (`src/marketplaces/core/` & `src/services/intelligence/` & `src/lib/observability/` — canonical, don't rebuild):
+- **Canonical Error Taxonomy & Safe Serializer** (`app-error.ts`): Unified error taxonomy across 18 machine-readable codes with strict PII/stack trace protection.
+- **Correlation & Distributed Tracing** (`correlation.ts`): End-to-end request tracing via `CorrelationManager`.
+- **Structured Production Logger** (`structured-logger.ts`): JSON telemetry with automatic redaction of credentials, tokens, and PII.
+- **Production Health Endpoints** (`/api/health/live`, `/api/health/ready`): Fast process liveness and database readiness probes.
+- **Application Rate Limiter** (`rate-limiter.ts`): Sliding-window token bucket rate limiter for auth, public, research, AI, and billing routes.
+- **Operational Diagnostics & Stale Run Recovery** (`operational-diagnostics.ts`, `/api/admin/diagnostics`): Diagnostic engine with automated stale research run recovery.
+- **Authoritative Entitlement Engine & Billing Ledger** (`entitlement-engine.ts`, `billing-event-ledger.ts`): Plan feature gating and webhook idempotency.
 
 **Current Verified Baseline**:
-- Tests: **1151/1151 passing across 316 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1158/1158 passing across 322 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
-- Next.js: Clean production build (**170/170 static and dynamic routes compiled**)
+- Next.js: Clean production build (**173/173 static and dynamic routes compiled**)
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,

@@ -345,10 +345,10 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1151/1151 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 316 suites)
+Tests:      1158/1158 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 322 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
-Next.js:    clean build      (npx next build — 170/170 static and dynamic routes compiled)
+Next.js:    clean build      (npx next build — 173/173 static and dynamic routes compiled)
 ```
 
 ## 19. Known Technical Debt
