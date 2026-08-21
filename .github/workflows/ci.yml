@@ -42,3 +42,17 @@ jobs:
           NEXTAUTH_URL: "https://staging.sellersalt.com"
           ENCRYPTION_KEY: "Y2ktcGxhY2Vob2xkZXItMzItYnl0ZXMtbm90LXJlYWwtMTIz"
           ADMIN_EMAILS: "ci@example.com"
+
+  secret-scan:
+    name: Secret & Credential Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks Secret Scanner
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

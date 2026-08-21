@@ -14,7 +14,9 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "security:scan": "node scripts/security/check-secrets.js",
+    "security:install-hooks": "bash scripts/security/install-hooks.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1111.0",
