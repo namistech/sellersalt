@@ -1,4 +1,5 @@
 import { createEtsyClient } from "./client";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import type { MarketplaceConnector, ProspectResult, SearchConfigInput, ShopStats, TopListing } from "../types";
 
 // Data-honesty update: earlier versions of this connector assumed Etsy's public API
@@ -100,8 +101,9 @@ export const etsyConnector: MarketplaceConnector = {
         const shopId = listing.shop_id;
         if (!shopId) continue;
 
-        let shop = shopCache.get(shopId);
-        if (shop === undefined) {
+        const allowThirdPartyShop = isThirdPartyShopLookupEnabled();
+        let shop = allowThirdPartyShop ? shopCache.get(shopId) : null;
+        if (allowThirdPartyShop && shop === undefined) {
           try {
             shop = await client.getShop(shopId);
           } catch {
@@ -109,16 +111,15 @@ export const etsyConnector: MarketplaceConnector = {
           }
           shopCache.set(shopId, shop);
         }
-        if (!shop) continue;
 
-        const shopCreatedTimestamp = shop.create_date ?? shop.created_timestamp;
-        const shopAgeMonths = computeShopAgeMonths(shopCreatedTimestamp);
-        const reviewCount = shop.review_count ?? 0;
-        const activeListings = shop.listing_active_count ?? 0;
-        const totalSales = shop.transaction_sold_count ?? 0;
+        const shopCreatedTimestamp = shop?.create_date ?? shop?.created_timestamp;
+        const shopAgeMonths = shop ? computeShopAgeMonths(shopCreatedTimestamp) : 12;
+        const reviewCount = shop?.review_count ?? 0;
+        const activeListings = shop?.listing_active_count ?? 0;
+        const totalSales = shop?.transaction_sold_count ?? 0;
 
-        if (shopAgeMonths < config.minShopAgeMonths || shopAgeMonths > config.maxShopAgeMonths) continue;
-        if (reviewCount < config.minReviewCount) continue;
+        if (shop && (shopAgeMonths < config.minShopAgeMonths || shopAgeMonths > config.maxShopAgeMonths)) continue;
+        if (shop && reviewCount < config.minReviewCount) continue;
 
         const price = priceFromListing(listing);
         if (price === null || price < config.minPrice || price > config.maxPrice) continue;
@@ -143,17 +144,17 @@ export const etsyConnector: MarketplaceConnector = {
         results.push({
           keyword,
           shopExternalId: String(shopId),
-          shopName: shop.shop_name ?? "",
-          shopUrl: shop.url || `https://www.etsy.com/shop/${shop.shop_name}`,
-          shopIconUrl: shop.icon_url_fullxfull ?? undefined,
+          shopName: shop?.shop_name ?? "",
+          shopUrl: shop?.url || (shop?.shop_name ? `https://www.etsy.com/shop/${shop.shop_name}` : `https://www.etsy.com/listing/${listing.listing_id}`),
+          shopIconUrl: shop?.icon_url_fullxfull ?? undefined,
           shopAgeMonths,
           reviewCount,
           activeListings,
           reviewRatio: computeReviewRatio(reviewCount, activeListings),
           reviewVelocity: computeReviewVelocity(reviewCount, shopAgeMonths),
           totalSales,
-          reviewAverage: shop.review_average ?? undefined,
-          numFavorers: shop.num_favorers ?? undefined,
+          reviewAverage: shop?.review_average ?? undefined,
+          numFavorers: shop?.num_favorers ?? undefined,
           avgSellingRatio: computeAvgSellingRatio(totalSales, activeListings),
           estDailySales: computeEstDailySales(totalSales, shopAgeMonths),
           listingExternalId: String(listing.listing_id),
@@ -178,6 +179,7 @@ export const etsyConnector: MarketplaceConnector = {
   },
 
   async getShopStats(credentials, shopExternalId) {
+    if (!isThirdPartyShopLookupEnabled()) return null;
     try {
       const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
       const shop = await client.getShop(shopExternalId);
@@ -189,6 +191,7 @@ export const etsyConnector: MarketplaceConnector = {
   },
 
   async getShopByName(credentials, shopName) {
+    if (!isThirdPartyShopLookupEnabled()) return null;
     try {
       const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
       const data = await client.searchShopsByName(shopName);
@@ -201,6 +204,7 @@ export const etsyConnector: MarketplaceConnector = {
   },
 
   async getShopTopListings(credentials, shopExternalId, limit): Promise<TopListing[]> {
+    if (!isThirdPartyShopLookupEnabled()) return [];
     try {
       const client = createEtsyClient(credentials.apiKey, credentials.sharedSecret);
       const data = await client.getShopListings(shopExternalId, limit);

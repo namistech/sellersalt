@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { fetchCompleteShopIntelligence } from "@/services/shop-intelligence";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ shopExternalId: string }> }) {
@@ -8,6 +9,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ shopExt
   const session = await getServerSession(authOptions);
   const organizationId = (session?.user as any)?.organizationId as string | undefined;
   if (!organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!isThirdPartyShopLookupEnabled()) {
+    return NextResponse.json(
+      { error: "Third-party shop intelligence lookup is currently disabled." },
+      { status: 403 }
+    );
+  }
 
   try {
     const profile = await fetchCompleteShopIntelligence(organizationId, shopExternalId);

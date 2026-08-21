@@ -7,6 +7,7 @@
  */
 
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { createEtsyClient, etsyCache, ETSY_CACHE_TTL } from "@/connectors/etsy";
 import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
 import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
@@ -371,20 +372,22 @@ export async function fetchCategoryIntelligence(
 
   // 6. Enrich parent shops for sample listings (cached 24h)
   const shopProfiles = new Map<number | string, any>();
-  const shopIdsToFetch = Array.from(
-    new Set(rawListings.map((l) => l.shop_id).filter(Boolean))
-  ).slice(0, 10);
+  if (isThirdPartyShopLookupEnabled()) {
+    const shopIdsToFetch = Array.from(
+      new Set(rawListings.map((l) => l.shop_id).filter(Boolean))
+    ).slice(0, 10);
 
-  await Promise.all(
-    shopIdsToFetch.map(async (sid) => {
-      try {
-        const s = await client.getShop(sid);
-        if (s) shopProfiles.set(sid, s);
-      } catch {
-        // ignore transient shop fetch failure
-      }
-    })
-  );
+    await Promise.all(
+      shopIdsToFetch.map(async (sid) => {
+        try {
+          const s = await client.getShop(sid);
+          if (s) shopProfiles.set(sid, s);
+        } catch {
+          // ignore transient shop fetch failure
+        }
+      })
+    );
+  }
 
   // 7. Calculate category market benchmarks
   const benchmarks = computeCategoryBenchmarks(rawListings, shopProfiles);

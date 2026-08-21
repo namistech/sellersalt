@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { startShopWatch, stopShopWatch } from "@/lib/queue";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { checkLimit } from "@/lib/plan-limits";
@@ -13,6 +14,12 @@ async function requireOrg() {
 
 export async function POST(_req: Request, { params }: { params: Promise<{ shopExternalId: string }> }) {
   try {
+    if (!isThirdPartyShopLookupEnabled()) {
+      return NextResponse.json(
+        { error: "Third-party shop tracking is currently disabled." },
+        { status: 403 }
+      );
+    }
     const { shopExternalId } = await params;
     if (!shopExternalId) {
       return NextResponse.json({ error: "Shop ID is required." }, { status: 400 });

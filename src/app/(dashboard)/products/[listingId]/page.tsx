@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
 import { evaluateCanonicalOpportunity } from "@/services/intelligence/canonical-opportunity";
@@ -74,7 +75,7 @@ export default async function ProductDetailPage({
           rawListingImages = imagesResult.value.results;
         }
 
-        if (liveListing?.shop_id) {
+        if (liveListing?.shop_id && isThirdPartyShopLookupEnabled()) {
           try {
             liveShop = await client.getShop(liveListing.shop_id, { organizationId });
           } catch {

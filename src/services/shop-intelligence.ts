@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
 import { computeShopWinningSignals } from "@/services/intelligence/winning-signals";
@@ -236,6 +237,10 @@ export async function fetchCompleteShopIntelligence(
   organizationId: string,
   shopExternalIdOrName: string
 ): Promise<CompleteShopIntelligenceProfile> {
+  if (!isThirdPartyShopLookupEnabled()) {
+    throw new Error("Third-party shop lookup is currently disabled (ENABLE_THIRD_PARTY_SHOP_LOOKUP=false).");
+  }
+
   // 1. Resolve active Etsy credentials
   const active = await getActiveConnectorWithCredentials(organizationId, "ETSY");
   const apiKey = active?.credentials?.apiKey || process.env.ETSY_API_KEY || "";

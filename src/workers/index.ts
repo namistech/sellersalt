@@ -18,6 +18,7 @@ import { sendEmail } from "../lib/send-email";
 import { syncSellerChannel } from "../lib/sync-seller-channel";
 import { sendVerificationEmail } from "../lib/email-verification";
 import { getSnapshotRetentionCutoff } from "../lib/data-retention";
+import { isThirdPartyShopLookupEnabled } from "../lib/feature-flags";
 
 console.log("SellerSalt worker starting, listening on queue:", PROSPECTING_QUEUE_NAME);
 
@@ -152,6 +153,11 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
 
 async function handleShopWatchJob(job: { data: ShopWatchJobData }) {
   const { shopWatchId, organizationId, connectorId, shopExternalId } = job.data;
+
+  if (!isThirdPartyShopLookupEnabled()) {
+    console.warn(`[SHOP_WATCH_WORKER] Third-party shop lookup is disabled by kill switch (ENABLE_THIRD_PARTY_SHOP_LOOKUP=false). Skipping shop ${shopExternalId}`);
+    return;
+  }
 
   try {
     registerAllConnectors();

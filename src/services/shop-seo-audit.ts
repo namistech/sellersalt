@@ -15,6 +15,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient } from "@/connectors/etsy";
 import { parseEtsyShopInput } from "@/lib/etsy-url-parser";
@@ -435,8 +436,8 @@ export async function fetchAndAuditShopSeo(
   const apiKey = active?.credentials?.apiKey || process.env.ETSY_API_KEY || "";
   const sharedSecret = active?.credentials?.sharedSecret || process.env.ETSY_SHARED_SECRET || "";
 
-  if (!apiKey) {
-    // If no connector, gracefully evaluate with parsed name so the user gets an actionable empty/demo audit
+  if (!apiKey || !isThirdPartyShopLookupEnabled()) {
+    // If no connector or third-party lookup is disabled, gracefully evaluate with parsed name so the user gets an actionable empty/demo audit
     return evaluateShopSeoAlgorithmic({
       shopId: "0",
       shopName: shopNameOrId,

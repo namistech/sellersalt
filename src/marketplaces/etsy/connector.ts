@@ -17,6 +17,7 @@
 // faked; see /docs/MARKETPLACE-INTEGRATION-MATRIX.md.
 
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { getConnector as getResearchConnector } from "@/connectors/registry";
 import { getSellerChannelConnector } from "@/seller-channels/registry";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
@@ -231,6 +232,7 @@ export const etsyConnector: MarketplaceConnector = {
   },
 
   async getPublicShopStats(shopExternalId, organizationId) {
+    if (!isThirdPartyShopLookupEnabled()) return null;
     const { credentials } = await resolveResearchCredentials(organizationId);
     let stats = null;
     if (researchConnector.getShopStats) {

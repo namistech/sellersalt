@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { createEtsyClient, etsyCache, ETSY_CACHE_TTL } from "@/connectors/etsy";
 import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
@@ -616,21 +617,23 @@ export async function searchEtsyMarketplaceProducts(
   const totalCount = searchResponse?.count ?? rawListings.length;
 
   // 5. Gather unique shop IDs for batch enrichment (capped to 15 to avoid excessive fanout)
-  const uniqueShopIds = Array.from(
-    new Set(rawListings.map((l: any) => l.shop_id).filter(Boolean))
-  ).slice(0, 15) as number[];
-
   const shopMap = new Map<number, any>();
-  await Promise.all(
-    uniqueShopIds.map(async (shopId) => {
-      try {
-        const shop = await client.getShop(shopId);
-        if (shop) shopMap.set(shopId, shop);
-      } catch {
-        // Shop fetch failure handled gracefully
-      }
-    })
-  );
+  if (isThirdPartyShopLookupEnabled()) {
+    const uniqueShopIds = Array.from(
+      new Set(rawListings.map((l: any) => l.shop_id).filter(Boolean))
+    ).slice(0, 15) as number[];
+
+    await Promise.all(
+      uniqueShopIds.map(async (shopId) => {
+        try {
+          const shop = await client.getShop(shopId);
+          if (shop) shopMap.set(shopId, shop);
+        } catch {
+          // Shop fetch failure handled gracefully
+        }
+      })
+    );
+  }
 
   // 6. Normalize results & calculate Opportunity Radar scores
   const now = Date.now();

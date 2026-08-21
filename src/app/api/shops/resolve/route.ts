@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { startShopWatch } from "@/lib/queue";
 import { getActiveConnectorWithCredentials } from "@/lib/get-active-connector";
 import { checkLimit } from "@/lib/plan-limits";
@@ -9,6 +10,12 @@ import { extractEtsyShopName } from "@/lib/etsy-url-parser";
 
 export async function POST(req: Request) {
   try {
+    if (!isThirdPartyShopLookupEnabled()) {
+      return NextResponse.json(
+        { error: "Third-party shop lookup is currently disabled." },
+        { status: 403 }
+      );
+    }
     const session = await getServerSession(authOptions);
     const organizationId = (session?.user as any)?.organizationId as string | undefined;
     if (!organizationId) {

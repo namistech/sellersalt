@@ -8,6 +8,7 @@ import {
   evaluateTrackingHealth,
 } from "@/services/tracking-engine";
 import { checkLimit } from "@/lib/plan-limits";
+import { isThirdPartyShopLookupEnabled } from "@/lib/feature-flags";
 import { startShopWatch } from "@/lib/queue";
 import type { TrackedShopSummary } from "@/types/tracking";
 
@@ -72,6 +73,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!isThirdPartyShopLookupEnabled()) {
+      return NextResponse.json(
+        { error: "Third-party shop tracking is currently disabled." },
+        { status: 403 }
+      );
+    }
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -46,6 +46,7 @@ export const ENV_SPECS: EnvVariableSpec[] = [
   // MARKETPLACES
   { name: "ETSY_CLIENT_ID", category: "REQUIRED_FOR_MARKETPLACE_INTEGRATIONS", description: "Etsy OpenAPI v3 OAuth Client ID / Keystring", isSecret: false },
   { name: "ETSY_CLIENT_SECRET", category: "REQUIRED_FOR_MARKETPLACE_INTEGRATIONS", description: "Etsy OpenAPI v3 OAuth Client Secret", isSecret: true },
+  { name: "ENABLE_THIRD_PARTY_SHOP_LOOKUP", category: "OPTIONAL", description: "Server-side feature flag / kill switch for third-party shop statistics lookup", isSecret: false, defaultValue: "false" },
 
   // OPTIONAL
   { name: "REDIS_URL", category: "OPTIONAL", description: "Redis connection URI for distributed caching and BullMQ background workers", isSecret: true },
