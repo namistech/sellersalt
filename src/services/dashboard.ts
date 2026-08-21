@@ -16,12 +16,15 @@ export interface DashboardOpportunityItem {
   listingTitle: string;
   listingUrl: string;
   listingImageUrl: string | null;
-  price: number;
+  // Batch 40: null when genuinely unobserved (e.g. Amazon/Walmart via the
+  // orchestrator) — never a fabricated 0. Consumers must render an
+  // "Unavailable" state, never `.toFixed()`/`.toLocaleString()` directly.
+  price: number | null;
   totalSales: number | null;
   avgSellingRatio: number | null;
   estDailySales: number | null;
-  reviewCount: number;
-  shopAgeMonths: number;
+  reviewCount: number | null;
+  shopAgeMonths: number | null;
   status: "PENDING_REVIEW" | "SHORTLISTED" | "CONTACTED" | "REJECTED";
   isFavorite: boolean;
   createdAt: string;

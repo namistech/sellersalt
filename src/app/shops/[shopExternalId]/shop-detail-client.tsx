@@ -307,7 +307,7 @@ export function ShopDetailClient({
     return [...rawListings].sort((a, b) => {
       if (sortBy === "oppScore") return (b.opportunityScore || 0) - (a.opportunityScore || 0);
       if (sortBy === "sales") return (b.estDailySales || 0) - (a.estDailySales || 0);
-      if (sortBy === "price") return b.price - a.price;
+      if (sortBy === "price") return (b.price ?? -Infinity) - (a.price ?? -Infinity);
       return a.title.localeCompare(b.title);
     });
   }, [rawListings, sortBy]);
@@ -1259,7 +1259,7 @@ export function ShopDetailClient({
                         </div>
                       </td>
                       <td className="p-3.5 text-right font-bold text-ink tabular-nums">
-                        ${listing.price.toFixed(2)}
+                        {listing.price !== null ? `$${listing.price.toFixed(2)}` : "Unavailable"}
                       </td>
                       <td className="p-3.5 text-right font-bold text-[#0E8F5D] tabular-nums">
                         ~{listing.estDailySales.toFixed(1)}/day
@@ -1332,7 +1332,7 @@ export function ShopDetailClient({
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-1 border-t border-line-subtle text-ink-secondary">
-                      <span className="font-bold text-ink tabular-nums">${listing.price.toFixed(2)}</span>
+                      <span className="font-bold text-ink tabular-nums">{listing.price !== null ? `$${listing.price.toFixed(2)}` : "Unavailable"}</span>
                       <span className="font-bold text-[#0E8F5D] tabular-nums">~{listing.estDailySales.toFixed(1)}/day</span>
                     </div>
                   </div>

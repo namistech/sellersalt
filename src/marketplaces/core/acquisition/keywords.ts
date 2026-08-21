@@ -19,6 +19,12 @@ export interface PublicKeywordQuery {
   marketplace: MarketplaceId;
   organizationId?: string;
   limit?: number;
+  // Batch 40: previously accepted by the UI/API but silently dropped
+  // before reaching any adapter — the underlying PublicSearchQuery
+  // contract (src/marketplaces/core/acquisition/contracts.ts) has always
+  // supported these bounds, so this is real filtering, not a new capability.
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface CanonicalKeywordObservation {
@@ -218,6 +224,8 @@ export async function harvestPublicMarketplaceKeywords(
       const harvestRes = await adapter.harvestPublicKeywords({
         query: query.query,
         limit: query.limit || 50,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
       });
 
       if (harvestRes.success && harvestRes.items.length > 0) {
@@ -264,6 +272,8 @@ export async function harvestPublicMarketplaceKeywords(
   const searchRes = await adapter.searchPublicProducts({
     query: query.query,
     limit: query.limit || 50,
+    minPrice: query.minPrice,
+    maxPrice: query.maxPrice,
   });
 
   const freshness = evaluateFreshness(searchRes.fetchedAt, "general");

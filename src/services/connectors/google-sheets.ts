@@ -61,9 +61,9 @@ export async function exportProspectsToGoogleSheets(
     const canonical = evaluateCanonicalOpportunity({
       marketplace,
       price: {
-        value: p.price > 0 ? p.price : null,
-        availability: p.price > 0 ? "OBSERVED" : "UNAVAILABLE",
-        provenance: p.price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+        value: p.price,
+        availability: p.price !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.price !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
         source: "etsy_listing_price",
       },
       estDailySales: {
@@ -74,8 +74,8 @@ export async function exportProspectsToGoogleSheets(
       },
       shopReviewCount: {
         value: p.reviewCount,
-        availability: "OBSERVED",
-        provenance: "ACTUAL_DATA",
+        availability: p.reviewCount !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.reviewCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
         source: "etsy_shop_review_count",
       },
       listingAgeDays: {
@@ -98,12 +98,12 @@ export async function exportProspectsToGoogleSheets(
 
     return [
       p.listingTitle,
-      p.price.toFixed(2),
+      p.price !== null ? p.price.toFixed(2) : "Unavailable",
       (p.estDailySales ?? 0).toFixed(1),
       p.totalSales ?? 0,
-      p.reviewCount,
+      p.reviewCount ?? "Unavailable",
       p.shopName,
-      Math.round(p.shopAgeMonths),
+      p.shopAgeMonths !== null ? Math.round(p.shopAgeMonths) : "Unavailable",
       score,
       demandSignal,
       whyItWins,

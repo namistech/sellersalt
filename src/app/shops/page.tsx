@@ -83,10 +83,15 @@ export default async function PublicShopsPage() {
 
   for (const p of prospects) {
     if (!shopMap.has(p.shopExternalId)) {
-      const activeListings = Math.max(1, p.activeListings);
+      const activeListings = Math.max(1, p.activeListings ?? 1);
       const totalSales = p.totalSales ?? 0;
-      const shopAgeMonths = Math.max(1, p.shopAgeMonths);
-      const estDailySales = p.estDailySales ?? totalSales / (shopAgeMonths * 30.44);
+      // Batch 40: floored value used only as an internal denominator for
+      // the derived estDailySales ratio below — the real, possibly-null
+      // p.shopAgeMonths is what's actually stored/displayed (see
+      // shopAgeMonths: p.shopAgeMonths below), so a genuinely unobserved
+      // shop age is never shown as a fabricated "1 mos old".
+      const shopAgeMonthsForMath = Math.max(1, p.shopAgeMonths ?? 1);
+      const estDailySales = p.estDailySales ?? totalSales / (shopAgeMonthsForMath * 30.44);
       const avgSellingRatio = p.avgSellingRatio ?? totalSales / activeListings;
 
       shopMap.set(p.shopExternalId, {
@@ -96,7 +101,7 @@ export default async function PublicShopsPage() {
         shopIconUrl: p.shopIconUrl,
         totalSales,
         activeListings,
-        shopAgeMonths,
+        shopAgeMonths: p.shopAgeMonths,
         estDailySales: Math.round(estDailySales * 10) / 10,
         avgSellingRatio: Math.round(avgSellingRatio * 10) / 10,
         reviewCount: p.reviewCount,

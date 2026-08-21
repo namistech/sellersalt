@@ -16,11 +16,15 @@ export interface ProspectRow {
   shopName: string;
   shopUrl: string;
   shopIconUrl: string | null;
-  shopAgeMonths: number;
-  reviewCount: number;
-  activeListings: number;
-  reviewRatio: number;
-  reviewVelocity: number;
+  // Batch 40: these six are null when genuinely unobserved (e.g. Amazon/
+  // Walmart via the orchestrator) — never a fabricated placeholder
+  // (0/12/1/1.0/0.1). Consumers must render an explicit "Unavailable"
+  // state, never call .toFixed()/.toLocaleString() directly.
+  shopAgeMonths: number | null;
+  reviewCount: number | null;
+  activeListings: number | null;
+  reviewRatio: number | null;
+  reviewVelocity: number | null;
   totalSales: number | null;
   reviewAverage: number | null;
   numFavorers: number | null;
@@ -29,7 +33,7 @@ export interface ProspectRow {
   listingTitle: string;
   listingUrl: string;
   listingImageUrl: string | null;
-  price: number;
+  price: number | null;
   status: ProspectStatus;
   isFavorite: boolean;
   createdAt: string;

@@ -80,10 +80,10 @@ export async function GET(req: Request) {
     .map(([keyword, listings]) => {
       const n = listings.length;
       const priceListings = listings.filter((l) => typeof l.price === "number");
-      const avgPrice = priceListings.length > 0 ? priceListings.reduce((s, l) => s + l.price, 0) / priceListings.length : 0;
+      const avgPrice = priceListings.length > 0 ? priceListings.reduce((s, l) => s + l.price!, 0) / priceListings.length : 0;
 
       const reviewListings = listings.filter((l) => typeof l.reviewCount === "number");
-      const avgReviewCount = reviewListings.length > 0 ? reviewListings.reduce((s, l) => s + l.reviewCount, 0) / reviewListings.length : 0;
+      const avgReviewCount = reviewListings.length > 0 ? reviewListings.reduce((s, l) => s + l.reviewCount!, 0) / reviewListings.length : 0;
 
       const salesListings = listings.filter((l) => typeof l.totalSales === "number");
       const avgTotalSales = salesListings.length > 0 ? salesListings.reduce((s, l) => s + l.totalSales!, 0) / salesListings.length : 0;

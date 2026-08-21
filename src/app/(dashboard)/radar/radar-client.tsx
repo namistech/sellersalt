@@ -162,19 +162,27 @@ export function RadarClient({
         shopUrl: opp.shopUrl,
         shopIconUrl: opp.shopIconUrl,
         shopExternalId: opp.shopExternalId ?? null,
-        createdTimestamp: Math.floor((Date.now() - opp.shopAgeMonths * 30.44 * 24 * 3600 * 1000) / 1000),
-        shopAgeMonths: opp.shopAgeMonths,
+        createdTimestamp: Math.floor((Date.now() - (opp.shopAgeMonths ?? 0) * 30.44 * 24 * 3600 * 1000) / 1000),
+        // Batch 40: opp.reviewCount/shopAgeMonths can now be genuinely
+        // null (Prospect's fabrication fix) — shopMetricsObserved must
+        // reflect that honestly rather than unconditionally claiming
+        // these shop-level stats were observed. NormalizedShopProfile's
+        // reviewCount/shopAgeMonths fields are non-nullable by design
+        // (see types/product-hunting.ts), so a 0 fallback is used only
+        // when shopMetricsObserved is false, matching the existing
+        // pattern the UI already gates rendering on elsewhere.
+        shopAgeMonths: opp.shopAgeMonths ?? 0,
         totalSales: opp.totalSales,
         activeListings: opp.activeListings,
-        reviewCount: opp.reviewCount,
+        reviewCount: opp.reviewCount ?? 0,
         reviewAverage: opp.reviewAverage,
-        shopMetricsObserved: true,
+        shopMetricsObserved: opp.reviewCount !== null && opp.shopAgeMonths !== null,
       },
       signals: {
         estDailySales: opp.estDailySales,
         avgSellingRatio: opp.avgSellingRatio,
         salesVelocityProxy: opp.estDailySales >= 8 ? "HIGH" : opp.estDailySales >= 3 ? "MODERATE" : "EMERGING",
-        reviewConversionRate: opp.totalSales > 0 ? opp.reviewCount / opp.totalSales : 0,
+        reviewConversionRate: opp.totalSales > 0 && opp.reviewCount !== null ? opp.reviewCount / opp.totalSales : 0,
       },
       opportunity: {
         opportunityScore: opp.score,
@@ -348,7 +356,7 @@ export function RadarClient({
             <div className="flex items-center gap-2 mt-0.5 text-xs text-ink-tertiary">
               <span className="font-medium text-ink-secondary">{row.shopName}</span>
               <span>·</span>
-              <span>${row.price.toFixed(2)}</span>
+              <span>{row.price !== null ? `$${row.price.toFixed(2)}` : "Price unavailable"}</span>
               <span>·</span>
               <span>{row.keyword}</span>
             </div>
@@ -761,7 +769,7 @@ export function RadarClient({
                 verdictLabel="High Opportunity Breakout"
                 verdictVariant="success"
                 provenance="SELLERSALT_SCORE"
-                description={`Discovered in ${top.keyword} with an estimated ${top.estDailySales.toFixed(1)} daily transactions (~$${(top.estDailySales * 30.44 * top.price).toFixed(0)}/mo) and lean catalog yield of ${top.avgSellingRatio.toFixed(1)} sales/listing.`}
+                description={`Discovered in ${top.keyword} with an estimated ${top.estDailySales.toFixed(1)} daily transactions (${top.price !== null ? `~$${(top.estDailySales * 30.44 * top.price).toFixed(0)}/mo` : "monthly revenue unavailable — price not observed"}) and lean catalog yield of ${top.avgSellingRatio.toFixed(1)} sales/listing.`}
                 actionLabel={isTopSaved ? "Saved in Planner" : "+ Add to Workspace Planner"}
                 onAction={() => handleQuickAddToPlanner(top)}
                 secondaryAction={
@@ -779,7 +787,7 @@ export function RadarClient({
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
                         <span className="text-[#9EAA9F]">Observed Price:</span>
-                        <span className="font-mono font-bold text-white">${top.price.toFixed(2)}</span>
+                        <span className="font-mono font-bold text-white">{top.price !== null ? `$${top.price.toFixed(2)}` : "Unavailable"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#9EAA9F]">Daily Sales Velocity:</span>
@@ -848,7 +856,7 @@ export function RadarClient({
                             {opp.shopName}
                           </Link>
                           <span>·</span>
-                          <span className="font-semibold text-ink">${opp.price.toFixed(2)}</span>
+                          <span className="font-semibold text-ink">{opp.price !== null ? `$${opp.price.toFixed(2)}` : "Price unavailable"}</span>
                         </div>
                       </div>
                     </div>
@@ -1132,7 +1140,7 @@ export function RadarClient({
                           {opp.shopName}
                         </Link>
                         <span>·</span>
-                        <span className="font-mono font-semibold text-ink">${opp.price.toFixed(2)}</span>
+                        <span className="font-mono font-semibold text-ink">{opp.price !== null ? `$${opp.price.toFixed(2)}` : "Price unavailable"}</span>
                       </div>
                     </div>
                   </div>

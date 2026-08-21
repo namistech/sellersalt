@@ -39,6 +39,7 @@ export async function POST(req: Request) {
       minPrice: body.minPrice,
       maxPrice: body.maxPrice,
       categoryTaxonomyId: body.categoryTaxonomyId,
+      keywords: Array.isArray(body.keywords) ? body.keywords.filter((k) => typeof k === "string") : undefined,
     };
 
     if (rawMarketplace === "all") {

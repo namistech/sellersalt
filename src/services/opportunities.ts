@@ -30,13 +30,14 @@ export interface OpportunityItem {
   listingTitle: string;
   listingUrl: string;
   listingImageUrl: string | null;
-  price: number;
+  // Batch 40: null when genuinely unobserved — never a fabricated 0/$0.00.
+  price: number | null;
   totalSales: number;
   activeListings: number;
   shopAgeMonths: number;
   estDailySales: number;
   avgSellingRatio: number;
-  reviewCount: number;
+  reviewCount: number | null;
   reviewAverage: number | null;
   numFavorers: number | null;
   score: number; // 0–100 composite
@@ -246,8 +247,15 @@ export async function getOpportunityRadarData(
   // Transform raw prospects into scored Opportunities using canonical evaluation
   const opportunities: OpportunityItem[] = rawProspects.map((p: typeof rawProspects[number]) => {
     const totalSales = p.totalSales ?? 0;
-    const activeListings = Math.max(1, p.activeListings);
-    const shopAgeMonths = Math.max(1, p.shopAgeMonths);
+    // Math.max(1, ...) below is a heuristic-internal denominator floor for
+    // the derived SellerSalt score only — Prospect.activeListings/
+    // shopAgeMonths are real, nullable fields (Batch 40); a missing value
+    // safely floors to 1 here without ever being displayed as if it were
+    // an observed "1 listing"/"1 month old" fact (see OpportunityItem's
+    // returned activeListings/shopAgeMonths below, which are these same
+    // heuristic-floored numbers, not the raw nullable Prospect columns).
+    const activeListings = Math.max(1, p.activeListings ?? 1);
+    const shopAgeMonths = Math.max(1, p.shopAgeMonths ?? 1);
     const estDailySales = p.estDailySales ?? (totalSales > 0 ? totalSales / (shopAgeMonths * 30.44) : 0);
     const avgSellingRatio = p.avgSellingRatio ?? (totalSales > 0 ? totalSales / activeListings : 0);
     const reviewCount = p.reviewCount;
@@ -257,9 +265,9 @@ export async function getOpportunityRadarData(
     const canonicalReport = evaluateCanonicalOpportunity({
       marketplace,
       price: {
-        value: p.price > 0 ? p.price : null,
-        availability: p.price > 0 ? "OBSERVED" : "UNAVAILABLE",
-        provenance: p.price > 0 ? "ACTUAL_DATA" : "UNAVAILABLE",
+        value: p.price,
+        availability: p.price !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: p.price !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
         source: "etsy_listing_price",
       },
       estDailySales: {
@@ -270,8 +278,8 @@ export async function getOpportunityRadarData(
       },
       shopReviewCount: {
         value: reviewCount,
-        availability: "OBSERVED",
-        provenance: "ACTUAL_DATA",
+        availability: reviewCount !== null ? "OBSERVED" : "UNAVAILABLE",
+        provenance: reviewCount !== null ? "ACTUAL_DATA" : "UNAVAILABLE",
         source: "etsy_shop_review_count",
       },
       listingAgeDays: {
@@ -305,11 +313,11 @@ export async function getOpportunityRadarData(
     const competitionSignal: OpportunitySignal = {
       score: canonicalReport.signalBreakdown.competition?.score ?? 50,
       label: canonicalReport.signalBreakdown.competition?.name || "Competition",
-      metricValue: canonicalReport.signalBreakdown.competition?.rawMetric || `${activeListings} listings · ${reviewCount} reviews`,
+      metricValue: canonicalReport.signalBreakdown.competition?.rawMetric || `${activeListings} listings · ${reviewCount ?? "unavailable"} reviews`,
     };
 
     const freshnessSignal = calculateFreshnessSignal(discoveredAt);
-    const momentumSignal = calculateMomentumSignal(reviewCount, totalSales, p.numFavorers);
+    const momentumSignal = calculateMomentumSignal(reviewCount ?? 0, totalSales, p.numFavorers);
 
     const classification = classifyOpportunity(
       score,
@@ -432,6 +440,11 @@ export async function getOpportunityRadarData(
       case "sales":
         return (a.totalSales - b.totalSales) * multiplier;
       case "price":
+        // Null (genuinely unobserved) always sorts last regardless of
+        // direction — same policy as sortProductHuntingResults (Batch 38).
+        if (a.price === null && b.price === null) return 0;
+        if (a.price === null) return 1;
+        if (b.price === null) return -1;
         return (a.price - b.price) * multiplier;
       default:
         return (a.score - b.score) * multiplier;

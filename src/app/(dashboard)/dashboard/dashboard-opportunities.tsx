@@ -86,7 +86,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
               const isTopFinding = index === 0;
 
               // Quick opportunity badge detection
-              const isEmerging = item.shopAgeMonths <= 18 && (item.estDailySales ?? 0) >= 3.5;
+              const isEmerging = item.shopAgeMonths !== null && item.shopAgeMonths <= 18 && (item.estDailySales ?? 0) >= 3.5;
               const isHiddenGem = (item.avgSellingRatio ?? 0) >= 15;
 
               return (
@@ -134,7 +134,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                           {item.shopName}
                         </Link>
                         <span>·</span>
-                        <span className="font-semibold text-ink">${item.price.toFixed(2)}</span>
+                        <span className="font-semibold text-ink">{item.price !== null ? `$${item.price.toFixed(2)}` : "Price unavailable"}</span>
                         {item.estDailySales != null && (
                           <>
                             <span>·</span>

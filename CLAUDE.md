@@ -944,6 +944,76 @@ No code was changed; six docs were created/updated. Full detail in
   model — flagged for a dedicated future compliance review, not adopted
   by default because competitors do it).
 
+**Data foundation, historical observations & Keyword Research repair
+(2026-08-21, Batch 40)** — implemented all three of Batch 39's recommended
+next steps above, plus field-level provenance. Full detail in
+`docs/BATCH-40-DATA-FOUNDATION-AND-KEYWORD-RESEARCH.md`.
+- **`Prospect.price` fabrication fixed at the source** (Batch 38's
+  finding): `shopAgeMonths`/`reviewCount`/`activeListings`/`reviewRatio`/
+  `reviewVelocity`/`price` all made nullable (migration
+  `20260821040000_prospect_nullable_and_keyword_category_history`,
+  applied to staging), the two real write sites
+  (`persistPublicProductObservations` in `persistence.ts`, the scheduled-
+  search worker in `src/workers/index.ts`) fixed to write real `null`
+  instead of a fabricated `0`/`12`/`1`, and every downstream consumer
+  fixed via a `tsc --noEmit`-driven sweep (prospect-columns.tsx — the
+  exact table the fabrication was originally spotted in — plus dashboard,
+  radar, shops directory, trends, both CSV export paths, and more). Found
+  and fixed two sibling fabrications while sweeping: a hardcoded `★5.0`
+  fake-rating fallback on the public `/shops` page, and a hardcoded `$15`
+  fake average-price fallback on the Trends keyword table.
+- **`KeywordObservationSnapshot`/`CategoryObservationSnapshot` now
+  exist** (same migration as above), mirroring `ProductObservation`
+  Snapshot's "one row per detected change" pattern exactly — new
+  `computeKeywordObservationFingerprint`/`computeCategoryObservation
+  Fingerprint` in `deduplication.ts`, wired into `persistKeywordObservations`/
+  `persistCategoryObservation` in `persistence.ts`. No trend-calculation
+  logic was built on top yet — deliberately deferred, per explicit
+  instruction, to a future batch once history has genuinely accumulated.
+- **Keyword Research pipeline repaired**: the live `/keyword-research` UI
+  → `POST /api/keywords/search` → `fetchMarketplaceKeywordResearch` path
+  had never once called `persistKeywordObservations` (only the separate
+  admin workbench did) — now wired in, non-blocking. Fixed two hardcoded
+  fabrications in the non-Etsy branch: `avgFavorers: 0` → `null` (Amazon/
+  Walmart have no "favorites" concept), `competitionLevel/Score:
+  "MODERATE"/50` → a real aggregate of the already-computed per-keyword
+  scores. Fixed a real "accepted but silently dropped" filter bug:
+  `PublicKeywordQuery` gained `minPrice`/`maxPrice`, threaded through to
+  both adapter calls in `harvestPublicMarketplaceKeywords` (previously
+  never reached the adapter despite the underlying `PublicSearchQuery`
+  contract already supporting them). Built real multi-keyword OR-fanout
+  (bounded to 5, deduped, merge-by-term with first-seen-wins provenance)
+  by exporting and reusing Product Research's own `resolveSearchKeywords`
+  from `orchestrator.ts` rather than reimplementing it. UI default
+  marketplace changed `"etsy"` → `"amazon"` (matching Product Research's
+  Batch 38 default and reasoning); every hardcoded `ACTUAL_ETSY_DATA`
+  badge/"Etsy" copy in `keyword-research/page.tsx` made marketplace-aware
+  (the same defect class Batch 36 fixed for Product Research, never
+  previously applied here); comma-separated multi-keyword input box added.
+- **Minimal field-level provenance (P1 #4)**: `KeywordSearchSummary`
+  gained an optional `fieldProvenance` object (`avgPrice`/`avgFavorers`,
+  each `{ value, provenance, source, observedAt }`) — reuses the exact
+  shape of the pre-existing `FieldProvenanceRecord`/`ProductFieldLineage`
+  architecture in `src/marketplaces/core/types.ts` (built in an earlier
+  batch for Product Research, populated by `merger.ts`'s multi-source
+  reconciliation) rather than inventing a second shape. Purely additive.
+- **10 new deterministic tests**
+  (`src/tests/batch-40-data-foundation-and-keyword-research.test.ts`):
+  a fixture Amazon adapter for the Keyword Research repair (no live
+  network) plus real staging-database tests for snapshot-on-change and
+  organization isolation. Full suite: **1251/1251 passing** (was
+  1241/1241 baseline). `tsc --noEmit`/`prisma validate`/`prisma migrate
+  status`/`next build` all clean.
+- **Deliberately deferred, not silently skipped**: `topListings` stays
+  empty for non-Etsy Keyword Research (needs deeper plumbing of the
+  underlying product sample, out of scope this pass); Category Hunting's
+  own equivalent repair was not audited (Keyword Research specifically
+  was this batch's named objective); the merchant workflow
+  (KEYWORD→PRODUCT RESEARCH→VALIDATE→PLAN) was **not re-verified via a
+  live authenticated browser session** this batch — no working dashboard
+  credentials were available in this session, the same caveat Batch 37
+  flagged. See the batch doc for the precise, split launch classification.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -1007,13 +1077,11 @@ No code was changed; six docs were created/updated. Full detail in
   either, but for a different reason: shop age itself is `UNAVAILABLE`
   from every legitimate source this app acquires from — nothing real to
   filter on.
-- **Legacy `Prospect.price` fabricates `$0.00` for unobserved Amazon/
-  Walmart prices** — found live on the Dashboard's "Top Opportunity
-  Discoveries" widget during Batch 38's browser verification. The
-  `Prospect.price` column is non-nullable, forcing
-  `persistence.ts`'s backward-compatible sync path to coerce `null → 0`.
-  Not fixed — needs a dedicated, carefully-scoped schema change (make the
-  column nullable, audit every other read site), not a quick patch.
+- ~~Legacy `Prospect.price` fabricates `$0.00` for unobserved Amazon/
+  Walmart prices~~ — **fixed in Batch 40** (2026-08-21): the column (plus
+  `reviewCount`/`activeListings`/`shopAgeMonths`/`reviewRatio`/
+  `reviewVelocity`) is now nullable, both write sites and every
+  downstream consumer fixed. See Batch 40's entry above.
 - **Amazon price/rating/per-card-category via `PUBLIC_WEB`** — confirmed
   (2026-08-21, Batch 37) real and correctly parsed whenever Amazon's
   response contains them, but Amazon currently withholds them from

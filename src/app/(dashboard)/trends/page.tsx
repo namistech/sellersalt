@@ -29,7 +29,9 @@ interface KeywordIntelligenceRow {
   difficultyScore: number;
   competitionSignal: "LOW" | "MODERATE" | "HIGH";
   topShopName?: string;
-  topPrice: number;
+  // Batch 40: null when no prospect in this keyword bucket has an
+  // observed price — never a fabricated placeholder average.
+  topPrice: number | null;
 }
 
 export default function TrendsPage() {
@@ -71,17 +73,21 @@ export default function TrendsPage() {
       };
       current.count += 1;
       current.totalDaily += p.estDailySales ?? 0;
-      current.prices.push(p.price);
+      // Batch 40: only real observed prices go into the sample —
+      // p.price is null whenever the source marketplace didn't expose it.
+      if (p.price !== null) current.prices.push(p.price);
       if (p.shopName) current.shops.add(p.shopName);
       map.set(kw, current);
     }
 
     return Array.from(map.entries()).map(([kw, data]) => {
       const words = kw.split(/\s+/).filter(Boolean).length;
+      // Batch 40: null (never a fabricated $15 placeholder) when no
+      // prospect in this keyword bucket has an observed price.
       const avgPrice =
         data.prices.length > 0
           ? data.prices.reduce((a, b) => a + b, 0) / data.prices.length
-          : 15;
+          : null;
       const avgDaily = data.totalDaily / Math.max(1, data.count);
 
       // Deterministic difficulty score (0-100) based on shop concentration & listing age
@@ -99,7 +105,7 @@ export default function TrendsPage() {
         estDailyVolume: Math.round(avgDaily * 10) / 10,
         difficultyScore: difficulty,
         competitionSignal,
-        topPrice: Math.round(avgPrice * 100) / 100,
+        topPrice: avgPrice !== null ? Math.round(avgPrice * 100) / 100 : null,
       };
     });
   }, [prospects]);
@@ -159,7 +165,7 @@ export default function TrendsPage() {
           k.estDailyVolume,
           k.difficultyScore,
           k.competitionSignal,
-          k.topPrice.toFixed(2),
+          k.topPrice !== null ? k.topPrice.toFixed(2) : "Unavailable",
           k.sampleListingCount,
         ].join(",")
       )
@@ -329,7 +335,9 @@ export default function TrendsPage() {
                           {k.competitionSignal}
                         </Badge>
                       </td>
-                      <td className="p-3 font-bold text-ink">${k.topPrice.toFixed(2)}</td>
+                      <td className="p-3 font-bold text-ink">
+                        {k.topPrice !== null ? `$${k.topPrice.toFixed(2)}` : "Unavailable"}
+                      </td>
                       <td className="p-3 text-right font-sans">
                         <Link href={`/prospects?search=${encodeURIComponent(k.keyword)}`}>
                           <Button variant="secondary" size="compact" className="text-xs">

@@ -12,6 +12,8 @@ import { checkMarketplaceCapability } from "@/marketplaces/core/availability";
 import type { CapabilityUnavailable } from "@/marketplaces/core/availability";
 import type { MarketplaceId } from "@/marketplaces/core/types";
 import { fanOutMarketplaceRequest, type MarketplaceFanOutResult } from "@/marketplaces/core/research-pipeline";
+import { resolveSearchKeywords } from "@/marketplaces/core/acquisition/orchestrator";
+import { persistKeywordObservations } from "@/marketplaces/core/acquisition/persistence";
 import type {
   KeywordSearchRequest,
   KeywordSearchResponse,
@@ -239,14 +241,52 @@ export function harvestTagsAndNgrams(
 // become marketplace-aware yet, so their call sites are untouched.
 // --------------------------------------------------------------------------
 
-export async function fetchMarketplaceKeywordResearch(
+/**
+ * Batch 40: persists harvested keywords into KeywordObservation (+ a
+ * KeywordObservationSnapshot on genuine change) — the live Keyword Research
+ * UI/API path previously never persisted anything (persistKeywordObservations
+ * was only ever called from the separate admin/batch workbench). Non-blocking:
+ * a persistence failure must never fail the user-facing search response.
+ */
+async function persistHarvestedKeywordsNonBlocking(
+  harvestedKeywords: any[],
+  organizationId: string,
+  marketplace: MarketplaceId
+): Promise<void> {
+  if (!harvestedKeywords || harvestedKeywords.length === 0) return;
+  try {
+    await persistKeywordObservations(
+      harvestedKeywords.map((k) => ({
+        keyword: k.keyword || k.term,
+        occurrenceCount: k.frequency,
+        listingFrequencyPercent: k.percentage,
+        observedAveragePrice: null,
+        demandProxyScore: k.estimatedDemandSignal ?? 50,
+        competitionProxy: k.competitionLevel === "HIGH" || k.competitionLevel === "VERY_HIGH" ? "HIGH" : k.competitionLevel === "LOW" || k.competitionLevel === "VERY_LOW" ? "LOW" : "MODERATE",
+        intentCategory: k.intentClassification,
+      })),
+      { organizationId, marketplace }
+    );
+  } catch {
+    // Non-blocking — a persistence failure must never break a real-time search response.
+  }
+}
+
+/**
+ * Single-keyword marketplace-aware keyword research — the pre-Batch-40
+ * behavior for one query, factored out so fetchMarketplaceKeywordResearch
+ * can fan it out across multiple seed keywords (Batch 40) without a second
+ * implementation.
+ */
+async function fetchSingleMarketplaceKeywordResearch(
   marketplace: MarketplaceId,
   organizationId: string,
   request: KeywordSearchRequest
 ): Promise<KeywordSearchResponse | CapabilityUnavailable> {
   if (marketplace === "etsy") {
     try {
-      return await fetchStandaloneKeywordResearch(organizationId, request);
+      const res = await fetchStandaloneKeywordResearch(organizationId, request);
+      return { ...res, marketplace: "etsy" };
     } catch {
       // Fall through to public harvester
     }
@@ -259,6 +299,8 @@ export async function fetchMarketplaceKeywordResearch(
       marketplace,
       organizationId,
       limit: request.limit || 50,
+      minPrice: request.minPrice,
+      maxPrice: request.maxPrice,
     });
 
     if (harvestRes.provenance === "UNAVAILABLE" && harvestRes.topKeywords.length === 0) {
@@ -288,8 +330,8 @@ export async function fetchMarketplaceKeywordResearch(
         percentage: k.listingFrequencyPercent,
         relevanceScore: Math.min(100, k.occurrenceCount * 10),
         estimatedDemandSignal: k.demandProxyScore,
-        competitionLevel: (k.competitionProxy === "HIGH" ? "HIGH" : k.competitionProxy === "MODERATE" ? "MODERATE" : "LOW") as any,
-        competitionScore: k.competitionProxy === "HIGH" ? 85 : k.competitionProxy === "MODERATE" ? 55 : 25,
+        competitionLevel: (k.competitionProxy === "HIGH" ? "HIGH" : k.competitionProxy === "MODERATE" ? "MODERATE" : k.competitionProxy === "LOW" ? "LOW" : "MODERATE") as any,
+        competitionScore: k.competitionProxy === "HIGH" ? 85 : k.competitionProxy === "MODERATE" ? 55 : k.competitionProxy === "LOW" ? 25 : 50,
         searchVolume: null,
         tailClassification: tailClass,
         intentClassification: classifyIntent(k.keyword),
@@ -300,14 +342,25 @@ export async function fetchMarketplaceKeywordResearch(
     const avgPrice = harvestRes.averageObservedPrice;
     const demandScore = harvestRes.demandProxyScore;
 
+    // Batch 40: real aggregate from the per-term competition scores already
+    // computed above, never a hardcoded "MODERATE"/50 constant. Guaranteed
+    // non-empty here since the empty-topKeywords case already returned above.
+    const compScores = harvestedKeywords.map((k) => k.competitionScore).filter((n) => typeof n === "number");
+    const aggCompScore = Math.round(compScores.reduce((a, b) => a + b, 0) / compScores.length);
+    const aggCompLevel: KeywordCompetitionRating =
+      aggCompScore >= 75 ? "VERY_HIGH" : aggCompScore >= 55 ? "HIGH" : aggCompScore >= 35 ? "MODERATE" : aggCompScore >= 18 ? "LOW" : "VERY_LOW";
+
     const summary: any = {
       query: request.query,
       totalEtsySupply: harvestRes.totalListingsObserved,
       sampledListingCount: harvestRes.totalListingsObserved,
       avgPrice,
-      avgFavorers: 0,
-      competitionLevel: "MODERATE",
-      competitionScore: 50,
+      // Batch 40: Amazon/Walmart's observable public markup has no
+      // "favorites" concept — null (never a fabricated 0), matches the
+      // same policy applied to Prospect.reviewCount/shopAgeMonths.
+      avgFavorers: null,
+      competitionLevel: aggCompLevel,
+      competitionScore: aggCompScore,
       analyzedListingCount: harvestRes.totalListingsObserved,
       uniqueKeywordCount: harvestedKeywords.length,
       totalSupply: harvestRes.totalListingsObserved,
@@ -316,12 +369,19 @@ export async function fetchMarketplaceKeywordResearch(
       averagePrice: avgPrice,
       priceRange: avgPrice ? { min: avgPrice * 0.5, max: avgPrice * 1.8, median: avgPrice } : null,
       dominantIntent: "PRODUCT_TYPE",
-      competitionRating: "MODERATE",
+      competitionRating: aggCompLevel,
       isHighOpportunity: (demandScore ?? 0) >= 70,
+      fieldProvenance: {
+        avgPrice: { value: avgPrice, provenance: "ACTUAL_DATA", source: "PUBLIC_WEB", observedAt: new Date().toISOString() },
+        avgFavorers: { value: null, provenance: "UNAVAILABLE", source: "PUBLIC_WEB", observedAt: new Date().toISOString() },
+      },
     };
+
+    await persistHarvestedKeywordsNonBlocking(harvestedKeywords, organizationId, marketplace);
 
     return {
       query: request.query,
+      marketplace,
       summary,
       keywords: harvestedKeywords,
       harvestedKeywords,
@@ -357,6 +417,104 @@ export async function fetchMarketplaceKeywordResearch(
   }
 }
 
+function isCapabilityUnavailableResponse(
+  res: KeywordSearchResponse | CapabilityUnavailable
+): res is CapabilityUnavailable {
+  return (res as CapabilityUnavailable).available === false;
+}
+
+/**
+ * Marketplace-aware keyword research entry point. Batch 40: now supports a
+ * real multi-keyword OR-fanout (bounded to MAX_FANOUT_KEYWORDS, deduped,
+ * reusing the exact same resolveSearchKeywords logic Product Research uses)
+ * — a single `query` (the overwhelmingly common case, and every pre-Batch-40
+ * caller) takes exactly the same single-request path it always did.
+ */
+export async function fetchMarketplaceKeywordResearch(
+  marketplace: MarketplaceId,
+  organizationId: string,
+  request: KeywordSearchRequest
+): Promise<KeywordSearchResponse | CapabilityUnavailable> {
+  const seedKeywords = resolveSearchKeywords(request);
+
+  if (seedKeywords.length <= 1) {
+    return fetchSingleMarketplaceKeywordResearch(marketplace, organizationId, {
+      ...request,
+      query: seedKeywords[0] || request.query,
+    });
+  }
+
+  const perSeedResults = await Promise.all(
+    seedKeywords.map((kw) =>
+      fetchSingleMarketplaceKeywordResearch(marketplace, organizationId, { ...request, query: kw })
+    )
+  );
+
+  const succeeded = perSeedResults.filter(
+    (r): r is KeywordSearchResponse => !isCapabilityUnavailableResponse(r)
+  );
+
+  if (succeeded.length === 0) {
+    // Every seed failed the same way (capability-level) — surface the first
+    // failure honestly rather than fabricating a merged "success".
+    return perSeedResults[0];
+  }
+
+  // Merge by keyword term — first-seen seed wins as provenance (same
+  // "first keyword that produced a given item wins" rule Batch 38 used for
+  // Product Research's multi-keyword product dedup).
+  const seenTerms = new Set<string>();
+  const mergedKeywords: any[] = [];
+  const seenListingIds = new Set<string>();
+  const mergedListings: ObservedListingEvidence[] = [];
+  let totalSupply = 0;
+  let priceWeightedSum = 0;
+  let priceSampleCount = 0;
+
+  for (const res of succeeded) {
+    totalSupply += res.summary.totalEtsySupply || 0;
+    if (typeof res.summary.avgPrice === "number" && res.summary.sampledListingCount > 0) {
+      priceWeightedSum += res.summary.avgPrice * res.summary.sampledListingCount;
+      priceSampleCount += res.summary.sampledListingCount;
+    }
+    for (const k of (res as any).keywords || []) {
+      const key = (k.term || k.keyword || "").toLowerCase();
+      if (!key || seenTerms.has(key)) continue;
+      seenTerms.add(key);
+      mergedKeywords.push(k);
+    }
+    for (const l of res.topListings || []) {
+      if (seenListingIds.has(l.listingId)) continue;
+      seenListingIds.add(l.listingId);
+      mergedListings.push(l);
+    }
+  }
+
+  mergedKeywords.sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
+
+  const mergedAvgPrice = priceSampleCount > 0 ? Math.round((priceWeightedSum / priceSampleCount) * 100) / 100 : succeeded[0].summary.avgPrice;
+
+  const mergedSummary: any = {
+    ...succeeded[0].summary,
+    query: seedKeywords.join(", "),
+    totalEtsySupply: totalSupply,
+    sampledListingCount: succeeded.reduce((acc, r) => acc + (r.summary.sampledListingCount || 0), 0),
+    avgPrice: mergedAvgPrice,
+    averagePrice: mergedAvgPrice,
+  };
+
+  return {
+    query: seedKeywords.join(", "),
+    marketplace,
+    matchedKeywords: seedKeywords,
+    summary: mergedSummary,
+    keywords: mergedKeywords,
+    harvestedKeywords: mergedKeywords,
+    topListings: mergedListings.slice(0, 12),
+    capturedAt: new Date().toISOString(),
+  } as any;
+}
+
 /** "All Marketplaces" fan-out — reuses the same generic helper the product
  * research pipeline established (src/marketplaces/core/research-pipeline.ts's
  * `fanOutMarketplaceRequest`) rather than reimplementing per-marketplace
@@ -387,6 +545,8 @@ export async function fetchStandaloneKeywordResearch(
   let listings: any[] = [];
   let totalEtsySupply = 0;
 
+  let usedOfficialApi = false;
+
   if (apiKey) {
     try {
       const client = createEtsyClient(apiKey, sharedSecret);
@@ -411,6 +571,7 @@ export async function fetchStandaloneKeywordResearch(
       const rawSearch = await client.searchListings(searchParams);
       listings = rawSearch?.results ?? [];
       totalEtsySupply = rawSearch?.count ?? listings.length;
+      usedOfficialApi = listings.length > 0;
     } catch {
       // Fall through to public web acquisition
     }
@@ -498,6 +659,10 @@ export async function fetchStandaloneKeywordResearch(
     avgFavorers,
     competitionLevel: compLevel,
     competitionScore: compScore,
+    fieldProvenance: {
+      avgPrice: { value: avgPrice, provenance: "ACTUAL_DATA", source: usedOfficialApi ? "MARKETPLACE_API" : "PUBLIC_WEB", observedAt: new Date().toISOString() },
+      avgFavorers: { value: avgFavorers, provenance: "ACTUAL_DATA", source: usedOfficialApi ? "MARKETPLACE_API" : "PUBLIC_WEB", observedAt: new Date().toISOString() },
+    },
   };
 
   // Harvest all tags & title n-grams

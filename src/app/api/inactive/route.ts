@@ -21,7 +21,7 @@ export async function GET() {
     shopIconUrl: string | null;
     lastSeenAt: string;
     lastKnownTotalSales: number | null;
-    lastKnownReviewCount: number;
+    lastKnownReviewCount: number | null;
   }> = [];
 
   for (const config of searchConfigs) {

@@ -147,7 +147,7 @@ export interface OrchestratedProductResult {
 /** Multi-keyword search fans out at most this many keywords, one public-web
  * request each, to keep acquisition bounded and rate-limit-respectful — see
  * docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics. */
-const MAX_FANOUT_KEYWORDS = 5;
+export const MAX_FANOUT_KEYWORDS = 5;
 
 /** Multi-keyword request field, threaded alongside the existing single
  * `query`. Semantics (documented, not silently changed): logical OR — each
@@ -162,8 +162,11 @@ export interface MultiKeywordSearchQuery extends PublicSearchQuery {
 
 /** Resolves the ordered, deduplicated, bounded list of keywords a request
  * should search — `request.keywords` when it has real entries, else the
- * single `request.query`. Never silently drops the primary `query`. */
-function resolveSearchKeywords(request: MultiKeywordSearchQuery): string[] {
+ * single `request.query`. Never silently drops the primary `query`.
+ * Exported (Batch 40) so Keyword Research's own multi-keyword fanout
+ * (src/services/keyword-research.ts) reuses this exact bounding/dedup
+ * logic instead of a second implementation. */
+export function resolveSearchKeywords(request: { query?: string; keywords?: string[] }): string[] {
   const fromArray = (request.keywords || [])
     .map((k) => (k || "").trim())
     .filter((k) => k.length > 0);

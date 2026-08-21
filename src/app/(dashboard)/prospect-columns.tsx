@@ -81,21 +81,21 @@ export function buildProspectColumns({
       header: "Shop Age",
       sortable: true,
       align: "right",
-      render: (p) => <DataText size="data-sm">{Math.round(p.shopAgeMonths)}mo</DataText>,
+      render: (p) => <DataText size="data-sm">{p.shopAgeMonths != null ? `${Math.round(p.shopAgeMonths)}mo` : "—"}</DataText>,
     },
     {
       key: "reviewCount",
       header: "Reviews",
       sortable: true,
       align: "right",
-      render: (p) => <DataText size="data-sm">{p.reviewCount.toLocaleString()}</DataText>,
+      render: (p) => <DataText size="data-sm">{p.reviewCount != null ? p.reviewCount.toLocaleString() : "—"}</DataText>,
     },
     {
       key: "activeListings",
       header: "Listings",
       sortable: true,
       align: "right",
-      render: (p) => <DataText size="data-sm">{p.activeListings}</DataText>,
+      render: (p) => <DataText size="data-sm">{p.activeListings ?? "—"}</DataText>,
     },
     {
       key: "totalSales",
@@ -137,7 +137,7 @@ export function buildProspectColumns({
       align: "right",
       render: (p) => (
         <DataText size="data-sm" className="font-mono">
-          ${p.price.toFixed(2)}
+          {p.price != null ? `$${p.price.toFixed(2)}` : "Unavailable"}
         </DataText>
       ),
     },

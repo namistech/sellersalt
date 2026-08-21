@@ -22,15 +22,17 @@ export interface PublicShopItem {
   shopIconUrl: string | null;
   totalSales: number;
   activeListings: number;
-  shopAgeMonths: number;
+  // Batch 40: null when genuinely unobserved — never a fabricated default.
+  shopAgeMonths: number | null;
   estDailySales: number;
   avgSellingRatio: number;
-  reviewCount: number;
+  // Batch 40: null when genuinely unobserved — never a fabricated 0.
+  reviewCount: number | null;
   reviewAverage: number | null;
   keywords: string[];
   topListing: {
     title: string;
-    price: number;
+    price: number | null;
     imageUrl: string | null;
   } | null;
   discoveredAt: string;
@@ -81,7 +83,9 @@ export function ShopsDirectoryClient({
         if (velocityFilter === "HIGH") {
           if (shop.estDailySales < 5) return false;
         } else if (velocityFilter === "EMERGING") {
-          if (shop.shopAgeMonths > 18 || shop.estDailySales < 2) return false;
+          // A genuinely unobserved shop age can't be judged "emerging" —
+          // exclude it from this filter rather than assuming young or old.
+          if (shop.shopAgeMonths === null || shop.shopAgeMonths > 18 || shop.estDailySales < 2) return false;
         } else if (velocityFilter === "HIGH_YIELD") {
           if (shop.avgSellingRatio < 10) return false;
         }
@@ -97,9 +101,9 @@ export function ShopsDirectoryClient({
           case "yield":
             return b.avgSellingRatio - a.avgSellingRatio;
           case "reviews":
-            return b.reviewCount - a.reviewCount;
+            return (b.reviewCount ?? -Infinity) - (a.reviewCount ?? -Infinity);
           case "youngest":
-            return a.shopAgeMonths - b.shopAgeMonths;
+            return (a.shopAgeMonths ?? Infinity) - (b.shopAgeMonths ?? Infinity);
           default:
             return b.estDailySales - a.estDailySales;
         }
@@ -285,10 +289,10 @@ export function ShopsDirectoryClient({
                           {shop.shopName}
                         </Link>
                         <div className="text-xs text-[#7C847E] flex items-center gap-1.5 mt-0.5">
-                          <span>{Math.round(shop.shopAgeMonths)} mos old</span>
+                          <span>{shop.shopAgeMonths !== null ? `${Math.round(shop.shopAgeMonths)} mos old` : "Shop age unavailable"}</span>
                           <span>·</span>
                           <span className="flex items-center text-amber-600">
-                            ★ {shop.reviewAverage?.toFixed(1) ?? "5.0"} ({shop.reviewCount})
+                            {shop.reviewAverage !== null ? `★ ${shop.reviewAverage.toFixed(1)}` : "Rating unavailable"} ({shop.reviewCount ?? "—"})
                           </span>
                         </div>
                       </div>
@@ -362,7 +366,7 @@ export function ShopsDirectoryClient({
                           {shop.topListing.title}
                         </div>
                         <div className="text-[10px] text-[#7C847E]">
-                          Listing price: ${shop.topListing.price.toFixed(2)}
+                          Listing price: {shop.topListing.price !== null ? `$${shop.topListing.price.toFixed(2)}` : "Unavailable"}
                         </div>
                       </div>
                     </div>

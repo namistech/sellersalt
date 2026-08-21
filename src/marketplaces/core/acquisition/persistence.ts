@@ -13,7 +13,12 @@
 import { prisma } from "@/lib/db";
 import type { NormalizedProduct, MarketplaceId } from "../types";
 import type { ConnectorType } from "@prisma/client";
-import { computeProductObservationFingerprint, evaluateObservationChange } from "./deduplication";
+import {
+  computeProductObservationFingerprint,
+  evaluateObservationChange,
+  computeKeywordObservationFingerprint,
+  computeCategoryObservationFingerprint,
+} from "./deduplication";
 import type { CanonicalKeywordObservation } from "./keywords";
 import type { PublicCategoryIntelligenceResult } from "./categories";
 
@@ -254,6 +259,11 @@ export async function persistPublicProductObservations(
           }
 
           if (configId) {
+            // Batch 40: every field below used to default to a fabricated
+            // placeholder (0/12/1/1.0/0.1) whenever the source marketplace
+            // genuinely didn't expose it (real, live "$0.00"/"12mo" found
+            // in Batch 38's browser verification). All six are now
+            // nullable — write the real value or null, never a guess.
             await prisma.prospect.create({
               data: {
                 organizationId: orgId,
@@ -264,18 +274,18 @@ export async function persistPublicProductObservations(
                 listingExternalId: p.externalId,
                 shopName: p.shop?.name || "Marketplace Merchant",
                 shopUrl: p.shop?.url || p.url || "",
-                shopAgeMonths: p.shop?.ageMonths ?? 12,
-                reviewCount: p.reviewCount ?? 0,
-                activeListings: p.shop?.activeListings ?? 1,
-                reviewRatio: 1.0,
-                reviewVelocity: 0.1,
+                shopAgeMonths: p.shop?.ageMonths ?? null,
+                reviewCount: p.reviewCount ?? null,
+                activeListings: p.shop?.activeListings ?? null,
+                reviewRatio: p.shop?.reviewRatio ?? null,
+                reviewVelocity: p.shop?.reviewVelocity ?? null,
                 totalSales: p.salesCount ?? null,
                 reviewAverage: p.rating ?? null,
                 numFavorers: p.favoritesCount ?? null,
                 listingTitle: p.title || "Untitled Product",
                 listingUrl: p.url || "",
                 listingImageUrl: p.imageUrl ?? null,
-                price: p.price !== null && p.price !== undefined ? p.price : 0,
+                price: p.price ?? null,
               },
             });
           }
@@ -293,21 +303,38 @@ export async function persistPublicProductObservations(
   }
 }
 
+/** Batch 40: only the fields persistKeywordObservations actually reads —
+ * looser than the full CanonicalKeywordObservation contract so callers
+ * (e.g. keyword-research.ts's live search path) don't need to fabricate
+ * unused fields (freshness, searchVolume, etc.) just to satisfy the type. */
+export interface PersistableKeywordObservation {
+  keyword?: string;
+  term?: string;
+  occurrenceCount?: number;
+  listingFrequencyPercent?: number;
+  observedAveragePrice?: number | null;
+  demandProxyScore?: number;
+  competitionProxy?: "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
+  intentCategory?: string;
+  intent?: string;
+}
+
 /**
  * Persists empirical keyword observations acquired from search listings.
  */
 export async function persistKeywordObservations(
-  keywords: CanonicalKeywordObservation[],
+  keywords: PersistableKeywordObservation[],
   options: {
     organizationId?: string;
     marketplace?: MarketplaceId | string;
   } = {}
-): Promise<{ savedCount: number }> {
+): Promise<{ savedCount: number; snapshotsCreated: number }> {
   if (!keywords || keywords.length === 0 || !options.organizationId) {
-    return { savedCount: 0 };
+    return { savedCount: 0, snapshotsCreated: 0 };
   }
 
   let savedCount = 0;
+  let snapshotsCreated = 0;
   const orgId = options.organizationId;
   const mkt = options.marketplace || "etsy";
 
@@ -316,7 +343,28 @@ export async function persistKeywordObservations(
     if (!kwText) continue;
 
     try {
-      await prisma.keywordObservation.upsert({
+      const incoming = {
+        occurrenceCount: k.occurrenceCount || 1,
+        listingFrequencyPercent: k.listingFrequencyPercent || 0,
+        observedAveragePrice: k.observedAveragePrice ?? null,
+        demandProxyScore: k.demandProxyScore || 50,
+        competitionProxy: k.competitionProxy || "UNAVAILABLE",
+      };
+      const newFingerprint = computeKeywordObservationFingerprint(incoming);
+
+      const existing = await prisma.keywordObservation.findUnique({
+        where: {
+          organizationId_marketplace_keyword: {
+            organizationId: orgId,
+            marketplace: mkt,
+            keyword: kwText,
+          },
+        },
+      });
+
+      const hasChanged = !existing || existing.fingerprint !== newFingerprint;
+
+      const saved = await prisma.keywordObservation.upsert({
         where: {
           organizationId_marketplace_keyword: {
             organizationId: orgId,
@@ -325,11 +373,8 @@ export async function persistKeywordObservations(
           },
         },
         update: {
-          listingFrequencyPercent: k.listingFrequencyPercent || 0,
-          occurrenceCount: k.occurrenceCount || 1,
-          observedAveragePrice: k.observedAveragePrice ?? null,
-          demandProxyScore: k.demandProxyScore || 50,
-          competitionProxy: k.competitionProxy || "UNAVAILABLE",
+          ...incoming,
+          fingerprint: newFingerprint,
           intentCategory: (k as any).intentCategory || (k as any).intent || "GENERAL",
           observedAt: new Date(),
         },
@@ -337,23 +382,40 @@ export async function persistKeywordObservations(
           organizationId: orgId,
           marketplace: mkt,
           keyword: kwText,
-          listingFrequencyPercent: k.listingFrequencyPercent || 0,
-          occurrenceCount: k.occurrenceCount || 1,
-          observedAveragePrice: k.observedAveragePrice ?? null,
-          demandProxyScore: k.demandProxyScore || 50,
-          competitionProxy: k.competitionProxy || "UNAVAILABLE",
+          ...incoming,
+          fingerprint: newFingerprint,
           intentCategory: (k as any).intentCategory || (k as any).intent || "GENERAL",
           source: "PUBLIC_WEB",
           observedAt: new Date(),
         },
       });
       savedCount++;
+
+      // Only record a snapshot when the underlying observation genuinely
+      // changed (or this is the first-ever observation) — mirrors
+      // ProductObservationSnapshot's "one row per detected change" pattern,
+      // not one row per re-observation.
+      if (hasChanged) {
+        await prisma.keywordObservationSnapshot.create({
+          data: {
+            keywordObservationId: saved.id,
+            fingerprint: newFingerprint,
+            occurrenceCount: incoming.occurrenceCount,
+            listingFrequencyPercent: incoming.listingFrequencyPercent,
+            observedAveragePrice: incoming.observedAveragePrice,
+            demandProxyScore: incoming.demandProxyScore,
+            competitionProxy: incoming.competitionProxy,
+            observedAt: new Date(),
+          },
+        });
+        snapshotsCreated++;
+      }
     } catch {
       // Non-blocking
     }
   }
 
-  return { savedCount };
+  return { savedCount, snapshotsCreated };
 }
 
 /**
@@ -365,16 +427,37 @@ export async function persistCategoryObservation(
     organizationId?: string;
     marketplace?: MarketplaceId | string;
   } = {}
-): Promise<{ success: boolean }> {
+): Promise<{ success: boolean; snapshotCreated: boolean }> {
   if (!category || !options.organizationId) {
-    return { success: false };
+    return { success: false, snapshotCreated: false };
   }
 
   try {
     const orgId = options.organizationId;
     const mkt = options.marketplace || "etsy";
 
-    await prisma.categoryObservation.upsert({
+    const incoming = {
+      observedCatalogCount: category.observedCatalogCount || category.totalListings || 0,
+      minPrice: category.priceDistribution?.min ?? null,
+      maxPrice: category.priceDistribution?.max ?? null,
+      medianPrice: category.priceDistribution?.median ?? null,
+      averagePrice: category.priceDistribution?.average ?? null,
+      averageOpportunityScore: category.opportunityDistribution?.averageScore ?? null,
+    };
+    const newFingerprint = computeCategoryObservationFingerprint(incoming);
+
+    const existing = await prisma.categoryObservation.findUnique({
+      where: {
+        organizationId_marketplace_categoryName: {
+          organizationId: orgId,
+          marketplace: mkt,
+          categoryName: category.categoryName,
+        },
+      },
+    });
+    const hasChanged = !existing || existing.fingerprint !== newFingerprint;
+
+    const saved = await prisma.categoryObservation.upsert({
       where: {
         organizationId_marketplace_categoryName: {
           organizationId: orgId,
@@ -383,12 +466,8 @@ export async function persistCategoryObservation(
         },
       },
       update: {
-        observedCatalogCount: category.observedCatalogCount || category.totalListings || 0,
-        minPrice: category.priceDistribution?.min ?? null,
-        maxPrice: category.priceDistribution?.max ?? null,
-        medianPrice: category.priceDistribution?.median ?? null,
-        averagePrice: category.priceDistribution?.average ?? null,
-        averageOpportunityScore: category.opportunityDistribution?.averageScore ?? null,
+        ...incoming,
+        fingerprint: newFingerprint,
         highOpportunityCount: category.opportunityDistribution?.highOpportunityCount ?? 0,
         freshnessStatus: category.freshness?.status || "LIVE",
         observedAt: new Date(),
@@ -397,19 +476,34 @@ export async function persistCategoryObservation(
         organizationId: orgId,
         marketplace: mkt,
         categoryName: category.categoryName,
-        observedCatalogCount: category.observedCatalogCount || category.totalListings || 0,
-        minPrice: category.priceDistribution?.min ?? null,
-        maxPrice: category.priceDistribution?.max ?? null,
-        medianPrice: category.priceDistribution?.median ?? null,
-        averagePrice: category.priceDistribution?.average ?? null,
-        averageOpportunityScore: category.opportunityDistribution?.averageScore ?? null,
+        ...incoming,
+        fingerprint: newFingerprint,
         highOpportunityCount: category.opportunityDistribution?.highOpportunityCount ?? 0,
         freshnessStatus: category.freshness?.status || "LIVE",
         observedAt: new Date(),
       },
     });
-    return { success: true };
+
+    let snapshotCreated = false;
+    if (hasChanged) {
+      await prisma.categoryObservationSnapshot.create({
+        data: {
+          categoryObservationId: saved.id,
+          fingerprint: newFingerprint,
+          observedCatalogCount: incoming.observedCatalogCount,
+          minPrice: incoming.minPrice,
+          maxPrice: incoming.maxPrice,
+          medianPrice: incoming.medianPrice,
+          averagePrice: incoming.averagePrice,
+          averageOpportunityScore: incoming.averageOpportunityScore,
+          observedAt: new Date(),
+        },
+      });
+      snapshotCreated = true;
+    }
+
+    return { success: true, snapshotCreated };
   } catch {
-    return { success: false };
+    return { success: false, snapshotCreated: false };
   }
 }

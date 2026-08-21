@@ -345,16 +345,16 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1241/1241 passing (npm run test:all — 361 suites)
+Tests:      1251/1251 passing (npm run test:all — 363 suites)
 TypeScript: clean            (npx tsc --noEmit)
-Prisma:     valid, synchronized (npx prisma@5.22.0 validate)
-Next.js:    clean build      (npx next build — 183 static and dynamic routes compiled)
+Prisma:     valid, synchronized (npx prisma@5.22.0 validate; migrate status clean)
+Next.js:    clean build      (npx next build)
 ```
 
-(As of Batch 38, 2026-08-21 — see `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
-Batch 39, same date, was a documentation/architecture-audit-only pass —
-no code changed, so these numbers still apply unchanged; see
-`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`.)
+(As of Batch 40, 2026-08-21 — see
+`docs/BATCH-40-DATA-FOUNDATION-AND-KEYWORD-RESEARCH.md`. Batch 39, same
+date, was a documentation/architecture-audit-only pass — no code changed;
+see `docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`.)
 
 ## 19. Known Technical Debt
 
@@ -401,26 +401,19 @@ Verified against current code as of this pass:
   a different reason: shop age itself is confirmed `UNAVAILABLE` from
   every legitimate source this app acquires from (Batch 37) — there is
   nothing real to filter on.
-- **The legacy `Prospect.price` column is non-nullable, forcing a
-  fabricated `0` for genuinely unobserved Amazon/Walmart prices** — found
-  live on the Dashboard's "Top Opportunity Discoveries" widget during
-  Batch 38's browser verification (several Amazon items showed literal
-  `$0.00`). Root cause: `persistence.ts`'s backward-compatible `Prospect`
-  sync path (`price: p.price !== null && p.price !== undefined ? p.price
-  : 0`) has no other option given the schema. **Not fixed** — making
-  `Prospect.price` nullable is a real schema change with an unaudited
-  blast radius across other call sites that assume a non-null price; flag
-  this for a dedicated, carefully-scoped follow-up rather than touching it
-  as a side effect of unrelated work.
-- **`KeywordObservation`/`CategoryObservation` have no snapshot/history
-  table** (confirmed, Batch 39 audit) — unlike `ProductObservation`
-  (extended in Batch 38), every re-observation `upsert()`s the same row,
-  overwriting prior stats in place. This is the concrete blocker for any
-  keyword/category trend intelligence — see `docs/
-  MARKET-INTELLIGENCE-ROADMAP.md` and `docs/
-  KEYWORD-INTELLIGENCE-ARCHITECTURE.md` §3. Recommended fix: mirror
-  `ProductObservationSnapshot`'s existing change-detection pattern, not a
-  new design.
+- ~~The legacy `Prospect.price` column is non-nullable, forcing a
+  fabricated `0`~~ — **fixed in Batch 40** (2026-08-21):
+  `price`/`reviewCount`/`activeListings`/`shopAgeMonths`/`reviewRatio`/
+  `reviewVelocity` are all nullable now, both write sites and every
+  downstream consumer fixed via a `tsc`-driven sweep. See
+  `docs/BATCH-40-DATA-FOUNDATION-AND-KEYWORD-RESEARCH.md`.
+- ~~`KeywordObservation`/`CategoryObservation` have no snapshot/history
+  table~~ — **fixed in Batch 40**: `KeywordObservationSnapshot`/
+  `CategoryObservationSnapshot` now exist, mirroring
+  `ProductObservationSnapshot`'s change-detection pattern exactly. No
+  trend-calculation logic was built on top yet (deliberately deferred) —
+  that remains the concrete blocker for keyword/category trend
+  intelligence; see `docs/MARKET-INTELLIGENCE-ROADMAP.md`.
 - **No sales/revenue/demand estimation model exists anywhere in this
   codebase** (Batch 39 audit, re-confirmed by direct inspection). If one
   is ever built, it must follow the input-signals→model→range→confidence→
@@ -431,6 +424,13 @@ Verified against current code as of this pass:
   official marketplace API as its primary source of competitor data** —
   independent validation that public-web-first (SellerSalt's existing
   architecture) is the category norm, not a compromise.
+- **Keyword Research reached parity with Product Research's Batch 38 repair
+  in Batch 40**: real persistence to `KeywordObservation` from the live
+  UI/API path (previously never called), real (not hardcoded) `avgFavorers`/
+  competition aggregate, `minPrice`/`maxPrice` actually reach the adapter,
+  multi-keyword OR-fanout, Amazon-default, marketplace-aware badges/copy.
+  `topListings` still stays empty for non-Etsy (deeper plumbing needed, out
+  of scope) and Category Hunting's own equivalent repair was not audited.
 
 ## 20. Development Rules for Future Agents
 

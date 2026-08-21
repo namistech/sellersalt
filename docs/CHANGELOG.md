@@ -1262,3 +1262,79 @@ detail in `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
   end-to-end in this batch). Amazon's price/rating/per-card-category
   remain suppressed by Amazon's own response to SellerSalt's honest bot
   disclosure — external, founder-confirmed to stay as-is.
+
+## Batch 39: Independent Ecommerce Intelligence Acquisition Strategy Audit (2026-08-21)
+
+**Why**: Explicit founder instruction — "architecture/strategy audit
+first, do not begin by adding features." No code was changed; six
+documentation deliverables were produced. Full detail in
+`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`.
+
+- Re-verified all governance modules untouched since Batch 38; ran a
+  fresh live Amazon acquisition trace (48 parsed products, 0 with
+  observed price/rating/category, reconfirming Batch 37's finding
+  unchanged).
+- Researched 8 named ecommerce-intelligence competitors, every claim
+  tagged VERIFIED/INFERENCE/UNKNOWN — found that none of the eight claim
+  an official marketplace API as their primary source of competitor
+  data, independently validating SellerSalt's own public-web-first
+  architecture as the category norm.
+- Concrete top recommendation: `KeywordObservation`/`CategoryObservation`
+  have no snapshot/history table (unlike `ProductObservation`) — the
+  clearest actionable gap, addressed in Batch 40 below.
+- Launch classification, precisely split: `PRODUCT_RESEARCH_READY` for a
+  single-cycle workflow (reaffirming Batch 38); `NOT_YET_READY_FOR_
+  PRODUCT_RESEARCH` for a historically-accumulated Market Intelligence
+  experience — a fact about elapsed real-world time, not a missing
+  feature.
+
+## Batch 40: Data Foundation, Historical Observations & Keyword Research Repair (2026-08-21)
+
+**Why**: Implementation batch executing Batch 39's three recommended next
+steps, plus field-level provenance. Full detail in
+`docs/BATCH-40-DATA-FOUNDATION-AND-KEYWORD-RESEARCH.md`.
+
+- **`Prospect.price` fabrication fixed at the source** (Batch 38's
+  finding, previously flagged not fixed): `price`/`reviewCount`/
+  `activeListings`/`shopAgeMonths`/`reviewRatio`/`reviewVelocity` all
+  made nullable (migration
+  `20260821040000_prospect_nullable_and_keyword_category_history`,
+  applied to staging). Both real write sites
+  (`persistPublicProductObservations`, the scheduled-search worker) fixed
+  to write real `null` instead of a fabricated `0`/`12`/`1`; every
+  downstream consumer fixed via a `tsc --noEmit`-driven sweep across ~15
+  files. Found and fixed two sibling fabrications while sweeping: a
+  hardcoded `★5.0` fake-rating fallback on the public `/shops` page, and
+  a hardcoded `$15` fake average-price fallback on the Trends table.
+- **`KeywordObservationSnapshot`/`CategoryObservationSnapshot` now
+  exist** (same migration), mirroring `ProductObservationSnapshot`'s
+  "one row per detected change" pattern via new
+  `computeKeywordObservationFingerprint`/`computeCategoryObservation
+  Fingerprint` functions. No trend-calculation logic built on top yet —
+  deliberately deferred.
+- **Keyword Research pipeline repaired**: the live UI/API path had never
+  once persisted to `KeywordObservation` (only the separate admin
+  workbench did) — now wired in. Fixed a hardcoded `avgFavorers: 0` → real
+  `null` for marketplaces with no "favorites" concept, and a hardcoded
+  `competitionLevel/Score: "MODERATE"/50` → a real aggregate of the
+  per-keyword scores. Fixed a real "accepted but silently dropped" filter
+  bug: `minPrice`/`maxPrice` now actually reach the harvest adapter. Built
+  real multi-keyword OR-fanout (bounded to 5, deduped) by exporting and
+  reusing Product Research's own `resolveSearchKeywords`, not
+  reimplementing it. UI default marketplace changed `"etsy"` → `"amazon"`;
+  every hardcoded `ACTUAL_ETSY_DATA`/"Etsy" badge and copy made
+  marketplace-aware (the same defect class Batch 36 fixed for Product
+  Research, never previously applied here).
+- **Minimal field-level provenance added**: `KeywordSearchSummary` gained
+  an optional `fieldProvenance` object, reusing the exact shape of the
+  pre-existing `FieldProvenanceRecord` architecture already built for
+  Product Research rather than inventing a second shape.
+- **Verification**: 10 new deterministic tests
+  (`src/tests/batch-40-data-foundation-and-keyword-research.test.ts`),
+  full suite **1,251/1,251 passing** (up from 1,241/1,241 baseline).
+  `tsc`/`prisma validate`/`prisma migrate status`/`next build` all clean.
+- **Deliberately deferred**: `topListings` stays empty for non-Etsy
+  Keyword Research; Category Hunting's own equivalent repair was not
+  audited; the full merchant workflow was not re-verified via a live
+  authenticated browser session this batch (no working dashboard
+  credentials available in this session).

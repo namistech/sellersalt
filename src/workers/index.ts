@@ -97,6 +97,10 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
     const results = research.products;
 
     if (results.length > 0) {
+      // Batch 40: shopAgeMonths/reviewCount/activeListings/reviewRatio/
+      // reviewVelocity/price all used to default to a fabricated
+      // placeholder (0) whenever the connector genuinely didn't observe
+      // the field. All six are now nullable — write null, never a guess.
       await prisma.prospect.createMany({
         data: results.map((r) => ({
           organizationId,
@@ -109,11 +113,11 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
           shopName: r.shop?.name ?? "",
           shopUrl: r.shop?.url ?? "",
           shopIconUrl: r.shop?.iconUrl,
-          shopAgeMonths: r.shop?.ageMonths ?? 0,
-          reviewCount: r.reviewCount ?? 0,
-          activeListings: r.shop?.activeListings ?? 0,
-          reviewRatio: r.shop?.reviewRatio ?? 0,
-          reviewVelocity: r.shop?.reviewVelocity ?? 0,
+          shopAgeMonths: r.shop?.ageMonths ?? null,
+          reviewCount: r.reviewCount ?? null,
+          activeListings: r.shop?.activeListings ?? null,
+          reviewRatio: r.shop?.reviewRatio ?? null,
+          reviewVelocity: r.shop?.reviewVelocity ?? null,
           totalSales: r.salesCount,
           reviewAverage: r.rating,
           numFavorers: r.favoritesCount,
@@ -122,7 +126,7 @@ async function handleProspectingJob(job: { data: ProspectingJobData }) {
           listingTitle: r.title,
           listingUrl: r.url ?? "",
           listingImageUrl: r.imageUrl,
-          price: r.price ?? 0,
+          price: r.price ?? null,
         })),
       });
     }

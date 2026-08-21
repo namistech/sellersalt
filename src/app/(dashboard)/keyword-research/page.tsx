@@ -61,6 +61,15 @@ function isCapabilityUnavailable(res: unknown): res is { available: false; messa
   return typeof res === "object" && res !== null && (res as any).available === false;
 }
 
+/** Live preview of how a comma-separated search box entry will be split —
+ * mirrors Product Research's identical preview (Batch 38's
+ * splitKeywordsPreviewLabel in live-search-tab.tsx). */
+function splitKeywordsPreviewLabel(raw: string): string {
+  const parts = raw.split(",").map((k) => k.trim()).filter(Boolean);
+  if (parts.length <= 1) return "";
+  return `Searching ${parts.length} keywords (any match): ${parts.join(" · ")}`;
+}
+
 interface KeywordMarketplaceFanOutResult {
   marketplace: string;
   status: MarketplaceResultStatus;
@@ -95,7 +104,11 @@ export default function KeywordResearchPage() {
   const [viewMode, setViewMode] = useResearchState<ViewMode>("kw_view_mode", "grid");
 
   // State
-  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("etsy");
+  // Batch 40 (founder direction, same reasoning as Product Research's
+  // Batch 38 default): Amazon has the strongest, most complete acquisition
+  // path today — Etsy's API credential is still rejected and its public
+  // web access is blocked. "All Marketplaces" remains selectable.
+  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("amazon");
   const [searchResponse, setSearchResponse] = useState<KeywordSearchResponse | null>(null);
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const [allMarketplaceResults, setAllMarketplaceResults] = useState<KeywordMarketplaceFanOutResult[] | null>(null);
@@ -199,9 +212,17 @@ export default function KeywordResearchPage() {
       return;
     }
 
+    // Multi-keyword: a comma-separated entry is split into an OR-fanout
+    // keyword list, mirroring Product Research's identical Batch 38
+    // pattern (see live-search-tab.tsx). A single phrase (the common case)
+    // behaves exactly as before.
+    const splitKeywords = q.split(",").map((k) => k.trim()).filter(Boolean);
+    const keywordList = splitKeywords.length > 1 ? splitKeywords : undefined;
+
     try {
       const response = await searchStandaloneKeywords({
         query: q,
+        keywords: keywordList,
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
         marketplace,
@@ -335,7 +356,9 @@ export default function KeywordResearchPage() {
           <div className="flex items-center gap-2.5">
             <CountrySelector size="sm" />
             <HowItWorksToggle isOpen={showGuide} onToggle={() => setShowGuide(!showGuide)} />
-            {marketplace === "etsy" && <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />}
+            {marketplace !== "all" && (
+              <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
+            )}
           </div>
         }
       />
@@ -381,10 +404,15 @@ export default function KeywordResearchPage() {
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Enter any keyword (e.g. 'leather passport holder', 'minimalist desk mat')..."
+                placeholder="Enter any keyword, or comma-separate up to 5 (e.g. 'leather passport holder, minimalist desk mat')..."
                 className="pl-10 h-11 text-sm font-medium"
               />
               <Search className="h-4 w-4 text-ink-tertiary absolute left-3.5 top-3.5 pointer-events-none" />
+              {splitKeywordsPreviewLabel(query) && (
+                <div className="absolute -bottom-5 left-0 text-[11px] text-ink-tertiary">
+                  {splitKeywordsPreviewLabel(query)}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -506,7 +534,9 @@ export default function KeywordResearchPage() {
                 description={
                   searchResponse.summary.competitionScore >= 70
                     ? `Broad head terms for "${searchResponse.query}" have high listing density (${searchResponse.summary.totalEtsySupply.toLocaleString()} competing listings). Target 3+ word long-tail phrases below to capture targeted buyer demand with lower ranking friction.`
-                    : `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100) with strong buyer favoriting velocity (~${searchResponse.summary.avgFavorers.toLocaleString()} avg favorites). Prioritize tag-compliant phrases in your title and 13 tags.`
+                    : searchResponse.summary.avgFavorers !== null
+                    ? `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100) with strong buyer favoriting velocity (~${searchResponse.summary.avgFavorers.toLocaleString()} avg favorites). Prioritize tag-compliant phrases in your title and 13 tags.`
+                    : `This keyword cluster shows approachable competition (${searchResponse.summary.competitionScore}/100). Prioritize tag-compliant phrases in your title and tags.`
                 }
                 actionLabel={topRecommended && savedPlannerTerms[topRecommended.term] ? "Added to Planner" : "+ Target Top Tag in Planner"}
                 onAction={topRecommended ? () => handleAddTermToPlanner(topRecommended) : undefined}
@@ -549,24 +579,29 @@ export default function KeywordResearchPage() {
           })()}
 
           {/* LEVEL 2: SUMMARY KPI GRID */}
+          {(() => {
+            const activeMarketplace = searchResponse.marketplace ?? marketplace;
+            const isEtsy = activeMarketplace === "etsy";
+            const marketplaceLabel = MARKETPLACE_LABELS[activeMarketplace] ?? activeMarketplace;
+            return (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Etsy Listing Supply</span>
-                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                <span className="text-[11px] font-bold text-ink-tertiary uppercase">{marketplaceLabel} Listing Supply</span>
+                <DataProvenanceBadge type={isEtsy ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
                 {searchResponse.summary.totalEtsySupply.toLocaleString()}
               </div>
               <div className="text-[11px] text-ink-tertiary">
-                Competing active listings on Etsy
+                Competing active listings on {marketplaceLabel}
               </div>
             </Card>
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-ink-tertiary uppercase">Avg. Observed Price</span>
-                <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                <DataProvenanceBadge type={isEtsy ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
                 ${searchResponse.summary.avgPrice.toFixed(2)}
@@ -582,10 +617,17 @@ export default function KeywordResearchPage() {
                 <DataProvenanceBadge type="ESTIMATED" />
               </div>
               <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono pt-1">
-                {searchResponse.summary.avgFavorers.toLocaleString()} <span className="text-xs font-sans font-normal text-ink-tertiary">favs</span>
+                {searchResponse.summary.avgFavorers !== null ? (
+                  <>
+                    {searchResponse.summary.avgFavorers.toLocaleString()}{" "}
+                    <span className="text-xs font-sans font-normal text-ink-tertiary">favs</span>
+                  </>
+                ) : (
+                  <span className="text-base text-ink-tertiary font-sans font-normal">Unavailable</span>
+                )}
               </div>
               <div className="text-[11px] text-ink-tertiary">
-                Avg. buyer favorites across top results
+                {isEtsy ? "Avg. buyer favorites across top results" : `${marketplaceLabel} has no observable "favorites" signal`}
               </div>
             </Card>
 
@@ -607,6 +649,8 @@ export default function KeywordResearchPage() {
               </div>
             </Card>
           </div>
+            );
+          })()}
 
           {/* Keyword Intelligence Visualizations */}
           {searchResponse.keywords.length > 0 && (
@@ -620,7 +664,7 @@ export default function KeywordResearchPage() {
                     </span>
                     <p className="text-[11px] text-ink-tertiary">Observed recurrence frequency across analyzed page 1 listings.</p>
                   </div>
-                  <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                  <DataProvenanceBadge type={(searchResponse.marketplace ?? marketplace) === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                 </div>
                 <HorizontalBarChart
                   data={[...searchResponse.keywords]
@@ -1045,10 +1089,10 @@ export default function KeywordResearchPage() {
                     <Heading as="h2" size="h4">
                       Observed Competing Listings ({searchResponse.topListings.length})
                     </Heading>
-                    <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
+                    <DataProvenanceBadge type={(searchResponse.marketplace ?? marketplace) === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                   </div>
                   <Text size="body-sm" color="secondary" className="mt-0.5">
-                    Top ranking listings on Etsy for &quot;{searchResponse.query}&quot; used to harvest tags and calculate benchmarks.
+                    Top ranking listings on {MARKETPLACE_LABELS[searchResponse.marketplace ?? marketplace] ?? (searchResponse.marketplace ?? marketplace)} for &quot;{searchResponse.query}&quot; used to harvest tags and calculate benchmarks.
                   </Text>
                 </div>
               </div>
@@ -1068,7 +1112,7 @@ export default function KeywordResearchPage() {
                         />
                       ) : (
                         <div className="h-12 w-12 rounded-lg bg-[#F4F3EF] border border-line flex items-center justify-center text-[10px] font-bold text-ink-tertiary shrink-0">
-                          ETSY
+                          {(MARKETPLACE_LABELS[searchResponse.marketplace ?? marketplace] ?? (searchResponse.marketplace ?? marketplace)).slice(0, 4).toUpperCase()}
                         </div>
                       )}
 
@@ -1103,7 +1147,7 @@ export default function KeywordResearchPage() {
                         rel="noopener noreferrer"
                         className="px-2.5 py-1.5 rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink-secondary hover:text-ink text-xs font-medium inline-flex items-center gap-1 shadow-2xs"
                       >
-                        <span>Etsy</span>
+                        <span>{MARKETPLACE_LABELS[searchResponse.marketplace ?? marketplace] ?? (searchResponse.marketplace ?? marketplace)}</span>
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>

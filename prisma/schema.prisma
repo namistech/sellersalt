@@ -317,11 +317,21 @@ model Prospect {
   shopName       String
   shopUrl        String
   shopIconUrl    String?
-  shopAgeMonths  Float
-  reviewCount    Int
-  activeListings Int
-  reviewRatio    Float
-  reviewVelocity Float
+  // Batch 40: these six were non-nullable and defaulted to a fabricated
+  // placeholder (0/12/1/1.0/0.1) whenever a marketplace genuinely didn't
+  // expose the field (Amazon/Walmart public-web results) — a real,
+  // live-visible Zero-Fabrication Contract violation (e.g. "$0.00" price,
+  // "12mo" shop age) found in Batch 38's browser verification. Now
+  // nullable; null means genuinely unobserved, never a guessed number.
+  // Etsy's real search connector (src/workers/index.ts's scheduled-search
+  // path) still populates all six with real observed values every time —
+  // nullability only changes behavior for marketplaces that truly don't
+  // expose a field.
+  shopAgeMonths  Float?
+  reviewCount    Int?
+  activeListings Int?
+  reviewRatio    Float?
+  reviewVelocity Float?
   // Real lifetime sales count (Etsy's transaction_sold_count) where the marketplace
   // exposes it — not a proxy. avgSellingRatio/estDailySales are derived from this.
   totalSales      Int?
@@ -332,7 +342,7 @@ model Prospect {
   listingTitle    String
   listingUrl      String
   listingImageUrl String?
-  price          Float
+  price          Float?
   status         ProspectStatus @default(PENDING_REVIEW)
   isFavorite     Boolean  @default(false)
   createdAt      DateTime @default(now())
@@ -1284,16 +1294,48 @@ model KeywordObservation {
   competitionProxy        String       @default("UNAVAILABLE")
   intentCategory          String       @default("GENERAL")
   source                  String       @default("PUBLIC_WEB")
+  // Batch 40: change-detection fingerprint (same pattern as
+  // ProductObservation.fingerprint) — null on rows written before this
+  // migration; populated on every write going forward so a real change
+  // in occurrenceCount/listingFrequencyPercent/observedAveragePrice/
+  // demandProxyScore/competitionProxy creates a KeywordObservationSnapshot
+  // instead of silently overwriting the prior observation in place.
+  fingerprint             String?
   observedAt              DateTime     @default(now())
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
 
   organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  snapshots               KeywordObservationSnapshot[]
 
   @@unique([organizationId, marketplace, keyword])
   @@index([organizationId])
   @@index([marketplace])
   @@index([keyword])
+  @@index([observedAt])
+}
+
+// Batch 40: mirrors ProductObservationSnapshot's existing pattern exactly
+// (Batch 39 audit's top recommendation — the concrete blocker for any
+// keyword trend intelligence). One row per *detected change*, not per
+// re-observation — an unchanged re-harvest only touches
+// KeywordObservation.observedAt, never creates a duplicate snapshot.
+model KeywordObservationSnapshot {
+  id                      String             @id @default(cuid())
+  keywordObservationId    String
+  fingerprint             String
+  occurrenceCount         Int
+  listingFrequencyPercent Float
+  observedAveragePrice    Float?
+  demandProxyScore        Float
+  competitionProxy        String
+  observedAt              DateTime           @default(now())
+  createdAt               DateTime           @default(now())
+
+  keywordObservation      KeywordObservation @relation(fields: [keywordObservationId], references: [id], onDelete: Cascade)
+
+  @@index([keywordObservationId])
+  @@index([fingerprint])
   @@index([observedAt])
 }
 
@@ -1310,16 +1352,40 @@ model CategoryObservation {
   averageOpportunityScore Float?
   highOpportunityCount    Int          @default(0)
   freshnessStatus         String       @default("LIVE")
+  // Batch 40: same change-detection purpose as KeywordObservation.fingerprint above.
+  fingerprint             String?
   observedAt              DateTime     @default(now())
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
 
   organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  snapshots               CategoryObservationSnapshot[]
 
   @@unique([organizationId, marketplace, categoryName])
   @@index([organizationId])
   @@index([marketplace])
   @@index([categoryName])
+  @@index([observedAt])
+}
+
+// Batch 40: mirrors ProductObservationSnapshot/KeywordObservationSnapshot.
+model CategoryObservationSnapshot {
+  id                      String               @id @default(cuid())
+  categoryObservationId   String
+  fingerprint             String
+  observedCatalogCount    Int
+  minPrice                Float?
+  maxPrice                Float?
+  medianPrice             Float?
+  averagePrice            Float?
+  averageOpportunityScore Float?
+  observedAt              DateTime             @default(now())
+  createdAt               DateTime             @default(now())
+
+  categoryObservation     CategoryObservation  @relation(fields: [categoryObservationId], references: [id], onDelete: Cascade)
+
+  @@index([categoryObservationId])
+  @@index([fingerprint])
   @@index([observedAt])
 }
 

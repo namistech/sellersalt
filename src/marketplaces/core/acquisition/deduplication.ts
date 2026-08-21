@@ -130,3 +130,48 @@ export function evaluateObservationChange(
     newFingerprint,
   };
 }
+
+/**
+ * Batch 40: same purpose as computeProductObservationFingerprint, for the
+ * KeywordObservation/CategoryObservationSnapshot historical tables — a
+ * genuine change in any of these fields creates a snapshot instead of
+ * silently overwriting the parent row in place.
+ */
+export function computeKeywordObservationFingerprint(observation: {
+  occurrenceCount?: number | null;
+  listingFrequencyPercent?: number | null;
+  observedAveragePrice?: number | null;
+  demandProxyScore?: number | null;
+  competitionProxy?: string | null;
+}): string {
+  const payload = [
+    observation.occurrenceCount !== null && observation.occurrenceCount !== undefined ? String(observation.occurrenceCount) : "null",
+    observation.listingFrequencyPercent !== null && observation.listingFrequencyPercent !== undefined ? Number(observation.listingFrequencyPercent).toFixed(2) : "null",
+    observation.observedAveragePrice !== null && observation.observedAveragePrice !== undefined ? Number(observation.observedAveragePrice).toFixed(2) : "null",
+    observation.demandProxyScore !== null && observation.demandProxyScore !== undefined ? Number(observation.demandProxyScore).toFixed(2) : "null",
+    (observation.competitionProxy || "UNAVAILABLE").toUpperCase(),
+  ].join("|");
+
+  return createHash("sha256").update(payload).digest("hex").substring(0, 32);
+}
+
+export function computeCategoryObservationFingerprint(observation: {
+  observedCatalogCount?: number | null;
+  minPrice?: number | null;
+  maxPrice?: number | null;
+  medianPrice?: number | null;
+  averagePrice?: number | null;
+  averageOpportunityScore?: number | null;
+}): string {
+  const norm = (v: number | null | undefined) => (v !== null && v !== undefined ? Number(v).toFixed(2) : "null");
+  const payload = [
+    observation.observedCatalogCount !== null && observation.observedCatalogCount !== undefined ? String(observation.observedCatalogCount) : "null",
+    norm(observation.minPrice),
+    norm(observation.maxPrice),
+    norm(observation.medianPrice),
+    norm(observation.averagePrice),
+    norm(observation.averageOpportunityScore),
+  ].join("|");
+
+  return createHash("sha256").update(payload).digest("hex").substring(0, 32);
+}

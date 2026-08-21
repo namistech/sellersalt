@@ -4,9 +4,33 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 39 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 40 COMPLETE)
 
-Read this section first if you're picking up work cold. Batch 39
+Read this section first if you're picking up work cold. Batch 40 (Data
+Foundation, Historical Observations & Keyword Research Repair — see
+`docs/BATCH-40-DATA-FOUNDATION-AND-KEYWORD-RESEARCH.md`) executed Batch
+39's three recommended next steps: (1) the legacy `Prospect.price`
+fabrication is fixed at the source — `price`/`reviewCount`/
+`activeListings`/`shopAgeMonths`/`reviewRatio`/`reviewVelocity` are all
+nullable now (migration
+`20260821040000_prospect_nullable_and_keyword_category_history`), both
+real write sites and every downstream consumer fixed via a `tsc`-driven
+sweep; (2) `KeywordObservationSnapshot`/`CategoryObservationSnapshot` now
+exist, mirroring `ProductObservationSnapshot`'s change-detection pattern
+(no trend-calculation logic on top yet, deliberately deferred); (3) the
+live Keyword Research UI/API path — which had never once persisted to the
+database — now does, plus real (not hardcoded) `avgFavorers`/competition
+aggregate, `minPrice`/`maxPrice` finally reaching the adapter, real
+multi-keyword OR-fanout, an Amazon default, and marketplace-aware badges
+(the same repair class Batch 36 gave Product Research, never previously
+applied to Keyword Research). Also added minimal, additive field-level
+provenance to Keyword Research's summary, reusing Product Research's
+existing `FieldProvenanceRecord` shape. 10 new tests, full suite
+**1,251/1,251 passing** (up from 1,241/1,241). Not re-verified via a live
+authenticated browser session this batch (no working dashboard
+credentials in this session) — a real, stated gap, not assumed complete.
+
+Batch 39
 (Independent Ecommerce Intelligence Acquisition Strategy Audit — see
 `docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`) was a **documentation/
 architecture-audit-only pass, no code changed** — six new/updated docs:
@@ -70,11 +94,11 @@ paragraph as the current state, not that section:
 - **Admin Beta Insight Center** (`/api/admin/beta-insights`): Live operational telemetry aggregating merchant drop-offs, decision impact distribution, learning loop rankings, and data quality.
 - **Beta Experiment Framework** (`beta-experiments.ts`): Deterministic cohort variant assignment.
 
-**Current Verified Baseline** (Batch 38, re-run independently, not copied forward):
-- Tests: **1241/1241 passing across 361 suites** (`npm run test:all`)
+**Current Verified Baseline** (Batch 40, re-run independently, not copied forward):
+- Tests: **1251/1251 passing across 363 suites** (`npm run test:all`)
 - TypeScript: Clean (`npx tsc --noEmit`)
-- Prisma: Valid, synchronized (`npx prisma@5.22.0 validate`)
-- Next.js: Clean production build (183 static and dynamic routes compiled)
+- Prisma: Valid, synchronized (`npx prisma@5.22.0 validate`; `migrate status` clean)
+- Next.js: Clean production build
 
 **Batch 33 checkpoint below — kept for its architecture notes, but the
 test/route counts above are stale; trust Batch 37's numbers.**
