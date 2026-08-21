@@ -76,6 +76,21 @@ export function parseAmazonPriceAndCurrency(
   return { price: null, currency: null };
 }
 
+/** Decodes the handful of HTML entities Amazon's card/aria-label markup
+ * actually contains (verified live: titles frequently carry `&amp;`,
+ * `&quot;`, `&#39;`) — a raw, undecoded title is a real display defect
+ * (e.g. `Fellowes Workstation 3&quot; Letter Tray` instead of `3"`), not a
+ * fabrication risk, but still real text corruption worth fixing cheaply. */
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ");
+}
+
 /** Amazon's internal `data-csa-c-product-type` code (e.g. "DRINKING_CUP") is
  * a real, per-card classification value already present in search-result
  * markup (verified live) — reformatted for display, not invented. */
@@ -103,7 +118,7 @@ export function extractAmazonBreadcrumbCategoryPath(html: string): string[] {
   const crumbRegex = /<a[^>]*class=["'][^"']*a-color-tertiary[^"']*["'][^>]*>([^<]+)<\/a>/gi;
   let m: RegExpExecArray | null;
   while ((m = crumbRegex.exec(sectionMatch[0])) !== null) {
-    const text = m[1].replace(/&amp;/g, "&").trim();
+    const text = decodeHtmlEntities(m[1].trim());
     if (text) crumbs.push(text);
   }
   return crumbs;
@@ -162,7 +177,7 @@ export function parseAmazonListingCardsFromHtml(html: string): NormalizedProduct
     const titleMatch =
       cardChunk.match(/<h2[^>]*>[\s\S]*?<span[^>]*>(.*?)<\/span>/i) ||
       cardChunk.match(/class=["'][^"']*a-text-normal[^"']*["'][^>]*>(.*?)<\/span>/i);
-    const rawTitle = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, "").trim() : "";
+    const rawTitle = titleMatch ? decodeHtmlEntities(titleMatch[1].replace(/<[^>]+>/g, "").trim()) : "";
     if (!rawTitle) continue;
 
     // Price + currency — reads the full `a-offscreen` text (not just a
@@ -227,7 +242,7 @@ export function parseAmazonListingCardsFromHtml(html: string): NormalizedProduct
     if (/Amazon['’]s Choice/i.test(cardChunk)) badges.push("Amazon's Choice");
     if (/\bBest Seller\b/i.test(cardChunk)) badges.push("Best Seller");
     const attributeChipMatch = cardChunk.match(/puis-medium-weight-text["']>([^<]{1,40})</i);
-    if (attributeChipMatch) badges.push(attributeChipMatch[1].trim());
+    if (attributeChipMatch) badges.push(decodeHtmlEntities(attributeChipMatch[1].trim()));
 
     const productUrl = `https://www.amazon.com/dp/${asin}`;
     // A price is only meaningful alongside its currency — if a match ever
@@ -458,7 +473,9 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
       const openGraph = parseOpenGraphData(page.html);
 
       const titleTagMatch = page.html.match(/<title>([^<]+)<\/title>/i);
-      const title = parsedJsonLd?.name || openGraph.title || titleTagMatch?.[1]?.split(" | ")[0]?.trim() || "";
+      const title = decodeHtmlEntities(
+        parsedJsonLd?.name || openGraph.title || titleTagMatch?.[1]?.split(" | ")[0]?.trim() || ""
+      );
       if (!title) {
         return {
           success: false,
@@ -501,7 +518,7 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
       // Brand — the "Visit the X Store" byline link, Amazon's own
       // canonical brand attribution on the product page (verified live).
       const brandMatch = page.html.match(/id=["']bylineInfo["'][^>]*>\s*Visit the (.+?) Store\s*</i);
-      const brand = brandMatch ? brandMatch[1].trim() : undefined;
+      const brand = brandMatch ? decodeHtmlEntities(brandMatch[1].trim()) : undefined;
 
       // Seller — the "Sold by" merchant panel's name + Amazon's internal
       // seller ID (both real, on-page). Amazon's public seller
@@ -564,7 +581,7 @@ export class AmazonPublicWebAdapter implements PublicWebAcquisitionAdapter {
         bestSellerRank: bestSellerRank.length > 0 ? bestSellerRank : undefined,
         shop: sellerMatch
           ? {
-              name: sellerMatch[1].trim(),
+              name: decodeHtmlEntities(sellerMatch[1].trim()),
               externalId: sellerIdMatch ? sellerIdMatch[1] : undefined,
             }
           : undefined,

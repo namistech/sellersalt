@@ -277,6 +277,42 @@ export function computeProductOpportunity(params: {
 // caching, same scoring — this only adds a marketplace check in front of it.
 // --------------------------------------------------------------------------
 
+/**
+ * Sorts search results in place by the requested metric/direction — the
+ * uniform sort applied for every marketplace acquired via
+ * orchestrateProductResearch (Etsy sends sort_on/sort_order to its own API
+ * instead and is unaffected). A `null` value (price/listingAgeDays never
+ * observed) always sorts to the end regardless of direction, so an
+ * unavailable field can never masquerade as the lowest/oldest/highest real
+ * value.
+ */
+export function sortProductHuntingResults(
+  results: ProductHuntingResult[],
+  sortOn: EtsySearchFilters["sortOn"],
+  sortOrder: EtsySearchFilters["sortOrder"]
+): void {
+  const dir = sortOrder === "asc" ? 1 : -1;
+
+  const metricFor = (r: ProductHuntingResult): number | null => {
+    if (sortOn === "price") return r.listing.price;
+    if (sortOn === "created") return r.listing.listingAgeDays; // smaller = newer
+    return r.opportunity.opportunityScore;
+  };
+
+  results.sort((a, b) => {
+    const av = metricFor(a);
+    const bv = metricFor(b);
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1; // nulls always last
+    if (bv === null) return -1;
+    // "created" is age-in-days — ascending age (smaller number) means
+    // "newest first", the intuitive meaning of desc-by-recency; keep the
+    // direction consistent with score/price (desc = "best"/highest first).
+    const delta = sortOn === "created" ? bv - av : av - bv;
+    return dir === 1 ? delta : -delta;
+  });
+}
+
 export async function searchMarketplaceProducts(
   marketplace: MarketplaceId,
   organizationId: string,
@@ -289,11 +325,17 @@ export async function searchMarketplaceProducts(
     const orchRes = await orchestrateProductResearch(
       {
         query: filters.keywords || "",
+        keywords: filters.keywordList && filters.keywordList.length > 0 ? filters.keywordList : undefined,
         marketplace,
         organizationId,
         limit: filters.limit,
+        page: filters.page,
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
+        minReviews: filters.minReviews,
+        maxReviews: filters.maxReviews,
+        minRating: filters.minRating,
+        maxRating: filters.maxRating,
       },
       {
         preferredSources: ["PUBLIC_WEB", "MARKETPLACE_API", "HISTORICAL_OBSERVATION"],
@@ -400,6 +442,7 @@ export async function searchMarketplaceProducts(
         badges: p.badges ?? [],
         availability: p.availability ?? null,
         bestSellerRank: p.bestSellerRank ?? [],
+        keyword: p.keyword ?? null,
       };
 
       const normalizedShop: NormalizedShopProfile = {
@@ -469,14 +512,29 @@ export async function searchMarketplaceProducts(
       };
     });
 
+    // sortOn/sortOrder were already accepted by the API contract and shown
+    // in the UI for every marketplace, but only ever applied for Etsy
+    // (sent straight to Etsy's own API) — silently ignored for Amazon/
+    // Walmart/etc. (Batch 38). Applied here uniformly; a null value (e.g.
+    // an unobserved price) always sorts last regardless of direction,
+    // never coerced to 0/oldest to participate in the ordering.
+    sortProductHuntingResults(results, filters.sortOn, filters.sortOrder);
+
     const durationMs = Date.now() - startTime;
+    const effectiveLimit = filters.limit ?? 25;
 
     return {
       results,
       totalCount: results.length,
       page: filters.page ?? 1,
-      limit: filters.limit ?? 25,
-      hasMore: false,
+      limit: effectiveLimit,
+      // A full page returned is a real, honest "there may be more" signal
+      // for a "Load more" control — Amazon/Walmart's public-web adapters
+      // already support paging via `page` (threaded through above), but
+      // neither exposes a real total-result count, so this is
+      // page-fullness, not an exact count. Never claimed as more precise
+      // than that.
+      hasMore: results.length >= effectiveLimit,
       searchParams: filters,
       source: "ETSY_LIVE_SEARCH" as const,
       executionDurationMs: durationMs,
@@ -632,6 +690,7 @@ export async function searchEtsyMarketplaceProducts(
       badges: [],
       availability: null,
       bestSellerRank: [],
+      keyword: null,
     };
 
     // Shop data

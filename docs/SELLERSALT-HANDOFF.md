@@ -4,24 +4,38 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 37 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 38 COMPLETE)
 
 Read this section first if you're picking up work cold. Current as of
-Batch 37 (Product Research Engine Forensics, Data Contract Repair & Real
-Ecommerce Intelligence Validation — see
-`BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`): Amazon/Walmart product
-research now surfaces real category, brand, seller, badges, availability,
-and (Amazon) Best Sellers Rank, not just title/URL/image — but Amazon's
-price/rating/per-card-category are currently suppressed by Amazon's own
-anti-bot response to SellerSalt's honest, self-identifying fetcher
-User-Agent (verified live; founder-confirmed to keep the honest
-disclosure rather than work around it — see that report's §13 before
-touching `src/marketplaces/core/acquisition/compliance.ts`'s
-`defaultUserAgent`). Launch classification: `PRIVATE_BETA_READY`
-(unchanged from Batch 36, richer evidence). Batches 34-36 (Real
-Acquisition Runtime Repair, Independent Acquisition, End-to-End
-Commercial Intelligence Validation) are summarized in `docs/CHANGELOG.md`
-and their own `BATCH-3{4,5,6}-*.md` reports at the repo root — the
+Batch 38 (Marketplace-Native Product Research & Independent Ecommerce
+Intelligence Data Foundation — see
+`BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`): founder direction —
+SellerSalt is not a simultaneous all-marketplace aggregator; research is
+marketplace-native, one marketplace at a time, Amazon first (`/prospects`'
+default changed from "All Marketplaces" to "Amazon"). New canonical
+`ProductResearchRecord` (`src/marketplaces/core/product-research-record.ts`)
+unifies live-search and historical-database reads. `ProductObservation`/
+`ProductObservationSnapshot` extended (real migration, applied to
+staging) to persist category/brand/badges/availability/bestSellerRank/
+keyword — historical "what changed over time" tracking is real for these
+fields now, not just price/rating/reviewCount. Multi-keyword search (OR
+fanout, bounded to 5, keyword-provenance-tagged) and real review/rating/
+sort/pagination filters were added — three of them were previously
+"accepted by the API but silently ignored," same defect class as Batch
+37's price-filter fix. Launch classification: `PRODUCT_RESEARCH_READY`
+(see that report §12 for the exact rubric — not a re-assertion of Batch
+36's `PRIVATE_BETA_READY`, which wasn't re-verified end-to-end this
+batch). Amazon's price/rating/per-card-category remain suppressed by
+Amazon's own anti-bot response to SellerSalt's honest, self-identifying
+fetcher User-Agent (Batch 37 finding, re-confirmed by the founder this
+batch to stay as-is — see `docs/DATA-ACQUISITION.md` §14 before touching
+`src/marketplaces/core/acquisition/compliance.ts`'s `defaultUserAgent`).
+A real, separate, pre-existing fabrication bug was found (Dashboard's
+"Top Opportunity Discoveries" widget shows `$0.00` via the legacy
+`Prospect.price` non-nullable column) but deliberately **not** fixed —
+too large a schema-risk to take on as a side effect; flagged for a
+dedicated follow-up. Batches 34-37 are summarized in `docs/CHANGELOG.md`
+and their own `BATCH-3{4,5,6,7}-*.md` reports at the repo root — the
 section below (Batch 33 checkpoint) predates all of them; treat this
 paragraph as the current state, not that section:
 
@@ -33,8 +47,8 @@ paragraph as the current state, not that section:
 - **Admin Beta Insight Center** (`/api/admin/beta-insights`): Live operational telemetry aggregating merchant drop-offs, decision impact distribution, learning loop rankings, and data quality.
 - **Beta Experiment Framework** (`beta-experiments.ts`): Deterministic cohort variant assignment.
 
-**Current Verified Baseline** (Batch 37, re-run independently, not copied forward):
-- Tests: **1222/1222 passing across 359 suites** (`npm run test:all`)
+**Current Verified Baseline** (Batch 38, re-run independently, not copied forward):
+- Tests: **1241/1241 passing across 361 suites** (`npm run test:all`)
 - TypeScript: Clean (`npx tsc --noEmit`)
 - Prisma: Valid, synchronized (`npx prisma@5.22.0 validate`)
 - Next.js: Clean production build (183 static and dynamic routes compiled)
@@ -349,11 +363,11 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of Batch 37 (Product Research Engine Forensics, Data Contract Repair &
-Real Ecommerce Intelligence Validation, 2026-08-21), independently re-run
+As of Batch 38 (Marketplace-Native Product Research & Independent
+Ecommerce Intelligence Data Foundation, 2026-08-21), independently re-run
 (not copied from an earlier report):
 
-- Tests: **1222/1222 passing** across 359 suites (`npm run test:all`)
+- Tests: **1241/1241 passing** across 361 suites (`npm run test:all`)
 - TypeScript: clean (`npx tsc --noEmit`)
 - Prisma: valid, synchronized (`npx prisma@5.22.0 validate`)
 - Build: clean (`npx next build` — 183 static and dynamic routes compiled)

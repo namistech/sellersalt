@@ -116,6 +116,7 @@ function buildResult(overrides: {
       badges: [],
       availability: null,
       bestSellerRank: [],
+      keyword: null,
     },
     shop,
     signals: {

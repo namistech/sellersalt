@@ -29,9 +29,16 @@ export async function POST(req: Request) {
 
     const filters: EtsySearchFilters = {
       keywords: typeof body.keywords === "string" ? body.keywords.trim() : undefined,
+      keywordList: Array.isArray(body.keywordList)
+        ? body.keywordList.filter((k: unknown): k is string => typeof k === "string" && k.trim().length > 0)
+        : undefined,
       taxonomyId: typeof body.taxonomyId === "number" ? body.taxonomyId : undefined,
       minPrice: typeof body.minPrice === "number" ? body.minPrice : undefined,
       maxPrice: typeof body.maxPrice === "number" ? body.maxPrice : undefined,
+      minReviews: typeof body.minReviews === "number" ? body.minReviews : undefined,
+      maxReviews: typeof body.maxReviews === "number" ? body.maxReviews : undefined,
+      minRating: typeof body.minRating === "number" ? body.minRating : undefined,
+      maxRating: typeof body.maxRating === "number" ? body.maxRating : undefined,
       shopLocation: typeof body.shopLocation === "string" ? body.shopLocation.trim() : undefined,
       sortOn: ["created", "price", "score"].includes(body.sortOn) ? body.sortOn : "score",
       sortOrder: ["asc", "desc"].includes(body.sortOrder) ? body.sortOrder : "desc",
@@ -72,11 +79,19 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
 
+    const keywordListParam = searchParams.get("keywordList");
     const filters: EtsySearchFilters = {
       keywords: searchParams.get("keywords") || undefined,
+      keywordList: keywordListParam
+        ? keywordListParam.split(",").map((k) => k.trim()).filter(Boolean)
+        : undefined,
       taxonomyId: searchParams.get("taxonomyId") ? Number(searchParams.get("taxonomyId")) : undefined,
       minPrice: searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined,
       maxPrice: searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined,
+      minReviews: searchParams.get("minReviews") ? Number(searchParams.get("minReviews")) : undefined,
+      maxReviews: searchParams.get("maxReviews") ? Number(searchParams.get("maxReviews")) : undefined,
+      minRating: searchParams.get("minRating") ? Number(searchParams.get("minRating")) : undefined,
+      maxRating: searchParams.get("maxRating") ? Number(searchParams.get("maxRating")) : undefined,
       shopLocation: searchParams.get("shopLocation") || undefined,
       sortOn: (searchParams.get("sortOn") as any) || "score",
       sortOrder: (searchParams.get("sortOrder") as any) || "desc",

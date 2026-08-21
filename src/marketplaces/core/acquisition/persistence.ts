@@ -25,6 +25,12 @@ export interface PersistenceResult {
   error?: string;
 }
 
+/** Serializes NormalizedProduct.bestSellerRank into the JSON string column —
+ * a real observed signal, stored verbatim, never recomputed. */
+function serializeBestSellerRank(p: NormalizedProduct): string | null {
+  return p.bestSellerRank && p.bestSellerRank.length > 0 ? JSON.stringify(p.bestSellerRank) : null;
+}
+
 function mapMarketplaceToConnectorType(marketplace?: MarketplaceId | string): ConnectorType {
   switch (marketplace) {
     case "amazon":
@@ -93,7 +99,7 @@ export async function persistPublicProductObservations(
         });
 
         if (existingObs) {
-          const changeEval = evaluateObservationChange(existingObs, p);
+          const changeEval = evaluateObservationChange(existingObs, p as any);
           if (changeEval.hasChanged) {
             // Record snapshot on metric change
             await prisma.productObservationSnapshot.create({
@@ -106,6 +112,9 @@ export async function persistPublicProductObservations(
                 reviewCount: p.reviewCount ?? null,
                 favoritesCount: p.favoritesCount ?? null,
                 salesCount: p.salesCount ?? null,
+                availability: p.availability ?? null,
+                shopName: p.shop?.name ?? null,
+                bestSellerRankJson: serializeBestSellerRank(p),
                 observedAt: observedDate,
               },
             });
@@ -117,6 +126,7 @@ export async function persistPublicProductObservations(
               data: {
                 fingerprint: changeEval.newFingerprint,
                 title: p.title,
+                imageUrl: p.imageUrl || existingObs.imageUrl,
                 price: p.price ?? existingObs.price,
                 rating: p.rating ?? existingObs.rating,
                 reviewCount: p.reviewCount ?? existingObs.reviewCount,
@@ -125,7 +135,14 @@ export async function persistPublicProductObservations(
                 estimatedDemand: p.estimatedDemand ?? existingObs.estimatedDemand,
                 shopName: p.shop?.name || existingObs.shopName,
                 shopExternalId: p.shop?.externalId || existingObs.shopExternalId,
-                categoryPath: p.categoryPath || existingObs.categoryPath,
+                shopUrl: p.shop?.url || existingObs.shopUrl,
+                keyword: p.keyword || existingObs.keyword,
+                categoryPath: p.categoryPath && p.categoryPath.length > 0 ? p.categoryPath : existingObs.categoryPath,
+                brand: p.brand || existingObs.brand,
+                badges: p.badges && p.badges.length > 0 ? p.badges : existingObs.badges,
+                availability: p.availability ?? existingObs.availability,
+                shippingInfo: p.shippingInfo || existingObs.shippingInfo,
+                bestSellerRankJson: serializeBestSellerRank(p) || existingObs.bestSellerRankJson,
                 fieldLineageJson: p.fieldLineage ? JSON.stringify(p.fieldLineage) : existingObs.fieldLineageJson,
                 confidence: p.opportunityScore?.confidence ?? existingObs.confidence,
                 observedAt: observedDate,
@@ -153,6 +170,7 @@ export async function persistPublicProductObservations(
               externalId: p.externalId,
               fingerprint,
               title: p.title,
+              imageUrl: p.imageUrl || null,
               price: p.price ?? null,
               currency: p.currency || "USD",
               rating: p.rating ?? null,
@@ -162,7 +180,14 @@ export async function persistPublicProductObservations(
               estimatedDemand: p.estimatedDemand ?? null,
               shopName: p.shop?.name || null,
               shopExternalId: p.shop?.externalId || null,
+              shopUrl: p.shop?.url || null,
+              keyword: p.keyword || null,
               categoryPath: p.categoryPath || [],
+              brand: p.brand || null,
+              badges: p.badges || [],
+              availability: p.availability ?? null,
+              shippingInfo: p.shippingInfo || null,
+              bestSellerRankJson: serializeBestSellerRank(p),
               sourceType: p.acquisitionMethod || "PUBLIC_WEB",
               sourceUrl: p.url || null,
               provenance: (p as any).provenance || p.source || "ACTUAL_DATA",
@@ -183,6 +208,9 @@ export async function persistPublicProductObservations(
               reviewCount: p.reviewCount ?? null,
               favoritesCount: p.favoritesCount ?? null,
               salesCount: p.salesCount ?? null,
+              availability: p.availability ?? null,
+              shopName: p.shop?.name ?? null,
+              bestSellerRankJson: serializeBestSellerRank(p),
               observedAt: observedDate,
             },
           });

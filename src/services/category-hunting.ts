@@ -466,6 +466,7 @@ export async function fetchCategoryIntelligence(
         badges: [],
         availability: null,
         bestSellerRank: [],
+        keyword: null,
       },
       shop: {
         shopId: String(l.shop_id),

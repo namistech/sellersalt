@@ -36,6 +36,15 @@ export interface PublicSearchQuery {
   limit?: number;
   minPrice?: number;
   maxPrice?: number;
+  /** Observable-review-count bounds. Semantics documented in
+   * docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Filter semantics: an item
+   * whose reviewCount is genuinely unobserved (null) is never excluded
+   * and never treated as 0 — same policy as minPrice/maxPrice. */
+  minReviews?: number;
+  maxReviews?: number;
+  /** Observable-rating bounds (0-5), same unavailable-safe policy. */
+  minRating?: number;
+  maxRating?: number;
   categoryId?: string;
   categoryPath?: string[];
   organizationId?: string;

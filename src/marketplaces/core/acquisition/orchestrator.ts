@@ -144,11 +144,46 @@ export interface OrchestratedProductResult {
   report: AcquisitionReport;
 }
 
+/** Multi-keyword search fans out at most this many keywords, one public-web
+ * request each, to keep acquisition bounded and rate-limit-respectful — see
+ * docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics. */
+const MAX_FANOUT_KEYWORDS = 5;
+
+/** Multi-keyword request field, threaded alongside the existing single
+ * `query`. Semantics (documented, not silently changed): logical OR — each
+ * keyword is searched independently and results are merged/deduplicated by
+ * (marketplace, externalId), keeping the FIRST keyword that produced a
+ * given item as its `keyword` provenance field. `query` alone (no
+ * `keywords`, or a single-entry `keywords`) behaves exactly as before this
+ * batch — this is strictly additive. */
+export interface MultiKeywordSearchQuery extends PublicSearchQuery {
+  keywords?: string[];
+}
+
+/** Resolves the ordered, deduplicated, bounded list of keywords a request
+ * should search — `request.keywords` when it has real entries, else the
+ * single `request.query`. Never silently drops the primary `query`. */
+function resolveSearchKeywords(request: MultiKeywordSearchQuery): string[] {
+  const fromArray = (request.keywords || [])
+    .map((k) => (k || "").trim())
+    .filter((k) => k.length > 0);
+
+  if (fromArray.length === 0) {
+    const single = (request.query || "").trim();
+    return single ? [single] : [];
+  }
+
+  const deduped = Array.from(new Set(fromArray.map((k) => k.toLowerCase()))).map(
+    (lower) => fromArray.find((k) => k.toLowerCase() === lower)!
+  );
+  return deduped.slice(0, MAX_FANOUT_KEYWORDS);
+}
+
 /**
  * Orchestrates product search across public web, official API, and historical observations.
  */
 export async function orchestrateProductResearch(
-  request: PublicSearchQuery & { marketplace: MarketplaceId },
+  request: MultiKeywordSearchQuery & { marketplace: MarketplaceId },
   customPolicy?: Partial<ResearchSourcePolicy>
 ): Promise<OrchestratedProductResult> {
   const acquisitionStartedAt = Date.now();
@@ -188,18 +223,41 @@ export async function orchestrateProductResearch(
       const publicAdapter = MarketplaceRegistry.tryGetPublicWebAdapter(request.marketplace);
 
       if (publicAdapter) {
+        // Multi-keyword OR fanout: bounded, one request per keyword,
+        // merged/deduped by externalId. A single-keyword request (the
+        // common case, and every pre-Batch-38 caller) makes exactly the
+        // same one request it always did.
+        const keywords = resolveSearchKeywords(request);
+        const seenExternalIds = new Set<string>();
+        const fannedOutItems: NormalizedProduct[] = [];
+        let anySucceeded = false;
+        let lastFailure: PublicAcquisitionResult<NormalizedProduct> | null = null;
+
         try {
-          const res = await publicAdapter.searchPublicProducts(request);
-          if (res.success && res.items.length > 0) {
+          for (const kw of keywords) {
+            const res = await publicAdapter.searchPublicProducts({ ...request, query: kw });
+            if (res.success && res.items.length > 0) {
+              anySucceeded = true;
+              for (const item of res.items) {
+                if (seenExternalIds.has(item.externalId)) continue;
+                seenExternalIds.add(item.externalId);
+                fannedOutItems.push({ ...item, keyword: item.keyword ?? kw });
+              }
+            } else {
+              lastFailure = res;
+            }
+          }
+
+          if (anySucceeded) {
             sourcesSucceeded.push("PUBLIC_WEB");
-            publicObservations = res.items;
+            publicObservations = fannedOutItems;
           } else {
             sourcesFailed.push("PUBLIC_WEB");
-            if (res.error) limitations.push(res.error);
-            if (typeof res.statusCode === "number") publicWebStatusCodes.push(res.statusCode);
-            if (res.failureReason) {
-              publicWebFailureReasons.push(res.failureReason);
-              limitations.push(`Public web response could not be used (${res.failureReason}).`);
+            if (lastFailure?.error) limitations.push(lastFailure.error);
+            if (typeof lastFailure?.statusCode === "number") publicWebStatusCodes.push(lastFailure.statusCode);
+            if (lastFailure?.failureReason) {
+              publicWebFailureReasons.push(lastFailure.failureReason);
+              limitations.push(`Public web response could not be used (${lastFailure.failureReason}).`);
             }
           }
         } catch (err: any) {
@@ -277,16 +335,19 @@ export async function orchestrateProductResearch(
       const validConnectorTypes = ["ETSY", "AMAZON", "EBAY", "SHOPIFY", "WOOCOMMERCE"];
 
       if (validConnectorTypes.includes(connectorType) && request.organizationId) {
+        // Same OR semantics as the live PUBLIC_WEB fanout (§ Multi-keyword
+        // semantics) — a historical fallback match against any requested
+        // keyword counts, not just the first.
+        const historicalKeywords = resolveSearchKeywords(request);
         const historicalRecords = await prisma.prospect.findMany({
           where: {
             organizationId: request.organizationId,
             marketplace: connectorType as any,
-            ...(request.query
+            ...(historicalKeywords.length > 0
               ? {
-                  listingTitle: {
-                    contains: request.query,
-                    mode: "insensitive",
-                  },
+                  OR: historicalKeywords.map((kw) => ({
+                    listingTitle: { contains: kw, mode: "insensitive" as const },
+                  })),
                 }
               : {}),
           },
@@ -370,6 +431,38 @@ export async function orchestrateProductResearch(
     const excluded = beforeCount - mergedProducts.length;
     if (excluded > 0) {
       limitations.push(`${excluded} observation(s) excluded outside the requested price range.`);
+    }
+  }
+
+  // 3.6. Review-count filtering (Batch 38) — same unavailable-safe policy
+  // as price above: a genuinely unobserved reviewCount is never excluded
+  // and never treated as 0.
+  if (typeof request.minReviews === "number" || typeof request.maxReviews === "number") {
+    const beforeCount = mergedProducts.length;
+    mergedProducts = mergedProducts.filter((p) => {
+      if (p.reviewCount === null || p.reviewCount === undefined) return true;
+      if (typeof request.minReviews === "number" && p.reviewCount < request.minReviews) return false;
+      if (typeof request.maxReviews === "number" && p.reviewCount > request.maxReviews) return false;
+      return true;
+    });
+    const excluded = beforeCount - mergedProducts.length;
+    if (excluded > 0) {
+      limitations.push(`${excluded} observation(s) excluded outside the requested review-count range.`);
+    }
+  }
+
+  // 3.7. Rating filtering (Batch 38) — same unavailable-safe policy.
+  if (typeof request.minRating === "number" || typeof request.maxRating === "number") {
+    const beforeCount = mergedProducts.length;
+    mergedProducts = mergedProducts.filter((p) => {
+      if (p.rating === null || p.rating === undefined) return true;
+      if (typeof request.minRating === "number" && p.rating < request.minRating) return false;
+      if (typeof request.maxRating === "number" && p.rating > request.maxRating) return false;
+      return true;
+    });
+    const excluded = beforeCount - mergedProducts.length;
+    if (excluded > 0) {
+      limitations.push(`${excluded} observation(s) excluded outside the requested rating range.`);
     }
   }
 

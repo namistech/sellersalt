@@ -33,6 +33,7 @@ export function computeProductObservationFingerprint(product: {
   shopName?: string | null;
   shopExternalId?: string | null;
   state?: string | null;
+  availability?: string | null;
 }): string {
   const normPrice = product.price !== null && product.price !== undefined ? Number(product.price).toFixed(2) : "null";
   const normCurrency = (product.currency || "USD").toUpperCase();
@@ -43,6 +44,7 @@ export function computeProductObservationFingerprint(product: {
   const normTitle = (product.title || "").trim().toLowerCase().replace(/\s+/g, " ");
   const normShop = (product.shopName || product.shopExternalId || "").trim().toLowerCase();
   const normState = (product.state || "active").toLowerCase();
+  const normAvailability = (product.availability || "unknown").toLowerCase();
 
   const payload = [
     normPrice,
@@ -54,6 +56,7 @@ export function computeProductObservationFingerprint(product: {
     normTitle,
     normShop,
     normState,
+    normAvailability,
   ].join("|");
 
   return createHash("sha256").update(payload).digest("hex").substring(0, 32);
@@ -73,6 +76,7 @@ export function evaluateObservationChange(
     salesCount?: number | null;
     title?: string | null;
     shopName?: string | null;
+    availability?: string | null;
   },
   incoming: {
     price?: number | null;
@@ -82,6 +86,7 @@ export function evaluateObservationChange(
     salesCount?: number | null;
     title?: string | null;
     shopName?: string | null;
+    availability?: string | null;
   }
 ): {
   hasChanged: boolean;
@@ -109,6 +114,9 @@ export function evaluateObservationChange(
   }
   if (existing.shopName && incoming.shopName && existing.shopName.trim() !== incoming.shopName.trim()) {
     changedFields.push("shopName");
+  }
+  if ((existing.availability || null) !== (incoming.availability || null)) {
+    changedFields.push("availability");
   }
 
   // If fingerprint differed but no individual field in the subset did (e.g. currency/state), mark generic change

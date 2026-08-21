@@ -55,6 +55,16 @@ function isCapabilityUnavailable(res: unknown): res is { available: false; messa
   return typeof res === "object" && res !== null && (res as any).available === false;
 }
 
+/** Live preview of how a comma-separated search box entry will be split —
+ * makes the OR-fanout multi-keyword semantics visible before submitting,
+ * rather than a silent behavior change (see
+ * docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics). */
+function splitKeywordsPreviewLabel(raw: string): string {
+  const parts = raw.split(",").map((k) => k.trim()).filter(Boolean);
+  if (parts.length <= 1) return "";
+  return `Searching ${parts.length} keywords (any match): ${parts.join(" · ")}`;
+}
+
 const MARKETPLACE_LABELS: Record<string, string> = {
   etsy: "Etsy",
   amazon: "Amazon",
@@ -68,20 +78,27 @@ export function LiveSearchTab() {
   const [keyword, setKeyword] = useState("digital planner");
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
+  const [minReviews, setMinReviews] = useState<string>("");
+  const [maxReviews, setMaxReviews] = useState<string>("");
+  const [minRating, setMinRating] = useState<string>("");
+  const [maxRating, setMaxRating] = useState<string>("");
   const [sortOn, setSortOn] = useState<"score" | "created" | "price">("score");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  // Batch 35: defaults to "All Marketplaces" rather than a single
-  // marketplace. A search must not depend on one marketplace being up —
-  // Etsy's official API credential is currently rejected and its public
-  // web access is blocked (see BATCH-34/35 forensics reports), while
-  // Amazon/Walmart's public-web adapters genuinely work today. "All
-  // Marketplaces" fans out to every eligible source in parallel and shows
-  // each one's own real status, so a fresh search surfaces real results
-  // from whichever sources are actually working instead of silently
-  // depending on whichever one happens to be first in a dropdown.
-  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("all");
+  // Batch 38 (founder direction, reversing Batch 35's default): SellerSalt
+  // is a marketplace-native research tool, not a simultaneous
+  // all-marketplace live aggregator — research happens one marketplace at
+  // a time, with results accumulating into SellerSalt's own historical
+  // database over time; a future cross-marketplace layer should primarily
+  // query that database rather than requiring every marketplace to be
+  // live-searchable at once. Amazon is the default because it currently
+  // has the strongest, most complete acquisition path (see
+  // BATCH-37/38 reports) — Etsy's API credential is still rejected and its
+  // public web access is blocked. "All Marketplaces" remains selectable
+  // for the cases it's still useful, just no longer the default.
+  const [marketplace, setMarketplace] = useState<MarketplaceSelectValue>("amazon");
 
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unavailableMessage, setUnavailableMessage] = useState<string | null>(null);
   const [searchResponse, setSearchResponse] = useState<ProductHuntingSearchResponse | null>(null);
@@ -110,6 +127,18 @@ export function LiveSearchTab() {
     setAllMarketplaceResults(null);
     setCrossComparison(null);
 
+    // Multi-keyword: a comma-separated entry ("wooden desk organizer, desk
+    // organizer, wood desk tray") is split into a keyword list and sent as
+    // keywordList — logical OR fanout, results deduplicated, each item
+    // tagged with which keyword produced it. See
+    // docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics. A
+    // single phrase (the common case) behaves exactly as before.
+    const splitKeywords = keyword
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    const keywordList = splitKeywords.length > 1 ? splitKeywords : undefined;
+
     // "All Marketplaces" fans the same search out across every registered
     // connector via the existing POST /api/marketplaces/research contract —
     // the server-side pipeline that route wraps is the single source of
@@ -117,7 +146,9 @@ export function LiveSearchTab() {
     // because its response shape (one status-tagged result per marketplace)
     // is fundamentally different from a single marketplace's rich,
     // Etsy-shaped ProductHuntingSearchResponse — not a duplicate
-    // implementation of the underlying research.
+    // implementation of the underlying research. Kept as an option (Batch
+    // 38) even though it's no longer the default — see the marketplace
+    // state's doc comment above.
     if (marketplace === "all") {
       try {
         const data = await fetchJson<{ results: any[]; comparison?: any }>("/api/marketplaces/research", {
@@ -143,8 +174,13 @@ export function LiveSearchTab() {
     try {
       const res = await searchMarketplaceProductsRequest({
         keywords: keyword.trim(),
+        keywordList,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        minReviews: minReviews ? Number(minReviews) : undefined,
+        maxReviews: maxReviews ? Number(maxReviews) : undefined,
+        minRating: minRating ? Number(minRating) : undefined,
+        maxRating: maxRating ? Number(maxRating) : undefined,
         sortOn,
         sortOrder,
         limit: 25,
@@ -160,6 +196,45 @@ export function LiveSearchTab() {
       setError(err.message || "Failed to search marketplace. Please check your connector credentials.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLoadMore() {
+    if (!searchResponse || marketplace === "all") return;
+    const splitKeywords = keyword.split(",").map((k) => k.trim()).filter(Boolean);
+    const keywordList = splitKeywords.length > 1 ? splitKeywords : undefined;
+    setLoadingMore(true);
+    try {
+      const nextPage = (searchResponse.page ?? 1) + 1;
+      const res = await searchMarketplaceProductsRequest({
+        keywords: keyword.trim(),
+        keywordList,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
+        minReviews: minReviews ? Number(minReviews) : undefined,
+        maxReviews: maxReviews ? Number(maxReviews) : undefined,
+        minRating: minRating ? Number(minRating) : undefined,
+        maxRating: maxRating ? Number(maxRating) : undefined,
+        sortOn,
+        sortOrder,
+        limit: 25,
+        page: nextPage,
+        marketplace,
+      });
+      if (isCapabilityUnavailable(res)) return;
+      setSearchResponse((prev) =>
+        prev
+          ? {
+              ...res,
+              results: [...prev.results, ...res.results],
+              page: nextPage,
+            }
+          : res
+      );
+    } catch (err: any) {
+      alert(err.message || "Failed to load more results");
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -222,7 +297,7 @@ export function LiveSearchTab() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-tertiary" />
               <Input
-                placeholder="Search products or niches (e.g. digital planner, leather wallet, svg bundle)..."
+                placeholder="Search one keyword, or several separated by commas (e.g. wooden desk organizer, desk tray)..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
                 className="pl-9 text-xs"
@@ -291,7 +366,66 @@ export function LiveSearchTab() {
                 ]}
               />
             </div>
+
+            <div className="sm:col-span-5">
+              <div className="text-[10px] text-ink-tertiary">
+                {splitKeywordsPreviewLabel(keyword)}
+              </div>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-line-subtle text-xs">
+            <div>
+              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Reviews</label>
+              <Input
+                type="number"
+                placeholder="e.g. 10"
+                value={minReviews}
+                onChange={(e) => setMinReviews(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Max Reviews</label>
+              <Input
+                type="number"
+                placeholder="e.g. 5000"
+                value={maxReviews}
+                onChange={(e) => setMaxReviews(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Rating</label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                placeholder="e.g. 4.0"
+                value={minRating}
+                onChange={(e) => setMinRating(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Max Rating</label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                max="5"
+                placeholder="e.g. 5.0"
+                value={maxRating}
+                onChange={(e) => setMaxRating(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+            <div className="col-span-2 sm:col-span-4 text-[10px] text-ink-tertiary">
+              A product whose review count or rating isn't observable on this marketplace is never excluded by these filters — only items with a real, observed value outside the range are.
+            </div>
+          </div>
+
         </form>
 
         {/* Quick Keyword Pills */}
@@ -683,6 +817,11 @@ export function LiveSearchTab() {
                       )}
                     </div>
                   )}
+                  {item.listing.keyword && (
+                    <div className="text-[10px] text-ink-tertiary">
+                      Found via: <span className="font-medium text-ink-secondary">{item.listing.keyword}</span>
+                    </div>
+                  )}
 
                   {/* Opportunity & Signals Summary — only rendered when
                       real shop-aggregate data was actually observed
@@ -760,6 +899,20 @@ export function LiveSearchTab() {
             );
             });
           })()}
+        </div>
+      )}
+
+      {searchResponse && searchResponse.results.length > 0 && searchResponse.hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button
+            variant="secondary"
+            size="compact"
+            loading={loadingMore}
+            onClick={handleLoadMore}
+            className="text-xs"
+          >
+            Load more results
+          </Button>
         </div>
       )}
 

@@ -485,6 +485,7 @@ export function ShopDetailClient({
           badges: [],
           availability: null,
           bestSellerRank: [],
+          keyword: null,
         },
         shop: {
           shopId: shopExternalId,

@@ -834,6 +834,66 @@ gap is disclosed rather than hidden. **Not independently re-verified in a
 real browser this pass** (no working dashboard credentials in this
 session) — flagged as an open follow-up, not claimed as done.
 
+**Marketplace-native Product Research & historical intelligence
+foundation (2026-08-21, Batch 38)** — founder direction: stop building
+toward a simultaneous all-marketplace aggregator; Product Research is
+marketplace-native, one marketplace at a time, Amazon first. Full detail
+in `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
+- `/prospects`' marketplace default changed from "All Marketplaces"
+  (Batch 35) to "Amazon" — browser-verified.
+- New canonical `ProductResearchRecord`
+  (`src/marketplaces/core/product-research-record.ts`), one shape for
+  both a live search result and a persisted historical row.
+  `salesCount` is typed as the literal `null` — structurally incapable of
+  fabrication by this layer.
+- `ProductObservation`/`ProductObservationSnapshot` (real, pre-existing
+  historical-observation infrastructure) extended via a real, additive
+  migration applied to staging
+  (`20260821030322_add_product_research_data_contract_fields`):
+  `imageUrl`/`shopUrl`/`keyword`/`brand`/`badges`/`availability`/
+  `shippingInfo`/`bestSellerRankJson` on the main row, plus
+  `availability`/`shopName`/`bestSellerRankJson` on snapshots — a
+  stock-status flip or seller change now shows up in the same
+  longitudinal history price/rating/reviewCount already had.
+- Three real "accepted but ignored" filter defects found and fixed:
+  review-count/rating filters didn't exist at all (now built, same
+  unavailable-safe policy as Batch 37's price filter); `sortOn`/
+  `sortOrder` were shown in the UI for every marketplace but only ever
+  applied for Etsy (now applied uniformly); pagination's `page` was never
+  threaded to acquisition and `hasMore` was hardcoded `false` (now real,
+  with a working "Load more" button). Category filtering remains
+  `NOT_IMPLEMENTED` — confirmed, not silently ignored.
+- Real multi-keyword search: comma-separated search box entry fans out
+  as a bounded (max 5), deduplicated, logical-OR search, each result
+  tagged with its producing keyword — verified live (3-keyword Amazon
+  search, 15 correctly-attributed real items).
+- A real display bug found via actual browser click-through (not just
+  API testing) and fixed: Amazon titles with HTML entities (e.g.
+  `Fellowes Workstation 3&quot; Letter Tray`) rendered undecoded.
+- A real, separate, pre-existing fabrication bug found and **deliberately
+  not fixed**: the Dashboard's "Top Opportunity Discoveries" widget shows
+  literal `$0.00` for Amazon items with genuinely unobserved prices,
+  because the legacy `Prospect.price` column is non-nullable, forcing
+  `persistence.ts`'s backward-compatible sync path to coerce `null → 0`.
+  Flagged for a dedicated follow-up — fixing it means making
+  `Prospect.price` nullable, a real schema change with an unaudited blast
+  radius across other call sites, too risky as a side effect of this
+  batch.
+- 19 new tests (deterministic fixtures + real staging-database tests for
+  persistence/snapshots/organization isolation), full suite
+  1,241/1,241 passing. `tsc`/`prisma validate`/`next build` clean.
+  Verified live against the real orchestrator pipeline **and**, for the
+  first time in this batch sequence, a real authenticated browser session
+  clicking through the actual `/prospects` UI.
+- **Launch classification: `PRODUCT_RESEARCH_READY`** — a real merchant
+  can select Amazon, search (single or multi-keyword), filter without
+  anything silently ignored, see honest provenance everywhere, and have
+  results persist into a real, queryable historical database. Not a fresh
+  re-assertion of Batch 36's `PRIVATE_BETA_READY` (that chain wasn't
+  re-verified end-to-end this batch). Amazon's price/rating/per-card-
+  category remain suppressed by Amazon's own response to SellerSalt's
+  honest bot disclosure — unchanged, founder-reconfirmed to stay as-is.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -887,12 +947,23 @@ session) — flagged as an open follow-up, not claimed as done.
 - **"App research"** — referenced in the 2026-08-16 master completion
   pass instructions but not defined anywhere in this file or `docs/`.
   Needs founder clarification before anything is built for it.
-- **Product Research review-count/shop-age filters and multi-keyword
-  search** — confirmed (2026-08-21, Batch 37) genuinely absent from
-  `EtsySearchFilters`/the search UI on every marketplace, not merely
-  broken. `minPrice`/`maxPrice` filtering was repaired this batch;
-  building new filter dimensions or multi-keyword fan-out was
-  deliberately out of scope for a data-contract repair pass.
+- **Product Research category filtering** — still confirmed
+  `NOT_IMPLEMENTED` as of Batch 38: no field for it in
+  `EtsySearchFilters`/`PublicSearchQuery`, no UI control on any
+  marketplace including Etsy. (Review-count/rating filters and
+  multi-keyword search, listed here as not-built after Batch 37, **were
+  built in Batch 38** — see that batch's entry above and `docs/
+  PRODUCT-RESEARCH-DATA-CONTRACT.md`.) Shop-age filtering isn't built
+  either, but for a different reason: shop age itself is `UNAVAILABLE`
+  from every legitimate source this app acquires from — nothing real to
+  filter on.
+- **Legacy `Prospect.price` fabricates `$0.00` for unobserved Amazon/
+  Walmart prices** — found live on the Dashboard's "Top Opportunity
+  Discoveries" widget during Batch 38's browser verification. The
+  `Prospect.price` column is non-nullable, forcing
+  `persistence.ts`'s backward-compatible sync path to coerce `null → 0`.
+  Not fixed — needs a dedicated, carefully-scoped schema change (make the
+  column nullable, audit every other read site), not a quick patch.
 - **Amazon price/rating/per-card-category via `PUBLIC_WEB`** — confirmed
   (2026-08-21, Batch 37) real and correctly parsed whenever Amazon's
   response contains them, but Amazon currently withholds them from

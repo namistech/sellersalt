@@ -154,6 +154,7 @@ export function RadarClient({
         badges: [],
         availability: null,
         bestSellerRank: [],
+        keyword: null,
       },
       shop: {
         shopId: opp.shopExternalId,

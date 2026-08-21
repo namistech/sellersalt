@@ -1198,6 +1198,7 @@ model ProductObservation {
   externalId        String
   fingerprint       String
   title             String
+  imageUrl          String?
   price             Float?
   currency          String?                    @default("USD")
   rating            Float?
@@ -1207,7 +1208,26 @@ model ProductObservation {
   estimatedDemand   Float?
   shopName          String?
   shopExternalId    String?
+  shopUrl           String?
+  // Which single search keyword produced this observation — required to
+  // preserve keyword provenance under multi-keyword (OR-fanout) search
+  // (see docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics).
+  // Null for observations acquired before Batch 38 or via a code path
+  // that doesn't track a source keyword (e.g. product-detail refresh).
+  keyword           String?
   categoryPath      String[]                   @default([])
+  brand             String?
+  // Real, on-page merchandising/disclosure labels only (e.g. "Sponsored",
+  // "Best Seller") — never SellerSalt-invented copy. See NormalizedProduct.badges.
+  badges            String[]                   @default([])
+  availability      String?                    // "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "UNAVAILABLE" | null
+  // Real fulfillment/shipping classification text as the marketplace
+  // itself expresses it (e.g. Walmart's "Fulfilled by Walmart").
+  shippingInfo      String?
+  // JSON-stringified Array<{ rank: number; category: string }> — a
+  // marketplace's own real sales-rank signal (e.g. Amazon's "Best
+  // Sellers Rank"), never a SellerSalt-derived estimate.
+  bestSellerRankJson String?
   sourceType        String                     @default("PUBLIC_WEB") // "PUBLIC_WEB" | "MARKETPLACE_API" | "HISTORICAL_OBSERVATION"
   sourceUrl         String?
   provenance        String                     @default("ACTUAL_DATA")
@@ -1239,6 +1259,9 @@ model ProductObservationSnapshot {
   reviewCount           Int?
   favoritesCount        Int?
   salesCount            Int?
+  availability          String?
+  shopName              String?
+  bestSellerRankJson    String?
   observedAt            DateTime            @default(now())
   createdAt             DateTime            @default(now())
 

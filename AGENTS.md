@@ -345,13 +345,13 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1222/1222 passing (npm run test:all — 359 suites)
+Tests:      1241/1241 passing (npm run test:all — 361 suites)
 TypeScript: clean            (npx tsc --noEmit)
 Prisma:     valid, synchronized (npx prisma@5.22.0 validate)
 Next.js:    clean build      (npx next build — 183 static and dynamic routes compiled)
 ```
 
-(As of Batch 37, 2026-08-21 — see `BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`.)
+(As of Batch 38, 2026-08-21 — see `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.)
 
 ## 19. Known Technical Debt
 
@@ -388,10 +388,27 @@ Verified against current code as of this pass:
   around this without a fresh, explicit founder decision; see
   `BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md` §13 for the full
   evidence before ever touching that UA string.
-- **Etsy's review-count/shop-age filters and multi-keyword search remain
-  `NOT_IMPLEMENTED`** — confirmed absent from `EtsySearchFilters` and the
-  search UI on every marketplace, not merely broken (Batch 37). Building
-  them is a real, scoped feature addition, not a bug repair.
+- **Review-count/rating filters, multi-keyword search, real sort-order
+  enforcement, and real pagination were built in Batch 38** (`docs/
+  PRODUCT-RESEARCH-DATA-CONTRACT.md`) — the line above from Batch 37 about
+  these being `NOT_IMPLEMENTED` is now stale for those specific items.
+  **Category filtering remains `NOT_IMPLEMENTED`** — still no field for it
+  in `EtsySearchFilters`/`PublicSearchQuery`, still no UI control on any
+  marketplace including Etsy. Shop-age filtering is not built either, for
+  a different reason: shop age itself is confirmed `UNAVAILABLE` from
+  every legitimate source this app acquires from (Batch 37) — there is
+  nothing real to filter on.
+- **The legacy `Prospect.price` column is non-nullable, forcing a
+  fabricated `0` for genuinely unobserved Amazon/Walmart prices** — found
+  live on the Dashboard's "Top Opportunity Discoveries" widget during
+  Batch 38's browser verification (several Amazon items showed literal
+  `$0.00`). Root cause: `persistence.ts`'s backward-compatible `Prospect`
+  sync path (`price: p.price !== null && p.price !== undefined ? p.price
+  : 0`) has no other option given the schema. **Not fixed** — making
+  `Prospect.price` nullable is a real schema change with an unaudited
+  blast radius across other call sites that assume a non-null price; flag
+  this for a dedicated, carefully-scoped follow-up rather than touching it
+  as a side effect of unrelated work.
 
 ## 20. Development Rules for Future Agents
 

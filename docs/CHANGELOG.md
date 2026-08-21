@@ -1171,3 +1171,94 @@ evidence, and the field-availability matrix in
   36 — the evidence backing it is now real and richer (esp. Walmart),
   Amazon's remaining gap is an external, founder-confirmed policy
   constraint, disclosed honestly rather than hidden.
+
+## Batch 38: Marketplace-Native Product Research & Independent Ecommerce Intelligence Data Foundation (2026-08-21)
+
+**Why**: Founder direction — stop building toward a simultaneous
+all-marketplace live-search aggregator; Product Research should be
+marketplace-native (one marketplace at a time, Amazon first), with real
+observations accumulating into SellerSalt's own historical database
+rather than every marketplace needing to be live-searchable at once. Full
+detail in `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
+
+- **`/prospects`' marketplace default changed from "All Marketplaces"
+  (Batch 35) to "Amazon"** — a real, browser-verified UI change, not just
+  a doc update. "All Marketplaces" remains selectable.
+- **New canonical `ProductResearchRecord`**
+  (`src/marketplaces/core/product-research-record.ts`) — one shape a live
+  search result and a persisted historical row both resolve to, via two
+  mappers. `salesCount` is typed as the literal `null`, not `number |
+  null` — structurally incapable of ever being fabricated by this layer.
+- **`ProductObservation`/`ProductObservationSnapshot` extended** (real,
+  additive migration `20260821030322_add_product_research_data_contract_fields`,
+  applied to staging): `imageUrl`, `shopUrl`, `keyword`, `brand`,
+  `badges`, `availability`, `shippingInfo`, `bestSellerRankJson` added to
+  the main row; `availability`, `shopName`, `bestSellerRankJson` added to
+  snapshots, so a stock-status flip or a seller change now shows up in
+  the same longitudinal history price/rating/reviewCount already had.
+  This existing historical-observation infrastructure (upsert-per-
+  `(org, marketplace, externalId)`, snapshot-on-real-change) already
+  existed before this batch — it simply had nowhere to persist most of
+  what Batch 37's adapters had just learned to observe.
+- **Three real "accepted but ignored" filter defects found and fixed**:
+  (1) `minReviews`/`maxReviews`/`minRating`/`maxRating` didn't exist at
+  all — now enforced with the same unavailable-safe policy as Batch 37's
+  price filter; (2) `sortOn`/`sortOrder` were shown in the UI for every
+  marketplace but only ever applied for Etsy — now applied uniformly,
+  with `null` metrics always sorting last; (3) pagination's `page`
+  parameter was never threaded to the acquisition layer and `hasMore` was
+  hardcoded `false` — now real (`page` threaded through, `hasMore` an
+  honest page-fullness signal), with a working "Load more" button added
+  to `/prospects`. Category filtering and multi-keyword search were
+  confirmed to have never existed in any form (not silently broken) —
+  documented as `NOT_IMPLEMENTED` where deliberately not built this pass.
+- **Multi-keyword search, real**: a comma-separated search box entry now
+  fans out as a bounded (max 5), deduplicated, logical-OR search — each
+  result tagged with the keyword that produced it, both in-memory and
+  persisted. Verified live: a real 3-keyword Amazon search returned 15
+  correctly-attributed real items with zero cross-keyword duplication.
+- **A real display bug found and fixed via actual browser click-through**
+  (not just API testing): Amazon titles containing HTML entities (e.g.
+  `Fellowes Workstation 3&quot; Letter Tray`) rendered undecoded. New
+  `decodeHtmlEntities()` helper applied across every text field the
+  Amazon adapter extracts.
+- **A real, pre-existing, separate fabrication bug found and explicitly
+  NOT fixed this batch**: the Dashboard's "Top Opportunity Discoveries"
+  widget shows literal `$0.00` for Amazon items with genuinely unobserved
+  prices — traced to the legacy `Prospect.price` column being
+  non-nullable, forcing `persistence.ts`'s backward-compatibility sync
+  path to coerce `null → 0`. Flagged for a dedicated follow-up rather than
+  risking a wide-blast-radius schema change as a side effect of this
+  batch.
+- **Five new/updated docs**: `docs/PRODUCT-RESEARCH-DATA-CONTRACT.md`,
+  `docs/DATA-TRUST.md`, `docs/MARKETPLACE-RESEARCH-MODEL.md`,
+  `docs/HISTORICAL-INTELLIGENCE.md` (new), `docs/DATA-ACQUISITION.md`
+  (updated, new §14 covering the marketplace-native strategy and the
+  Amazon bot-UA cost, re-confirmed by the founder this batch).
+- **Homepage fixed two real overclaims**: the hero implied Etsy/Amazon/
+  eBay/Walmart/Shopify all work equally today (only Amazon/Walmart
+  genuinely do) — corrected to "Live research today: Amazon • Walmart."
+  Added two new sections: marketplace-native research & historical
+  intelligence, and responsible/permitted acquisition (states plainly
+  that SellerSalt doesn't circumvent CAPTCHAs/auth/rate limits/anti-bot
+  systems).
+- **Verification**: 19 new tests
+  (`src/tests/batch-38-marketplace-native-product-research.test.ts`,
+  deterministic fixtures for acquisition/filter/contract behavior, real
+  staging-database tests for persistence/snapshots/organization
+  isolation), full suite **1,241/1,241 passing** across 361 suites.
+  `tsc`/`prisma validate`/`next build` all clean. Verified live against
+  the real orchestrator pipeline and, for the first time in this batch
+  sequence, a **real authenticated browser session** clicking through the
+  actual `/prospects` UI (multi-keyword preview, filter inputs, honest
+  "Price: Unavailable" disclosure, per-card keyword provenance, "Load
+  more" — all confirmed rendering correctly).
+- **Launch classification**: `PRODUCT_RESEARCH_READY` — a real merchant
+  can select Amazon, search (single or multi-keyword), filter without any
+  filter being silently ignored, see honest provenance at every surface,
+  and have results persist into a real, queryable historical database.
+  Not re-asserted as a fresh `PRIVATE_BETA_READY` (that classification's
+  full SEARCH→VALIDATE→PLAN chain was Batch 36's finding, not re-verified
+  end-to-end in this batch). Amazon's price/rating/per-card-category
+  remain suppressed by Amazon's own response to SellerSalt's honest bot
+  disclosure — external, founder-confirmed to stay as-is.

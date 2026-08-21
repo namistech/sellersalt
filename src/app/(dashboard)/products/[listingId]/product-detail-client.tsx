@@ -216,6 +216,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           badges: [],
           availability: null,
           bestSellerRank: [],
+          keyword: null,
         },
         shop: {
           shopId: product.shopId,

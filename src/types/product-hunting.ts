@@ -12,9 +12,23 @@ export type { OpportunityType, OpportunitySignal };
 
 export interface EtsySearchFilters {
   keywords?: string;
+  /** Multiple search phrases (Batch 38) — logical OR, bounded to 5,
+   * deduplicated results, each item tagged with the keyword that produced
+   * it. When present, takes precedence over the single `keywords` string
+   * for the acquisition call; `keywords` is still sent/kept for display
+   * and backward-compatible callers. See
+   * docs/PRODUCT-RESEARCH-DATA-CONTRACT.md §Multi-keyword semantics. */
+  keywordList?: string[];
   taxonomyId?: number;
   minPrice?: number;
   maxPrice?: number;
+  /** Observable-review-count bounds (Batch 38). Unavailable-safe: an item
+   * with no observed review count is never excluded. */
+  minReviews?: number;
+  maxReviews?: number;
+  /** Observable-rating bounds (0-5, Batch 38), same unavailable-safe policy. */
+  minRating?: number;
+  maxRating?: number;
   shopLocation?: string;
   sortOn?: "created" | "price" | "score";
   sortOrder?: "asc" | "desc";
@@ -77,6 +91,9 @@ export interface NormalizedProductListing {
    * Sellers Rank"), never a SellerSalt-derived estimate. Empty when
    * unavailable. */
   bestSellerRank: Array<{ rank: number; category: string }>;
+  /** Which search keyword produced this result under multi-keyword (OR
+   * fanout) search — null for a single-keyword search or when not tracked. */
+  keyword: string | null;
 }
 
 export interface NormalizedShopProfile {

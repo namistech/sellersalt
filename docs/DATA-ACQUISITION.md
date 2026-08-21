@@ -196,4 +196,48 @@ The validation layer (`src/services/intelligence/product-validation-engine.ts`) 
 - Supports user-supplied unit economics with strict `USER_DERIVED` provenance separation.
 - Persists validations in `ProductValidation` model in PostgreSQL with multi-tenant `organizationId` isolation.
 
+---
+
+## 14. Marketplace-Native Research Strategy (Batch 38, 2026-08-21)
+
+Founder direction, formalized: SellerSalt is **not** a simultaneous
+all-marketplace live-search aggregator. Research happens **one marketplace
+at a time** — a search selects a single marketplace (Amazon by default
+today; Etsy's official API credential is still rejected and its public web
+access is blocked), acquires real observations from it, and persists them
+into SellerSalt's own historical database
+(`ProductObservation`/`ProductObservationSnapshot`, §"Historical Data
+Foundation" in `docs/HISTORICAL-INTELLIGENCE.md`). "All Marketplaces" mode
+(§2's fan-out) remains available as an option, not the default — the
+long-term intent (see `docs/HISTORICAL-INTELLIGENCE.md` §Phase 4) is for a
+future cross-marketplace layer to primarily query SellerSalt's own
+accumulated database rather than requiring every marketplace to be
+live-searchable at once.
+
+### Honest bot disclosure, and what it costs
+
+`src/marketplaces/core/acquisition/compliance.ts`'s `PublicPageFetcher`
+requests use a real Chrome User-Agent with an honest, appended bot
+signature (`"...(SellerSalt Commerce Research Bot/1.0;
++https://sellersalt.com/bot; research@sellersalt.com)"`). This is a
+deliberate transparency choice, re-confirmed by the founder during Batch
+38 after Batch 37 proved, with a controlled live A/B fetch of the same
+Amazon ASIN, that Amazon's servers withhold price/rating/per-card-category
+specifically from this disclosed identity while serving full data to an
+undisclosed plain-browser UA. SellerSalt does not spoof, rotate, or hide
+its identity to recover that data — the honest-disclosure cost is real and
+documented, not silently worked around. See
+`BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md` §13 for the full evidence.
+
+### Multi-keyword search (new, §"Multi-keyword semantics" in
+`docs/PRODUCT-RESEARCH-DATA-CONTRACT.md`)
+
+A single research call can now fan out across up to 5 keywords (logical
+OR, deduplicated by `(marketplace, externalId)`, each item tagged with the
+keyword that produced it) — `MultiKeywordSearchQuery.keywords` in
+`src/marketplaces/core/acquisition/orchestrator.ts`. This is acquisition
+capacity, not a new acquisition method — each keyword still goes through
+the exact same single-keyword `PublicWebAcquisitionAdapter.
+searchPublicProducts()` path, bounded and rate-limited the same way.
+
 

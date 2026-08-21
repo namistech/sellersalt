@@ -174,6 +174,7 @@ describe("Phase C: Multi-Product Comparison Engine", () => {
         badges: [],
         availability: null,
         bestSellerRank: [],
+        keyword: null,
       },
       shop: {
         shopId: `shop_${id}`,

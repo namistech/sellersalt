@@ -115,7 +115,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
       badge: "Observable Signals",
       title: "2. Research Empirical Market Structure",
       description:
-        "Inspect real price distributions (P10, P25, P50, P75, P90), seller concentration indices, review velocity, and keyword cluster prevalence across Etsy and Amazon.",
+        "Inspect real price distributions (P10, P25, P50, P75, P90), seller concentration indices, review velocity, and keyword cluster prevalence — one marketplace at a time, starting with Amazon.",
       icon: Search,
       preview: {
         headline: "Market Structure & Price Positioning",
@@ -268,20 +268,17 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               </div>
             </div>
 
-            {/* Source Attribution Indicator */}
+            {/* Source Attribution Indicator — honest about what's genuinely
+                live today, not an implied guarantee across every listed
+                marketplace. See docs/MARKETPLACE-RESEARCH-MODEL.md. */}
             <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-[#7C847E] font-medium border-t border-[#E3E6E0]/60 max-w-xl mx-auto">
-              <span>Observable research across:</span>
+              <span>Live research today:</span>
               <div className="flex items-center gap-4 font-bold text-[#343D36]">
-                <span>Etsy</span>
-                <span>•</span>
                 <span>Amazon</span>
                 <span>•</span>
-                <span>eBay</span>
-                <span>•</span>
                 <span>Walmart</span>
-                <span>•</span>
-                <span>Shopify</span>
               </div>
+              <span className="text-[#A3AA9F]">Etsy, eBay & more expanding</span>
             </div>
           </div>
         </section>
@@ -466,6 +463,61 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         </section>
 
         {/* ================================================================= */}
+        {/* 3.5 MARKETPLACE-NATIVE RESEARCH & HISTORICAL INTELLIGENCE        */}
+        {/* ================================================================= */}
+        <section className="py-20 bg-[#FAFAF8] border-b border-[#E3E6E0]">
+          <div className="max-w-6xl mx-auto px-6 space-y-12">
+            <div className="text-center max-w-3xl mx-auto space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+                How Research Actually Works
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
+                One marketplace at a time — accumulating into your own market memory.
+              </h2>
+              <p className="text-sm sm:text-base text-[#525B55] max-w-2xl mx-auto">
+                SellerSalt isn&apos;t a simultaneous every-marketplace search engine. Research
+                is marketplace-native: you pick a marketplace, SellerSalt acquires real
+                observations from it, and every observation is saved into your organization&apos;s
+                own historical database — so the same product searched again later shows you
+                what actually changed, not just a fresh snapshot.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 rounded-2xl bg-white border border-[#E3E6E0] space-y-3">
+                <Boxes className="w-5 h-5 text-emerald-600" />
+                <h4 className="text-sm font-bold text-[#141B16]">Marketplace-specific research</h4>
+                <p className="text-xs text-[#525B55] leading-relaxed">
+                  Each marketplace has its own acquisition path, its own observable-field set, and
+                  its own honest gaps — Amazon and Walmart don&apos;t pretend to work like each
+                  other, and a search never silently depends on a marketplace that isn&apos;t
+                  reachable right now.
+                </p>
+              </div>
+              <div className="p-6 rounded-2xl bg-white border border-[#E3E6E0] space-y-3">
+                <BarChart3 className="w-5 h-5 text-emerald-600" />
+                <h4 className="text-sm font-bold text-[#141B16]">Historical market intelligence</h4>
+                <p className="text-xs text-[#525B55] leading-relaxed">
+                  Every real observation is saved with a timestamp. Search the same product again
+                  next week and SellerSalt can show you what actually moved — price, rating,
+                  review count, availability, even seller — instead of forcing you to remember.
+                </p>
+              </div>
+              <div className="p-6 rounded-2xl bg-white border border-[#E3E6E0] space-y-3">
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+                <h4 className="text-sm font-bold text-[#141B16]">Cross-marketplace, later</h4>
+                <p className="text-xs text-[#525B55] leading-relaxed">
+                  A future cross-marketplace comparison will primarily draw on SellerSalt&apos;s own
+                  accumulated observations, not require every marketplace to answer a live request
+                  at the exact moment you ask. That&apos;s the direction, stated plainly rather than
+                  implied as already finished.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ================================================================= */}
         {/* 4. TRUST-FIRST DATA PHILOSOPHY & SIGNAL CLASSIFICATION          */}
         {/* ================================================================= */}
         <section className="py-20 bg-white border-b border-[#E3E6E0]">
@@ -548,6 +600,37 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* ================================================================= */}
+        {/* 4.5 RESPONSIBLE, PERMITTED ACQUISITION                           */}
+        {/* ================================================================= */}
+        <section className="py-16 bg-[#FAFAF8] border-b border-[#E3E6E0]">
+          <div className="max-w-4xl mx-auto px-6 text-center space-y-5">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              How We Acquire Data
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-[#141B16] tracking-tight">
+              Permitted public sources, authorized integrations — nothing circumvented.
+            </h2>
+            <p className="text-sm text-[#525B55] max-w-2xl mx-auto leading-relaxed">
+              SellerSalt uses permitted public, structured, and authorized data sources where
+              available, and respects each marketplace&apos;s own access policies — we do not
+              circumvent CAPTCHAs, authentication, rate limits, or anti-bot systems. Our
+              acquisition requests honestly identify themselves; when a marketplace restricts what
+              it will share with that identity, we disclose the resulting gap rather than work
+              around it. Public-web research, authorized store connections, and SellerSalt&apos;s
+              own historical intelligence are three distinct things — we never blur them into one
+              undifferentiated data claim.
+            </p>
+            <Link
+              href="/trust"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+            >
+              <span>Read the full data acquisition & trust documentation</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </section>
 
