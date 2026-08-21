@@ -56,9 +56,9 @@ test("Batch 18: Canonical Opportunity Identity & Deduplication", async (t) => {
     // Shortlist the opportunity
     updateOpportunityStage(orgId, res1.opportunity.id, "SHORTLISTED");
 
-    // Rediscover the same listing from Competitor Surveillance with updated price
+    // Rediscover the same listing from Market Research with updated price
     const res2 = upsertCanonicalOpportunity(orgId, {
-      source: "COMPETITOR_SURVEILLANCE",
+      source: "MARKET_RESEARCH",
       listingExternalId: "listing_alpha_99",
       listingTitle: "Handmade Leather Card Holder (Updated)",
       primaryKeyword: "leather card holder",

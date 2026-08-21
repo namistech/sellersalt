@@ -43,7 +43,7 @@ export function getMarketIntelligenceFeed(): MarketSignalEvent[] {
       whyItMatters: "Competitor is capturing demand in your target category without increasing review moat.",
       provenance: "ACTUAL_ETSY_DATA",
       actionLabel: "Research Winning Listings",
-      actionHref: "/spy",
+      actionHref: "/shop-intelligence",
       urgency: "HIGH",
       timestamp: "2h ago",
     },

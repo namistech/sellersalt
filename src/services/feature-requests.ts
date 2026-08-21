@@ -9,7 +9,7 @@ export type FeatureStatus =
   | "DECLINED";
 
 export type FeatureCategory =
-  | "SURVEILLANCE"
+  | "MARKET_RESEARCH"
   | "SEO_STUDIO"
   | "PRODUCT_HUNTING"
   | "SHOP_RESEARCH"
@@ -51,12 +51,12 @@ let FEATURE_STORE: FeatureRequestItem[] = [
     id: "feat-2",
     title: "Longitudinal Shop Market Research Tracking",
     description: "Automatic background tracking of verified shop sales, catalog additions, and review velocity with breakout alerts.",
-    category: "SURVEILLANCE",
+    category: "MARKET_RESEARCH",
     status: "SHIPPED",
     upvotes: 38,
     authorName: "SellerSalt Team",
     authorOrgId: "system",
-    adminResponse: "Shipped in v1.7.0 — Track any shop from Market Research (/spy).",
+    adminResponse: "Shipped in v1.7.0 — Track any shop from Shop Intelligence (/shop-intelligence).",
     createdAt: "2026-06-20T11:00:00.000Z",
     updatedAt: "2026-08-12T09:15:00.000Z",
   },
@@ -64,7 +64,7 @@ let FEATURE_STORE: FeatureRequestItem[] = [
     id: "feat-3",
     title: "Webhook & Discord Alerts for Competitor Price Cuts",
     description: "Receive instant push alerts to Discord or Webhook endpoints whenever a tracked competitor changes prices.",
-    category: "SURVEILLANCE",
+    category: "MARKET_RESEARCH",
     status: "IN_DEVELOPMENT",
     upvotes: 29,
     authorName: "CraftingPro",

@@ -128,6 +128,7 @@ describe("SellerSalt Etsy Commercial API Compliance Remediation Suite", () => {
       "src/components/public/PublicFooter.tsx",
       "src/app/(dashboard)/spy/page.tsx",
       "src/app/(dashboard)/dashboard/dashboard-client.tsx",
+      "src/app/(dashboard)/shop-intelligence/page.tsx",
       "src/app/(auth)/login/page.tsx",
       "src/app/checkout/checkout-client.tsx",
     ];

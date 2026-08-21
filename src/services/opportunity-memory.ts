@@ -88,7 +88,7 @@ function seedInitialOpportunities(organizationId: string) {
       stage: "KEYWORDS",
     },
     {
-      source: "COMPETITOR_SURVEILLANCE",
+      source: "MARKET_RESEARCH",
       listingExternalId: "172839104",
       listingTitle: "Handmade Wooden Floating Shelves Modern",
       listingUrl: "https://www.etsy.com/listing/172839104",
@@ -517,7 +517,7 @@ export function getCanonicalOpportunities(
         list = list.filter((o) => !o.isDismissed && o.opportunityScore >= 75);
         break;
       case "COMPETITOR":
-        list = list.filter((o) => !o.isDismissed && (o.source === "COMPETITOR_SURVEILLANCE" || o.source === "SHOP_INTELLIGENCE"));
+        list = list.filter((o) => !o.isDismissed && (o.source === "MARKET_RESEARCH" || o.source === "SHOP_INTELLIGENCE"));
         break;
       case "KEYWORDS":
         list = list.filter((o) => !o.isDismissed && o.source === "KEYWORD_RESEARCH");
@@ -702,7 +702,7 @@ export function calculatePipelineHealth(organizationId: string): PipelineHealthR
     { stage: "DRAFT", number: 7, label: "Draft", href: "/drafts" },
     { stage: "REVIEW", number: 8, label: "Review", href: "/drafts" },
     { stage: "PUBLISHED", number: 9, label: "Published", href: "/settings/channels" },
-    { stage: "MONITORING", number: 10, label: "Monitoring", href: "/spy/tracked" },
+    { stage: "MONITORING", number: 10, label: "Monitoring", href: "/shop-intelligence/tracked" },
   ];
 
   // Calculate counts per stage (including seeded healthy baseline if empty for immediate exploration)

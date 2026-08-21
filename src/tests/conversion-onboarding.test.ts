@@ -55,7 +55,7 @@ test("Task 1 & 4: Public Positioning & Pricing Plan Consistency", async (t) => {
 test("Task 7 & 8: First-Run Onboarding & Fast-Start Launchpads", async (t) => {
   const launchpads = [
     { id: "radar", title: "Hunt Winning Products", href: "/radar" },
-    { id: "shop", title: "Research Competitors", href: "/spy" },
+    { id: "shop", title: "Research Competitors", href: "/shop-intelligence" },
     { id: "categories", title: "Explore Market Niches", href: "/categories" },
     { id: "keywords", title: "Find Profitable Keywords", href: "/keyword-research" },
   ];

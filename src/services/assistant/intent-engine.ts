@@ -528,7 +528,7 @@ export async function processDeterministicIntent(
       text: "Here is your recommended Etsy Intelligence Agenda for today:\n1. 🔍 Scan Opportunity Radar for breakout listings with Opportunity Score >= 80.\n2. 📊 Monitor tracked competitor shops in ShopWatch for sales velocity spikes.\n3. 🎯 Harvest 13 compliant long-tail tags in Keyword Research.\n4. ✍️ Generate an original listing draft in the AI Studio with <15% overlap protection.",
       actions: [
         { label: "1. Opportunity Radar", href: "/radar", variant: "primary" },
-        { label: "2. Tracked Shops", href: "/spy/tracked", variant: "secondary" },
+        { label: "2. Tracked Shops", href: "/shop-intelligence/tracked", variant: "secondary" },
         { label: "3. Keyword Research", href: "/keyword-research", variant: "outline" },
         { label: "4. AI Studio", href: "/studio", variant: "outline" },
       ],

@@ -52,9 +52,9 @@ test("Batch 23: Plan Transition Matrix & Server-Authoritative Entitlements", asy
     assert.equal(freeAccess.canAccessAgencyTools, false);
     assert.equal(freeAccess.canManageMultipleStores, false);
 
-    // Pro unlocks AI generation and advanced surveillance
+    // Pro unlocks AI generation and advanced tracking
     assert.equal(proAccess.canGenerateListingCopy, true);
-    assert.equal(proAccess.canUseAdvancedSurveillance, true);
+    assert.equal(proAccess.canUseAdvancedTracking, true);
 
     // Agency unlocks multi-store client management & agency tools
     assert.equal(agencyAccess.canAccessAgencyTools, true);
@@ -75,7 +75,7 @@ test("Batch 23: Onboarding & First-Value Flow Verification", async (t) => {
       radar: "/radar",
       keywords: "/keyword-research",
       seo: "/seo",
-      competitors: "/spy",
+      competitors: "/shop-intelligence",
       own_shop: "/store",
       studio: "/studio",
     };

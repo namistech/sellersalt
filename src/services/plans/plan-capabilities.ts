@@ -135,7 +135,7 @@ export function getFeatureAccess(currentTier: PlanTierKey = "STARTED") {
     canTrackCompetitors: isTierSufficient(currentTier, "FREE"),
     canGenerateListingCopy: isTierSufficient(currentTier, "STARTED"),
     canExportData: isTierSufficient(currentTier, "STARTED"),
-    canUseAdvancedSurveillance: isTierSufficient(currentTier, "PRO"),
+    canUseAdvancedTracking: isTierSufficient(currentTier, "PRO"),
     canManageMultipleStores: isTierSufficient(currentTier, "PRO"),
     canAccessAgencyTools: isTierSufficient(currentTier, "AGENCY"),
   };

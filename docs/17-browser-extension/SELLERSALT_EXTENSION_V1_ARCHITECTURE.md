@@ -42,7 +42,7 @@ The SellerSalt Browser Extension allows sellers to access real-time market intel
 
 When an extension user attempts an operation:
 1. The extension requests `/api/extension/plan-status`.
-2. If a feature is locked (e.g. `features.canUseAdvancedSurveillance === false` for a Free user), the extension displays a sleek in-context card:
+2. If a feature is locked (e.g. `features.canUseAdvancedTracking === false` for a Free user), the extension displays a sleek in-context card:
    ```
    ┌───────────────────────────────────────────────┐
    │ 🔒 Pro Feature                                │

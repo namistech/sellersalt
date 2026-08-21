@@ -45,7 +45,7 @@ export interface OrganizationEntitlements {
     canTrackCompetitors: boolean;
     canGenerateListingCopy: boolean;
     canExportData: boolean;
-    canUseAdvancedSurveillance: boolean;
+    canUseAdvancedTracking: boolean;
     canManageMultipleStores: boolean;
     canAccessAgencyTools: boolean;
     browserExtensionEnabled: boolean;
@@ -159,7 +159,7 @@ export class EntitlementEngine {
         canTrackCompetitors: featureAccess.canTrackCompetitors,
         canGenerateListingCopy: featureAccess.canGenerateListingCopy,
         canExportData: featureAccess.canExportData,
-        canUseAdvancedSurveillance: featureAccess.canUseAdvancedSurveillance,
+        canUseAdvancedTracking: featureAccess.canUseAdvancedTracking,
         canManageMultipleStores: featureAccess.canManageMultipleStores,
         canAccessAgencyTools: featureAccess.canAccessAgencyTools,
         browserExtensionEnabled: planDef.limits.browserExtensionEnabled,

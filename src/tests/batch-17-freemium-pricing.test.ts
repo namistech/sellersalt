@@ -34,15 +34,15 @@ describe("Batch 17: Pricing & Commercial Plan Architecture", () => {
   it("validates graduated feature permissions across tiers", () => {
     const freeFeat = getFeatureAccess("FREE");
     assert.strictEqual(freeFeat.canExportData, false);
-    assert.strictEqual(freeFeat.canUseAdvancedSurveillance, false);
+    assert.strictEqual(freeFeat.canUseAdvancedTracking, false);
 
     const starterFeat = getFeatureAccess("STARTED");
     assert.strictEqual(starterFeat.canExportData, true);
-    assert.strictEqual(starterFeat.canUseAdvancedSurveillance, false);
+    assert.strictEqual(starterFeat.canUseAdvancedTracking, false);
 
     const proFeat = getFeatureAccess("PRO");
     assert.strictEqual(proFeat.canExportData, true);
-    assert.strictEqual(proFeat.canUseAdvancedSurveillance, true);
+    assert.strictEqual(proFeat.canUseAdvancedTracking, true);
     assert.strictEqual(proFeat.canManageMultipleStores, true);
   });
 });

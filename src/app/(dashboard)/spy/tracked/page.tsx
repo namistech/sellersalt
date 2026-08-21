@@ -2,15 +2,17 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import SpyOnCompetitorPage from "../page";
 
-export default function TrackedCompetitorsPage() {
+export default function LegacySpyTrackedRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    // Seamlessly transition legacy /spy/tracked URLs to unified /spy surveillance hub
-    router.replace("/spy");
+    router.replace("/shop-intelligence");
   }, [router]);
 
-  return <SpyOnCompetitorPage />;
+  return (
+    <div className="p-8 text-center text-xs text-ink-tertiary">
+      Redirecting to Shop Intelligence…
+    </div>
+  );
 }

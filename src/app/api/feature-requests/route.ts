@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const result = await createFeatureRequest({
       title: title.trim(),
       description: description.trim(),
-      category: (category as FeatureCategory) || "SURVEILLANCE",
+      category: (category as FeatureCategory) || "MARKET_RESEARCH",
       authorName,
       authorOrgId: organizationId,
     });

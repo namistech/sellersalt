@@ -87,13 +87,13 @@ test("Batch 25: Pro $1 / 3-Day Trial Commercial Verification", async (t) => {
 test("Batch 25: Multi-Tenant & Server-Authoritative Gating Invariants", async (t) => {
   await t.test("prevents client-side plan spoofing on feature checks", () => {
     // A canceled or expired user cannot access Pro features even if the client claims "PRO"
-    assert.equal(canUseFeature("PRO", "canUseAdvancedSurveillance", "EXPIRED"), false);
+    assert.equal(canUseFeature("PRO", "canUseAdvancedTracking", "EXPIRED"), false);
     assert.equal(canUseFeature("PRO", "canGenerateListingCopy", "CANCELED"), false);
     assert.equal(canUseFeature("AGENCY", "canAccessAgencyTools", "PAYMENT_FAILED"), false);
     
     // Only ACTIVE or TRIALING subscriptions unlock paid features
-    assert.equal(canUseFeature("PRO", "canUseAdvancedSurveillance", "ACTIVE"), true);
-    assert.equal(canUseFeature("PRO", "canUseAdvancedSurveillance", "TRIALING"), true);
+    assert.equal(canUseFeature("PRO", "canUseAdvancedTracking", "ACTIVE"), true);
+    assert.equal(canUseFeature("PRO", "canUseAdvancedTracking", "TRIALING"), true);
   });
 
   await t.test("retains single source of truth for plan limits across all tiers", () => {

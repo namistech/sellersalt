@@ -323,9 +323,9 @@ test("Batch 19: Plan Gating & Quota Consistency", async (t) => {
     assert.equal(access.canAccessAgencyTools, false);
   });
 
-  await t.test("verifies Pro plan unlocks advanced surveillance and multi-stores", () => {
+  await t.test("verifies Pro plan unlocks advanced tracking and multi-stores", () => {
     const access = getFeatureAccess("PRO");
-    assert.equal(access.canUseAdvancedSurveillance, true);
+    assert.equal(access.canUseAdvancedTracking, true);
     assert.equal(access.canManageMultipleStores, true);
   });
 });

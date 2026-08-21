@@ -13,24 +13,27 @@ describe("Batch 16: Commercial Plan Architecture & Quota Engine", () => {
     // 1. Free tier
     const freeAccess = getFeatureAccess("FREE");
     assert.strictEqual(freeAccess.canConnectEtsy, false);
-    assert.strictEqual(freeAccess.canGenerateListingCopy, false);
-    assert.strictEqual(freeAccess.canUseAdvancedSurveillance, false);
+    assert.strictEqual(freeAccess.canUseAdvancedTracking, false);
+    assert.strictEqual(freeAccess.canManageMultipleStores, false);
     assert.strictEqual(freeAccess.canAccessAgencyTools, false);
 
-    // 2. Starter tier
+    // Starter tier access
     const starterAccess = getFeatureAccess("STARTED");
     assert.strictEqual(starterAccess.canConnectEtsy, true);
+    assert.strictEqual(starterAccess.canTrackCompetitors, true);
     assert.strictEqual(starterAccess.canGenerateListingCopy, true);
-    assert.strictEqual(starterAccess.canUseAdvancedSurveillance, false);
+    assert.strictEqual(starterAccess.canExportData, true);
+    assert.strictEqual(starterAccess.canUseAdvancedTracking, false);
+    assert.strictEqual(starterAccess.canManageMultipleStores, false);
     assert.strictEqual(starterAccess.canAccessAgencyTools, false);
 
-    // 3. Pro / Growth tier
+    // Pro tier access
     const proAccess = getFeatureAccess("PRO");
     assert.strictEqual(proAccess.canConnectEtsy, true);
+    assert.strictEqual(proAccess.canTrackCompetitors, true);
     assert.strictEqual(proAccess.canGenerateListingCopy, true);
-    assert.strictEqual(proAccess.canUseAdvancedSurveillance, true);
-    assert.strictEqual(proAccess.canManageMultipleStores, true);
-    assert.strictEqual(proAccess.canAccessAgencyTools, false);
+    assert.strictEqual(proAccess.canExportData, true);
+    assert.strictEqual(proAccess.canUseAdvancedTracking, true);
 
     // 4. Agency tier
     const agencyAccess = getFeatureAccess("AGENCY");

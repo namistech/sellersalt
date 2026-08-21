@@ -72,8 +72,8 @@ const INTELLIGENCE_ITEMS: NavigationItem[] = [
   { id: "validate", label: "Product Validation", href: "/validate", icon: Compass },
   { id: "radar", label: "Opportunity Radar", href: "/radar", icon: Flame },
   { id: "intelligence-graph", label: "Intelligence Graph", href: "/intelligence", icon: Layers },
-  { id: "spy", label: "Market Research", href: "/spy", icon: Search },
-  { id: "tracked-shops", label: "Demand Signals", href: "/spy/tracked", icon: Store },
+  { id: "shop-intelligence", label: "Shop Intelligence", href: "/shop-intelligence", icon: Search },
+  { id: "tracked-shops", label: "Demand Signals", href: "/shop-intelligence/tracked", icon: Store },
 ];
 
 const OPTIMIZE_ITEMS: NavigationItem[] = [

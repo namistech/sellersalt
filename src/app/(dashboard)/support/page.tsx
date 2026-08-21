@@ -439,7 +439,7 @@ export default function SupportPage() {
                 className="w-full text-xs py-2 px-3 rounded-lg border border-line bg-surface font-semibold text-ink"
               >
                 <option value="GENERAL">General Inquiries</option>
-                <option value="SURVEILLANCE">Market Research</option>
+                <option value="MARKET_RESEARCH">Market Research</option>
                 <option value="ETSY_API">Etsy API &amp; Connectors</option>
                 <option value="BILLING">Billing &amp; Subscription</option>
                 <option value="BUG_REPORT">Bug Report</option>

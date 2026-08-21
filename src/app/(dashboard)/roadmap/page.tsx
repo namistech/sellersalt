@@ -77,7 +77,7 @@ export default function RoadmapPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<FeatureCategory>("SURVEILLANCE");
+  const [category, setCategory] = useState<FeatureCategory>("MARKET_RESEARCH");
   const [similarItems, setSimilarItems] = useState<FeatureRequestItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -246,7 +246,7 @@ export default function RoadmapPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold text-ink-tertiary uppercase">Filter:</span>
-            {["ALL", "SURVEILLANCE", "SEO_STUDIO", "PRODUCT_HUNTING", "SHOP_RESEARCH", "WORKSPACE_PLANNER"].map(
+            {["ALL", "MARKET_RESEARCH", "SEO_STUDIO", "PRODUCT_HUNTING", "SHOP_RESEARCH", "WORKSPACE_PLANNER"].map(
               (cat) => (
                 <button
                   key={cat}
@@ -258,7 +258,7 @@ export default function RoadmapPage() {
                       : "bg-surface text-ink-secondary border-line hover:text-ink"
                   }`}
                 >
-                  {cat === "ALL" ? "All Areas" : cat === "SURVEILLANCE" ? "Market Research" : cat.replace("_", " ")}
+                  {cat === "ALL" ? "All Areas" : cat === "MARKET_RESEARCH" ? "Market Research" : cat.replace("_", " ")}
                 </button>
               )
             )}
@@ -394,7 +394,7 @@ export default function RoadmapPage() {
               onChange={(e) => setCategory(e.target.value as any)}
               className="w-full text-xs py-2 px-3 rounded-lg border border-line bg-surface font-semibold text-ink"
             >
-              <option value="SURVEILLANCE">Market Research</option>
+              <option value="MARKET_RESEARCH">Market Research</option>
               <option value="SEO_STUDIO">Listing SEO Studio</option>
               <option value="PRODUCT_HUNTING">Product Hunting</option>
               <option value="SHOP_RESEARCH">Shop Research</option>

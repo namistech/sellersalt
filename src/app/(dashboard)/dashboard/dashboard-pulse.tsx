@@ -28,7 +28,7 @@ export function DashboardPulse({ pulse }: DashboardPulseProps) {
         />
       </Link>
 
-      <Link href="/spy/tracked" className="transition-transform hover:-translate-y-0.5">
+      <Link href="/shop-intelligence/tracked" className="transition-transform hover:-translate-y-0.5">
         <MetricCard
           label="Tracked Competitors"
           value={pulse.trackedShops}

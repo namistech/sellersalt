@@ -469,9 +469,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         if (watches.length === 0) {
           return {
             success: true,
-            summary: "You are not tracking any research shops yet. You can track any benchmark store from Market Research (/spy).",
+            summary: "You are not tracking any research shops yet. You can track any benchmark store from Shop Intelligence (/shop-intelligence).",
             provenance: "ACTUAL_ETSY_DATA",
-            actions: [{ label: "Discover Shops to Track", href: "/spy", variant: "primary" }],
+            actions: [{ label: "Discover Shops to Track", href: "/shop-intelligence", variant: "primary" }],
           };
         }
 
@@ -517,7 +517,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
             ],
             href: `/shops/${i.shopExternalId}`,
           })),
-          actions: [{ label: "Open Tracking Center", href: "/spy/tracked", variant: "primary" }],
+          actions: [{ label: "Open Tracking Center", href: "/shop-intelligence/tracked", variant: "primary" }],
         };
       } catch (err: any) {
         return {

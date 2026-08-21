@@ -52,7 +52,7 @@ export async function POST(req: Request) {
             error: parsed.error || "Pasted input is an Etsy shop rather than a listing.",
             isShopUrl: true,
             shopName: parsed.shopName,
-            redirectUrl: parsed.shopName ? `/shops/${encodeURIComponent(parsed.shopName)}` : "/spy",
+            redirectUrl: parsed.shopName ? `/shops/${encodeURIComponent(parsed.shopName)}` : "/shop-intelligence",
           },
           { status: 400 }
         );

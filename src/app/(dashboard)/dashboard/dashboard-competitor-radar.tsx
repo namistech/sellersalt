@@ -20,7 +20,7 @@ export function DashboardCompetitorRadar({ competitors }: DashboardCompetitorRad
             <Badge variant="neutral">Active tracking</Badge>
           </div>
           <Link
-            href="/spy/tracked"
+            href="/shop-intelligence/tracked"
             className="inline-flex items-center gap-1 text-body-sm font-medium text-accent hover:underline"
           >
             All tracked shops <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -34,7 +34,7 @@ export function DashboardCompetitorRadar({ competitors }: DashboardCompetitorRad
               title="No shops tracked yet"
               description="Track any Etsy shop URL to build a real historical sales & review trend over time."
               action={
-                <Button variant="primary" size="compact" href="/spy">
+                <Button variant="primary" size="compact" href="/shop-intelligence">
                   Track a shop
                 </Button>
               }
@@ -97,7 +97,7 @@ export function DashboardCompetitorRadar({ competitors }: DashboardCompetitorRad
 
       <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-meta text-ink-tertiary">
         <span>Snapshots refreshed via background schedule</span>
-        <Link href="/spy" className="text-accent hover:underline">
+        <Link href="/shop-intelligence" className="text-accent hover:underline">
           + Track new shop
         </Link>
       </div>

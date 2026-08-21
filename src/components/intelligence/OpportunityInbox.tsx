@@ -74,7 +74,7 @@ export function OpportunityInbox({
       if (activeTab === "HIGH_OPPORTUNITY") {
         list = list.filter((o) => o.opportunityScore >= 75);
       } else if (activeTab === "COMPETITOR") {
-        list = list.filter((o) => o.source === "COMPETITOR_SURVEILLANCE" || o.source === "SHOP_INTELLIGENCE");
+        list = list.filter((o) => o.source === "MARKET_RESEARCH" || o.source === "SHOP_INTELLIGENCE");
       } else if (activeTab === "KEYWORDS") {
         list = list.filter((o) => o.source === "KEYWORD_RESEARCH");
       } else if (activeTab === "OWN_SHOP") {
@@ -238,10 +238,10 @@ export function OpportunityInbox({
               Keyword Hunter
             </Link>
             <Link
-              href="/spy"
+              href="/shop-intelligence"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-line bg-surface-secondary hover:bg-surface text-ink transition"
             >
-              Market Research
+              Shop Intelligence
             </Link>
           </div>
         </div>

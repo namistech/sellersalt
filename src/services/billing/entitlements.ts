@@ -25,7 +25,7 @@ export interface AccountEntitlements {
     canTrackCompetitors: boolean;
     canGenerateListingCopy: boolean;
     canExportData: boolean;
-    canUseAdvancedSurveillance: boolean;
+    canUseAdvancedTracking: boolean;
     canManageMultipleStores: boolean;
     canAccessAgencyTools: boolean;
   };

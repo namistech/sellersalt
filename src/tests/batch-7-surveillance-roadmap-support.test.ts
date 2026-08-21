@@ -62,7 +62,7 @@ test("Batch 7: Feature Request & Public Roadmap Service", async (t) => {
     const result = await createFeatureRequest({
       title: "Real-time Discord Webhook Alerts for Price Cuts",
       description: "Notify our Discord channel whenever a monitored competitor drops prices.",
-      category: "SURVEILLANCE",
+      category: "MARKET_RESEARCH",
       authorName: "Test Seller",
       authorOrgId: "test-org-101",
     });
@@ -91,7 +91,7 @@ test("Batch 7: Customer Support Ticket Hub Service", async (t) => {
       authorName: "Alice Artisan",
       subject: "Question about 6-hour snapshot frequency",
       message: "How long after clicking Spy will the first snapshot appear in our dashboard?",
-      category: "SURVEILLANCE",
+      category: "MARKET_RESEARCH",
       priority: "HIGH",
     });
 

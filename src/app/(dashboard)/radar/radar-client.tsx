@@ -526,11 +526,11 @@ export function RadarClient({
           <Button
             variant="secondary"
             size="default"
-            onClick={() => router.push("/spy")}
+            onClick={() => router.push("/shop-intelligence")}
             className="gap-1.5 shadow-xs"
           >
             <Eye className="h-4 w-4" />
-            Market Research
+            Shop Intelligence
           </Button>
           <Button
             variant="primary"

@@ -113,7 +113,7 @@ export function DashboardOnboardingGuide({
       title: "Research Competitors",
       subtitle: "Shop Intelligence",
       description: "Analyze any Etsy shop's estimated revenue, daily sales rate, and get a strategic competition verdict.",
-      href: "/spy",
+      href: "/shop-intelligence",
       cta: "Research Shop",
       icon: Store,
       color: "text-blue-600 bg-blue-50 border-blue-200",

@@ -61,19 +61,19 @@ test("Batch 24: Canonical Subscription State Machine", async (t) => {
 test("Batch 24: Feature Entitlement & Authorization Gating", async (t) => {
   await t.test("evaluates feature boolean flags based on tier and active status", () => {
     const activePro = resolveFeatureEntitlement("PRO", "ACTIVE");
-    assert.equal(activePro.canUseAdvancedSurveillance, true);
+    assert.equal(activePro.canUseAdvancedTracking, true);
     assert.equal(activePro.canGenerateListingCopy, true);
     assert.equal(activePro.canAccessAgencyTools, false);
 
     const expiredPro = resolveFeatureEntitlement("PRO", "EXPIRED");
-    assert.equal(expiredPro.canUseAdvancedSurveillance, false);
+    assert.equal(expiredPro.canUseAdvancedTracking, false);
     assert.equal(expiredPro.canGenerateListingCopy, false);
   });
 
   await t.test("canUseFeature strictly enforces server-authoritative decisions", () => {
-    assert.equal(canUseFeature("FREE", "canUseAdvancedSurveillance", "FREE"), false);
-    assert.equal(canUseFeature("PRO", "canUseAdvancedSurveillance", "ACTIVE"), true);
-    assert.equal(canUseFeature("PRO", "canUseAdvancedSurveillance", "EXPIRED"), false);
+    assert.equal(canUseFeature("FREE", "canUseAdvancedTracking", "FREE"), false);
+    assert.equal(canUseFeature("PRO", "canUseAdvancedTracking", "ACTIVE"), true);
+    assert.equal(canUseFeature("PRO", "canUseAdvancedTracking", "EXPIRED"), false);
     assert.equal(canUseFeature("AGENCY", "canAccessAgencyTools", "ACTIVE"), true);
   });
 });

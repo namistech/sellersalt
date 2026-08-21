@@ -3,7 +3,7 @@
 export type TicketCategory =
   | "BILLING"
   | "ETSY_API"
-  | "SURVEILLANCE"
+  | "MARKET_RESEARCH"
   | "BUG_REPORT"
   | "FEATURE_QUESTION"
   | "GENERAL";
