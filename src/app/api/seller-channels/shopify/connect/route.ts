@@ -6,7 +6,7 @@ import { checkLimit } from "@/lib/plan-limits";
 import { createConnectToken } from "@/lib/store-connect-token";
 import { getSetting } from "@/lib/app-settings";
 
-const SCOPES = "read_orders,read_products,write_products";
+const SCOPES = "read_orders";
 
 // Built from NEXTAUTH_URL, never req.url — see the WooCommerce connect
 // route for why (req.url reflects the container's internal 0.0.0.0 address

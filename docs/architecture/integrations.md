@@ -64,12 +64,9 @@ integration must follow this same pattern.
 
 ### Scopes requested today
 
-- Shopify: `read_orders,read_products,write_products`
+- Shopify: `read_orders` (least privilege, matching synced orders capability)
 - Etsy-seller: `listings_w listings_r shops_r transactions_r`
-- WooCommerce: [VERIFY] — app-authorization flow scope not directly
-  inspected in this pass; root `CLAUDE.md` states write scope was
-  "upgraded from read-only" across all three so cross-listing won't
-  need customers to reconnect later.
+- WooCommerce: `read` (least privilege, matching synced orders capability)
 
 ### Manual-key fallback
 
