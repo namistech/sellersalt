@@ -351,7 +351,10 @@ Prisma:     valid, synchronized (npx prisma@5.22.0 validate)
 Next.js:    clean build      (npx next build — 183 static and dynamic routes compiled)
 ```
 
-(As of Batch 38, 2026-08-21 — see `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.)
+(As of Batch 38, 2026-08-21 — see `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
+Batch 39, same date, was a documentation/architecture-audit-only pass —
+no code changed, so these numbers still apply unchanged; see
+`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`.)
 
 ## 19. Known Technical Debt
 
@@ -409,6 +412,25 @@ Verified against current code as of this pass:
   blast radius across other call sites that assume a non-null price; flag
   this for a dedicated, carefully-scoped follow-up rather than touching it
   as a side effect of unrelated work.
+- **`KeywordObservation`/`CategoryObservation` have no snapshot/history
+  table** (confirmed, Batch 39 audit) — unlike `ProductObservation`
+  (extended in Batch 38), every re-observation `upsert()`s the same row,
+  overwriting prior stats in place. This is the concrete blocker for any
+  keyword/category trend intelligence — see `docs/
+  MARKET-INTELLIGENCE-ROADMAP.md` and `docs/
+  KEYWORD-INTELLIGENCE-ARCHITECTURE.md` §3. Recommended fix: mirror
+  `ProductObservationSnapshot`'s existing change-detection pattern, not a
+  new design.
+- **No sales/revenue/demand estimation model exists anywhere in this
+  codebase** (Batch 39 audit, re-confirmed by direct inspection). If one
+  is ever built, it must follow the input-signals→model→range→confidence→
+  provenance shape in `docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md` §9 —
+  a bare number, ever, is the one thing this document exists to prevent.
+- **Competitor research (8 companies, `docs/
+  COMPETITOR-DATA-ACQUISITION-RESEARCH.md`) found no company using an
+  official marketplace API as its primary source of competitor data** —
+  independent validation that public-web-first (SellerSalt's existing
+  architecture) is the category norm, not a compromise.
 
 ## 20. Development Rules for Future Agents
 

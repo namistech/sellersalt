@@ -158,6 +158,53 @@ regex-extracted fragment; add it only once a real, verified source exists
 for a specific field, the same way `badges`/`bestsellerRank` were added in
 Batch 37/38 only after live verification.
 
+## 7. Formal field inventory (Batch 39)
+
+Full classification per the six-state model (OBSERVED / HISTORICAL_OBSERVED
+/ DERIVED / ESTIMATED / USER_DERIVED / UNAVAILABLE — see
+`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md` §4 for the model's definition).
+"MVP status" marks whether the field is required for the
+`PRODUCT_RESEARCH_READY` bar (Batch 38) a merchant needs to decide "does
+this deserve further investigation" — not every real field is MVP-required.
+
+| Field | Type | Source (Amazon / Walmart / Etsy) | Classification | Required for MVP? | Freshness | Confidence |
+|---|---|---|---|---|---|---|
+| title | string | card / card / API | OBSERVED | Yes | Live per-search | High |
+| productUrl | string | card / card / API | OBSERVED | Yes | Live per-search | High |
+| imageUrl | string | card / card / API | OBSERVED | Yes | Live per-search | High |
+| brand | string\|null | detail-only / card+detail / — | OBSERVED where present | No | Live per-search | High when present |
+| sellerName/Id | string\|null | detail-only / card+detail / API | OBSERVED where present | Yes (Walmart), No (Amazon cards) | Live per-search | High when present |
+| category | string[] | detail-only¹ / card / API | OBSERVED where present | No | Live per-search | High when present |
+| price | number\|null | detail-only¹ / card+detail / API | OBSERVED where present | **Yes** | Live per-search | High when present |
+| currency | string\|null | with price | OBSERVED where present | Yes (with price) | Live per-search | High |
+| availability | enum\|null | detail-only¹ / card+detail / — | OBSERVED where present | No | Live per-search | High when present |
+| fulfillmentType | string\|null | — / card / — | OBSERVED (Walmart only) | No | Live per-search | High |
+| rating | number\|null | detail-only¹ / card / — | OBSERVED where present | **Yes** | Live per-search | High when present |
+| reviewCount | number\|null | detail-only¹ / card / — | OBSERVED where present | **Yes** | Live per-search | High when present |
+| review velocity | number\|null | — | UNAVAILABLE (no history yet accumulated for any product) | No | — | — |
+| bestsellerRank | array | detail-only¹ / — / — | OBSERVED (Amazon detail only) | No | Live per-search | High when present |
+| rank history | array | — | UNAVAILABLE (schema supports it — `ProductObservationSnapshot.bestSellerRankJson`, Batch 38 — but no product has 2+ real observations over meaningful elapsed time yet) | No | — | — |
+| sales count | number | — | **UNAVAILABLE**, all three marketplaces except Etsy's real lifetime `transaction_sold_count` | No (Amazon/Walmart), Yes (Etsy) | — | — |
+| sales/revenue estimate | number | — | **NOT BUILT** — no estimation model exists (see §6, `docs/MARKET-INTELLIGENCE-ROADMAP.md`) | No | — | — |
+| price history | array | `ProductObservationSnapshot` | HISTORICAL_OBSERVED (schema real, needs repeated real-world observation) | No | Per-snapshot | High once accumulated |
+| listing age | number | detail (Etsy: `created_timestamp`; Amazon/Walmart: not exposed) | OBSERVED (Etsy only) / UNAVAILABLE (Amazon/Walmart) | No | — | — |
+| competing listing count | number | derived from search sample size | DERIVED (sample-bounded, not a true catalog count — see caveat below) | No | Per-search | Medium (sample-size-limited) |
+| price/review/rating distribution | stats | derived from search sample | DERIVED | No | Per-search | Medium (sample-size-limited) |
+| keyword (which search found this) | string\|null | orchestrator | DERIVED (Batch 38 multi-keyword tagging) | No | Per-search | High |
+
+¹ "detail-only" fields are additionally constrained by Amazon's bot-UA
+suppression (`docs/DATA-ACQUISITION.md` §14) — even the detail-page path
+only recovers these under specific conditions verified in Batch 37; treat
+as "observed when the page allows it," not guaranteed every request.
+
+**Competing-listing-count/distribution caveat**: these are computed from
+whatever sample size the current search returned (typically ≤25-50 items
+per request), not a true "how many listings exist for this query"
+catalog count — neither Amazon nor Walmart's public search page exposes
+an exact total. Labeling this DERIVED-from-a-bounded-sample (not a full
+census) is itself part of the provenance contract — a future UI surface
+must not present it as "X total competing listings" without that caveat.
+
 ## 6. Sales, revenue, and demand — the one rule that matters most
 
 `ProductResearchRecord.salesCount` is typed as the literal `null` — not

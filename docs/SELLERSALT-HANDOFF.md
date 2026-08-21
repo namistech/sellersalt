@@ -4,9 +4,32 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 38 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 39 COMPLETE)
 
-Read this section first if you're picking up work cold. Current as of
+Read this section first if you're picking up work cold. Batch 39
+(Independent Ecommerce Intelligence Acquisition Strategy Audit — see
+`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`) was a **documentation/
+architecture-audit-only pass, no code changed** — six new/updated docs:
+`docs/INDEPENDENT-ECOMMERCE-INTELLIGENCE-ACQUISITION-ENGINE.md`,
+`docs/COMPETITOR-DATA-ACQUISITION-RESEARCH.md` (8 companies researched,
+every claim tagged VERIFIED/INFERENCE/UNKNOWN),
+`docs/PRODUCT-RESEARCH-DATA-CONTRACT.md` (updated with a formal field
+table), `docs/KEYWORD-INTELLIGENCE-ARCHITECTURE.md`, `docs/
+MARKET-INTELLIGENCE-ROADMAP.md`, and the audit report itself. Key
+takeaways: (1) a fresh live re-trace reconfirmed Amazon's price/rating/
+category are still suppressed by its bot-UA response — unchanged; (2) not
+one of 8 competitors researched uses an official marketplace API as its
+*primary* competitor-data source — independent validation of SellerSalt's
+own architecture; (3) `KeywordObservation`/`CategoryObservation` have no
+snapshot/history table (the concrete next-migration recommendation); (4)
+launch classification is precisely split — `PRODUCT_RESEARCH_READY` for a
+single-cycle search→validate→plan workflow, `NOT_YET_READY_FOR_PRODUCT_RESEARCH`
+for genuinely historically-accumulated Market Intelligence (which needs
+real elapsed production time, not more code). Test/build numbers are
+unchanged from Batch 38 (below). Recommended next batch (not started):
+fix the `Prospect.price` fabrication, add keyword/category snapshot
+tables, port multi-keyword search to Keyword Research.
+
 Batch 38 (Marketplace-Native Product Research & Independent Ecommerce
 Intelligence Data Foundation — see
 `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`): founder direction —

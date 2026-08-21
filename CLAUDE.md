@@ -894,6 +894,56 @@ in `BATCH-38-MARKETPLACE-NATIVE-PRODUCT-RESEARCH.md`.
   category remain suppressed by Amazon's own response to SellerSalt's
   honest bot disclosure — unchanged, founder-reconfirmed to stay as-is.
 
+**Independent Ecommerce Intelligence Acquisition Strategy Audit
+(2026-08-21, Batch 39)** — an architecture/strategy audit, explicitly not
+a feature batch (founder instruction: audit first, don't add features).
+No code was changed; six docs were created/updated. Full detail in
+`docs/BATCH-39-ACQUISITION-STRATEGY-AUDIT.md`. Key findings:
+- **A real, live re-trace of one Amazon acquisition request** (this
+  batch, not copied from Batch 37) reconfirmed: 48 real parsed products,
+  zero with observed price/rating/category — the bot-UA constraint is
+  unchanged and still the dominant limiter of Amazon's usefulness.
+- **Competitor research** (Helium 10, Jungle Scout, Keepa, SellerApp,
+  DataHawk, eRank, EtsyHunt, Alura — `docs/COMPETITOR-DATA-ACQUISITION-RESEARCH.md`,
+  every claim tagged VERIFIED/INFERENCE/UNKNOWN): **not one of the eight
+  companies researched claims an official marketplace API as its primary
+  source of competitor/market-wide data** — including DataHawk, the one
+  company with genuine verified Amazon partner status, whose competitor
+  data comes from a separate daily public-marketplace scan. This
+  independently validates the "not a thin API wrapper" direction as the
+  category norm, not just SellerSalt's own constraint. Every company that
+  publishes a sales estimate discloses it as an estimate, never a raw
+  fact — DataHawk publishes a per-estimate confidence score, the closest
+  real precedent for SellerSalt's own range+confidence+basis estimation
+  format (not yet built — no estimation model exists in this codebase).
+- **`KeywordObservation`/`CategoryObservation` have no snapshot/history
+  table** (unlike `ProductObservation`, extended in Batch 38) — the
+  single clearest, most actionable gap found, and the concrete
+  recommended next migration (mirror `ProductObservationSnapshot`'s
+  pattern) before any trend/Market-Intelligence work can start for real.
+- **The tension between the founder's strategic choice (Amazon first) and
+  empirical data richness (Walmart currently richer) is named plainly**,
+  not papered over — Amazon still provides real, non-fabricated evidence
+  (badges, brand/seller/category/BSR on the product-detail page), just
+  thinner than Walmart's.
+- **Launch classification, precisely split rather than one slogan**:
+  `PRODUCT_RESEARCH_READY` for a single-cycle search→observe→validate→plan
+  workflow (Batch 38's classification, reaffirmed).
+  `NOT_YET_READY_FOR_PRODUCT_RESEARCH` for the fuller, historically-
+  accumulated Market Intelligence experience — not a missing feature, but
+  a fact about elapsed real-world time: no product has yet been observed
+  multiple times in real production use, and no amount of code changes
+  that by itself.
+- **Recommended next batch** (not started): (1) fix the `Prospect.price`
+  non-nullable-column fabrication found in Batch 38 (still unfixed), (2)
+  add `KeywordObservationSnapshot`/`CategoryObservationSnapshot` tables,
+  (3) port Batch 38's multi-keyword fanout to Keyword Research. Explicitly
+  **not** recommended next: any estimation model, any Market Intelligence
+  UI, or any browser-extension-based acquisition mode (a materially
+  different compliance posture than SellerSalt's current server-side
+  model — flagged for a dedicated future compliance review, not adopted
+  by default because competitors do it).
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
