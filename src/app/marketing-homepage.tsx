@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { MarketplaceDisclaimerBox } from "@/components/governance/MarketplaceDisclaimerBox";
 import { PLAN_DEFINITIONS } from "@/services/plans/plan-capabilities";
 
 interface PackageData {
@@ -63,7 +64,7 @@ const TRUST_PILLARS = [
     icon: Boxes,
     title: "Built with the platforms, not around them.",
     description:
-      "Our research tools are built on licensed data and transparent, consented sources — not scraping, not workarounds.",
+      "Our research tools are built on licensed data and transparent, consented sources — not unauthorized access, not workarounds.",
   },
   {
     icon: Users,
@@ -183,7 +184,7 @@ const CANONICAL_FAQS = [
   },
   {
     q: "How does SellerSalt acquire marketplace data?",
-    a: "SellerSalt uses permitted, licensed, and transparent data sources along with official marketplace APIs for your own connected shops. We strictly follow marketplace policies and never use unauthorized access or server-side scraping.",
+    a: "SellerSalt uses permitted, licensed, and transparent data sources along with official marketplace APIs for your own connected shops. We strictly follow marketplace policies and never use unauthorized extraction or server-side workarounds.",
   },
   {
     q: "Does SellerSalt invent or guess missing data?",
@@ -380,7 +381,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                           <Icon className="w-5 h-5" />
                         </div>
-                        <Badge variant="outline" className="text-[10px] font-bold">
+                        <Badge variant="neutral" className="text-[10px] font-bold">
                           {feature.badge}
                         </Badge>
                       </div>
@@ -452,7 +453,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span className="font-mono font-bold text-emerald-200">mcp-server / sellersalt</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px] text-emerald-300 border-emerald-700">
+                    <Badge variant="neutral" className="text-[10px] text-emerald-300 border-emerald-700">
                       Active
                     </Badge>
                   </div>
@@ -776,6 +777,13 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             </div>
           </div>
         </section>
+
+        {/* ================================================================= */}
+        {/* 10. MARKETPLACE TRADEMARK DISCLAIMERS                            */}
+        {/* ================================================================= */}
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <MarketplaceDisclaimerBox marketplace="etsy" />
+        </div>
       </main>
 
       <PublicFooter />

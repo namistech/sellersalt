@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
+import { ShieldCheck, AlertCircle } from "lucide-react";
 
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
@@ -21,103 +22,135 @@ export default function PrivacyPage() {
         <div className="space-y-8">
           {/* Header */}
           <div className="border-b border-[#E3E6E0] pb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-800 text-xs font-bold mb-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Data Protection & Privacy</span>
+            </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#141B16]">
               Privacy Policy
             </h1>
             <p className="mt-2 text-sm text-[#7C847E]">
-              Last updated: August 15, 2026 · Committed to transparency and data protection
+              Last updated: [DATE]
             </p>
+            <div className="mt-4 p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 text-amber-900 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p>
+                <strong>Notice:</strong> Starting draft, not final. Have a qualified attorney review before publishing, particularly international data transfer, regional privacy-rights, and retention sections.
+              </p>
+            </div>
           </div>
 
           {/* Policy Body */}
           <div className="space-y-8 text-sm leading-relaxed text-[#525B55]">
             <section className="space-y-3">
-              <h2 className="text-lg font-bold text-[#141B16]">1. Overview & Commitment</h2>
+              <h2 className="text-lg font-bold text-[#141B16]">1. What This Policy Covers</h2>
               <p>
-                SellerSalt ("we", "us", or "our") respects your privacy. This Privacy Policy explains what information we collect when you use our website, application, and research tools, how we use and protect that information, and your choices regarding your data.
+                Explains what information SellerSalt (&quot;we,&quot; &quot;us,&quot; operated by Netdrix Cloud Services, United Arab Emirates, operating as Netdrix Digital, UK affiliate ErgoForge Global Limited) collects, how we use it, and your choices.
               </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">2. Information We Collect</h2>
               <p>
-                We collect information necessary to provide and secure our ecommerce intelligence tools:
+                <strong>Account information</strong>: name, email, organization name, role, billing details (processed by payment providers — see Section 5).
               </p>
-              <ul className="list-disc pl-5 space-y-1.5">
-                <li>
-                  <strong>Account Information:</strong> When you register, we collect your name, email address, and an encrypted hash of your password. We never store plain-text passwords.
-                </li>
-                <li>
-                  <strong>Billing Information:</strong> Payment transactions are handled directly by certified, PCI-compliant payment processors (such as Stripe and PayPal). SellerSalt stores only customer and subscription identifiers necessary to verify active plan entitlements.
-                </li>
-                <li>
-                  <strong>Research & Search Configurations:</strong> Keywords, search filters, and competitor shop IDs that you choose to track within your workspace are stored to deliver automated daily snapshots and Opportunity Radar alerts.
-                </li>
-                <li>
-                  <strong>Technical & Log Data:</strong> We automatically log standard connection details (such as IP address, browser type, and authentication cookies) to maintain session integrity and prevent brute-force attacks.
-                </li>
-              </ul>
+              <p>
+                <strong>Connected store data</strong>: data belonging to the connected store only, through the platform&apos;s official API, limited to what&apos;s needed for the features you use.
+              </p>
+              <p>
+                <strong>Extension telemetry</strong>: [NEEDS ENGINEERING INPUT: describe exactly what the browser extension currently collects by reading its actual code — do not describe an idealized version; state whether it&apos;s opt-in or on-by-default].
+              </p>
+              <p>
+                <strong>Usage data</strong>: interactions with SellerSalt for product improvement and support.
+              </p>
+              <p>
+                <strong>AI agent/MCP interactions</strong>: actions taken through any connected AI agent, logged for security and audit.
+              </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">3. How We Use Information</h2>
-              <p>We use the collected information exclusively to:</p>
-              <ul className="list-disc pl-5 space-y-1.5">
-                <li>Provide, operate, and maintain your SellerSalt workspace.</li>
-                <li>Execute scheduled marketplace research streams on your behalf.</li>
-                <li>Process subscription billing, renewals, and quota allocations.</li>
-                <li>Send transactional system communications (such as password reset links, email change confirmations, and workspace invitations).</li>
-                <li>Protect against unauthorized access, fraudulent activity, and abuse.</li>
-              </ul>
+              <p>
+                To provide and improve the Service; to communicate about account/billing/product updates; to build aggregate, non-attributable market research datasets (individual users&apos; browsing is never shown to other customers); to detect and prevent fraud, abuse, and security incidents.
+              </p>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-lg font-bold text-[#141B16]">4. Information Sharing & Disclosure</h2>
+              <h2 className="text-lg font-bold text-[#141B16]">4. What We Don&apos;t Do</h2>
               <p>
-                <strong>We do not sell, rent, or monetize your personal information.</strong> We share data only with third-party service providers essential for platform operations:
+                We do not use your connected store&apos;s access to view or analyze any other seller&apos;s shop data. We do not sell your personal information to third parties. We do not present modeled or estimated data as if it were confirmed fact.
               </p>
-              <ul className="list-disc pl-5 space-y-1.5">
-                <li><strong>Payment Processors:</strong> Stripe and PayPal to process secure credit card and subscription charges.</li>
-                <li><strong>Transactional Email Infrastructure:</strong> Secure SMTP services to transmit account and security notifications.</li>
-                <li><strong>Cloud Infrastructure:</strong> Secure cloud database and hosting providers operating in modern data centers.</li>
-              </ul>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-lg font-bold text-[#141B16]">5. Data Security & Encryption</h2>
+              <h2 className="text-lg font-bold text-[#141B16]">5. Third-Party Service Providers</h2>
               <p>
-                We implement robust technical and organizational security measures:
+                Payment processing: Stripe, PayPal (we do not store your full card number).
               </p>
-              <ul className="list-disc pl-5 space-y-1.5">
-                <li>Password hashing using bcrypt with high salt rounds.</li>
-                <li>AES-256-GCM authenticated encryption for sensitive credentials stored in the database.</li>
-                <li>HTTPS / TLS 1.3 encryption across all public and authenticated endpoints.</li>
-                <li>Strict multi-tenant database queries ensuring workspace isolation.</li>
-              </ul>
+              <p>
+                Infrastructure/hosting: [NEEDS FOUNDER INPUT: hosting provider disclosure].
+              </p>
+              <p>
+                Email delivery: [NEEDS FOUNDER INPUT: SMTP/SES provider].
+              </p>
+              <p>
+                Integrations you connect: Zapier, Slack, QuickBooks, any MCP-connected AI agent — data flows only when you explicitly set up the connection.
+              </p>
             </section>
 
             <section className="space-y-3">
-              <h2 className="text-lg font-bold text-[#141B16]">6. Your Rights & Data Controls</h2>
+              <h2 className="text-lg font-bold text-[#141B16]">6. Data Retention</h2>
               <p>
-                You retain full control over your personal data. You have the right to:
+                [NEEDS FOUNDER INPUT: retention periods per data type.]
               </p>
-              <ul className="list-disc pl-5 space-y-1.5">
-                <li>Access and review your account details at any time in Profile Settings.</li>
-                <li>Update your login email address (protected by password verification).</li>
-                <li>Export your discovered prospect and opportunity data via CSV export.</li>
-                <li>Request complete deletion of your account and workspace data by contacting support.</li>
-              </ul>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-lg font-bold text-[#141B16]">7. Your Rights</h2>
+              <p>
+                [NEEDS LEGAL REVIEW: which regional privacy laws apply (GDPR, CCPA/CPRA, others) given a UAE-registered operator, UK affiliate, and international customer base, and what specific rights/mechanisms are required.] Contact <a href="mailto:support@sellersalt.com" className="text-emerald-700 underline">support@sellersalt.com</a> to exercise applicable rights.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-lg font-bold text-[#141B16]">8. International Data Transfers</h2>
+              <p>
+                [NEEDS LEGAL REVIEW: transfer mechanism based on where data is hosted vs. where users are located.]
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-lg font-bold text-[#141B16]">9. Children&apos;s Privacy</h2>
+              <p>
+                SellerSalt is not directed to, and we do not knowingly collect information from, anyone under 18.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-lg font-bold text-[#141B16]">10. Security</h2>
+              <p>
+                Industry-standard security measures, including encryption of connected-store access tokens at rest. No system is completely secure; use a strong, unique password.
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-lg font-bold text-[#141B16]">11. Changes to This Policy</h2>
+              <p>
+                Material changes notified via email or in-app notice before taking effect.
+              </p>
             </section>
 
             <section className="space-y-3 border-t border-[#E3E6E0] pt-6">
-              <h2 className="text-lg font-bold text-[#141B16]">7. Contact & Privacy Inquiries</h2>
+              <h2 className="text-lg font-bold text-[#141B16]">12. Contact</h2>
               <p>
-                For privacy-related inquiries, data requests, or questions regarding our privacy practices:
+                support@sellersalt.com, Monday–Friday 9:00 AM – 6:00 PM, or via the in-dashboard ticket system.
               </p>
-              <div className="rounded-lg bg-white p-4 border border-[#E3E6E0] text-xs space-y-1">
-                <div><strong>Privacy Email:</strong> privacy@sellersalt.com</div>
-                <div><strong>Support Contact:</strong> <Link href="/contact" className="text-[#16C784] hover:underline">sellersalt.com/contact</Link></div>
-                <div><strong>Data Controller:</strong> SellerSalt Technologies <em>[Legal Entity Name & Registered Jurisdiction Placeholder]</em></div>
+              <div className="mt-4 rounded-xl bg-white p-4 border border-[#E3E6E0] text-xs space-y-1.5">
+                <div><strong>Email:</strong> <a href="mailto:support@sellersalt.com" className="text-emerald-700 hover:underline">support@sellersalt.com</a></div>
+                <div><strong>Support Contact:</strong> <Link href="/contact" className="text-emerald-700 hover:underline">sellersalt.com/contact</Link></div>
+                <div><strong>Operator:</strong> Netdrix Cloud Services (UAE), operating as Netdrix Digital</div>
+                <div><strong>UK Affiliate:</strong> ErgoForge Global Limited</div>
+                <div><strong>Support Hours:</strong> Monday &ndash; Friday 9:00 AM &ndash; 6:00 PM + in-dashboard tickets</div>
               </div>
             </section>
           </div>

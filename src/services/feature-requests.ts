@@ -17,6 +17,18 @@ export type FeatureCategory =
   | "BILLING_ACCOUNT"
   | "INTEGRATIONS";
 
+export function getRoadmapCategories(): FeatureCategory[] {
+  return [
+    "MARKET_RESEARCH",
+    "SEO_STUDIO",
+    "PRODUCT_HUNTING",
+    "SHOP_RESEARCH",
+    "WORKSPACE_PLANNER",
+    "BILLING_ACCOUNT",
+    "INTEGRATIONS",
+  ];
+}
+
 export interface FeatureRequestItem {
   id: string;
   title: string;
