@@ -1,7 +1,7 @@
 # CLAUDE.md — SellerSalt Project Context
 
 Read this file fully before doing anything else. It replaces needing to
-re-explain months of context to a new chat.
+re-explain months of context to a new chat. For base architectural constraints, tenancy models, and future roadmap planning, read **`docs/architecture/BASE-ARCHITECTURE.md`**.
 
 ## What this is
 

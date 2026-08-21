@@ -6,7 +6,7 @@ otherwise) working in this codebase. Read it fully before making changes.
 
 For a faster, more practical "what do I do right now" version, read
 **`docs/SELLERSALT-HANDOFF.md`** first — this file is the fuller reference
-it links back to.
+it links back to. For core architectural constraints, tenancy models, and roadmap entry points, read **`docs/architecture/BASE-ARCHITECTURE.md`**.
 
 ---
 
