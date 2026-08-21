@@ -25,6 +25,7 @@ import type { ProductHuntingResult } from "@/types/product-hunting";
 import { Button, Badge, Card, Heading, Text, Tooltip } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { addProductToPlanner } from "@/services/product-hunting-client";
+import { formatMarketplacePrice } from "@/lib/format-price";
 
 export interface ProductResearchDrawerProps {
   product: ProductHuntingResult | null;
@@ -126,15 +127,35 @@ export function ProductResearchDrawer({
             <div className="flex-1 min-w-0 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xl font-bold text-ink">
-                  {listing.price !== null ? `$${listing.price.toFixed(2)}` : "Price unavailable"}
+                  {formatMarketplacePrice(listing.price, listing.currency) ?? "Price unavailable"}
                 </span>
                 <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
-                {listing.taxonomyPath && (
+                {typeof listing.rating === "number" && (
+                  <Badge variant="neutral" className="text-xs">
+                    {listing.rating.toFixed(1)}★{typeof listing.reviewCount === "number" ? ` (${listing.reviewCount.toLocaleString()})` : ""}
+                  </Badge>
+                )}
+                {listing.brand && (
+                  <Badge variant="neutral" className="text-xs">{listing.brand}</Badge>
+                )}
+                {listing.badges.map((b) => (
+                  <Badge key={b} variant="neutral" className="text-xs">{b}</Badge>
+                ))}
+                {listing.taxonomyPath ? (
                   <Badge variant="neutral" className="text-xs">
                     {listing.taxonomyPath}
                   </Badge>
-                )}
+                ) : listing.categoryPath.length > 0 ? (
+                  <Badge variant="neutral" className="text-xs">
+                    {listing.categoryPath.join(" › ")}
+                  </Badge>
+                ) : null}
               </div>
+              {listing.bestSellerRank.length > 0 && (
+                <div className="text-xs text-ink-secondary">
+                  Marketplace sales rank: {listing.bestSellerRank.map((r) => `#${r.rank.toLocaleString()} in ${r.category}`).join(" · ")}
+                </div>
+              )}
 
               <div className="text-xs text-ink-secondary leading-relaxed line-clamp-3">
                 {listing.description || "No description available for this listing."}

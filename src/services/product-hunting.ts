@@ -385,17 +385,29 @@ export async function searchMarketplaceProducts(
         listingAgeDays,
         listingAgeMonths: 1,
         listingUrl: p.url || "",
-        shopId: p.shop?.name || p.externalId,
+        shopId: p.shop?.externalId || p.shop?.name || p.externalId,
         shopName: p.shop?.name || "Marketplace Merchant",
         numFavorers: p.favoritesCount ?? null,
         views: null,
+        rating: p.rating ?? null,
+        reviewCount: p.reviewCount ?? null,
+        brand: p.brand ?? null,
+        categoryPath: p.categoryPath && p.categoryPath.length > 0
+          ? p.categoryPath
+          : p.category
+          ? [p.category.name]
+          : [],
+        badges: p.badges ?? [],
+        availability: p.availability ?? null,
+        bestSellerRank: p.bestSellerRank ?? [],
       };
 
       const normalizedShop: NormalizedShopProfile = {
-        shopId: p.shop?.name || p.externalId,
+        shopId: p.shop?.externalId || p.shop?.name || p.externalId,
         shopName: p.shop?.name || "Marketplace Merchant",
         shopUrl: p.shop?.url || p.url || "",
         shopIconUrl: null,
+        shopExternalId: p.shop?.externalId ?? null,
         createdTimestamp: Math.floor(Date.now() / 1000) - shopAgeMonths * 30 * 86400,
         shopAgeMonths,
         activeListings,
@@ -606,6 +618,20 @@ export async function searchEtsyMarketplaceProducts(
       shopName: rawShop?.shop_name ?? raw.shop_name ?? `Shop ${shopId}`,
       numFavorers: raw.num_favorers ?? null,
       views: raw.views ?? null,
+      // Etsy's listing search results don't carry a per-listing rating —
+      // review/rating data Etsy exposes is shop-level (already captured on
+      // normalizedShop below via rawShop.review_count/review_average).
+      rating: null,
+      reviewCount: null,
+      // Etsy's Open API v3 search/shop responses don't expose a brand,
+      // category breadcrumb (taxonomy_path is present separately above as
+      // taxonomyPath), merchandising badges, live stock status, or a
+      // public sales-rank signal — left honestly empty rather than guessed.
+      brand: null,
+      categoryPath: [],
+      badges: [],
+      availability: null,
+      bestSellerRank: [],
     };
 
     // Shop data
@@ -624,6 +650,7 @@ export async function searchEtsyMarketplaceProducts(
       shopName: rawShop?.shop_name ?? raw.shop_name ?? `Shop ${shopId}`,
       shopUrl: rawShop?.url ?? `https://www.etsy.com/shop/${rawShop?.shop_name ?? shopId}`,
       shopIconUrl: rawShop?.icon_url_fullxfull ?? null,
+      shopExternalId: shopId || null,
       createdTimestamp: shopCreatedTimestamp,
       shopAgeMonths,
       totalSales,

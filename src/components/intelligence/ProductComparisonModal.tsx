@@ -17,6 +17,7 @@ import type { ProductHuntingResult, ProductComparisonSummary } from "@/types/pro
 import { Button, Badge, Card, Heading, Text } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { addProductToPlanner } from "@/services/product-hunting-client";
+import { formatMarketplacePrice } from "@/lib/format-price";
 
 export interface ProductComparisonModalProps {
   products: ProductHuntingResult[];
@@ -200,7 +201,7 @@ export function ProductComparisonModal({
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="font-mono text-base font-bold text-ink">
-                          {item.listing.price !== null ? `$${item.listing.price.toFixed(2)}` : "Unavailable"}
+                          {formatMarketplacePrice(item.listing.price, item.listing.currency) ?? "Unavailable"}
                         </span>
                         <DataProvenanceBadge type={marketplace === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                       </div>

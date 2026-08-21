@@ -781,6 +781,59 @@ these bugs surfacing independently in each engine across Batches
 since every live marketplace's policy is `ALLOWED`, but worth closing
 for consistency.
 
+**Product Research data contract repair (2026-08-21, Batch 37)** — founder
+review correctly flagged that Batch 36's `PRIVATE_BETA_READY` data was too
+thin: real searches were close to title + URL only, missing image, price,
+reviews, rating, seller, category, and any demand signal. Full detail,
+evidence, and field-availability matrix in
+`BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`. Root cause was three
+compounding gaps: (1) real parser defects — Amazon's card-window cap was
+still too small for a real sponsored card's title (measured live at
+offset 9,771, past the 9,000-char cap), and its price regex only matched
+a leading `$`, silently failing (and risking mislabeling) a real
+geo-localized non-USD price this session's IP actually received; (2) a
+UI-facing type/mapping gap — `NormalizedProduct` already had
+`category`/`brand`/`badges`/`availability`, just never populated by the
+adapters, and separately `NormalizedProductListing` had no field at all
+for a product's own rating/review count, so even observed data got
+shoehorned into an Etsy-shop-shaped field gated behind a flag that's
+structurally always false for Amazon/Walmart; (3) **Amazon's own
+anti-bot response to SellerSalt's honest, self-identifying
+`PublicPageFetcher` User-Agent** — verified live (same ASIN, minutes
+apart) that the identical request with a plain browser UA returns full
+price/rating/category that the disclosed bot UA never receives. (3) was
+investigated and proven, then raised directly to the founder as a real
+decision rather than worked around; **founder chose to keep the honest
+bot disclosure**, so Amazon's price/rating/per-card-category remain
+genuinely unavailable in production — a disclosed external constraint,
+not a bug. Fixed: Amazon's window cap, currency-honest price parsing (new
+`parseAmazonPriceAndCurrency`, never assumes USD), real per-card category/
+badges, and a rebuilt product-detail path (Amazon's JSON-LD confirmed
+dead on live pages — 0 `Product` blocks — replaced with real HTML
+breadcrumb/brand/seller/availability/Best-Sellers-Rank parsing). Walmart:
+real seller name/ID, category, availability, badges, and fulfillment type
+now read from fields already present in `__NEXT_DATA__` but never parsed;
+its product-detail JSON-LD also confirmed dead, replaced with a parser
+for the page's real product JSON. Both marketplaces' public seller/item
+data confirmed to expose **no shop-registration-date field anywhere** —
+shop age is genuinely `UNAVAILABLE`, not unparsed, for both. Also fixed: a
+real "filter exists, request 200s, filter silently ignored" bug —
+`orchestrateProductResearch` accepted `minPrice`/`maxPrice` but never
+applied them; now enforced with UNAVAILABLE-price-safe semantics (a
+`null` price is never excluded or treated as `$0`). Also fixed: the UI
+layer itself (not just adapters) hardcoded a `$` price prefix in four
+render sites regardless of the item's real currency — new shared
+`src/lib/format-price.ts` fixes all four. Review-count/shop-age filters
+and multi-keyword search confirmed genuinely `NOT_IMPLEMENTED` (not
+merely broken) — deliberately not built this pass, a real feature
+addition out of scope for a data-contract repair batch. 19 new
+deterministic tests, full suite 1,222/1,222 passing. **Launch
+classification unchanged: `PRIVATE_BETA_READY`** — the chain still works,
+the evidence backing it is now real and richer (esp. Walmart), Amazon's
+gap is disclosed rather than hidden. **Not independently re-verified in a
+real browser this pass** (no working dashboard credentials in this
+session) — flagged as an open follow-up, not claimed as done.
+
 ## What's explicitly NOT built yet
 
 - **Cross-listing push/sync logic** — the `CrossListing` data model exists,
@@ -834,6 +887,19 @@ for consistency.
 - **"App research"** — referenced in the 2026-08-16 master completion
   pass instructions but not defined anywhere in this file or `docs/`.
   Needs founder clarification before anything is built for it.
+- **Product Research review-count/shop-age filters and multi-keyword
+  search** — confirmed (2026-08-21, Batch 37) genuinely absent from
+  `EtsySearchFilters`/the search UI on every marketplace, not merely
+  broken. `minPrice`/`maxPrice` filtering was repaired this batch;
+  building new filter dimensions or multi-keyword fan-out was
+  deliberately out of scope for a data-contract repair pass.
+- **Amazon price/rating/per-card-category via `PUBLIC_WEB`** — confirmed
+  (2026-08-21, Batch 37) real and correctly parsed whenever Amazon's
+  response contains them, but Amazon currently withholds them from
+  SellerSalt's honestly self-identifying bot User-Agent specifically
+  (verified live, same ASIN, plain-browser UA returns full data). Founder
+  decision: keep the honest disclosure. See Lessons Learned #12 before
+  touching `compliance.ts`'s `defaultUserAgent`.
 ## Known scaling constraint (not solved, just flagged)
 
 Every customer shares one Etsy Personal Access connector — 5 req/sec,
@@ -944,6 +1010,25 @@ Every customer shares one Etsy Personal Access connector — 5 req/sec,
     drift) — when picking up another session's in-progress uncommitted
     diff, diff every touched block against its sibling/equivalent rather
     than assuming a partial edit was applied consistently everywhere.
+12. **Amazon withholds price/rating/per-card-category from SellerSalt's
+    disclosed bot User-Agent (2026-08-21)**: `PublicPageFetcher`'s UA
+    honestly self-identifies as `"SellerSalt Commerce Research Bot/1.0"`
+    (a deliberate prior compliance choice). Batch 37 found — via a
+    controlled fetch of the identical live ASIN minutes apart — that
+    Amazon serves a real, successful `200` to this UA but strips price
+    and per-card rating/reviewCount/category from it, while the same
+    request with a plain browser UA (no bot signature) returns full data.
+    Product-detail-page fields (brand, seller, category breadcrumb, Best
+    Sellers Rank) are *not* affected — only price/rating/per-card-category
+    are. This looked, at first, like a parser bug; it was proven to be
+    Amazon's own access-control response to bot disclosure instead. Raised
+    directly to the founder rather than silently working around it (this
+    batch's instructions explicitly prohibited anti-bot evasion on my own
+    authority) — founder chose to keep the honest disclosure. If a future
+    session is asked to "fix" Amazon's missing price/rating again, check
+    this lesson before assuming it's a parser regression — verify with a
+    controlled UA A/B fetch first, and treat changing the UA's bot
+    signature as a founder decision, not a routine code fix.
 
 ## How to work efficiently in this project
 

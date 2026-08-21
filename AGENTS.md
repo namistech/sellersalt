@@ -345,11 +345,13 @@ Re-verify before trusting this — it's a snapshot from this documentation
 pass, not a live value:
 
 ```
-Tests:      1175/1175 passing (npx tsx --env-file=.env.local --test src/tests/*.test.ts — 340 suites)
+Tests:      1222/1222 passing (npm run test:all — 359 suites)
 TypeScript: clean            (npx tsc --noEmit)
-Prisma:     valid, synchronized (node --env-file=.env.local node_modules/prisma/build/index.js validate)
-Next.js:    clean build      (npx next build — 173/173 static and dynamic routes compiled)
+Prisma:     valid, synchronized (npx prisma@5.22.0 validate)
+Next.js:    clean build      (npx next build — 183 static and dynamic routes compiled)
 ```
+
+(As of Batch 37, 2026-08-21 — see `BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`.)
 
 ## 19. Known Technical Debt
 
@@ -371,6 +373,25 @@ Verified against current code as of this pass:
   any capability flag can go `true` — external dependency, not an
   engineering task.
 - `Prospect` table has no confirmed prune/retention job (VERIFY IN CODE).
+- **Amazon's `PublicPageFetcher` requests use a real, honestly self-
+  identifying User-Agent** (`src/marketplaces/core/acquisition/
+  compliance.ts`'s `defaultUserAgent`, ends with `"(SellerSalt Commerce
+  Research Bot/1.0; +https://sellersalt.com/bot; research@sellersalt.com)"`).
+  Verified live during Batch 37 that Amazon serves a real, successful
+  `200` to this UA but **withholds price, per-card rating/reviewCount,
+  and per-card category** specifically for it — the identical request
+  with a plain browser UA (no bot signature) returns full data for the
+  same ASIN. This is Amazon's own access-control response to the
+  disclosure, not a parser bug (the parsers are proven correct against
+  the plain-browser response). Founder decision (2026-08-21): **keep the
+  honest bot disclosure** — do not drop the UA's bot signature to work
+  around this without a fresh, explicit founder decision; see
+  `BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md` §13 for the full
+  evidence before ever touching that UA string.
+- **Etsy's review-count/shop-age filters and multi-keyword search remain
+  `NOT_IMPLEMENTED`** — confirmed absent from `EtsySearchFilters` and the
+  search UI on every marketplace, not merely broken (Batch 37). Building
+  them is a real, scoped feature addition, not a bug repair.
 
 ## 20. Development Rules for Future Agents
 

@@ -119,6 +119,63 @@ function parseWalmartListingCardsFromNextData(html: string): NormalizedProduct[]
         ? `https://www.walmart.com${item.canonicalUrl}`
         : `https://www.walmart.com/ip/${itemId}`;
 
+      // Seller — real, per-item `sellerName`/`sellerId` fields already
+      // present in the same hydration JSON (verified live during Batch
+      // 37) but previously never read. No seller-registration/age field
+      // exists anywhere in this item shape — confirmed by inspecting a
+      // full real item's ~130 keys — so shop age stays genuinely
+      // UNAVAILABLE for Walmart, not merely unparsed.
+      const sellerName = typeof item?.sellerName === "string" ? item.sellerName : undefined;
+      const sellerId = typeof item?.sellerId === "string" ? item.sellerId : undefined;
+
+      // Category — `catalogProductType` (e.g. "Cups & Mugs") is Walmart's
+      // own per-item category label; `departmentName` (e.g. "Home") is the
+      // top-level department. Both real, both previously unread.
+      const catalogProductType =
+        typeof item?.catalogProductType === "string" ? item.catalogProductType : undefined;
+      const departmentName =
+        typeof item?.departmentName === "string" ? item.departmentName : undefined;
+      const categoryPath = [departmentName, catalogProductType].filter(
+        (v): v is string => typeof v === "string" && v.length > 0
+      );
+
+      // Availability — real server-computed stock status, not guessed.
+      const availabilityValue = item?.availabilityStatusV2?.value;
+      const availability: NormalizedProduct["availability"] =
+        item?.isOutOfStock === true || availabilityValue === "OUT_OF_STOCK"
+          ? "OUT_OF_STOCK"
+          : availabilityValue === "IN_STOCK"
+          ? "IN_STOCK"
+          : null;
+
+      // Badges — real on-page labels: sponsored-placement disclosure (so a
+      // paid slot is never conflated with organic ranking/demand) plus any
+      // real merchandising badge Walmart attaches (e.g. "Best seller",
+      // "Rollback").
+      const badges: string[] = [];
+      if (item?.isSponsoredFlag === true) badges.push("Sponsored");
+      const badgeFlags = item?.badges?.flags;
+      if (Array.isArray(badgeFlags)) {
+        for (const flag of badgeFlags) {
+          if (flag && typeof flag.text === "string" && flag.text.trim()) {
+            badges.push(flag.text.trim());
+          }
+        }
+      }
+
+      // Fulfillment type ("MARKETPLACE" / "FC" / "STORE") is a real,
+      // server-provided classification of who ships the item — surfaced as
+      // shipping info text rather than invented shipping copy.
+      const fulfillmentLabels: Record<string, string> = {
+        MARKETPLACE: "Sold by third-party marketplace seller",
+        FC: "Fulfilled by Walmart",
+        STORE: "Ships from Walmart store",
+      };
+      const shippingInfo =
+        typeof item?.fulfillmentType === "string"
+          ? fulfillmentLabels[item.fulfillmentType] ?? item.fulfillmentType
+          : null;
+
       const normalized: NormalizedProduct = {
         marketplace: "walmart",
         externalId: itemId,
@@ -129,6 +186,11 @@ function parseWalmartListingCardsFromNextData(html: string): NormalizedProduct[]
         currency: "USD",
         rating,
         reviewCount,
+        categoryPath: categoryPath.length > 0 ? categoryPath : undefined,
+        availability,
+        badges: badges.length > 0 ? badges : undefined,
+        shippingInfo,
+        shop: sellerName ? { name: sellerName, externalId: sellerId } : undefined,
         source: "ACTUAL_DATA" as SignalProvenance,
         acquisitionMethod: "PUBLIC_WEB",
         isHistorical: false,
@@ -254,6 +316,109 @@ export function parseWalmartListingCardsFromHtml(html: string): NormalizedProduc
   if (fromJson.length > 0) return fromJson;
 
   return parseWalmartListingCardsFromRegexFallback(html);
+}
+
+/**
+ * Extracts a real Walmart product-detail record from the product page's own
+ * `__NEXT_DATA__` hydration state (`props.pageProps.initialData.data.product`).
+ * Walmart's product pages (verified live during Batch 37) now ship only a
+ * `WebPage`/speakable JSON-LD stub with no `Product` schema at all — the
+ * previous `parseProductFromJsonLd` path was silently dead on every current
+ * product page. This JSON carries substantially richer real fields than the
+ * search-card JSON, including seller-level review stats
+ * (`sellerReviewCount`/`sellerAverageRating`) not present on search cards.
+ */
+function parseWalmartProductFromNextData(html: string): NormalizedProduct | null {
+  const scriptMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i);
+  if (!scriptMatch) return null;
+
+  let data: any;
+  try {
+    data = JSON.parse(scriptMatch[1]);
+  } catch {
+    return null;
+  }
+
+  const product = data?.props?.pageProps?.initialData?.data?.product;
+  const title = typeof product?.name === "string" ? product.name.trim() : "";
+  if (!product || !title) return null;
+
+  const itemId =
+    (typeof product?.usItemId === "string" && product.usItemId) ||
+    (typeof product?.primaryProductId === "string" && product.primaryProductId) ||
+    "";
+
+  const priceInfo = product?.priceInfo?.currentPrice;
+  const price = typeof priceInfo?.price === "number" && priceInfo.price > 0 ? priceInfo.price : null;
+  const currency = typeof priceInfo?.currencyUnit === "string" ? priceInfo.currencyUnit : "USD";
+
+  const rating = typeof product?.averageRating === "number" ? product.averageRating : null;
+  const reviewCount = typeof product?.numberOfReviews === "number" ? product.numberOfReviews : null;
+
+  const imageUrl =
+    typeof product?.imageInfo?.thumbnailUrl === "string"
+      ? product.imageInfo.thumbnailUrl
+      : Array.isArray(product?.imageInfo?.allImages) && product.imageInfo.allImages[0]?.url
+      ? product.imageInfo.allImages[0].url
+      : undefined;
+
+  const categoryPathEntries = product?.category?.path;
+  const categoryPath = Array.isArray(categoryPathEntries)
+    ? categoryPathEntries.map((c: any) => c?.name).filter((n: any): n is string => typeof n === "string")
+    : [];
+
+  const availabilityValue = product?.availabilityStatusV2?.value;
+  const availability: NormalizedProduct["availability"] =
+    availabilityValue === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : availabilityValue === "IN_STOCK" ? "IN_STOCK" : null;
+
+  const brand = typeof product?.brand === "string" && product.brand.trim() ? product.brand.trim() : undefined;
+
+  // Seller-level review stats exist here even when absent from search
+  // cards — real, distinct from the product's own rating/reviewCount
+  // above. No registration/age field is present anywhere in this JSON.
+  const sellerName =
+    typeof product?.sellerDisplayName === "string"
+      ? product.sellerDisplayName
+      : typeof product?.sellerName === "string"
+      ? product.sellerName
+      : undefined;
+  const sellerId = typeof product?.sellerId === "string" ? product.sellerId : undefined;
+
+  const normalized: NormalizedProduct = {
+    marketplace: "walmart",
+    externalId: itemId || title.slice(0, 40),
+    title,
+    url: typeof product?.canonicalUrl === "string" ? `https://www.walmart.com${product.canonicalUrl}` : undefined,
+    imageUrl,
+    price,
+    currency,
+    rating,
+    reviewCount,
+    categoryPath: categoryPath.length > 0 ? categoryPath : undefined,
+    availability,
+    brand,
+    shop: sellerName ? { name: sellerName, externalId: sellerId } : undefined,
+    source: "ACTUAL_DATA" as SignalProvenance,
+    acquisitionMethod: "PUBLIC_WEB",
+    isHistorical: false,
+    capturedAt: new Date(),
+  };
+
+  const oppInput = extractOpportunityInputFromNormalizedProduct(normalized);
+  const report = evaluateCanonicalOpportunity(oppInput);
+  if (report.overallScore !== null) {
+    normalized.opportunityScore = {
+      score: report.overallScore,
+      confidence: report.confidenceScore,
+      tier: report.tier,
+      verdict: report.verdictLabel,
+      verdictVariant: report.verdictVariant,
+      availableSignals: report.signals.available.map((s) => s.id),
+      unavailableSignals: report.signals.unavailable.map((s) => s.id),
+    };
+  }
+
+  return normalized;
 }
 
 export class WalmartPublicWebAdapter implements PublicWebAcquisitionAdapter {
@@ -421,6 +586,23 @@ export class WalmartPublicWebAdapter implements PublicWebAcquisitionAdapter {
           statusCode: page.statusCode,
           failureReason: "ACCESS_RESTRICTED",
           error: "Walmart product page is restricted without dedicated proxy infrastructure.",
+          fetchedAt,
+        };
+      }
+
+      // Primary path: the page's own __NEXT_DATA__ product JSON (see
+      // parseWalmartProductFromNextData's doc comment — JSON-LD no longer
+      // carries Product schema on live Walmart product pages).
+      const nextDataProduct = parseWalmartProductFromNextData(page.html);
+      if (nextDataProduct) {
+        return {
+          success: true,
+          marketplace: "walmart",
+          items: [nextDataProduct],
+          sourceUrl: productUrl,
+          sourceType: "PUBLIC_WEB",
+          provenance: "ACTUAL_DATA",
+          statusCode: 200,
           fetchedAt,
         };
       }

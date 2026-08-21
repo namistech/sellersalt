@@ -4,11 +4,26 @@ Read this file first. It is the fastest path to being productive in this
 repository. Everything here is verified against the actual code as of
 2026-08-19, not aspirational.
 
-## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-20 — BATCH 33 COMPLETE)
+## CURRENT IMPLEMENTATION CHECKPOINT (2026-08-21 — BATCH 37 COMPLETE)
 
-Read this section first if you're picking up work cold — it's the
-condensed version of everything else in this file, current as of Batch 33
-(Real Merchant Beta Execution, Learning Loop & Product-Market Validation):
+Read this section first if you're picking up work cold. Current as of
+Batch 37 (Product Research Engine Forensics, Data Contract Repair & Real
+Ecommerce Intelligence Validation — see
+`BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`): Amazon/Walmart product
+research now surfaces real category, brand, seller, badges, availability,
+and (Amazon) Best Sellers Rank, not just title/URL/image — but Amazon's
+price/rating/per-card-category are currently suppressed by Amazon's own
+anti-bot response to SellerSalt's honest, self-identifying fetcher
+User-Agent (verified live; founder-confirmed to keep the honest
+disclosure rather than work around it — see that report's §13 before
+touching `src/marketplaces/core/acquisition/compliance.ts`'s
+`defaultUserAgent`). Launch classification: `PRIVATE_BETA_READY`
+(unchanged from Batch 36, richer evidence). Batches 34-36 (Real
+Acquisition Runtime Repair, Independent Acquisition, End-to-End
+Commercial Intelligence Validation) are summarized in `docs/CHANGELOG.md`
+and their own `BATCH-3{4,5,6}-*.md` reports at the repo root — the
+section below (Batch 33 checkpoint) predates all of them; treat this
+paragraph as the current state, not that section:
 
 **Architecture** (`src/marketplaces/core/` & `src/services/telemetry/` & `src/services/beta/` — canonical, don't rebuild):
 - **Merchant Journey Telemetry Engine** (`merchant-journey.ts`): Organization-scoped, non-PII, deterministic telemetry tracking across the 5 canonical stages + onboarding and billing with automated secret sanitization.
@@ -18,11 +33,14 @@ condensed version of everything else in this file, current as of Batch 33
 - **Admin Beta Insight Center** (`/api/admin/beta-insights`): Live operational telemetry aggregating merchant drop-offs, decision impact distribution, learning loop rankings, and data quality.
 - **Beta Experiment Framework** (`beta-experiments.ts`): Deterministic cohort variant assignment.
 
-**Current Verified Baseline**:
-- Tests: **1175/1175 passing across 340 suites** (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+**Current Verified Baseline** (Batch 37, re-run independently, not copied forward):
+- Tests: **1222/1222 passing across 359 suites** (`npm run test:all`)
 - TypeScript: Clean (`npx tsc --noEmit`)
-- Prisma: Valid, synchronized (`node_modules/prisma/build/index.js validate`)
-- Next.js: Clean production build (**173/173 static and dynamic routes compiled**)
+- Prisma: Valid, synchronized (`npx prisma@5.22.0 validate`)
+- Next.js: Clean production build (183 static and dynamic routes compiled)
+
+**Batch 33 checkpoint below — kept for its architecture notes, but the
+test/route counts above are stale; trust Batch 37's numbers.**
 
 **Implemented (marketplace-aware) intelligence surfaces** — all five wired
 functionally (real state → real API call → capability-aware empty state,
@@ -331,13 +349,14 @@ discipline) if you need to touch deployment.
 
 ## Current verified baseline
 
-As of Batch 20 (Autonomous Opportunity Discovery & Market Radar 2.0, 2026-08-20),
-independently re-run (not copied from an earlier report):
+As of Batch 37 (Product Research Engine Forensics, Data Contract Repair &
+Real Ecommerce Intelligence Validation, 2026-08-21), independently re-run
+(not copied from an earlier report):
 
-- Tests: **1070/1070 passing** across 263 suites (`npx tsx --env-file=.env.local --test src/tests/*.test.ts`)
+- Tests: **1222/1222 passing** across 359 suites (`npm run test:all`)
 - TypeScript: clean (`npx tsc --noEmit`)
-- Prisma: valid, synchronized (`node --env-file=.env.local node_modules/prisma/build/index.js validate`)
-- Build: clean (`npx next build` — 168/168 static and dynamic routes compiled)
+- Prisma: valid, synchronized (`npx prisma@5.22.0 validate`)
+- Build: clean (`npx next build` — 183 static and dynamic routes compiled)
 
 If these numbers differ when you run them yourself, trust your own run —
 this file is a snapshot, not a live dashboard.

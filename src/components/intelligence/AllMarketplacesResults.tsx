@@ -26,6 +26,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Card, Badge, Text, Heading, SafeImage } from "@/components/ui";
+import { formatMarketplacePrice } from "@/lib/format-price";
 
 export type MarketplaceResultStatus = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE" | "NOT_IMPLEMENTED";
 
@@ -51,6 +52,11 @@ export interface NormalizedProductLike {
   rating?: number | null;
   shop?: { name?: string } | null;
   opportunityScore?: OpportunityScoreLike | null;
+  brand?: string | null;
+  categoryPath?: string[];
+  badges?: string[];
+  availability?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "UNAVAILABLE" | null;
+  bestSellerRank?: Array<{ rank: number; category: string }> | null;
 }
 
 export interface MarketplaceOpportunitySummaryLike {
@@ -426,14 +432,36 @@ export function AllMarketplacesResults({
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-ink-tertiary flex-wrap">
                             {typeof product.price === "number" && (
                               <span className="font-semibold text-ink-secondary">
-                                {product.currency === "USD" || !product.currency ? "$" : `${product.currency} `}
-                                {product.price.toFixed(2)}
+                                {formatMarketplacePrice(product.price, product.currency)}
                               </span>
                             )}
                             {typeof product.rating === "number" && <span>★ {product.rating.toFixed(1)}</span>}
                             {typeof product.reviewCount === "number" && <span>{product.reviewCount.toLocaleString()} reviews</span>}
                             {product.shop?.name && <span className="truncate max-w-[100px] text-ink-tertiary">· {product.shop.name}</span>}
+                            {product.availability === "OUT_OF_STOCK" && (
+                              <span className="text-red-600 font-medium">Out of stock</span>
+                            )}
                           </div>
+                          {((product.categoryPath && product.categoryPath.length > 0) || (product.badges && product.badges.length > 0) || product.brand) && (
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              {product.brand && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{product.brand}</span>
+                              )}
+                              {product.categoryPath && product.categoryPath.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">
+                                  {product.categoryPath[product.categoryPath.length - 1]}
+                                </span>
+                              )}
+                              {product.badges?.slice(0, 2).map((b) => (
+                                <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                              ))}
+                            </div>
+                          )}
+                          {product.bestSellerRank && product.bestSellerRank.length > 0 && (
+                            <div className="text-[10px] text-ink-tertiary mt-1">
+                              {product.bestSellerRank.map((r) => `#${r.rank.toLocaleString()} in ${r.category}`).join(" · ")}
+                            </div>
+                          )}
                         </div>
                       </div>
 

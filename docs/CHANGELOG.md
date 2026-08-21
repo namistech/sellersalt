@@ -1077,3 +1077,97 @@ Furthermore, missing data was sometimes implicitly assumed to be 0 or defaulted 
   - TypeScript: 100% clean (`npx tsc --noEmit`).
   - Prisma: Valid (`prisma validate`).
   - Next.js: Clean production build (**173/173 routes compiled**).
+
+## Batches 34-36: Real Acquisition Runtime Repair, Independent Acquisition & End-to-End Commercial Intelligence Validation (2026-08-20 – 2026-08-21)
+
+**Why**: A real merchant search returned zero usable results. Traced end-to-end
+against live staging: Etsy's `MARKETPLACE_API` credential was genuinely
+rejected (external, `403`, unresolved), but Amazon/Walmart's public-web
+sources were fixable — their parsers were structurally broken against
+current live markup, and real, present data was being coerced into
+fabricated defaults (`$0.00` price, `"[ACTUAL ETSY DATA]"` badge on
+non-Etsy results, a hardcoded `2.0 sales/day` planner fallback) instead of
+disclosed as unavailable. See root `CLAUDE.md` and
+`BATCH-34-REAL-ACQUISITION-RUNTIME-FORENSICS.md`,
+`BATCH-35-INDEPENDENT-ACQUISITION-AND-RESEARCH-VALIDATION.md`,
+`BATCH-36-END-TO-END-COMMERCIAL-INTELLIGENCE-VALIDATION.md` for full detail.
+Ended with SellerSalt classified `PRIVATE_BETA_READY` — real Amazon/Walmart
+search results flowing through a real, disclosed-evidence
+SEARCH → RESEARCH → VALIDATE → PLAN chain.
+
+## Batch 37: Product Research Engine Forensics, Data Contract Repair & Real Ecommerce Intelligence Validation (2026-08-21)
+
+**Why**: Batch 36's `PRIVATE_BETA_READY` classification was correct about
+the *chain* working, but founder review found the *data* itself was still
+too thin — close to title + URL only, missing image/price/reviews/rating/
+seller/category/demand signals a real merchant needs. Full detail,
+evidence, and the field-availability matrix in
+`BATCH-37-PRODUCT-RESEARCH-DATA-VALIDATION.md`.
+
+- **Root cause was three compounding gaps, not one**: (1) real parser
+  defects — Amazon's card-window cap was still too small for a real
+  sponsored card's title (measured live at offset 9,771, past the
+  existing 9,000-char cap), and its price regex only matched a leading
+  `$`, silently failing (and risking mislabeling) a real geo-localized
+  non-USD price this session's IP actually received from Amazon; (2) a
+  UI-facing type/mapping gap — `NormalizedProduct` already had
+  `category`/`brand`/`badges`/`availability` fields, simply never
+  populated, and separately `NormalizedProductListing` had no field at
+  all for a product's own rating/review count, so even observed data was
+  shoehorned into an Etsy-shop-shaped field gated behind a flag that's
+  structurally always false for Amazon/Walmart; (3) Amazon's own
+  anti-bot response to SellerSalt's honest, self-identifying
+  `PublicPageFetcher` User-Agent — verified live that the identical
+  request with a plain browser UA returns full price/rating/category
+  that the disclosed bot UA never receives. (3) was investigated,
+  proven, and — per explicit founder decision after being raised as a
+  real choice — **deliberately left as-is** rather than worked around,
+  since changing it would mean dropping honest bot disclosure.
+- **Amazon adapter**: card-window cap raised (bounded by the next card's
+  own match, not a fixed size); new currency-honest price parser (never
+  assumes USD); real per-card category (`data-csa-c-product-type`) and
+  badges (Sponsored/Best Seller/Amazon's Choice/material) now captured;
+  product-detail page's dead JSON-LD path (confirmed live: 0
+  `Product` JSON-LD blocks on current pages) replaced with real HTML
+  parsing (breadcrumb category, brand, seller name/ID, availability, and
+  a new `bestSellerRank` field for Amazon's real "Best Sellers Rank"
+  signal — never converted into an estimated sales number). Amazon's
+  public seller page confirmed to expose no registration/age field at
+  all — shop age is genuinely `UNAVAILABLE`, not unparsed.
+- **Walmart adapter**: real seller name/ID, category
+  (department + product type), availability, sponsored/merchandising
+  badges, and fulfillment type now captured from fields already present
+  in the page's own `__NEXT_DATA__` JSON but never read. Product-detail
+  page's JSON-LD also confirmed dead (now just a `WebPage` stub) —
+  replaced with a new parser reading the page's real product JSON, which
+  additionally exposes seller-level review stats. No seller-age field
+  found anywhere in ~130 real inspected keys — `UNAVAILABLE`, confirmed.
+- **Orchestrator price filter, actually enforced**: `minPrice`/`maxPrice`
+  were accepted by the API contract and threaded all the way to
+  `orchestrateProductResearch`, but never once referenced inside it — a
+  real "UI field exists → request 200s → filter silently ignored" defect.
+  Fixed with UNAVAILABLE-price-safe semantics (a `null` price is never
+  excluded or treated as `$0`). Review-count and shop-age filters, and
+  multi-keyword search, confirmed genuinely `NOT_IMPLEMENTED` (not
+  merely broken) — not built this pass per the explicit
+  don't-invent-new-filter-architecture instruction.
+- **UI currency-honesty fix**: found the *display* layer, not just the
+  adapters, hardcoded a `$` price prefix in four places
+  (`live-search-tab.tsx`, `ProductComparisonModal.tsx`,
+  `ProductResearchDrawer.tsx`, `AllMarketplacesResults.tsx`) regardless
+  of the item's real currency — same mislabeling risk as the adapter-
+  level bug, one layer up. New shared `src/lib/format-price.ts` fixes
+  all four.
+- **Verification**: 19 new deterministic tests
+  (`src/tests/batch-37-product-research-data-contract.test.ts`), full
+  suite 1,222/1,222 passing, `tsc`/`prisma validate`/`next build` clean.
+  Verified against the real, running dev server's `orchestrateProductResearch`
+  pipeline for all 4 required test queries (not just fixtures) — see the
+  batch report for the full before/after field-presence matrix. No real-
+  browser click-through was performed this pass (no working dashboard
+  credentials available) — disclosed as an open follow-up, not claimed
+  as done.
+- **Launch classification**: `PRIVATE_BETA_READY`, unchanged from Batch
+  36 — the evidence backing it is now real and richer (esp. Walmart),
+  Amazon's remaining gap is an external, founder-confirmed policy
+  constraint, disclosed honestly rather than hidden.

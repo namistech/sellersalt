@@ -331,6 +331,14 @@ export interface NormalizedProduct extends MarketplaceRef {
    * from a marketplace-native metric even when it rides along on the same
    * record. */
   estimatedDemand?: number | null;
+  /** A marketplace's own publicly-observed sales-rank signal (e.g. Amazon's
+   * "Best Sellers Rank" — a real, marketplace-computed proxy for demand),
+   * never a SellerSalt-derived number. `category` is the marketplace's own
+   * label for the rank's scope (e.g. "Kitchen & Dining", "Mugs") — a
+   * product can carry more than one (Amazon shows a top-level department
+   * rank plus a narrower sub-category rank). Absent/undefined when the
+   * marketplace doesn't expose this, never estimated from other signals. */
+  bestSellerRank?: Array<{ rank: number; category: string }> | null;
 
   keywordSignals?: KeywordSignal[];
   competitionSignals?: CompetitionSignal[];

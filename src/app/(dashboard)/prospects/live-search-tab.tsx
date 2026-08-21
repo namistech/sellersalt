@@ -38,6 +38,7 @@ import {
 } from "@/components/ui";
 import { DataProvenanceBadge } from "@/components/data/DataProvenanceBadge";
 import { MarketplaceSelector, type MarketplaceSelectValue } from "@/components/ui/MarketplaceSelector";
+import { formatMarketplacePrice } from "@/lib/format-price";
 import { AllMarketplacesResults } from "@/components/intelligence/AllMarketplacesResults";
 import { fetchJson } from "@/services/http";
 import {
@@ -421,7 +422,7 @@ export function LiveSearchTab() {
 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
                         <span>Price: <strong className="font-mono text-ink">
-                          {topItem.listing.price !== null ? `$${topItem.listing.price.toFixed(2)}` : "Unavailable"}
+                          {formatMarketplacePrice(topItem.listing.price, topItem.listing.currency) ?? "Unavailable"}
                         </strong></span>
                         {topItem.shop.shopMetricsObserved && (
                           <>
@@ -431,7 +432,26 @@ export function LiveSearchTab() {
                             <span>Moat: <strong className="text-ink">{topItem.shop.reviewCount.toLocaleString()} reviews</strong></span>
                           </>
                         )}
+                        {typeof topItem.listing.rating === "number" && (
+                          <>
+                            <span>·</span>
+                            <span>Rating: <strong className="text-ink">{topItem.listing.rating.toFixed(1)}★{typeof topItem.listing.reviewCount === "number" ? ` (${topItem.listing.reviewCount.toLocaleString()})` : ""}</strong></span>
+                          </>
+                        )}
                       </div>
+                      {(topItem.listing.categoryPath.length > 0 || topItem.listing.badges.length > 0 || topItem.listing.brand) && (
+                        <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                          {topItem.listing.brand && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{topItem.listing.brand}</span>
+                          )}
+                          {topItem.listing.categoryPath.length > 0 && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{topItem.listing.categoryPath[topItem.listing.categoryPath.length - 1]}</span>
+                          )}
+                          {topItem.listing.badges.map((b) => (
+                            <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -622,13 +642,47 @@ export function LiveSearchTab() {
                     </button>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-mono text-base font-bold text-ink">
-                        {item.listing.price !== null ? `$${item.listing.price.toFixed(2)}` : "Price unavailable"}
+                        {formatMarketplacePrice(item.listing.price, item.listing.currency) ?? "Price unavailable"}
                       </span>
                       <span className="text-[11px] text-ink-tertiary truncate">
                         {item.shop.shopName}
                       </span>
                     </div>
+                    {(item.listing.categoryPath.length > 0 || item.listing.badges.length > 0 || item.listing.brand) && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {item.listing.brand && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{item.listing.brand}</span>
+                        )}
+                        {item.listing.categoryPath.length > 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{item.listing.categoryPath[item.listing.categoryPath.length - 1]}</span>
+                        )}
+                        {item.listing.badges.slice(0, 2).map((b) => (
+                          <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Product-level rating/reviews (Amazon/Walmart's own
+                      per-listing signal) — rendered independently of
+                      shopMetricsObserved below, which gates Etsy-only
+                      SHOP-level aggregates and was never meant to hide a
+                      real per-listing rating. */}
+                  {(typeof item.listing.rating === "number" || typeof item.listing.reviewCount === "number") && (
+                    <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                      {typeof item.listing.rating === "number" && (
+                        <span className="font-semibold text-ink">{item.listing.rating.toFixed(1)}★</span>
+                      )}
+                      {typeof item.listing.reviewCount === "number" && (
+                        <span className="text-ink-tertiary">({item.listing.reviewCount.toLocaleString()} reviews)</span>
+                      )}
+                      {item.listing.availability && (
+                        <span className={item.listing.availability === "OUT_OF_STOCK" ? "text-red-600" : "text-ink-tertiary"}>
+                          · {item.listing.availability.replace(/_/g, " ").toLowerCase()}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Opportunity & Signals Summary — only rendered when
                       real shop-aggregate data was actually observed
@@ -648,6 +702,14 @@ export function LiveSearchTab() {
                         <div className="font-bold font-mono text-ink">
                           {item.shop.reviewCount} <span className="text-[10px] font-normal text-ink-tertiary">({item.shop.activeListings} listings)</span>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                  {!item.shop.shopMetricsObserved && item.listing.bestSellerRank.length > 0 && (
+                    <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-xs">
+                      <div className="text-[10px] text-ink-tertiary">Marketplace sales rank</div>
+                      <div className="font-bold font-mono text-ink">
+                        {item.listing.bestSellerRank.map((r) => `#${r.rank.toLocaleString()} in ${r.category}`).join(" · ")}
                       </div>
                     </div>
                   )}

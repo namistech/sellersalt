@@ -50,6 +50,33 @@ export interface NormalizedProductListing {
   shopName: string;
   numFavorers: number | null;
   views: number | null;
+  /** The PRODUCT's own rating/review count (e.g. Amazon/Walmart's per-
+   * listing star rating) — distinct from `NormalizedShopProfile.
+   * reviewAverage`/`reviewCount`, which are Etsy SHOP-level aggregates and
+   * only populated when `shopMetricsObserved` is true. This pair must be
+   * rendered independently of that flag — a real per-listing rating from
+   * Amazon/Walmart is not a shop metric and must not be hidden behind a
+   * gate meant for shop-level data it was never intended to satisfy. */
+  rating: number | null;
+  reviewCount: number | null;
+  /** null when the marketplace/adapter doesn't attribute a brand at all
+   * (never guessed from the title). */
+  brand: string | null;
+  /** Human-readable category label(s), most-general first, exactly as the
+   * marketplace itself classifies the product — e.g.
+   * ["Home", "Cups & Mugs"] for Walmart, or Amazon's full breadcrumb
+   * trail. Empty when the source didn't expose one. */
+  categoryPath: string[];
+  /** Real on-page labels only (e.g. "Sponsored", "Best Seller", "Rollback",
+   * a material/attribute chip) — never SellerSalt-invented merchandising
+   * copy. */
+  badges: string[];
+  /** null when the source page didn't expose a stock-status signal. */
+  availability: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "UNAVAILABLE" | null;
+  /** A marketplace's own published sales-rank signal (e.g. Amazon's "Best
+   * Sellers Rank"), never a SellerSalt-derived estimate. Empty when
+   * unavailable. */
+  bestSellerRank: Array<{ rank: number; category: string }>;
 }
 
 export interface NormalizedShopProfile {
@@ -57,6 +84,10 @@ export interface NormalizedShopProfile {
   shopName: string;
   shopUrl: string;
   shopIconUrl: string | null;
+  /** The marketplace's own seller/merchant ID when it legitimately exposes
+   * one distinct from the shop name (e.g. Amazon's seller ID, Walmart's
+   * sellerId) — null when unavailable, never derived from the name. */
+  shopExternalId: string | null;
   createdTimestamp: number;
   shopAgeMonths: number;
   totalSales: number;

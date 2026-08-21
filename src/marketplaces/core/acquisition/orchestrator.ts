@@ -350,6 +350,29 @@ export async function orchestrateProductResearch(
     }
   }
 
+  // 3.5. Price filtering — request.minPrice/maxPrice were already accepted
+  // by the API contract and threaded all the way here, but nothing ever
+  // actually applied them (confirmed during Batch 37: a search with
+  // minPrice/maxPrice set returned an unfiltered result set, HTTP 200,
+  // with no indication the filter had been silently ignored). Only
+  // excludes items with a real OBSERVED price outside the range — an
+  // item whose price is genuinely UNAVAILABLE (`null`) is never treated
+  // as if it were $0 or excluded by a min/max bound it was never actually
+  // measured against.
+  if (typeof request.minPrice === "number" || typeof request.maxPrice === "number") {
+    const beforeCount = mergedProducts.length;
+    mergedProducts = mergedProducts.filter((p) => {
+      if (p.price === null || p.price === undefined) return true;
+      if (typeof request.minPrice === "number" && p.price < request.minPrice) return false;
+      if (typeof request.maxPrice === "number" && p.price > request.maxPrice) return false;
+      return true;
+    });
+    const excluded = beforeCount - mergedProducts.length;
+    if (excluded > 0) {
+      limitations.push(`${excluded} observation(s) excluded outside the requested price range.`);
+    }
+  }
+
   // 4.5. Compute Canonical Opportunity Scores for all observations
   for (const prod of mergedProducts) {
     if (!prod.opportunityScore) {
