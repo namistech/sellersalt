@@ -61,6 +61,11 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/trademarks" className="hover:text-[#141B16] transition-colors">
+                  Trademark Disclosures
+                </Link>
+              </li>
+              <li>
                 <Link href="/terms" className="hover:text-[#141B16] transition-colors">
                   Terms of Service
                 </Link>
@@ -103,10 +108,13 @@ export function PublicFooter() {
           </div>
         </div>
 
-        {/* Prominent Legal Etsy API Disclosure (Part 18 & Rule 1 & Rule 2) */}
-        <div className="border-t border-[#E3E6E0] pt-6 pb-4 text-[11px] text-[#7C847E] leading-relaxed">
+        {/* Trust Statement */}
+        <div className="border-t border-[#E3E6E0] pt-6 pb-4 text-[11px] text-[#7C847E] leading-relaxed space-y-2">
           <p>
-            <strong>Etsy Trademark & API Disclosure:</strong> The term &lsquo;Etsy&rsquo; is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc. SellerSalt is an independent software application providing market intelligence, research tools, and strategic analytics for e-commerce entrepreneurs.
+            <strong>Trust & Compliance:</strong> SellerSalt operates in compliance with the terms of service of every marketplace we support. We do not scrape marketplace data, and we do not use any marketplace&apos;s API to access data belonging to sellers who haven&apos;t connected their own store to SellerSalt. Questions from a marketplace or partner? <a href="mailto:support@sellersalt.com" className="text-[#141B16] underline">support@sellersalt.com</a>.
+          </p>
+          <p>
+            SellerSalt is a product of Netdrix Cloud Services (UAE), part of the Netdrix Digital group. UK affiliate: ErgoForge Global Limited. Support: support@sellersalt.com, Mon–Fri 9AM–6PM.
           </p>
         </div>
 
@@ -116,6 +124,8 @@ export function PublicFooter() {
             &copy; {new Date().getFullYear()} SellerSalt. All rights reserved.
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/trademarks" className="hover:underline">Trademarks</Link>
+            <span>·</span>
             <Link href="/terms" className="hover:underline">Terms</Link>
             <span>·</span>
             <Link href="/privacy" className="hover:underline">Privacy</Link>

@@ -9,24 +9,24 @@ import { MarketingHomepage } from "./marketing-homepage";
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
-  title: "SellerSalt — Know What to Sell Before You Spend Money",
+  title: "SellerSalt — Know What to Sell — and Prove It",
   description:
-    "SellerSalt helps ecommerce merchants discover opportunities, research observable markets, validate product ideas, and build evidence-grounded launch plans.",
+    "SellerSalt is the evidence-based intelligence platform for sellers, agencies, and teams building real ecommerce businesses. Know what to sell before you spend money.",
   keywords:
     "ecommerce intelligence, product research, market opportunity radar, product validation, unit economics modeling, ecommerce product sourcing, commercial decision software",
   alternates: { canonical: SITE_URL },
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "SellerSalt — Know What to Sell Before You Spend Money",
+    title: "SellerSalt — Know What to Sell — and Prove It",
     description:
-      "Turn observable marketplace signals into evidence-based product decisions with SellerSalt.",
+      "SellerSalt is the evidence-based intelligence platform for sellers, agencies, and teams building real ecommerce businesses. Know what to sell before you spend money.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SellerSalt — Know What to Sell Before You Spend Money",
+    title: "SellerSalt — Know What to Sell — and Prove It",
     description:
-      "Evidence-based ecommerce product research, commercial validation, and sourcing intelligence.",
+      "SellerSalt is the evidence-based intelligence platform for sellers, agencies, and teams building real ecommerce businesses. Know what to sell before you spend money.",
   },
 };
 
