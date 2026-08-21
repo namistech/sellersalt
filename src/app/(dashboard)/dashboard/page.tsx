@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getDashboardData } from "@/services/dashboard";
 import { getPlanUsageSummary } from "@/services/plans/quota-enforcement";
+import { getTenantAccessScope } from "@/services/tenancy";
 import { PageHeader } from "@/components/shell";
 import { Card } from "@/components/ui";
 import { EmptyState } from "@/components/data";
@@ -15,7 +16,7 @@ export default async function OverviewPage() {
   const userId = user?.id;
   const userName = user?.name ?? user?.email?.split("@")[0] ?? "there";
 
-  if (!organizationId) {
+  if (!organizationId || !userId) {
     return (
       <div>
         <PageHeader title="Overview" />
@@ -23,6 +24,22 @@ export default async function OverviewPage() {
           <EmptyState
             title="Your account isn't linked to a workspace yet"
             description="Try signing out and back in — if this persists, contact support."
+          />
+        </Card>
+      </div>
+    );
+  }
+
+  // Multi-tenant Access Scoping: verify membership or active engagement
+  const tenantScope = await getTenantAccessScope(userId, { requiredScope: "DASHBOARD_READ" });
+  if (!tenantScope.isAccessible(organizationId)) {
+    return (
+      <div>
+        <PageHeader title="Overview" />
+        <Card padding="lg">
+          <EmptyState
+            title="Access Denied"
+            description="You do not have active membership or an authorized engagement with this workspace."
           />
         </Card>
       </div>
