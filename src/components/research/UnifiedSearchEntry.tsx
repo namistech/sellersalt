@@ -158,7 +158,7 @@ export function UnifiedSearchEntry({
 
           {/* Marketplace Selector Chips */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-muted-foreground font-medium text-[11px]">Sources:</span>
+            <span className="text-muted-foreground font-medium text-label-sm">Sources:</span>
             {AVAILABLE_MARKETPLACES.map((mp) => {
               const isSelected = selectedMarketplaces.includes(mp.id);
               return (
@@ -166,7 +166,7 @@ export function UnifiedSearchEntry({
                   key={mp.id}
                   type="button"
                   onClick={() => toggleMarketplace(mp.id)}
-                  className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all border ${
+                  className={`px-2 py-1 rounded-md text-label-sm font-bold transition-all border ${
                     isSelected
                       ? "bg-muted/80 text-foreground border-primary/40 shadow-2xs"
                       : "bg-transparent text-muted-foreground border-border hover:bg-muted/20 opacity-60"
@@ -181,8 +181,8 @@ export function UnifiedSearchEntry({
       </form>
 
       {/* Suggestion Chips */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-        <span className="text-muted-foreground text-[11px] font-semibold flex items-center gap-1">
+      <div className="flex flex-wrap items-center gap-1.5 pt-1 text-sm">
+        <span className="text-muted-foreground text-label-sm font-semibold flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-amber-500" /> Try searching:
         </span>
         {SAMPLE_SUGGESTIONS.map((suggestion) => (
@@ -192,7 +192,7 @@ export function UnifiedSearchEntry({
             onClick={() => {
               setQuery(suggestion);
             }}
-            className="px-2.5 py-1 rounded-lg border bg-muted/20 hover:bg-muted/50 hover:border-primary/40 text-foreground text-[11px] font-medium transition-all"
+            className="px-2.5 py-1 rounded-lg border bg-muted/20 hover:bg-muted/50 hover:border-primary/40 text-foreground text-sm font-medium transition-all"
           >
             {suggestion}
           </button>

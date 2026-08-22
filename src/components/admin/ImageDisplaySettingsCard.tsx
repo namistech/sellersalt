@@ -130,16 +130,16 @@ export function ImageDisplaySettingsCard({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-base text-ink">{title}</h3>
-            <Badge variant="neutral" className="text-[10px]">
+            <Badge variant="neutral" className="text-label-sm">
               Display & Spacing
             </Badge>
             {isFullBleed && (
-              <Badge variant="success" className="text-[10px]">
+              <Badge variant="success" className="text-label-sm">
                 Full Bleed (Zero Edge Space)
               </Badge>
             )}
           </div>
-          <p className="text-xs text-ink-secondary mt-1 max-w-2xl">{description}</p>
+          <p className="text-sm text-ink-secondary mt-1 max-w-2xl">{description}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -147,7 +147,7 @@ export function ImageDisplaySettingsCard({
             type="button"
             variant="tertiary"
             onClick={handleFullBleedPreset}
-            className="text-xs h-8 px-3 font-semibold"
+            className="text-sm h-8 px-3 font-semibold"
           >
             <Maximize2 className="w-3.5 h-3.5 mr-1 text-[#0E8F5D]" />
             Full Bleed (No Surrounding Space)
@@ -156,7 +156,7 @@ export function ImageDisplaySettingsCard({
             type="button"
             variant="tertiary"
             onClick={handleDefaultPreset}
-            className="text-xs h-8 px-3 text-ink-secondary"
+            className="text-sm h-8 px-3 text-ink-secondary"
           >
             <RotateCcw className="w-3.5 h-3.5 mr-1" />
             Reset Defaults
@@ -170,7 +170,7 @@ export function ImageDisplaySettingsCard({
           {/* 1. Dimension & Frame Size */}
           <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+              <span className="text-sm font-bold text-ink flex items-center gap-1.5">
                 <Box className="w-3.5 h-3.5 text-[#0E8F5D]" />
                 Frame Dimensions & Scale
               </span>
@@ -183,7 +183,7 @@ export function ImageDisplaySettingsCard({
                       onChange(k("width"), wPreset);
                       onChange(k("height"), wPreset === "100%" ? "100%" : "80%");
                     }}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-md transition-colors ${
+                    className={`px-2 py-0.5 text-label-sm font-mono font-bold rounded-md transition-colors ${
                       width === wPreset
                         ? "bg-[#141B16] text-white"
                         : "bg-white border border-line text-ink-secondary hover:text-ink"
@@ -239,7 +239,7 @@ export function ImageDisplaySettingsCard({
                 <button
                   type="button"
                   onClick={() => setSpacingMode(spacingMode === "uniform" ? "individual" : "uniform")}
-                  className="text-[10px] font-semibold text-[#0E8F5D] hover:underline"
+                  className="text-label-sm font-semibold text-[#0E8F5D] hover:underline"
                 >
                   {spacingMode === "uniform" ? "Switch to 4-Sided" : "Switch to Uniform"}
                 </button>
@@ -248,7 +248,7 @@ export function ImageDisplaySettingsCard({
 
             {spacingMode === "uniform" ? (
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-ink-secondary">
+                <div className="flex justify-between text-sm text-ink-secondary">
                   <span>Uniform Margin</span>
                   <span className="font-mono text-ink font-bold">{marginTop}px</span>
                 </div>
@@ -262,49 +262,49 @@ export function ImageDisplaySettingsCard({
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Top (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Top (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={marginTop}
                     onChange={(e) => onChange(k("margin_top"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Right (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Right (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={marginRight}
                     onChange={(e) => onChange(k("margin_right"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Bottom (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Bottom (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={marginBottom}
                     onChange={(e) => onChange(k("margin_bottom"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Left (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Left (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={marginLeft}
                     onChange={(e) => onChange(k("margin_left"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
               </div>
@@ -314,7 +314,7 @@ export function ImageDisplaySettingsCard({
           {/* 3. Padding (Container Inset) */}
           <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+              <span className="text-sm font-bold text-ink flex items-center gap-1.5">
                 <Move className="w-3.5 h-3.5 text-[#0E8F5D]" />
                 Padding (Container Inset Spacing)
               </span>
@@ -324,7 +324,7 @@ export function ImageDisplaySettingsCard({
                     key={pPreset}
                     type="button"
                     onClick={() => handleUniformPadding(pPreset)}
-                    className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-md transition-colors ${
+                    className={`px-2 py-0.5 text-label-sm font-mono font-bold rounded-md transition-colors ${
                       paddingTop === pPreset
                         ? "bg-[#141B16] text-white"
                         : "bg-white border border-line text-ink-secondary hover:text-ink"
@@ -338,7 +338,7 @@ export function ImageDisplaySettingsCard({
 
             {spacingMode === "uniform" ? (
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-ink-secondary">
+                <div className="flex justify-between text-sm text-ink-secondary">
                   <span>Uniform Container Padding</span>
                   <span className="font-mono text-ink font-bold">{paddingTop}px</span>
                 </div>
@@ -352,49 +352,49 @@ export function ImageDisplaySettingsCard({
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Top (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Top (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={paddingTop}
                     onChange={(e) => onChange(k("padding_top"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Right (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Right (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={paddingRight}
                     onChange={(e) => onChange(k("padding_right"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Bottom (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Bottom (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={paddingBottom}
                     onChange={(e) => onChange(k("padding_bottom"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-ink-tertiary block mb-1">Left (px)</label>
+                  <label className="text-meta text-ink-tertiary block mb-1">Left (px)</label>
                   <input
                     type="number"
                     min="0"
                     max="100"
                     value={paddingLeft}
                     onChange={(e) => onChange(k("padding_left"), e.target.value)}
-                    className="w-full px-2 py-1 text-xs font-mono bg-white border border-line rounded-lg text-ink"
+                    className="w-full px-2 py-1 text-sm font-mono bg-white border border-line rounded-lg text-ink"
                   />
                 </div>
               </div>
@@ -544,11 +544,11 @@ export function ImageDisplaySettingsCard({
         {/* Right Column: Live Simulated Preview Frame */}
         <div className="xl:col-span-5 sticky top-6 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+            <span className="text-sm font-bold text-ink flex items-center gap-1.5">
               <Eye className="w-3.5 h-3.5 text-[#0E8F5D]" />
               Real-Time Viewport Simulator
             </span>
-            <Badge variant="neutral" className="text-[10px]">
+            <Badge variant="neutral" className="text-label-sm">
               Live CSS Render
             </Badge>
           </div>
@@ -597,17 +597,17 @@ export function ImageDisplaySettingsCard({
             </div>
 
             {/* Viewport Overlay Indicators */}
-            <div className="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-xs p-2 rounded-xl text-white text-[10px] flex items-center justify-between">
+            <div className="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-xs p-2 rounded-xl text-white text-meta flex items-center justify-between">
               <div className="font-mono">
                 {width} × {height} • Margins: {marginTop}px • Rad: {borderRadius}px
               </div>
-              <Badge tone="dark" variant="neutral" className="text-[9px]">
+              <Badge tone="dark" variant="neutral" className="text-label-sm">
                 {fit.toUpperCase()}
               </Badge>
             </div>
           </div>
 
-          <p className="text-[11px] text-ink-tertiary leading-relaxed text-center">
+          <p className="text-meta text-ink-tertiary leading-relaxed text-center">
             Settings saved here take effect immediately on Get Started, Sign Up, and Login screens.
           </p>
         </div>

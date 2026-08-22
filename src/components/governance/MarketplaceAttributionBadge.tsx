@@ -20,11 +20,11 @@ export function MarketplaceAttributionBadge({
 
   return (
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
-      <Badge variant="neutral" className="text-[10px] font-bold uppercase tracking-wider">
+      <Badge variant="neutral" className="text-label-sm font-bold uppercase tracking-wider">
         {policy.displayName}
       </Badge>
       {showAccessMode && (
-        <span className="text-[9px] font-medium text-muted-foreground">
+        <span className="text-meta font-medium text-muted-foreground">
           ({policy.complianceStatus.replace(/_/g, " ")})
         </span>
       )}

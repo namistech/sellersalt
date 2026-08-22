@@ -322,15 +322,15 @@ export function AdminSidebar({
       {/* Mobile Toggle Bar */}
       <div className="lg:hidden w-full bg-white rounded-xl border border-line p-3 mb-4 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-ink">Admin Console</span>
-          <Badge variant="neutral" className="text-[10px]">
+          <span className="text-sm font-bold text-ink">Admin Console</span>
+          <Badge variant="neutral" className="text-label-sm">
             {activeTab}
           </Badge>
         </div>
         <button
           type="button"
           onClick={() => setMobileDrawerOpen((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#FAFAF8] border border-line text-ink"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[#FAFAF8] border border-line text-ink"
         >
           {mobileDrawerOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           <span>{mobileDrawerOpen ? "Close Menu" : "Console Navigation"}</span>
@@ -342,7 +342,7 @@ export function AdminSidebar({
         <div className="lg:hidden w-full bg-white rounded-2xl border border-line p-4 shadow-md space-y-5 mb-6">
           {navGroups.map((group) => (
             <div key={group.id} className="space-y-1.5">
-              <div className="px-3 text-[11px] font-extrabold uppercase tracking-wider text-ink-tertiary">
+              <div className="px-3 text-label-sm font-extrabold uppercase tracking-wider text-ink-tertiary">
                 {group.label}
               </div>
               <div className="space-y-0.5">
@@ -381,7 +381,7 @@ export function AdminSidebar({
               {!isCollapsed && (
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="h-2 w-2 rounded-full bg-[#0E8F5D] animate-pulse shrink-0" />
-                  <span className="text-xs font-bold text-ink truncate">Admin Console</span>
+                  <span className="text-sm font-bold text-ink truncate">Admin Console</span>
                 </div>
               )}
 
@@ -400,7 +400,7 @@ export function AdminSidebar({
               {navGroups.map((group) => (
                 <div key={group.id} className="space-y-1">
                   {!isCollapsed ? (
-                    <div className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-ink-tertiary">
+                    <div className="px-3 text-label-sm font-extrabold uppercase tracking-wider text-ink-tertiary">
                       {group.label}
                     </div>
                   ) : (
@@ -426,11 +426,11 @@ export function AdminSidebar({
           <div
             className={cn(
               "pt-2 border-t border-line mt-2",
-              isCollapsed ? "flex justify-center" : "flex items-center justify-between px-2 text-[11px] text-ink-tertiary"
+              isCollapsed ? "flex justify-center" : "flex items-center justify-between px-2 text-meta text-ink-tertiary"
             )}
           >
             {!isCollapsed && (
-              <span className="font-mono text-[10px]">v1.0 • Ops Ready</span>
+              <span className="font-mono text-label-sm">v1.0 • Ops Ready</span>
             )}
             <button
               type="button"

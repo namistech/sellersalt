@@ -34,8 +34,8 @@ export function ProgressMeter({
     <div className={cn("space-y-2", className)}>
       {(label || sublabel) && (
         <div className="flex items-center justify-between text-xs">
-          {label && <span className="font-bold text-ink text-[11px] uppercase tracking-wide">{label}</span>}
-          {sublabel && <span className="text-[11px] text-ink-tertiary">{sublabel}</span>}
+          {label && <span className="font-bold text-ink text-label-sm uppercase tracking-wide">{label}</span>}
+          {sublabel && <span className="text-meta text-ink-tertiary">{sublabel}</span>}
         </div>
       )}
 
@@ -59,11 +59,11 @@ export function ProgressMeter({
       </div>
 
       {showLegend && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-xs">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1 text-sm">
           {segments.map((seg, idx) => {
             const pct = sum > 0 ? (seg.value / sum) * 100 : 0;
             return (
-              <div key={idx} className="flex items-center gap-1.5 text-[11px]">
+              <div key={idx} className="flex items-center gap-1.5 text-label-sm">
                 <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
                 <span className="text-ink-secondary">{seg.label}:</span>
                 <span className="font-bold text-ink tabular-nums">{pct.toFixed(1)}%</span>

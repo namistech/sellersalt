@@ -106,12 +106,12 @@ export function NextCommercialActionBar({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">{actionConfig.headline}</h3>
-            <p className="text-xs text-muted-foreground">{actionConfig.description}</p>
+            <p className="text-sm text-muted-foreground">{actionConfig.description}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="neutral" className="text-[9px]">
+          <Badge variant="neutral" className="text-label-sm">
             Data Trust: {trustScore}%
           </Badge>
           <Badge
@@ -122,7 +122,7 @@ export function NextCommercialActionBar({
                 ? "info"
                 : "warning"
             }
-            className="text-[9px] font-bold"
+            className="text-label-sm font-bold"
           >
             Verdict: {verdict}
           </Badge>
@@ -134,7 +134,7 @@ export function NextCommercialActionBar({
           href={actionConfig.secondaryAction.href}
           size="compact"
           variant="secondary"
-          className="text-xs font-semibold"
+          className="text-sm font-semibold"
         >
           <SecondaryIcon className="w-3.5 h-3.5 mr-1.5" />
           <span>{actionConfig.secondaryAction.label}</span>
@@ -144,7 +144,7 @@ export function NextCommercialActionBar({
           href={actionConfig.primaryAction.href}
           size="compact"
           variant="primary"
-          className="text-xs font-bold"
+          className="text-sm font-bold"
         >
           <PrimaryIcon className="w-3.5 h-3.5 mr-1.5" />
           <span>{actionConfig.primaryAction.label}</span>

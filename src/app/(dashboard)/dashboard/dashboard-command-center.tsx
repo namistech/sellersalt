@@ -237,7 +237,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-[#9EAA9F]">Ranked by Revenue Impact</span>
+            <span className="text-meta text-[#9EAA9F]">Ranked by Revenue Impact</span>
             <DataProvenanceBadge type="SELLERSALT_SCORE" />
           </div>
         </div>
@@ -249,17 +249,17 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
               className="p-4 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-3 flex flex-col justify-between hover:border-[#16C784]/50 transition shadow-2xs"
             >
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-label-sm">
                   <span className="px-2 py-0.5 rounded font-bold uppercase tracking-wide bg-[#2A362D] text-[#16C784]">
                     {item.badgeText}
                   </span>
-                  <span className="font-mono text-[#9EAA9F]">Impact: {item.impactScore}/100</span>
+                  <span className="font-mono text-meta text-[#9EAA9F]">Impact: {item.impactScore}/100</span>
                 </div>
 
-                <h4 className="text-xs font-bold text-white leading-snug">
+                <h4 className="text-sm font-bold text-white leading-snug">
                   {item.title}
                 </h4>
-                <p className="text-[11px] text-[#9EAA9F] line-clamp-2">
+                <p className="text-sm text-[#9EAA9F] line-clamp-2">
                   {item.subtitle}
                 </p>
 
@@ -270,7 +270,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
 
               <Link
                 href={item.actionHref}
-                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] transition shadow-2xs mt-2"
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] transition shadow-2xs mt-2"
               >
                 <span>{item.actionLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -288,13 +288,13 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
               <Layers className="h-5 w-5 text-[#0E8F5D]" />
               10-Stage Operating Pipeline Health
             </h3>
-            <p className="text-xs text-ink-tertiary">
+            <p className="text-sm text-ink-tertiary">
               Continuous operating loop from research discovery to live post-publish monitoring.
             </p>
           </div>
           <Link
             href="/workspace"
-            className="text-xs font-bold text-[#0E8F5D] hover:underline inline-flex items-center gap-1"
+            className="text-sm font-bold text-[#0E8F5D] hover:underline inline-flex items-center gap-1"
           >
             <span>Open Operating Workspace</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -309,16 +309,16 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
               href={st.href}
               className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] text-center transition flex flex-col justify-between gap-1 group shadow-2xs"
             >
-              <div className="text-[10px] font-bold text-ink-tertiary group-hover:text-[#0E8F5D]">
+              <div className="text-label-sm font-bold text-ink-tertiary group-hover:text-[#0E8F5D]">
                 #{st.stageNumber}
               </div>
               <div className="text-base font-extrabold text-ink group-hover:text-[#0E8F5D]">
                 {st.count}
               </div>
-              <div className="text-[10px] font-semibold text-ink-secondary truncate" title={st.label}>
+              <div className="text-xs font-semibold text-ink-secondary truncate" title={st.label}>
                 {st.label}
               </div>
-              <div className="text-[9px] font-mono text-ink-tertiary">
+              <div className="text-xs font-mono text-ink-tertiary">
                 {st.conversionRatePercent}% conv
               </div>
             </Link>
@@ -326,21 +326,21 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
         </div>
 
         {/* Bottleneck Diagnostic Callout */}
-        <div className="p-4 rounded-xl bg-[#FFF9EB] border border-[#FFE0A3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="p-4 rounded-xl bg-[#FFF9EB] border border-[#FFE0A3] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm">
           <div className="flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 text-[#FFB020] shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <span className="font-bold text-[#664400] text-[11px] uppercase tracking-wide">
+              <span className="font-bold text-[#664400] text-label-sm uppercase tracking-wide">
                 Primary Conversion Bottleneck: {pipelineHealth.bottleneckLabel}
               </span>
-              <p className="text-[#664400] text-xs">
+              <p className="text-[#664400] text-sm">
                 {pipelineHealth.bottleneckDescription}
               </p>
             </div>
           </div>
           <Link
             href={pipelineHealth.fixBottleneckAction.href}
-            className="shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
+            className="shrink-0 px-3.5 py-1.5 rounded-lg text-sm font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
           >
             {pipelineHealth.fixBottleneckAction.label} →
           </Link>
@@ -349,50 +349,57 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
 
       {/* SECTION C & D: INTELLIGENCE FEED + CONTINUE WHERE YOU LEFT OFF */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Real-Time Intelligence Feed */}
+        {/* Real-Time Market Intelligence Pulse */}
         <div className="p-5 rounded-2xl bg-white border border-line shadow-xs space-y-3.5 flex flex-col justify-between">
           <div className="space-y-1">
-            <h4 className="text-sm font-bold text-ink flex items-center gap-2">
-              <span>📡</span> Live Market Intelligence Signals
-            </h4>
-            <p className="text-xs text-ink-tertiary">
-              New competitor movements and breakout signals detected since your last visit.
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-ink flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#FFB020]" />
+                Live Opportunity Feed
+              </h4>
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16C784] opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16C784]" />
+              </span>
+            </div>
+            <p className="text-sm text-ink-tertiary">
+              Algorithmic opportunity signals captured across monitored niches.
             </p>
           </div>
 
           <div className="space-y-2.5">
-            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-xs">
+            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-ink flex items-center gap-1.5 text-[11px]">
+                <span className="font-bold text-ink flex items-center gap-1.5 text-sm">
                   🔥 Competitor Acceleration Detected
                 </span>
-                <span className="text-[10px] text-ink-tertiary">3h ago</span>
+                <span className="text-meta text-ink-tertiary">3h ago</span>
               </div>
-              <p className="text-ink-secondary text-[11px]">
+              <p className="text-ink-secondary text-sm">
                 Competitor 'ArtisanStudio' surged +28% weekly velocity on personalized ceramic drinkware.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-xs">
+            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-ink flex items-center gap-1.5 text-[11px]">
+                <span className="font-bold text-ink flex items-center gap-1.5 text-sm">
                   🔎 Emerging High-Intent Cluster Found
                 </span>
-                <span className="text-[10px] text-ink-tertiary">6h ago</span>
+                <span className="text-meta text-ink-tertiary">6h ago</span>
               </div>
-              <p className="text-ink-secondary text-[11px]">
+              <p className="text-ink-secondary text-sm">
                 Search phrase 'aesthetic desk tray leather' identified with under 250 competing items.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-xs">
+            <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-ink flex items-center gap-1.5 text-[11px]">
+                <span className="font-bold text-ink flex items-center gap-1.5 text-sm">
                   🎯 Breakout Opportunity Discovered
                 </span>
-                <span className="text-[10px] text-ink-tertiary">12h ago</span>
+                <span className="text-meta text-ink-tertiary">12h ago</span>
               </div>
-              <p className="text-ink-secondary text-[11px]">
+              <p className="text-ink-secondary text-sm">
                 New young shop (6 mos) generating 5.1 sales/day in Handmade Leather Goods.
               </p>
             </div>
@@ -400,7 +407,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
 
           <Link
             href="/radar"
-            className="w-full text-center px-3 py-2 text-xs font-bold rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink transition"
+            className="w-full text-center px-3 py-2 text-sm font-bold rounded-lg border border-line bg-white hover:bg-[#FAFAF8] text-ink transition"
           >
             Explore All Opportunities in Radar →
           </Link>
@@ -413,7 +420,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
               <Clock className="h-4 w-4 text-[#0E8F5D]" />
               Continue Where You Left Off
             </h4>
-            <p className="text-xs text-ink-tertiary">
+            <p className="text-sm text-ink-tertiary">
               Resume in-flight strategies, keyword clusters, and draft reviews.
             </p>
           </div>
@@ -423,20 +430,20 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
               <Link
                 key={item.id}
                 href={item.href}
-                className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] transition flex items-center justify-between gap-3 text-xs group"
+                className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] transition flex items-center justify-between gap-3 text-sm group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-base">{item.icon}</span>
                   <div className="min-w-0">
-                    <h5 className="font-bold text-ink group-hover:text-[#0E8F5D] truncate">
+                    <h5 className="font-bold text-sm text-ink group-hover:text-[#0E8F5D] truncate">
                       {item.title}
                     </h5>
-                    <p className="text-[11px] text-ink-tertiary truncate">
+                    <p className="text-sm text-ink-tertiary truncate">
                       {item.progress}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[#0E8F5D] font-bold text-xs shrink-0">
+                <div className="flex items-center gap-1 text-[#0E8F5D] font-bold text-sm shrink-0">
                   <span>Resume</span>
                   <ArrowRight className="h-3 w-3" />
                 </div>
@@ -446,7 +453,7 @@ export function DashboardCommandCenter({ organizationId, userName }: DashboardCo
 
           <Link
             href="/workspace"
-            className="w-full text-center px-3 py-2 text-xs font-bold rounded-lg bg-[#141B16] text-white hover:bg-[#202C23] transition"
+            className="w-full text-center px-3 py-2 text-sm font-bold rounded-lg bg-[#141B16] text-white hover:bg-[#202C23] transition"
           >
             Open Full Operating Workspace →
           </Link>

@@ -35,15 +35,15 @@ export function BulletGauge({
     <div className={cn("p-4 rounded-xl bg-surface border border-line space-y-3 shadow-2xs", className)}>
       <div className="flex items-baseline justify-between">
         <div>
-          <div className="text-xs font-bold text-ink uppercase tracking-wide">{label}</div>
-          {sublabel && <div className="text-[11px] text-ink-tertiary">{sublabel}</div>}
+          <div className="text-label-sm font-bold text-ink uppercase tracking-wide">{label}</div>
+          {sublabel && <div className="text-meta text-ink-tertiary">{sublabel}</div>}
         </div>
         <div className="text-right">
           <span className="font-mono text-xl font-bold text-ink tabular-nums">
             {actual}
-            <span className="text-xs text-ink-tertiary ml-0.5">{unit}</span>
+            <span className="text-sm text-ink-tertiary ml-0.5">{unit}</span>
           </span>
-          <div className="text-[10px] font-semibold text-ink-tertiary">
+          <div className="text-label-sm font-semibold text-ink-tertiary">
             Benchmark: {benchmark}{unit}
           </div>
         </div>
@@ -83,7 +83,7 @@ export function BulletGauge({
         )}
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-ink-tertiary font-medium">
+      <div className="flex items-center justify-between text-meta text-ink-tertiary font-medium">
         <span>0{unit}</span>
         <span className="flex items-center gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-[#141B16]" /> Category Median ({benchmark}{unit})

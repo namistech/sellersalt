@@ -354,7 +354,7 @@ export function CheckoutClient({
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-[#E3E6E0]" />
                   </div>
-                  <div className="relative flex justify-center text-[10px] uppercase">
+                  <div className="relative flex justify-center text-label-sm uppercase">
                     <span className="bg-white px-2 text-[#7C847E] font-medium">Or enter email below</span>
                   </div>
                 </div>
@@ -394,16 +394,16 @@ export function CheckoutClient({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="password" className="text-xs font-semibold text-[#141B16]">
+                      <label htmlFor="password" className="text-sm font-semibold text-[#141B16]">
                         Password
                       </label>
                       {/* Forgot password link on checkout login form (Part 25) */}
                       {accountMode === "signup" ? (
-                        <span className="text-[11px] text-[#7C847E]">Min 8 characters</span>
+                        <span className="text-meta text-[#7C847E]">Min 8 characters</span>
                       ) : (
                         <Link
                           href="/forgot-password"
-                          className="text-[11px] font-semibold text-[#0E8F5D] hover:underline"
+                          className="text-sm font-semibold text-[#0E8F5D] hover:underline"
                         >
                           Forgot password?
                         </Link>
@@ -434,7 +434,7 @@ export function CheckoutClient({
                     </div>
                     {accountMode === "signup" && (
                       <div className="mt-2 space-y-1.5">
-                        <div className="text-[11px] text-[#7C847E]">
+                        <div className="text-meta text-[#7C847E]">
                           Use at least 8 characters, including a number and a symbol.
                         </div>
                       </div>
@@ -465,7 +465,7 @@ export function CheckoutClient({
 
             {/* Trust & Guarantee Section */}
             <Card padding="md" className="border-[#E3E6E0] bg-white shadow-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-[#525B55]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-[#525B55]">
                 <div className="flex items-start gap-2.5">
                   <ShieldCheck className="h-4 w-4 text-[#0E8F5D] shrink-0 mt-0.5" />
                   <div>
@@ -492,7 +492,7 @@ export function CheckoutClient({
               </div>
             </Card>
 
-            <p className="text-[11px] text-[#7C847E] leading-relaxed">
+            <p className="text-meta text-[#7C847E] leading-relaxed">
               By proceeding with checkout, you agree to SellerSalt's{" "}
               <Link href="/terms" target="_blank" className="text-[#141B16] underline font-medium">
                 Terms of Service
@@ -516,11 +516,11 @@ export function CheckoutClient({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#0E8F5D]" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-[#0E8F5D]">
+                    <span className="text-label-sm font-extrabold uppercase tracking-wider text-[#0E8F5D]">
                       Selected Plan
                     </span>
                   </div>
-                  <Badge variant="success" className="text-[11px] font-semibold text-[#0E8F5D] bg-[#E7FAF1] border border-[#16C784]/30">
+                  <Badge variant="success" className="text-label-sm font-semibold text-[#0E8F5D] bg-[#E7FAF1] border border-[#16C784]/30">
                     {isFreePlan ? "Free Explorer" : selected.trialDays ? `${selected.trialDays}-Day Trial` : "Monthly Subscription"}
                   </Badge>
                 </div>
@@ -532,7 +532,7 @@ export function CheckoutClient({
                       key={pkg.key}
                       type="button"
                       onClick={() => selectPlan(pkg.key)}
-                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all text-center ${
+                      className={`py-2 px-2 rounded-lg text-xs sm:text-sm font-bold transition-all text-center ${
                         selected.key === pkg.key
                           ? "bg-[#0E8F5D] text-white shadow-xs"
                           : "text-[#525B55] hover:text-[#141B16] hover:bg-white"
@@ -546,13 +546,13 @@ export function CheckoutClient({
 
               {/* Price Breakdown */}
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-3">
-                <div className="flex items-center justify-between text-xs text-[#525B55]">
+                <div className="flex items-center justify-between text-sm text-[#525B55]">
                   <span>Tier</span>
                   <span className="font-bold text-[#141B16]">{selected.name}</span>
                 </div>
 
                 {selected.trialDays && !isFreePlan && (
-                  <div className="flex items-center justify-between text-xs text-[#525B55]">
+                  <div className="flex items-center justify-between text-sm text-[#525B55]">
                     <span>{selected.trialDays}-Day Full Access Trial</span>
                     <span className="font-mono font-bold text-[#0E8F5D]">
                       ${(displayTrialPriceUsd ?? 1).toFixed(2)}
@@ -560,7 +560,7 @@ export function CheckoutClient({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-[#525B55]">
+                <div className="flex items-center justify-between text-sm text-[#525B55]">
                   <span>Recurring monthly billing</span>
                   <span className="font-mono font-semibold text-[#141B16]">
                     {isFreePlan ? "$0.00 / mo" : `$${displayPriceUsd.toFixed(2)} / mo`}
@@ -568,14 +568,14 @@ export function CheckoutClient({
                 </div>
 
                 {appliedCoupon && (
-                  <div className="flex items-center justify-between text-xs text-[#0E8F5D] font-medium pt-1 border-t border-[#E3E6E0]">
+                  <div className="flex items-center justify-between text-sm text-[#0E8F5D] font-medium pt-1 border-t border-[#E3E6E0]">
                     <span>Coupon "{appliedCoupon.code}" Discount</span>
                     <span>Applied ✓</span>
                   </div>
                 )}
 
                 <div className="pt-3 border-t border-[#E3E6E0] flex items-baseline justify-between">
-                  <div className="text-xs font-bold text-[#141B16] uppercase tracking-wider">
+                  <div className="text-label-sm font-bold text-[#141B16] uppercase tracking-wider">
                     Total Due Today:
                   </div>
                   <div className="text-2xl font-extrabold font-mono text-[#141B16]">
@@ -588,7 +588,7 @@ export function CheckoutClient({
               {!isFreePlan && (
                 <div>
                   {appliedCoupon ? (
-                    <div className="flex items-center justify-between rounded-lg bg-[#E7FAF1] px-3.5 py-2 text-xs text-[#0E8F5D] font-medium border border-[#0E8F5D]/30">
+                    <div className="flex items-center justify-between rounded-lg bg-[#E7FAF1] px-3.5 py-2 text-sm text-[#0E8F5D] font-medium border border-[#0E8F5D]/30">
                       <span>Coupon "{appliedCoupon.code}" active</span>
                       <button
                         type="button"
@@ -608,7 +608,7 @@ export function CheckoutClient({
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApplyCoupon())}
-                        className="text-xs"
+                        className="text-sm"
                       />
                       <Button
                         type="button"
@@ -617,22 +617,22 @@ export function CheckoutClient({
                         onClick={handleApplyCoupon}
                         loading={couponApplying}
                         disabled={!couponInput.trim()}
-                        className="shrink-0 text-xs font-semibold px-4"
+                        className="shrink-0 text-sm font-semibold px-4"
                       >
                         Apply
                       </Button>
                     </div>
                   )}
-                  {couponError && <p className="mt-1 text-xs text-danger">{couponError}</p>}
+                  {couponError && <p className="mt-1 text-sm text-danger">{couponError}</p>}
                 </div>
               )}
 
               {/* Features Included List */}
               <div className="space-y-2 pt-2 border-t border-[#E3E6E0]">
-                <div className="text-xs font-semibold text-[#141B16] uppercase tracking-wider">
+                <div className="text-label-sm font-semibold text-[#141B16] uppercase tracking-wider">
                   Included with {selected.name}:
                 </div>
-                <ul className="space-y-2 text-xs text-[#525B55]">
+                <ul className="space-y-2 text-sm text-[#525B55]">
                   <li className="flex items-center gap-2">
                     <Check className="h-3.5 w-3.5 text-[#0E8F5D] shrink-0" />
                     <span><strong>{selected.maxSearchConfigs}</strong> Saved Keyword Searches</span>
@@ -664,10 +664,10 @@ export function CheckoutClient({
               <div className="pt-3 border-t border-[#E3E6E0]">
                 {!isAuthenticated ? (
                   <div className="p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E3E6E0] text-center space-y-1">
-                    <p className="text-xs font-semibold text-[#141B16]">
+                    <p className="text-sm font-semibold text-[#141B16]">
                       Create or sign in to your account on the left
                     </p>
-                    <p className="text-[11px] text-[#7C847E]">
+                    <p className="text-meta text-[#7C847E]">
                       {isFreePlan
                         ? "Free workspace activates instantly upon authentication."
                         : "Payment methods will activate automatically once authenticated."}

@@ -77,7 +77,7 @@ export function PublicHeader({ currentPath = "/" }: PublicHeaderProps) {
                 href="/settings/profile"
                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line bg-white hover:bg-[#F4F3EF] text-xs font-medium text-[#141B16] transition-colors"
               >
-                <div className="h-5 w-5 rounded-full bg-[#0E8F5D] text-white text-[10px] font-bold flex items-center justify-center">
+                <div className="h-5 w-5 rounded-full bg-[#0E8F5D] text-white text-label-sm font-bold flex items-center justify-center">
                   {(session.user?.name || session.user?.email || "U").substring(0, 1).toUpperCase()}
                 </div>
                 <span className="max-w-[120px] truncate">{session.user?.name || session.user?.email}</span>

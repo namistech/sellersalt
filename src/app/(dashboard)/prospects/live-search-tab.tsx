@@ -285,7 +285,7 @@ export function LiveSearchTab() {
       <Card padding="md" className="border-line bg-white shadow-xs space-y-4">
         <form onSubmit={handleSearch} className="space-y-3">
           <div>
-            <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Marketplace</label>
+            <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Marketplace</label>
             <MarketplaceSelector
               selectedId={marketplace}
               onChange={(id) => setMarketplace(id)}
@@ -300,7 +300,7 @@ export function LiveSearchTab() {
                 placeholder="Search one keyword, or several separated by commas (e.g. wooden desk organizer, desk tray)..."
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                className="pl-9 text-xs"
+                className="pl-9 text-sm"
               />
             </div>
 
@@ -308,42 +308,42 @@ export function LiveSearchTab() {
               type="submit"
               variant="primary"
               loading={loading}
-              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-semibold px-5 text-white shrink-0"
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-sm font-semibold px-5 text-white shrink-0"
             >
               Search Marketplace
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2 border-t border-line-subtle text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2 border-t border-line-subtle text-sm">
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Marketplace Country</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Marketplace Country</label>
               <CountrySelector size="sm" className="w-full h-8" />
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Price ($)</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Min Price ($)</label>
               <Input
                 type="number"
                 placeholder="Min $"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Max Price ($)</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Max Price ($)</label>
               <Input
                 type="number"
                 placeholder="Max $"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Sort Metric</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Sort Metric</label>
               <Select
                 value={sortOn}
                 onChange={(e) => setSortOn(e.target.value as any)}
@@ -356,7 +356,7 @@ export function LiveSearchTab() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Order</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Order</label>
               <Select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as any)}
@@ -368,35 +368,35 @@ export function LiveSearchTab() {
             </div>
 
             <div className="sm:col-span-5">
-              <div className="text-[10px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 {splitKeywordsPreviewLabel(keyword)}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-line-subtle text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-line-subtle text-sm">
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Reviews</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Min Reviews</label>
               <Input
                 type="number"
                 placeholder="e.g. 10"
                 value={minReviews}
                 onChange={(e) => setMinReviews(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Max Reviews</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Max Reviews</label>
               <Input
                 type="number"
                 placeholder="e.g. 5000"
                 value={maxReviews}
                 onChange={(e) => setMaxReviews(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Min Rating</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Min Rating</label>
               <Input
                 type="number"
                 step="0.1"
@@ -405,11 +405,11 @@ export function LiveSearchTab() {
                 placeholder="e.g. 4.0"
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-ink-tertiary mb-1">Max Rating</label>
+              <label className="block text-label-sm font-medium text-ink-tertiary mb-1">Max Rating</label>
               <Input
                 type="number"
                 step="0.1"
@@ -418,10 +418,10 @@ export function LiveSearchTab() {
                 placeholder="e.g. 5.0"
                 value={maxRating}
                 onChange={(e) => setMaxRating(e.target.value)}
-                className="text-xs"
+                className="text-sm"
               />
             </div>
-            <div className="col-span-2 sm:col-span-4 text-[10px] text-ink-tertiary">
+            <div className="col-span-2 sm:col-span-4 text-meta text-ink-tertiary">
               A product whose review count or rating isn't observable on this marketplace is never excluded by these filters — only items with a real, observed value outside the range are.
             </div>
           </div>
@@ -429,8 +429,8 @@ export function LiveSearchTab() {
         </form>
 
         {/* Quick Keyword Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
-          <span className="text-ink-tertiary text-[11px] font-medium">Quick ideas:</span>
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-sm">
+          <span className="text-ink-tertiary text-label-sm font-medium">Quick ideas:</span>
           {["digital planner", "crochet pattern", "leather keychain", "minimalist jewelry", "svg bundle"].map(
             (q) => (
               <button
@@ -439,7 +439,7 @@ export function LiveSearchTab() {
                 onClick={() => {
                   setKeyword(q);
                 }}
-                className="px-2 py-0.5 rounded bg-[#F4F3EF] hover:bg-[#E7FAF1] hover:text-[#0E8F5D] text-ink text-[11px] transition-colors border border-line-subtle"
+                className="px-2 py-0.5 rounded bg-[#F4F3EF] hover:bg-[#E7FAF1] hover:text-[#0E8F5D] text-ink text-label-sm transition-colors border border-line-subtle"
               >
                 {q}
               </button>
@@ -525,7 +525,7 @@ export function LiveSearchTab() {
             return (
               <Card variant="feature" padding="lg" className="space-y-4 bg-white">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" /> Top Ranked Opportunity in Sample
                   </span>
                   <DataProvenanceBadge type="SELLERSALT_SCORE" />
@@ -542,10 +542,10 @@ export function LiveSearchTab() {
 
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
+                        <span className="px-2 py-0.5 rounded-full text-label-sm font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
                           #{1} Opportunity
                         </span>
-                        <span className="text-xs text-ink-tertiary">
+                        <span className="text-sm text-ink-tertiary">
                           Shop: <strong className="text-ink">{topItem.shop.shopName}</strong>
                         </span>
                       </div>
@@ -554,7 +554,7 @@ export function LiveSearchTab() {
                         {topItem.listing.title}
                       </h3>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-secondary">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-ink-secondary">
                         <span>Price: <strong className="font-mono text-ink">
                           {formatMarketplacePrice(topItem.listing.price, topItem.listing.currency) ?? "Unavailable"}
                         </strong></span>
@@ -576,13 +576,13 @@ export function LiveSearchTab() {
                       {(topItem.listing.categoryPath.length > 0 || topItem.listing.badges.length > 0 || topItem.listing.brand) && (
                         <div className="flex flex-wrap items-center gap-1 pt-0.5">
                           {topItem.listing.brand && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{topItem.listing.brand}</span>
+                            <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">{topItem.listing.brand}</span>
                           )}
                           {topItem.listing.categoryPath.length > 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{topItem.listing.categoryPath[topItem.listing.categoryPath.length - 1]}</span>
+                            <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">{topItem.listing.categoryPath[topItem.listing.categoryPath.length - 1]}</span>
                           )}
                           {topItem.listing.badges.map((b) => (
-                            <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                            <span key={b} className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
                           ))}
                         </div>
                       )}
@@ -593,9 +593,9 @@ export function LiveSearchTab() {
                     <div className="text-right">
                       <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono leading-none">
                         {topItem.opportunity.opportunityScore}
-                        <span className="text-xs text-ink-tertiary font-sans font-normal">/100</span>
+                        <span className="text-sm text-ink-tertiary font-sans font-normal">/100</span>
                       </div>
-                      <span className="text-[10px] font-semibold text-ink-tertiary">Opportunity Score</span>
+                      <span className="text-label-sm font-semibold text-ink-tertiary">Opportunity Score</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -770,7 +770,7 @@ export function LiveSearchTab() {
                     <button
                       type="button"
                       onClick={() => setActiveDrawerProduct(item)}
-                      className="font-bold text-xs text-ink hover:text-[#0E8F5D] text-left line-clamp-2 transition-colors"
+                      className="font-bold text-sm text-ink hover:text-[#0E8F5D] text-left line-clamp-2 transition-colors"
                     >
                       {item.listing.title}
                     </button>
@@ -778,20 +778,20 @@ export function LiveSearchTab() {
                       <span className="font-mono text-base font-bold text-ink">
                         {formatMarketplacePrice(item.listing.price, item.listing.currency) ?? "Price unavailable"}
                       </span>
-                      <span className="text-[11px] text-ink-tertiary truncate">
+                      <span className="text-meta text-ink-tertiary truncate">
                         {item.shop.shopName}
                       </span>
                     </div>
                     {(item.listing.categoryPath.length > 0 || item.listing.badges.length > 0 || item.listing.brand) && (
                       <div className="flex flex-wrap items-center gap-1 mt-1">
                         {item.listing.brand && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{item.listing.brand}</span>
+                          <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">{item.listing.brand}</span>
                         )}
                         {item.listing.categoryPath.length > 0 && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{item.listing.categoryPath[item.listing.categoryPath.length - 1]}</span>
+                          <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">{item.listing.categoryPath[item.listing.categoryPath.length - 1]}</span>
                         )}
                         {item.listing.badges.slice(0, 2).map((b) => (
-                          <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                          <span key={b} className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
                         ))}
                       </div>
                     )}
@@ -803,7 +803,7 @@ export function LiveSearchTab() {
                       SHOP-level aggregates and was never meant to hide a
                       real per-listing rating. */}
                   {(typeof item.listing.rating === "number" || typeof item.listing.reviewCount === "number") && (
-                    <div className="flex items-center gap-1 text-xs text-ink-secondary">
+                    <div className="flex items-center gap-1 text-sm text-ink-secondary">
                       {typeof item.listing.rating === "number" && (
                         <span className="font-semibold text-ink">{item.listing.rating.toFixed(1)}★</span>
                       )}
@@ -818,7 +818,7 @@ export function LiveSearchTab() {
                     </div>
                   )}
                   {item.listing.keyword && (
-                    <div className="text-[10px] text-ink-tertiary">
+                    <div className="text-meta text-ink-tertiary">
                       Found via: <span className="font-medium text-ink-secondary">{item.listing.keyword}</span>
                     </div>
                   )}
@@ -829,24 +829,24 @@ export function LiveSearchTab() {
                       carry no such data, so this must not show fabricated
                       placeholder numbers. */}
                   {item.shop.shopMetricsObserved && (
-                    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-xs">
+                    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-sm">
                       <div>
-                        <div className="text-[10px] text-ink-tertiary">Est. Velocity</div>
+                        <div className="text-meta text-ink-tertiary">Est. Velocity</div>
                         <div className="font-bold font-mono text-[#0E8F5D]">
-                          {item.signals.estDailySales.toFixed(1)} <span className="text-[10px] font-normal text-ink-tertiary">sales/day</span>
+                          {item.signals.estDailySales.toFixed(1)} <span className="text-meta font-normal text-ink-tertiary">sales/day</span>
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-ink-tertiary">Shop Reviews</div>
+                        <div className="text-meta text-ink-tertiary">Shop Reviews</div>
                         <div className="font-bold font-mono text-ink">
-                          {item.shop.reviewCount} <span className="text-[10px] font-normal text-ink-tertiary">({item.shop.activeListings} listings)</span>
+                          {item.shop.reviewCount} <span className="text-meta font-normal text-ink-tertiary">({item.shop.activeListings} listings)</span>
                         </div>
                       </div>
                     </div>
                   )}
                   {!item.shop.shopMetricsObserved && item.listing.bestSellerRank.length > 0 && (
-                    <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-xs">
-                      <div className="text-[10px] text-ink-tertiary">Marketplace sales rank</div>
+                    <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-sm">
+                      <div className="text-meta text-ink-tertiary">Marketplace sales rank</div>
                       <div className="font-bold font-mono text-ink">
                         {item.listing.bestSellerRank.map((r) => `#${r.rank.toLocaleString()} in ${r.category}`).join(" · ")}
                       </div>
@@ -854,12 +854,12 @@ export function LiveSearchTab() {
                   )}
 
                   {/* Classification Pill */}
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="inline-flex items-center gap-1 font-semibold text-ink text-[11px]">
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="inline-flex items-center gap-1 font-semibold text-ink text-label-sm">
                       <span>{item.opportunity.classificationEmoji}</span>
                       <span>{item.opportunity.classificationLabel}</span>
                     </span>
-                    <span className="text-[10px] text-ink-tertiary">
+                    <span className="text-meta text-ink-tertiary">
                       Age: {item.listing.listingAgeDays}d
                     </span>
                   </div>

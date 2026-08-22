@@ -271,10 +271,10 @@ export function OpportunityInbox({
 
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-bold text-ink uppercase tracking-wider text-[10px] px-2 py-0.5 rounded bg-surface-secondary">
+                      <span className="font-bold text-ink uppercase tracking-wider text-label-sm px-2 py-0.5 rounded bg-surface-secondary">
                         {opp.source.replace("_", " ")}
                       </span>
-                      <span className="font-semibold text-[#0E8F5D] text-[11px]">
+                      <span className="font-semibold text-[#0E8F5D] text-label-sm">
                         Stage: {opp.stage}
                       </span>
                       <DataProvenanceBadge type={opp.provenance} />
@@ -284,7 +284,7 @@ export function OpportunityInbox({
                       {opp.listingTitle}
                     </h4>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-ink-tertiary">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-ink-tertiary">
                       {opp.shopName && (
                         <span>
                           Shop: <strong className="text-ink">{opp.shopName}</strong>
@@ -303,7 +303,7 @@ export function OpportunityInbox({
                           href={opp.listingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-0.5 text-accent hover:underline"
+                          className="inline-flex items-center gap-0.5 text-accent hover:underline text-sm font-medium"
                         >
                           <span>View on Etsy</span>
                           <ExternalLink className="h-3 w-3" />
@@ -317,26 +317,26 @@ export function OpportunityInbox({
                 <div className="flex flex-wrap items-center gap-3 md:justify-end">
                   {/* Score Pill */}
                   <div className="px-3 py-2 rounded-xl bg-[#141B16] text-white text-center min-w-[90px]">
-                    <div className="text-[10px] uppercase font-bold text-[#FFB020]">Score</div>
+                    <div className="text-label-sm uppercase font-bold text-[#FFB020]">Score</div>
                     <div className="text-base font-extrabold text-[#16C784]">
                       {opp.opportunityScore}
-                      <span className="text-[10px] text-[#9EAA9F] font-normal">/100</span>
+                      <span className="text-label-sm text-[#9EAA9F] font-normal">/100</span>
                     </div>
                   </div>
 
                   {/* Demand Pill */}
                   <div className="px-3 py-2 rounded-xl bg-surface-secondary border border-line text-center min-w-[90px]">
-                    <div className="text-[10px] uppercase font-bold text-ink-tertiary">Velocity</div>
-                    <div className="text-xs font-bold text-ink">
-                      {opp.demand.estDailySales.toFixed(1)} <span className="font-normal text-[10px]">/day</span>
+                    <div className="text-label-sm uppercase font-bold text-ink-tertiary">Velocity</div>
+                    <div className="text-sm font-bold text-ink">
+                      {opp.demand.estDailySales.toFixed(1)} <span className="font-normal text-meta">/day</span>
                     </div>
                   </div>
 
                   {/* Margin Pill */}
                   <div className="px-3 py-2 rounded-xl bg-surface-secondary border border-line text-center min-w-[90px]">
-                    <div className="text-[10px] uppercase font-bold text-ink-tertiary">Net Margin</div>
-                    <div className="text-xs font-bold text-[#0E8F5D]">
-                      {opp.economics.marginPercent}% <span className="font-normal text-[10px]">(${opp.economics.estNetProfit})</span>
+                    <div className="text-label-sm uppercase font-bold text-ink-tertiary">Net Margin</div>
+                    <div className="text-sm font-bold text-[#0E8F5D]">
+                      {opp.economics.marginPercent}% <span className="font-normal text-meta">(${opp.economics.estNetProfit})</span>
                     </div>
                   </div>
                 </div>
@@ -421,10 +421,10 @@ export function OpportunityInbox({
 
             {/* Tradeoff Summary Callout */}
             <div className="p-4 rounded-xl bg-[#141B16] text-white space-y-2 border border-[#2A362D]">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#FFB020] flex items-center gap-1.5">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-[#FFB020] flex items-center gap-1.5">
                 🧠 Strategic Tradeoff Analysis
               </span>
-              <p className="text-xs leading-relaxed text-[#D2DDD3]">
+              <p className="text-sm leading-relaxed text-[#D2DDD3]">
                 {tradeoffs.comparisonSummary}
               </p>
             </div>
@@ -444,27 +444,27 @@ export function OpportunityInbox({
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-1">
                         {isBestOpp && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFB020] text-[#141B16]">
+                          <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#FFB020] text-[#141B16]">
                             🏆 Best Opportunity
                           </span>
                         )}
                         {isBestMargin && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#16C784] text-[#141B16]">
+                          <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#16C784] text-[#141B16]">
                             💰 Best Margin
                           </span>
                         )}
                         {isSafest && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#4E9FFF] text-[#141B16]">
+                          <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#4E9FFF] text-[#141B16]">
                             🛡️ Safest Entry
                           </span>
                         )}
                       </div>
 
-                      <h5 className="text-xs font-bold text-ink leading-tight line-clamp-2">
+                      <h5 className="text-sm font-bold text-ink leading-tight line-clamp-2">
                         {opp.listingTitle}
                       </h5>
 
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-ink-tertiary">Opp Score:</span>
                           <strong className="text-ink">{opp.opportunityScore}/100</strong>

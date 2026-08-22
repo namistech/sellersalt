@@ -24,7 +24,7 @@ export function MarketplaceDisclaimerBox({
 
   if (variant === "inline") {
     return (
-      <span className={`text-[10px] text-muted-foreground italic ${className}`}>
+      <span className={`text-meta text-muted-foreground italic ${className}`}>
         {policy.displayRules.disclaimerText}
       </span>
     );
@@ -32,7 +32,7 @@ export function MarketplaceDisclaimerBox({
 
   return (
     <div
-      className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+      className={`p-3 rounded-xl border text-sm flex items-start gap-2.5 ${
         variant === "banner"
           ? "bg-amber-500/10 border-amber-500/20 text-amber-900 dark:text-amber-200"
           : "bg-muted/15 border-muted text-muted-foreground"
@@ -40,10 +40,10 @@ export function MarketplaceDisclaimerBox({
     >
       <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
       <div className="space-y-0.5">
-        <span className="font-semibold block text-foreground text-[11px]">
+        <span className="font-semibold block text-foreground text-label-sm">
           {policy.displayName} Trademark & Compliance Notice
         </span>
-        <p className="text-[10px] leading-relaxed">
+        <p className="text-meta leading-relaxed">
           {policy.displayRules.disclaimerText}
         </p>
       </div>

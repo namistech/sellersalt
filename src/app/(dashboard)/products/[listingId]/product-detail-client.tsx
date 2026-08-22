@@ -473,10 +473,10 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
         onAction={handleAddToPlanner}
         sidePanel={
           <div className="space-y-3">
-            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+            <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
               Unit Economics Breakdown
             </div>
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-[#9EAA9F]">Sale Price:</span>
                 <span className="font-bold text-white tabular-nums">${product.price.toFixed(2)}</span>
@@ -499,19 +499,19 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Demand Velocity</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Demand Velocity</span>
             <span className="text-base font-bold text-white tabular-nums">{product.estDailySales.toFixed(1)} sales/day</span>
-            <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">High consistent volume</span>
+            <span className="text-label-sm text-[#16C784] block mt-0.5 font-semibold">High consistent volume</span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Competitor Review Moat</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Competitor Review Moat</span>
             <span className="text-base font-bold text-white tabular-nums">{product.shopReviewCount} reviews</span>
-            <span className="text-[10px] text-[#9EAA9F] block mt-0.5">Moderate entry threshold</span>
+            <span className="text-label-sm text-[#9EAA9F] block mt-0.5">Moderate entry threshold</span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Listing Freshness</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Listing Freshness</span>
             <span className="text-base font-bold text-white tabular-nums">{product.listingAgeDays} Days</span>
-            <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">Recent market breakout</span>
+            <span className="text-label-sm text-[#16C784] block mt-0.5 font-semibold">Recent market breakout</span>
           </div>
         </div>
       </IntelligenceCard>
@@ -524,59 +524,59 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
           <Heading as="h2" size="h4">
             Sales, Revenue & Unit Economics Intelligence
           </Heading>
-          <span className="text-xs text-ink-tertiary">Deterministic unit economics calculations</span>
+          <span className="text-sm text-ink-tertiary">Deterministic unit economics calculations</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Sales</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Est. Monthly Sales</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
             <div className="text-2xl font-bold text-[#0E8F5D] pt-1 tabular-nums">
               ~{product.estMonthlySales.toLocaleString()}{" "}
               <span className="text-xs font-normal text-ink-tertiary">units</span>
             </div>
-            <div className="text-[11px] text-ink-tertiary">
+            <div className="text-meta text-ink-tertiary">
               Based on {product.estDailySales.toFixed(1)} daily transactions
             </div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Revenue</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Est. Monthly Revenue</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
             <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               ${product.estMonthlyRevenue.toLocaleString()}
             </div>
-            <div className="text-[11px] text-ink-tertiary">
+            <div className="text-meta text-ink-tertiary">
               Gross sales at ${product.price.toFixed(2)} retail price
             </div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Profit</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Est. Monthly Profit</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
             <div className="text-2xl font-bold text-[#0E8F5D] pt-1 tabular-nums">
               ${Math.round(product.estMonthlySales * product.estNetProfit).toLocaleString()}
             </div>
-            <div className="text-[11px] text-ink-tertiary">
+            <div className="text-meta text-ink-tertiary">
               Net margin: {product.profitMarginPercent.toFixed(1)}%
             </div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Listing SEO Health</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Listing SEO Health</span>
               <DataProvenanceBadge type="SELLERSALT_SCORE" />
             </div>
             <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               {product.seoScore}<span className="text-xs font-normal text-ink-tertiary">/100</span>
             </div>
-            <div className="text-[11px] text-ink-tertiary">
+            <div className="text-meta text-ink-tertiary">
               {product.tags.length} active tags · {product.title.length} chars
             </div>
           </Card>
@@ -663,46 +663,46 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
         <div className="flex items-center justify-between pb-3 border-b border-line-subtle">
           <div>
             <h3 className="text-sm font-bold text-ink">Listing Content & Visual Audit</h3>
-            <p className="text-xs text-ink-tertiary">Structural completeness, tag utilization, and keyword optimization.</p>
+            <p className="text-sm text-ink-tertiary">Structural completeness, tag utilization, and keyword optimization.</p>
           </div>
           <DataProvenanceBadge type="SELLERSALT_SCORE" />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
           <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
-            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-label-sm font-bold">
               <span className="flex items-center gap-1.5"><ImageIcon className="h-3.5 w-3.5 text-[#0E8F5D]" /> Image Assets</span>
               <span className="text-[#0E8F5D]">{contentQuality.imageCount}/10</span>
             </div>
             <div className="font-bold text-ink text-sm">{contentQuality.imageCount} High-Res Photos</div>
-            <p className="text-[11px] text-ink-tertiary">Visual coverage across gallery slots.</p>
+            <p className="text-meta text-ink-tertiary">Visual coverage across gallery slots.</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
-            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-label-sm font-bold">
               <span className="flex items-center gap-1.5"><Tag className="h-3.5 w-3.5 text-blue-600" /> Tag Slots</span>
               <span className={contentQuality.tagCount === 13 ? "text-[#0E8F5D]" : "text-amber-600"}>{contentQuality.tagCount}/13</span>
             </div>
             <div className="font-bold text-ink text-sm">{contentQuality.tagCount} Active Tags</div>
-            <p className="text-[11px] text-ink-tertiary">{contentQuality.tagCount === 13 ? "100% full tag slot usage." : "Missing tag opportunities."}</p>
+            <p className="text-meta text-ink-tertiary">{contentQuality.tagCount === 13 ? "100% full tag slot usage." : "Missing tag opportunities."}</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
-            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-label-sm font-bold">
               <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 text-purple-600" /> Title Length</span>
               <span>{contentQuality.titleLength}/140 chars</span>
             </div>
             <div className="font-bold text-ink text-sm">{contentQuality.titleLength} Characters</div>
-            <p className="text-[11px] text-ink-tertiary">Includes key search phrases.</p>
+            <p className="text-meta text-ink-tertiary">Includes key search phrases.</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1">
-            <div className="flex items-center justify-between text-ink-tertiary uppercase text-[10px] font-bold">
+            <div className="flex items-center justify-between text-ink-tertiary uppercase text-label-sm font-bold">
               <span className="flex items-center gap-1.5"><Award className="h-3.5 w-3.5 text-amber-600" /> Overall Grade</span>
               <span className="font-bold text-[#0E8F5D]">Grade {contentQuality.grade}</span>
             </div>
             <div className="font-bold text-ink text-sm">SEO Score: {product.seoScore}/100</div>
-            <p className="text-[11px] text-ink-tertiary">Deterministic rubric assessment.</p>
+            <p className="text-meta text-ink-tertiary">Deterministic rubric assessment.</p>
           </div>
         </div>
       </Card>

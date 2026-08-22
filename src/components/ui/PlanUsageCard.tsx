@@ -69,7 +69,7 @@ export function PlanUsageCard({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
         {/* Keywords */}
         <div className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5">
-          <div className="flex justify-between text-[10px] text-ink-tertiary uppercase font-bold">
+          <div className="flex justify-between text-label-sm text-ink-tertiary uppercase font-bold">
             <span>Keywords</span>
             <span className="font-mono text-ink font-extrabold">{keywordUsage.current}/{keywordUsage.limit}</span>
           </div>
@@ -83,7 +83,7 @@ export function PlanUsageCard({
 
         {/* Product Research */}
         <div className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5">
-          <div className="flex justify-between text-[10px] text-ink-tertiary uppercase font-bold">
+          <div className="flex justify-between text-label-sm text-ink-tertiary uppercase font-bold">
             <span>Products</span>
             <span className="font-mono text-ink font-extrabold">{productUsage.current}/{productUsage.limit}</span>
           </div>
@@ -97,7 +97,7 @@ export function PlanUsageCard({
 
         {/* SEO Audits */}
         <div className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5">
-          <div className="flex justify-between text-[10px] text-ink-tertiary uppercase font-bold">
+          <div className="flex justify-between text-label-sm text-ink-tertiary uppercase font-bold">
             <span>SEO Audits</span>
             <span className="font-mono text-ink font-extrabold">{seoUsage.current}/{seoUsage.limit}</span>
           </div>
@@ -111,7 +111,7 @@ export function PlanUsageCard({
 
         {/* Tracked Shops */}
         <div className="p-2.5 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5">
-          <div className="flex justify-between text-[10px] text-ink-tertiary uppercase font-bold">
+          <div className="flex justify-between text-label-sm text-ink-tertiary uppercase font-bold">
             <span>Tracked Shops</span>
             <span className="font-mono text-ink font-extrabold">{competitorUsage.current}/{competitorUsage.limit}</span>
           </div>

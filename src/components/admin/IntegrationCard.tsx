@@ -190,7 +190,7 @@ export function IntegrationCard({
                 {provenanceBadge && <Badge variant="neutral">{provenanceBadge}</Badge>}
               </div>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-tertiary">
+                <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-tertiary">
                   {category}
                 </span>
               </div>
@@ -199,32 +199,32 @@ export function IntegrationCard({
           <div className="shrink-0">{getStatusBadge()}</div>
         </div>
 
-        <p className="text-body-sm text-ink-secondary leading-relaxed mb-5">{description}</p>
+        <p className="text-sm text-ink-secondary leading-relaxed mb-5">{description}</p>
 
         {/* Callbacks & Redirect URIs */}
         {callbackUrls && callbackUrls.length > 0 && (
           <div className="mb-5 p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-2.5">
-            <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
+            <div className="text-sm font-semibold text-ink flex items-center gap-1.5">
               <span>Required Redirect / Callback URLs</span>
-              <span className="text-ink-tertiary text-[11px] font-normal">(Copy to your Developer Portal)</span>
+              <span className="text-ink-tertiary text-meta font-normal">(Copy to your Developer Portal)</span>
             </div>
             {callbackUrls.map((cb, idx) => (
               <div key={idx} className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-ink-secondary">
+                <div className="flex items-center justify-between text-sm text-ink-secondary">
                   <span className="font-medium text-ink">{cb.label}</span>
-                  {cb.description && <span className="text-[11px] text-ink-tertiary">{cb.description}</span>}
+                  {cb.description && <span className="text-meta text-ink-tertiary">{cb.description}</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value={cb.url}
-                    className="w-full text-xs font-mono bg-white border border-line px-2.5 py-1.5 rounded-lg text-ink select-all focus:outline-none focus:border-[#0E8F5D]"
+                    className="w-full text-sm font-mono bg-white border border-line px-2.5 py-1.5 rounded-lg text-ink select-all focus:outline-none focus:border-[#0E8F5D]"
                   />
                   <Button
                     size="compact"
                     variant="secondary"
-                    className="shrink-0 h-8 px-2.5 text-xs flex items-center gap-1.5"
+                    className="shrink-0 h-8 px-2.5 text-sm flex items-center gap-1.5"
                     onClick={() => copyToClipboard(cb.url, `${id}-cb-${idx}`)}
                   >
                     {copiedKey === `${id}-cb-${idx}` ? (
@@ -257,17 +257,17 @@ export function IntegrationCard({
                   <div className="flex items-center justify-between">
                     <label
                       htmlFor={`input-${field.key}`}
-                      className="text-xs font-semibold text-ink flex items-center gap-1.5"
+                      className="text-sm font-semibold text-ink flex items-center gap-1.5"
                     >
                       <span>{field.label}</span>
                       {field.isSecret && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#FAFAF8] text-ink-tertiary border border-line">
+                        <span className="text-label-sm px-1.5 py-0.5 rounded bg-[#FAFAF8] text-ink-tertiary border border-line">
                           Encrypted
                         </span>
                       )}
                     </label>
                     {isConfigured && (
-                      <span className="text-[11px] text-[#0E8F5D] font-bold flex items-center gap-1">
+                      <span className="text-label-sm text-[#0E8F5D] font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-[#0E8F5D]" />
                         Configured
                       </span>
@@ -280,7 +280,7 @@ export function IntegrationCard({
                         id={`input-${field.key}`}
                         value={fieldValues[field.key] !== undefined ? fieldValues[field.key] : (field.value || "")}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                        className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
+                        className="w-full text-sm bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                       >
                         {field.options?.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -295,7 +295,7 @@ export function IntegrationCard({
                         placeholder={field.placeholder || (field.isSecret ? (field.hasValue ? "•••••••••••••••• (Configured)" : "••••••••••••••••") : "")}
                         value={fieldValues[field.key] !== undefined ? fieldValues[field.key] : (field.isSecret ? "" : (field.value || ""))}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                        className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink placeholder:text-ink-tertiary focus:bg-white focus:outline-none focus:border-[#0E8F5D] pr-10"
+                        className="w-full text-sm font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink placeholder:text-ink-tertiary focus:bg-white focus:outline-none focus:border-[#0E8F5D] pr-10"
                       />
                     )}
 
@@ -315,7 +315,7 @@ export function IntegrationCard({
                     )}
                   </div>
 
-                  <p className="text-[11px] text-ink-tertiary leading-normal flex items-start gap-1">
+                  <p className="text-meta text-ink-tertiary leading-normal flex items-start gap-1">
                     <HelpCircle className="w-3 h-3 shrink-0 mt-0.5 text-ink-tertiary" />
                     <span>{field.instructions}</span>
                   </p>

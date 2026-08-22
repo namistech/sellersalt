@@ -345,13 +345,27 @@ export function AnalyticsClient() {
         })}
       </div>
 
-      {/* Tab 1: Executive Overview */}
-      {activeTab === "overview" && waterfall && (
+      {loading ? (
+        <Card padding="lg" className="border-line bg-white shadow-xs">
+          <div className="text-center py-16 space-y-3">
+            <DollarSign className="h-6 w-6 text-[#0E8F5D] animate-spin mx-auto" />
+            <div className="text-sm font-semibold text-ink">Analyzing Shop Financials & Calculating True Margin...</div>
+            <p className="text-meta text-ink-tertiary">Computing accurate fee drag and COGS deductions.</p>
+          </div>
+        </Card>
+      ) : !waterfall ? (
+        <Card padding="lg" className="border-line bg-white shadow-xs">
+          <div className="text-center py-16 space-y-2">
+            <div className="text-sm font-bold text-ink">No Sales Transactions Recorded in this Period</div>
+            <p className="text-meta text-ink-tertiary">Select a broader date range or verify that your Etsy store has active completed orders.</p>
+          </div>
+        </Card>
+      ) : (
         <div className="space-y-6">
           {/* LEVEL 1: NET PROFIT RETENTION & FEE DRAG (PRIMARY DECISION SURFACE) */}
           <Card variant="feature" padding="lg" className="space-y-4 bg-white">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">
                 Cashflow & Margin Intelligence
               </span>
               <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
@@ -360,10 +374,10 @@ export function AnalyticsClient() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 p-5 rounded-2xl bg-[#FAFAF8] border border-line">
               <div className="space-y-2 min-w-0 max-w-2xl">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink-tertiary">
+                  <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                     Financial Verdict:
                   </span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                  <span className={`px-2.5 py-0.5 rounded-full text-label-sm font-bold ${
                     waterfall.contributionMargin >= 50
                       ? "bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30"
                       : waterfall.contributionMargin >= 25
@@ -384,13 +398,13 @@ export function AnalyticsClient() {
               </div>
 
               <div className="shrink-0 flex flex-col items-center sm:items-end justify-center p-4 rounded-xl bg-white border border-line shadow-2xs space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+                <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                   True Net Take-Home
                 </span>
                 <div className="text-3xl font-extrabold text-[#0E8F5D] font-mono">
                   {waterfall.currency} {waterfall.trueNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </div>
-                <div className="text-[11px] text-ink-tertiary">
+                <div className="text-meta text-ink-tertiary">
                   Across {waterfall.orderCount} orders ({waterfall.totalUnitsSold} units)
                 </div>
               </div>
@@ -402,15 +416,15 @@ export function AnalyticsClient() {
             {/* 1. Gross Revenue */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">Gross Sales</span>
-                <span className="text-[10px] font-mono text-[#0E8F5D] bg-[#E7FAF1] px-1.5 py-0.5 rounded font-bold">
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">Gross Sales</span>
+                <span className="text-label-sm font-mono text-[#0E8F5D] bg-[#E7FAF1] px-1.5 py-0.5 rounded font-bold">
                   [ACTUAL]
                 </span>
               </div>
               <div className="text-2xl font-black text-ink">
                 {waterfall.currency} {waterfall.grossSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 Across <strong>{waterfall.orderCount}</strong> completed orders ({waterfall.totalUnitsSold} units)
               </div>
             </Card>
@@ -418,15 +432,15 @@ export function AnalyticsClient() {
             {/* 2. Platform Fees */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">Etsy Platform Fees</span>
-                <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">Etsy Platform Fees</span>
+                <span className="text-label-sm font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
                   [CALCULATED]
                 </span>
               </div>
               <div className="text-2xl font-black text-ink">
                 {waterfall.currency} {waterfall.totalEtsyFees.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 Fee Drag: <strong className="font-mono text-ink">{waterfall.feeRatio}%</strong> of gross sales
               </div>
             </Card>
@@ -434,15 +448,15 @@ export function AnalyticsClient() {
             {/* 3. True Net Profit */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">True Net Profit</span>
-                <span className="text-[10px] font-mono text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold">
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">True Net Profit</span>
+                <span className="text-label-sm font-mono text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded font-bold">
                   [CALCULATED]
                 </span>
               </div>
               <div className="text-2xl font-black text-[#0E8F5D]">
                 {waterfall.currency} {waterfall.trueNetProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 Contribution Margin: <strong className="font-mono text-[#0E8F5D]">{waterfall.contributionMargin}%</strong>
               </div>
             </Card>
@@ -450,15 +464,15 @@ export function AnalyticsClient() {
             {/* 4. Average Order Value */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">Average Order Value</span>
-                <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">Average Order Value</span>
+                <span className="text-label-sm font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
                   [CALCULATED]
                 </span>
               </div>
               <div className="text-2xl font-black text-ink">
                 {waterfall.currency} {waterfall.averageOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 {waterfall.refunds > 0 ? `Refunds: ${waterfall.currency} ${waterfall.refunds.toFixed(2)}` : "Zero refund friction"}
               </div>
             </Card>
@@ -528,40 +542,40 @@ export function AnalyticsClient() {
             />
           </div>
 
-          <div className="space-y-3 text-xs">
+          <div className="space-y-3 text-sm">
             {/* Step 1: Gross Sales */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-[#FAFAF8] border border-line">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-ink text-white flex items-center justify-center font-mono font-bold text-[10px]">1</span>
+                <span className="w-6 h-6 rounded-full bg-ink text-white flex items-center justify-center font-mono font-bold text-label-sm">1</span>
                 <div>
                   <strong className="text-ink">GROSS ORDER REVENUE</strong>
-                  <div className="text-[11px] text-ink-tertiary">Sum of all completed receipt totals received from Etsy shoppers</div>
+                  <div className="text-meta text-ink-tertiary">Sum of all completed receipt totals received from Etsy shoppers</div>
                 </div>
               </div>
               <div className="text-right">
                 <strong className="text-sm font-mono text-ink">+{waterfall.currency} {waterfall.grossSales.toFixed(2)}</strong>
-                <div className="text-[10px] font-mono text-[#0E8F5D]">[ACTUAL ETSY DATA]</div>
+                <div className="text-label-sm font-mono text-[#0E8F5D]">[ACTUAL ETSY DATA]</div>
               </div>
             </div>
 
             {/* Step 2: Refunds */}
             <div className="flex items-center justify-between p-3 rounded-xl bg-red-50/40 border border-red-200 text-red-900">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center font-mono font-bold text-[10px]">2</span>
+                <span className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center font-mono font-bold text-label-sm">2</span>
                 <div>
                   <strong>(-) Refunds & Order Cancellations</strong>
-                  <div className="text-[11px] text-red-700">Verified buyer refunds and return adjustments</div>
+                  <div className="text-meta text-red-700">Verified buyer refunds and return adjustments</div>
                 </div>
               </div>
               <div className="text-right">
                 <strong className="text-sm font-mono text-red-700">-{waterfall.currency} {waterfall.refunds.toFixed(2)}</strong>
-                <div className="text-[10px] font-mono text-red-600">[ACTUAL ETSY DATA]</div>
+                <div className="text-label-sm font-mono text-red-600">[ACTUAL ETSY DATA]</div>
               </div>
             </div>
 
             {/* Subtotal: Net Sales */}
             <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#E7FAF1] border border-[#9BE7C4] text-[#0E8F5D]">
-              <strong className="text-xs uppercase">= NET ORDER SALES</strong>
+              <strong className="text-sm uppercase">= NET ORDER SALES</strong>
               <strong className="text-sm font-mono">+{waterfall.currency} {waterfall.netSales.toFixed(2)}</strong>
             </div>
 
@@ -571,7 +585,7 @@ export function AnalyticsClient() {
                 <span>(-) Etsy Platform Fees Total</span>
                 <span className="font-mono text-sm">-{waterfall.currency} {waterfall.totalEtsyFees.toFixed(2)}</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-blue-200/60 text-[11px] text-blue-800">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-blue-200/60 text-meta text-blue-800">
                 <div>• Listing Fees: <strong>${waterfall.fees.listingFees.toFixed(2)}</strong></div>
                 <div>• Transaction (6.5%): <strong>${waterfall.fees.transactionFees.toFixed(2)}</strong></div>
                 <div>• Payment Proc (3%+$0.25): <strong>${waterfall.fees.processingFees.toFixed(2)}</strong></div>
@@ -581,7 +595,7 @@ export function AnalyticsClient() {
 
             {/* Subtotal: Net Etsy Proceeds */}
             <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-blue-100/60 border border-blue-300 text-blue-950">
-              <strong className="text-xs uppercase">= NET ETSY PAYOUT / PROCEEDS</strong>
+              <strong className="text-sm uppercase">= NET ETSY PAYOUT / PROCEEDS</strong>
               <strong className="text-sm font-mono">+{waterfall.currency} {waterfall.netEtsyPayout.toFixed(2)}</strong>
             </div>
 
@@ -591,7 +605,7 @@ export function AnalyticsClient() {
                 <span>(-) Product COGS & Packaging / Shipping Expenses</span>
                 <span className="font-mono text-sm">-{waterfall.currency} {waterfall.totalSellerCosts.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-[11px] text-amber-800 pt-1 border-t border-amber-200/60">
+              <div className="flex items-center justify-between text-meta text-amber-800 pt-1 border-t border-amber-200/60">
                 <span>Estimated Unit COGS (Materials/Print): <strong>${waterfall.estimatedCogs.toFixed(2)}</strong> {waterfall.isCogsModelled && "(Modelled Heuristic)"}</span>
                 <span>Packaging & Shipping Costs: <strong>${waterfall.shippingPackagingCosts.toFixed(2)}</strong></span>
               </div>
@@ -601,13 +615,13 @@ export function AnalyticsClient() {
             <div className="flex items-center justify-between p-4 rounded-xl bg-[#0E8F5D] text-white shadow-sm">
               <div>
                 <div className="text-sm font-bold tracking-wide">🏆 TRUE NET PROFIT (Operating Income)</div>
-                <div className="text-xs opacity-90">Net take-home margin after all platform fees and production costs</div>
+                <div className="text-sm opacity-90">Net take-home margin after all platform fees and production costs</div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-black font-mono">
                   {waterfall.currency} {waterfall.trueNetProfit.toFixed(2)}
                 </div>
-                <div className="text-xs font-mono font-semibold opacity-95">
+                <div className="text-sm font-mono font-semibold opacity-95">
                   {waterfall.contributionMargin}% Contribution Margin
                 </div>
               </div>
@@ -621,21 +635,21 @@ export function AnalyticsClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-line">
             <div>
-              <h3 className="text-sm font-bold text-ink">Listing Yield & Performance Matrix</h3>
-              <p className="text-xs text-ink-tertiary">Catalog ranking by revenue volume, average realized price, and profit contribution.</p>
+              <h3 className="text-base font-bold text-ink">Listing Yield & Performance Matrix</h3>
+              <p className="text-sm text-ink-tertiary">Catalog ranking by revenue volume, average realized price, and profit contribution.</p>
             </div>
             <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
           </div>
 
           {loadingListings ? (
-            <div className="text-center py-12 text-xs text-ink-tertiary">Loading listing yield metrics...</div>
+            <div className="text-center py-12 text-sm text-ink-tertiary">Loading listing yield metrics...</div>
           ) : listings.length === 0 ? (
-            <div className="text-center py-12 text-xs text-ink-tertiary">No listing transactions recorded in this period.</div>
+            <div className="text-center py-12 text-sm text-ink-tertiary">No listing transactions recorded in this period.</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-ink">
+              <table className="w-full text-left text-sm text-ink">
                 <thead>
-                  <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider text-label-sm">
                     <th className="py-2.5 pr-4 font-semibold">Listing / Product</th>
                     <th className="py-2.5 pr-4 font-semibold text-right">Units Sold</th>
                     <th className="py-2.5 pr-4 font-semibold text-right">Gross Sales</th>
@@ -662,7 +676,7 @@ export function AnalyticsClient() {
                         ${item.estimatedProfit.toFixed(2)}
                       </td>
                       <td className="py-3 pr-4 text-right font-mono">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        <span className={`px-1.5 py-0.5 rounded text-label-sm font-bold ${
                           item.profitMargin >= 60 ? "bg-[#E7FAF1] text-[#0E8F5D]" : "bg-[#FFF8E6] text-[#B37800]"
                         }`}>
                           {item.profitMargin}%

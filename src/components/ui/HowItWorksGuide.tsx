@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Sparkles, X } from "lucide-react";
 import { Badge } from "./Badge";
+import { Heading } from "./Typography";
 import { cn } from "./cn";
 
 export interface GuideStep {
@@ -84,13 +85,13 @@ export function HowItWorksGuide({
         <div className="p-5 sm:p-6 rounded-2xl bg-white border border-line shadow-xs space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-start sm:items-center justify-between gap-3 pb-3 border-b border-line-subtle">
             <div>
-              <h3 className="text-sm sm:text-base font-bold text-ink flex items-center gap-2">
+              <Heading as="h3" size="h4" className="flex items-center gap-1.5 text-ink">
                 <Sparkles className="h-4 w-4 text-[#0E8F5D]" /> {title}
-              </h3>
-              <p className="text-xs text-ink-tertiary mt-0.5">{description}</p>
+              </Heading>
+              <p className="text-sm text-ink-tertiary mt-0.5">{description}</p>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="success" className="text-[11px] font-bold hidden sm:inline-flex">
+              <Badge variant="success" className="text-label-sm font-bold hidden sm:inline-flex">
                 SellerSalt Intelligence Guide
               </Badge>
               <button
@@ -111,17 +112,17 @@ export function HowItWorksGuide({
                 className="p-3.5 rounded-xl border border-line-subtle bg-[#FAFAF8] space-y-1.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="h-5 w-5 rounded-full bg-[#E7FAF1] text-[#0E8F5D] font-bold text-xs flex items-center justify-center">
+                  <span className="h-5 w-5 rounded-full bg-[#E7FAF1] text-[#0E8F5D] font-bold text-label-md flex items-center justify-center">
                     {idx + 1}
                   </span>
                   {step.badge && (
-                    <span className="text-[10px] font-semibold text-ink-tertiary px-1.5 py-0.5 rounded bg-surface border border-line-subtle">
+                    <span className="text-label-sm font-semibold text-ink-tertiary px-1.5 py-0.5 rounded bg-surface border border-line-subtle">
                       {step.badge}
                     </span>
                   )}
                 </div>
-                <div className="font-bold text-xs sm:text-sm text-ink">{step.title}</div>
-                <p className="text-xs text-ink-secondary leading-relaxed">{step.description}</p>
+                <div className="font-bold text-sm text-ink">{step.title}</div>
+                <p className="text-sm text-ink-secondary leading-relaxed">{step.description}</p>
               </div>
             ))}
           </div>

@@ -42,12 +42,12 @@ export function SegmentedGauge({
     <div className={cn("space-y-3 p-4 rounded-xl bg-surface border border-line shadow-2xs", className)}>
       <div className="flex items-center justify-between">
         <div>
-          {label && <div className="text-xs font-bold text-ink uppercase tracking-wide">{label}</div>}
-          {sublabel && <div className="text-[11px] text-ink-tertiary">{sublabel}</div>}
+          {label && <div className="text-label-sm font-bold text-ink uppercase tracking-wide">{label}</div>}
+          {sublabel && <div className="text-meta text-ink-tertiary">{sublabel}</div>}
         </div>
         <div className="flex items-baseline gap-1">
           <span className="font-mono text-2xl font-bold text-ink tracking-tight tabular-nums">{score}</span>
-          <span className="text-xs font-semibold text-ink-tertiary">/{scoreMax}</span>
+          <span className="text-sm font-semibold text-ink-tertiary">/{scoreMax}</span>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export function SegmentedGauge({
         </div>
 
         {/* Band Range Labels */}
-        <div className="flex justify-between text-[10px] font-semibold text-ink-tertiary font-mono px-0.5">
+        <div className="flex justify-between text-meta font-semibold text-ink-tertiary font-mono px-0.5">
           {bands.map((band, idx) => (
             <span
               key={idx}

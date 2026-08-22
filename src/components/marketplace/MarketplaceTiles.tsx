@@ -197,22 +197,22 @@ export function MarketplaceTiles({
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-ink">Etsy Marketplace</h3>
-                    <Badge variant="success" className="font-bold text-[11px]">
+                    <Badge variant="success" className="font-bold text-label-sm">
                       Available
                     </Badge>
                   </div>
-                  <p className="text-xs text-ink-tertiary">
+                  <p className="text-sm text-ink-tertiary">
                     Official OpenAPI v3 Integration · Read &amp; Write Operations
                   </p>
                 </div>
               </div>
 
               {primaryEtsyChannel ? (
-                <Badge variant="success" className="font-bold flex items-center gap-1">
+                <Badge variant="success" className="font-bold flex items-center gap-1 text-sm">
                   <CheckCircle2 className="h-3.5 w-3.5" /> Connected
                 </Badge>
               ) : (
-                <Badge variant="neutral" className="text-xs">
+                <Badge variant="neutral" className="text-sm">
                   Ready to Link
                 </Badge>
               )}
@@ -222,7 +222,7 @@ export function MarketplaceTiles({
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-bold text-ink-tertiary uppercase block">
+                    <span className="text-label-sm font-bold text-ink-tertiary uppercase block">
                       Connected Storefront
                     </span>
                     <span className="text-sm font-bold text-ink flex items-center gap-1.5">
@@ -236,7 +236,7 @@ export function MarketplaceTiles({
                       href={primaryEtsyChannel.storeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-ink-secondary hover:text-ink px-2.5 py-1.5 rounded-lg border border-line bg-white shadow-2xs hover:bg-surface-muted transition"
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-ink-secondary hover:text-ink px-2.5 py-1.5 rounded-lg border border-line bg-white shadow-2xs hover:bg-surface-muted transition"
                     >
                       <span>View on Etsy</span>
                       <ExternalLink className="h-3 w-3" />
@@ -246,7 +246,7 @@ export function MarketplaceTiles({
                       size="compact"
                       loading={syncingId === primaryEtsyChannel.id}
                       onClick={() => handleSync(primaryEtsyChannel.id)}
-                      className="text-xs"
+                      className="text-sm"
                     >
                       <RefreshCw className="h-3.5 w-3.5 mr-1" /> Sync
                     </Button>
@@ -254,16 +254,16 @@ export function MarketplaceTiles({
                       variant="secondary"
                       size="compact"
                       onClick={() => handleDelete(primaryEtsyChannel.id)}
-                      className="text-xs text-danger hover:bg-danger/10 border-danger/30"
+                      className="text-sm text-danger hover:bg-danger/10 border-danger/30"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-line-subtle text-xs text-ink-secondary">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-line-subtle text-sm text-ink-secondary">
                   <div>
-                    <span className="text-[10px] text-ink-tertiary block">Status</span>
+                    <span className="text-label-sm text-ink-tertiary block">Status</span>
                     <span className="font-semibold text-[#0E8F5D]">
                       {primaryEtsyChannel.status === "ACTIVE"
                         ? "Active & Synchronizing"
@@ -271,7 +271,7 @@ export function MarketplaceTiles({
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-ink-tertiary block">Last Synchronized</span>
+                    <span className="text-label-sm text-ink-tertiary block">Last Synchronized</span>
                     <span className="font-medium text-ink">
                       {primaryEtsyChannel.lastSyncedAt
                         ? new Date(primaryEtsyChannel.lastSyncedAt).toLocaleString()
@@ -279,7 +279,7 @@ export function MarketplaceTiles({
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-ink-tertiary block">Capabilities</span>
+                    <span className="text-label-sm text-ink-tertiary block">Capabilities</span>
                     <span className="font-medium text-ink">Search, Intelligence, Drafts</span>
                   </div>
                 </div>
@@ -351,17 +351,17 @@ export function MarketplaceTiles({
                 </div>
                 <h3 className="text-sm font-bold text-ink">Amazon</h3>
               </div>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 Coming Soon
               </Badge>
             </div>
-            <p className="text-xs text-ink-secondary leading-relaxed">
+            <p className="text-sm text-ink-secondary leading-relaxed">
               Amazon Seller Central integration for Best Sellers Rank (BSR) tracking, search frequency rank, and FBA fee calculations.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-xs text-ink-tertiary">
+          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-sm text-ink-tertiary">
             <span>Amazon SP-API</span>
-            <Button variant="secondary" size="compact" disabled className="text-[11px] h-7 opacity-60">
+            <Button variant="secondary" size="compact" disabled className="text-label-sm h-7 opacity-60">
               Coming Soon
             </Button>
           </div>
@@ -382,17 +382,17 @@ export function MarketplaceTiles({
                 </div>
                 <h3 className="text-sm font-bold text-ink">eBay</h3>
               </div>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 Coming Soon
               </Badge>
             </div>
-            <p className="text-xs text-ink-secondary leading-relaxed">
+            <p className="text-sm text-ink-secondary leading-relaxed">
               eBay marketplace connector for multi-channel inventory cross-listing and sell-through rate analysis.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-xs text-ink-tertiary">
+          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-sm text-ink-tertiary">
             <span>eBay Buy &amp; Sell API</span>
-            <Button variant="secondary" size="compact" disabled className="text-[11px] h-7 opacity-60">
+            <Button variant="secondary" size="compact" disabled className="text-label-sm h-7 opacity-60">
               Coming Soon
             </Button>
           </div>
@@ -413,17 +413,17 @@ export function MarketplaceTiles({
                 </div>
                 <h3 className="text-sm font-bold text-ink">TikTok Shop</h3>
               </div>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 Coming Soon
               </Badge>
             </div>
-            <p className="text-xs text-ink-secondary leading-relaxed">
+            <p className="text-sm text-ink-secondary leading-relaxed">
               TikTok Shop creator intelligence, trending affiliate products, viral GMV tracking, and video conversion analytics.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-xs text-ink-tertiary">
+          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-sm text-ink-tertiary">
             <span>TikTok Partner API</span>
-            <Button variant="secondary" size="compact" disabled className="text-[11px] h-7 opacity-60">
+            <Button variant="secondary" size="compact" disabled className="text-label-sm h-7 opacity-60">
               Coming Soon
             </Button>
           </div>
@@ -444,17 +444,17 @@ export function MarketplaceTiles({
                 </div>
                 <h3 className="text-sm font-bold text-ink">Walmart</h3>
               </div>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 Coming Soon
               </Badge>
             </div>
-            <p className="text-xs text-ink-secondary leading-relaxed">
+            <p className="text-sm text-ink-secondary leading-relaxed">
               Walmart Marketplace integration for Buy Box price intelligence, catalog synchronization, and fulfillment analytics.
             </p>
           </div>
-          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-xs text-ink-tertiary">
+          <div className="mt-4 pt-3 border-t border-line-subtle flex items-center justify-between text-sm text-ink-tertiary">
             <span>Walmart Marketplace API</span>
-            <Button variant="secondary" size="compact" disabled className="text-[11px] h-7 opacity-60">
+            <Button variant="secondary" size="compact" disabled className="text-label-sm h-7 opacity-60">
               Coming Soon
             </Button>
           </div>

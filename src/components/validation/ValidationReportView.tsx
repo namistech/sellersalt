@@ -269,19 +269,19 @@ export function ValidationReportView({
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Observed Listings</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Observed Listings</span>
               <span className="text-lg font-black text-foreground">{report.demand.observedListingsCount}</span>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Total Reviews Observed</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Total Reviews Observed</span>
               <span className="text-lg font-black text-foreground">{report.demand.observedReviewSum ?? "—"}</span>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Total Favorites Observed</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Total Favorites Observed</span>
               <span className="text-lg font-black text-foreground">{report.demand.observedFavoritesSum ?? "—"}</span>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Demand Tier</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Demand Tier</span>
               <span className="text-lg font-black text-primary">{report.demand.demandTier}</span>
             </div>
           </div>
@@ -296,21 +296,21 @@ export function ValidationReportView({
               <Users className="w-4 h-4 text-primary" />
               Observed Competition & Concentration
             </h2>
-            <Badge variant="neutral" className="text-xs">
+            <Badge variant="neutral" className="text-sm">
               Barrier: {report.competition.reviewBarrierRating}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {report.competition.explanation}
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Observed Merchants</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Observed Merchants</span>
               <span className="text-lg font-black text-foreground">{report.competition.observedSellerCount}</span>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Concentration Index (HHI)</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Concentration Index (HHI)</span>
               <span className="text-lg font-black text-foreground">
                 {report.competition.sellerConcentrationIndex !== null
                   ? `${report.competition.sellerConcentrationIndex}/100`
@@ -318,7 +318,7 @@ export function ValidationReportView({
               </span>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 border space-y-1">
-              <span className="text-[11px] text-muted-foreground block font-medium">Competition Barrier</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">Competition Barrier</span>
               <span className="text-lg font-black text-foreground">{report.competition.state}</span>
             </div>
           </div>
@@ -334,42 +334,42 @@ export function ValidationReportView({
               Empirical Price Distribution
             </h2>
             {report.economics.candidatePricePosition && (
-              <Badge variant="neutral" className="text-xs">
+              <Badge variant="neutral" className="text-sm">
                 Position: {report.economics.candidatePricePosition}
               </Badge>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {report.economics.explanation}
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-2">
             <div className="p-3 rounded-lg bg-muted/30 border space-y-1 text-center">
-              <span className="text-[10px] text-muted-foreground block font-medium">10th Percentile</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">10th Percentile</span>
               <span className="text-sm font-bold text-foreground">
                 {report.economics.percentile10 ? `$${report.economics.percentile10.toFixed(2)}` : "—"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border space-y-1 text-center">
-              <span className="text-[10px] text-muted-foreground block font-medium">25th Percentile</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">25th Percentile</span>
               <span className="text-sm font-bold text-foreground">
                 {report.economics.percentile25 ? `$${report.economics.percentile25.toFixed(2)}` : "—"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 space-y-1 text-center">
-              <span className="text-[10px] text-primary block font-bold">Median Price</span>
+              <span className="text-label-sm text-primary block font-bold">Median Price</span>
               <span className="text-base font-black text-primary">
                 {report.economics.observedMedianPrice ? `$${report.economics.observedMedianPrice.toFixed(2)}` : "—"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border space-y-1 text-center">
-              <span className="text-[10px] text-muted-foreground block font-medium">75th Percentile</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">75th Percentile</span>
               <span className="text-sm font-bold text-foreground">
                 {report.economics.percentile75 ? `$${report.economics.percentile75.toFixed(2)}` : "—"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 border space-y-1 text-center">
-              <span className="text-[10px] text-muted-foreground block font-medium">90th Percentile</span>
+              <span className="text-label-sm text-muted-foreground block font-medium">90th Percentile</span>
               <span className="text-sm font-bold text-foreground">
                 {report.economics.percentile90 ? `$${report.economics.percentile90.toFixed(2)}` : "—"}
               </span>
@@ -482,29 +482,29 @@ export function ValidationReportView({
             </div>
 
             {calcResult ? (
-              <div className="space-y-4 pt-2 text-xs">
+              <div className="space-y-4 pt-2 text-sm">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-1">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Contribution Margin</span>
+                    <span className="text-label-sm text-muted-foreground block font-medium">Contribution Margin</span>
                     <span className="text-base font-black text-foreground">${calcResult.contributionMargin.toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-1">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Break-Even Price</span>
+                    <span className="text-label-sm text-muted-foreground block font-medium">Break-Even Price</span>
                     <span className="text-base font-black text-foreground">${calcResult.breakEvenPrice.toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-1">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Max Allowable CAC</span>
+                    <span className="text-label-sm text-muted-foreground block font-medium">Max Allowable CAC</span>
                     <span className="text-base font-black text-primary">${calcResult.maxAllowableCac.toFixed(2)}</span>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30 border space-y-1">
-                    <span className="text-[10px] text-muted-foreground block font-medium">Total Direct Cost</span>
+                    <span className="text-label-sm text-muted-foreground block font-medium">Total Direct Cost</span>
                     <span className="text-base font-black text-foreground">${calcResult.totalDirectCosts.toFixed(2)}</span>
                   </div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-muted/20 border space-y-1">
-                  <span className="font-semibold text-foreground text-[11px] block">Unit Economics Notes:</span>
-                  <ul className="list-disc pl-4 text-muted-foreground text-[11px] space-y-0.5">
+                  <span className="font-semibold text-foreground text-label-sm block">Unit Economics Notes:</span>
+                  <ul className="list-disc pl-4 text-muted-foreground text-sm space-y-0.5">
                     {calcResult.notes.map((n, i) => (
                       <li key={i}>{n}</li>
                     ))}
@@ -512,7 +512,7 @@ export function ValidationReportView({
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center text-muted-foreground text-xs">
+              <div className="p-8 text-center text-muted-foreground text-sm">
                 Click &quot;Compute Profitability&quot; to view user-derived margin breakdown.
               </div>
             )}

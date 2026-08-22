@@ -120,10 +120,10 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
           </button>
 
           <div className="flex items-center gap-1.5">
-            <span className={`text-xs font-bold ${billingPeriod === "ANNUAL" ? "text-ink" : "text-ink-tertiary"}`}>
+            <span className={`text-sm font-bold ${billingPeriod === "ANNUAL" ? "text-ink" : "text-ink-tertiary"}`}>
               Annual Billing
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
+            <span className="px-2 py-0.5 rounded-full text-label-sm font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
               Save 20%
             </span>
           </div>
@@ -149,7 +149,7 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
               }`}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0E8F5D] px-3 py-0.5 text-[11px] font-bold text-white shadow-xs">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0E8F5D] px-3 py-0.5 text-label-sm font-bold text-white shadow-xs">
                   {plan.badge}
                 </div>
               )}
@@ -157,29 +157,29 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-lg font-bold text-ink">{plan.name}</h3>
-                  <div className="text-[11px] font-semibold text-[#0E8F5D] mt-0.5">
+                  <div className="text-sm font-semibold text-[#0E8F5D] mt-0.5">
                     &ldquo;{plan.outcome}&rdquo;
                   </div>
-                  <p className="text-xs text-ink-tertiary mt-1 min-h-[32px]">{plan.description}</p>
+                  <p className="text-sm text-ink-tertiary mt-1 min-h-[32px]">{plan.description}</p>
                 </div>
 
                 <div className="border-b border-line pb-4">
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold text-ink">${price}</span>
-                    <span className="text-xs font-semibold text-ink-tertiary">
+                    <span className="text-sm font-semibold text-ink-tertiary">
                       {isFree ? "forever" : "/month"}
                     </span>
                   </div>
                   {!isFree && billingPeriod === "ANNUAL" && (
-                    <div className="text-[10px] text-[#0E8F5D] font-semibold mt-0.5">
+                    <div className="text-meta text-[#0E8F5D] font-semibold mt-0.5">
                       Billed annually (${price * 12}/year)
                     </div>
                   )}
                 </div>
 
                 {/* Limits Snapshot */}
-                <div className="space-y-2 text-xs text-ink-secondary">
-                  <div className="font-bold text-ink text-[11px] uppercase tracking-wider">
+                <div className="space-y-2 text-sm text-ink-secondary">
+                  <div className="font-bold text-ink text-label-sm uppercase tracking-wider">
                     Included Quotas:
                   </div>
                   <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
                   <Button
                     variant="primary"
                     fullWidth
-                    className={`text-xs font-bold py-2.5 ${
+                    className={`text-sm font-bold py-2.5 ${
                       isPro
                         ? "bg-[#0E8F5D] hover:bg-[#0C7A52] text-white shadow-sm"
                         : "bg-[#141B16] hover:bg-[#141B16]/90 text-white"
@@ -245,8 +245,8 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
         </div>
 
         <div className="border border-line rounded-2xl overflow-hidden bg-white shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-[#FAFAF8] border-b border-line text-ink font-bold uppercase text-[10px]">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="bg-[#FAFAF8] border-b border-line text-ink font-bold uppercase text-label-sm">
               <tr>
                 <th className="p-3.5 w-1/3">Feature / Capability</th>
                 <th className="p-3.5 text-center">Free Explorer</th>
@@ -260,7 +260,7 @@ export function PricingClient({ initialTier = "PRO" }: PricingClientProps) {
                 <tr key={idx} className="hover:bg-surface-muted transition">
                   <td className="p-3.5 font-bold text-ink">
                     <div>{row.name}</div>
-                    <div className="text-[10px] text-ink-tertiary font-normal">{row.category}</div>
+                    <div className="text-meta text-ink-tertiary font-normal">{row.category}</div>
                   </td>
                   <td className="p-3.5 text-center font-medium text-ink-secondary">
                     {typeof row.free === "boolean" ? (

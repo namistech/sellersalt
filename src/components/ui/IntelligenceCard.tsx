@@ -107,7 +107,7 @@ export function IntelligenceCard({
           {/* Header Signal Badge */}
           <div className="flex flex-wrap items-center gap-2.5">
             {badgeText && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1C261F] border border-[#2A362D] text-[11px] font-bold tracking-wider text-[#16C784] uppercase">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#1C261F] border border-[#2A362D] text-label-sm font-bold tracking-wider text-[#16C784] uppercase">
                 <span className="flex h-2 w-2 rounded-full bg-[#16C784] animate-pulse" />
                 {badgeIcon || <Sparkles className="h-3 w-3 text-[#FBBF24]" />}
                 {badgeText}
@@ -125,14 +125,14 @@ export function IntelligenceCard({
               <div className="mt-2.5 inline-flex flex-wrap items-center gap-3">
                 <span
                   className={cn(
-                    "px-3 py-1 rounded-lg text-xs font-bold border tracking-wide",
+                    "px-3 py-1 rounded-lg text-label-sm font-bold border tracking-wide",
                     getVerdictStyle()
                   )}
                 >
                   {verdictLabel}
                 </span>
                 {score !== undefined && (
-                  <span className="text-xs font-medium text-[#9EAA9F]">
+                  <span className="text-sm font-medium text-[#9EAA9F]">
                     Score: <span className="text-white font-bold tabular-nums">{score}</span>
                     {typeof score === "number" && <span className="text-[#6D7870] font-sans">/{scoreMax}</span>}
                   </span>
@@ -143,7 +143,7 @@ export function IntelligenceCard({
 
           {/* Natural Language Explanation */}
           {description && (
-            <p className="text-xs sm:text-sm text-[#A5B2A6] leading-relaxed max-w-3xl">
+            <p className="text-sm text-[#A5B2A6] leading-relaxed max-w-3xl">
               {description}
             </p>
           )}

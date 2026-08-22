@@ -611,15 +611,15 @@ function SeoAuditContent() {
               {/* Overall Score Badge */}
               <div className="flex items-center gap-4 bg-[#FAFAF8] border border-line p-4 rounded-xl shrink-0">
                 <div className="text-right">
-                  <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                  <div className="text-label-sm uppercase font-bold text-ink-tertiary tracking-wider">
                     Shop SEO Health
                   </div>
-                  <div className="text-xs font-semibold text-ink-secondary">
+                  <div className="text-sm font-semibold text-ink-secondary">
                     {shopAuditResult.overallShopSeoScore >= 80 ? "Optimized" : "Needs Attention"}
                   </div>
                 </div>
                 <div className="text-3xl font-extrabold font-mono text-[#0E8F5D] bg-[#E7FAF1] border border-[#16C784]/30 px-3.5 py-1.5 rounded-xl">
-                  {shopAuditResult.overallShopSeoScore}<span className="text-xs font-normal text-ink-tertiary">/100</span>
+                  {shopAuditResult.overallShopSeoScore}<span className="text-sm font-normal text-ink-tertiary">/100</span>
                 </div>
               </div>
             </div>
@@ -627,49 +627,49 @@ function SeoAuditContent() {
             {/* 4 Score Breakdown Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
                   <Store className="h-3.5 w-3.5 text-[#0E8F5D]" /> Branding & Icon
                 </div>
                 <div className="text-xl font-bold font-mono text-ink">
                   {shopAuditResult.brandingScore}%
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-meta text-ink-secondary">
                   {shopAuditResult.actualData.hasIcon ? "✓ Icon" : "✗ Missing Icon"} · {shopAuditResult.actualData.hasBanner ? "✓ Banner" : "✗ Missing Banner"}
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
                   <Tag className="h-3.5 w-3.5 text-[#0E8F5D]" /> 13-Tag Utilization
                 </div>
                 <div className="text-xl font-bold font-mono text-ink">
                   {shopAuditResult.catalogMetrics.perfect13TagListingPercent}%
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-meta text-ink-secondary">
                   {shopAuditResult.catalogMetrics.avgTagsPerListing}/13 average tags per listing
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5 text-[#0E8F5D]" /> Title Quality
                 </div>
                 <div className="text-xl font-bold font-mono text-ink">
                   {shopAuditResult.titleQualityScore}%
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-meta text-ink-secondary">
                   {shopAuditResult.catalogMetrics.avgTitleLength} average character length
                 </div>
               </div>
 
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-                <div className="text-[11px] font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase flex items-center gap-1.5">
                   <ImageIcon className="h-3.5 w-3.5 text-[#0E8F5D]" /> Image Completeness
                 </div>
                 <div className="text-xl font-bold font-mono text-ink">
                   {shopAuditResult.imageCompletenessScore}%
                 </div>
-                <div className="text-[11px] text-ink-secondary">
+                <div className="text-meta text-ink-secondary">
                   {shopAuditResult.catalogMetrics.listingsWithImageGapsCount} listings with &lt; 5 images
                 </div>
               </div>
@@ -678,17 +678,17 @@ function SeoAuditContent() {
             {/* Keyword Density & Opportunities */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-                <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                <div className="text-sm font-bold text-ink flex items-center gap-1.5">
                   <TrendingUp className="h-4 w-4 text-[#0E8F5D]" /> Top Catalog Keyword Density
                 </div>
-                <p className="text-[11px] text-ink-secondary">
+                <p className="text-meta text-ink-secondary">
                   Most recurring search phrases across this shop's listing tags.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {shopAuditResult.catalogMetrics.topRepeatedKeywords.map((kw) => (
                     <span
                       key={kw.keyword}
-                      className="px-2 py-0.5 rounded bg-white text-[11px] font-medium text-ink border border-line"
+                      className="px-2 py-0.5 rounded bg-white text-label-sm font-medium text-ink border border-line"
                     >
                       {kw.keyword} <strong className="text-[#0E8F5D]">({kw.frequencyPercent}%)</strong>
                     </span>
@@ -697,17 +697,17 @@ function SeoAuditContent() {
               </div>
 
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-2">
-                <div className="text-xs font-bold text-ink flex items-center gap-1.5">
+                <div className="text-sm font-bold text-ink flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-[#B37800]" /> Missing Keyword Opportunities
                 </div>
-                <p className="text-[11px] text-ink-secondary">
+                <p className="text-meta text-ink-secondary">
                   High-intent buyer search tags not yet targeted in this shop's active catalog.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {shopAuditResult.catalogMetrics.missingKeywordOpportunities.map((m) => (
                     <span
                       key={m}
-                      className="px-2 py-0.5 rounded bg-amber-50 text-[11px] font-medium text-amber-900 border border-amber-200"
+                      className="px-2 py-0.5 rounded bg-amber-50 text-label-sm font-medium text-amber-900 border border-amber-200"
                     >
                       + {m}
                     </span>
@@ -847,39 +847,39 @@ function SeoAuditContent() {
             {/* Rubric Breakdown Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Title</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Title</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.titleScore}/30</div>
-                <div className="text-[11px] text-ink-secondary">{auditResult.titleAnalysis.characterCount} chars</div>
+                <div className="text-meta text-ink-secondary">{auditResult.titleAnalysis.characterCount} chars</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">13 Tags</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">13 Tags</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.tagScore}/30</div>
-                <div className="text-[11px] text-ink-secondary">{auditResult.tagAnalysis.tagCount}/13 used</div>
+                <div className="text-meta text-ink-secondary">{auditResult.tagAnalysis.tagCount}/13 used</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Synergy</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Synergy</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.keywordSynergyScore}/15</div>
-                <div className="text-[11px] text-ink-secondary">{auditResult.synergyAnalysis.matchingPhrases.length} in title</div>
+                <div className="text-meta text-ink-secondary">{auditResult.synergyAnalysis.matchingPhrases.length} in title</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Description</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Description</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.descriptionScore}/15</div>
-                <div className="text-[11px] text-ink-secondary">{auditResult.descriptionAnalysis.hasFirst160Keyword ? "Hook ✓" : "No Hook"}</div>
+                <div className="text-meta text-ink-secondary">{auditResult.descriptionAnalysis.hasFirst160Keyword ? "Hook ✓" : "No Hook"}</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Taxonomy</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Taxonomy</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.taxonomyScore}/5</div>
-                <div className="text-[11px] text-ink-secondary">{auditResult.taxonomyAnalysis.isDeepTaxonomy ? "Mapped ✓" : "Generic"}</div>
+                <div className="text-meta text-ink-secondary">{auditResult.taxonomyAnalysis.isDeepTaxonomy ? "Mapped ✓" : "Generic"}</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line text-center space-y-1">
-                <div className="text-[10px] font-bold text-ink-tertiary uppercase">Attributes</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Attributes</div>
                 <div className="text-lg font-bold font-mono text-ink">{auditResult.breakdown.attributeScore}/5</div>
-                <div className="text-[11px] text-ink-secondary">Complete</div>
+                <div className="text-meta text-ink-secondary">Complete</div>
               </div>
             </div>
           </Card>

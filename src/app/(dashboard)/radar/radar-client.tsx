@@ -370,7 +370,7 @@ export function RadarClient({
       render: (row) => (
         <div className="flex flex-col items-start gap-1">
           {renderTypeBadge(row.type)}
-          <span className="text-[11px] text-ink-tertiary line-clamp-1 max-w-[200px]">
+          <span className="text-meta text-ink-tertiary line-clamp-1 max-w-[200px]">
             {row.reason}
           </span>
         </div>
@@ -392,7 +392,7 @@ export function RadarClient({
           >
             {row.score}
           </div>
-          <div className="text-[11px] text-ink-tertiary">
+          <div className="text-meta text-ink-tertiary">
             <div>{row.score >= 80 ? "High Signal" : row.score >= 65 ? "Moderate" : "Low"}</div>
           </div>
         </div>
@@ -406,7 +406,7 @@ export function RadarClient({
           <div className="font-mono text-sm font-medium text-ink">
             {row.estDailySales.toFixed(1)}/day
           </div>
-          <div className="text-[11px] text-ink-tertiary">
+          <div className="text-meta text-ink-tertiary">
             {row.totalSales.toLocaleString()} total
           </div>
         </div>
@@ -420,7 +420,7 @@ export function RadarClient({
           <div className="font-mono text-sm font-medium text-ink">
             {row.avgSellingRatio.toFixed(1)}x
           </div>
-          <div className="text-[11px] text-ink-tertiary">
+          <div className="text-meta text-ink-tertiary">
             {row.activeListings} listings
           </div>
         </div>
@@ -431,10 +431,10 @@ export function RadarClient({
       header: "Competition",
       render: (row) => (
         <div>
-          <div className="text-xs font-medium text-ink">
+          <div className="text-sm font-medium text-ink">
             {row.reviewCount} reviews
           </div>
-          <div className="text-[11px] text-ink-tertiary">
+          <div className="text-meta text-ink-tertiary">
             {Math.round(row.shopAgeMonths)} mos old
           </div>
         </div>
@@ -781,10 +781,10 @@ export function RadarClient({
                 }
                 sidePanel={
                   <div className="space-y-3">
-                    <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                    <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
                       Breakout Metrics
                     </div>
-                    <div className="space-y-2 text-xs">
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-[#9EAA9F]">Observed Price:</span>
                         <span className="font-mono font-bold text-white">{top.price !== null ? `$${top.price.toFixed(2)}` : "Unavailable"}</span>
@@ -805,7 +805,7 @@ export function RadarClient({
                   </div>
                 }
               >
-                <div className="flex items-center gap-4 text-xs text-[#9EAA9F]">
+                <div className="flex items-center gap-4 text-sm text-[#9EAA9F]">
                   <span>Store: <Link href={`/shops/${top.shopExternalId}`} className="text-[#16C784] font-bold hover:underline">{top.shopName}</Link></span>
                   <span>·</span>
                   <span>Target Niche: <strong className="text-white">{top.keyword}</strong></span>
@@ -1131,11 +1131,11 @@ export function RadarClient({
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/products/${opp.prospectId}`}
-                        className="font-bold text-xs text-ink hover:text-[#0E8F5D] line-clamp-2 transition-colors"
+                        className="font-bold text-sm text-ink hover:text-[#0E8F5D] line-clamp-2 transition-colors"
                       >
                         {opp.listingTitle || opp.shopName}
                       </Link>
-                      <div className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-tertiary">
+                      <div className="mt-1 flex items-center gap-1.5 text-meta text-ink-tertiary">
                         <Link href={`/shops/${opp.shopExternalId}`} className="text-ink-secondary hover:underline">
                           {opp.shopName}
                         </Link>
@@ -1145,7 +1145,7 @@ export function RadarClient({
                     </div>
                   </div>
 
-                  <p className="text-[11px] text-ink-secondary line-clamp-2 italic bg-surface-muted p-2 rounded-md border border-line-subtle">
+                  <p className="text-sm text-ink-secondary line-clamp-2 italic bg-surface-muted p-2 rounded-md border border-line-subtle">
                     "{opp.reason}"
                   </p>
                 </div>

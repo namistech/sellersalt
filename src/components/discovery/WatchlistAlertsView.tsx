@@ -76,7 +76,7 @@ export function WatchlistAlertsView() {
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-primary" />
             <h2 className="text-base font-bold text-foreground">Opportunity Alerts</h2>
-            <Badge variant="neutral" className="text-[10px]">
+            <Badge variant="neutral" className="text-label-sm">
               {alerts.length} New
             </Badge>
           </div>
@@ -85,7 +85,7 @@ export function WatchlistAlertsView() {
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="p-3 rounded-xl border bg-muted/20 text-xs flex items-center justify-between gap-3"
+                className="p-3 rounded-xl border bg-muted/20 text-sm flex items-center justify-between gap-3"
               >
                 <div className="space-y-0.5">
                   <span className="font-bold text-foreground block">{alert.title}</span>
@@ -99,7 +99,7 @@ export function WatchlistAlertsView() {
                       ? "warning"
                       : "neutral"
                   }
-                  className="text-[10px] shrink-0"
+                  className="text-label-sm shrink-0"
                 >
                   {alert.severity}
                 </Badge>
@@ -117,23 +117,23 @@ export function WatchlistAlertsView() {
               <Bookmark className="w-5 h-5 text-primary" />
               Watched Opportunities ({watchlist.length})
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Continuously monitored products, keywords, and niches tracking score and momentum shifts.
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-xs text-muted-foreground">Loading watchlist...</div>
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading watchlist...</div>
         ) : watchlist.length === 0 ? (
-          <div className="p-12 text-center text-xs text-muted-foreground border border-dashed rounded-xl space-y-2">
+          <div className="p-12 text-center text-sm text-muted-foreground border border-dashed rounded-xl space-y-2">
             <Bookmark className="w-6 h-6 text-muted-foreground mx-auto" />
             <p>Your opportunity watchlist is currently empty.</p>
-            <p className="text-[11px]">Save opportunities from the Autonomous Discovery Center or Opportunity Radar.</p>
+            <p className="text-meta">Save opportunities from the Autonomous Discovery Center or Opportunity Radar.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b text-muted-foreground font-semibold">
                   <th className="pb-2">Target Title</th>
@@ -149,7 +149,7 @@ export function WatchlistAlertsView() {
                   <tr key={item.id} className="hover:bg-muted/30">
                     <td className="py-3 font-bold text-foreground max-w-xs truncate">{item.title}</td>
                     <td className="py-3">
-                      <Badge variant="neutral" className="text-[10px]">
+                      <Badge variant="neutral" className="text-label-sm">
                         {item.type}
                       </Badge>
                     </td>
@@ -164,7 +164,7 @@ export function WatchlistAlertsView() {
                           onClick={() => handleValidate(item.title, item.marketplace)}
                           size="compact"
                           variant="secondary"
-                          className="text-[11px]"
+                          className="text-sm font-semibold"
                         >
                           <Compass className="w-3 h-3 mr-1" />
                           Validate

@@ -154,14 +154,14 @@ export function AssistantDailyBriefing({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-white tracking-tight">
+              <h2 className="text-base font-bold text-white tracking-tight">
                 SellerSalt Daily Seller Briefing
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0E8F5D] text-white">
+              <span className="px-2 py-0.5 rounded-full text-label-sm font-bold bg-[#0E8F5D] text-white">
                 LIVE
               </span>
             </div>
-            <p className="text-xs text-white/70 mt-0.5">
+            <p className="text-sm text-white/70 mt-0.5">
               Actionable summary of market shifts, urgent draft reviews, and recommended next moves.
             </p>
           </div>
@@ -170,7 +170,7 @@ export function AssistantDailyBriefing({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/workspace"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition border border-white/10"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition border border-white/10"
           >
             <Layers className="h-3.5 w-3.5" />
             <span>Open Workspace</span>
@@ -181,10 +181,10 @@ export function AssistantDailyBriefing({
       {/* Visual Operating Pipeline Flow */}
       <Card padding="md" className="border-line bg-white shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
+          <span className="text-sm font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
             <span>🎯 Active Seller Pipeline</span>
           </span>
-          <span className="text-[11px] text-ink-tertiary">
+          <span className="text-meta text-ink-tertiary">
             Click any stage to inspect opportunities
           </span>
         </div>
@@ -196,7 +196,7 @@ export function AssistantDailyBriefing({
               href={stg.href}
               className="p-2.5 rounded-xl bg-[#FAFAF8] hover:bg-[#E7FAF1] border border-line hover:border-[#0E8F5D]/40 transition group text-center"
             >
-              <div className="text-[10px] font-bold uppercase text-ink-tertiary group-hover:text-[#0E8F5D] truncate">
+              <div className="text-label-sm font-bold uppercase text-ink-tertiary group-hover:text-[#0E8F5D] truncate">
                 {idx + 1}. {stg.label}
               </div>
               <div className="text-lg font-mono font-extrabold text-ink group-hover:text-[#0E8F5D] pt-0.5">
@@ -221,7 +221,7 @@ export function AssistantDailyBriefing({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${
+            className={`px-3 py-1 rounded-lg text-sm font-bold transition whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-[#141B16] text-white"
                 : "bg-[#FAFAF8] text-ink hover:bg-surface-muted border border-line"
@@ -244,22 +244,22 @@ export function AssistantDailyBriefing({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.icon}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+                  <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                     {item.category.replace("_", " ")}
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-mono font-extrabold text-[#0E8F5D] bg-[#E7FAF1] px-2 py-0.5 rounded">
+                  <span className="text-sm font-mono font-extrabold text-[#0E8F5D] bg-[#E7FAF1] px-2 py-0.5 rounded">
                     {item.metric}
                   </span>
                 </div>
               </div>
 
-              <h3 className="text-xs font-bold text-ink leading-snug">
+              <h3 className="text-sm font-bold text-ink leading-snug">
                 {item.title}
               </h3>
 
-              <div className="p-2.5 rounded-xl bg-[#FAFAF8] border border-line-subtle text-[11px] space-y-1">
+              <div className="p-2.5 rounded-xl bg-[#FAFAF8] border border-line-subtle text-sm space-y-1">
                 <div>
                   <span className="font-bold text-ink-secondary">What this means: </span>
                   <span className="text-ink-tertiary">{item.interpretation}</span>
@@ -275,7 +275,7 @@ export function AssistantDailyBriefing({
               <DataProvenanceBadge type="SELLERSALT_SCORE" />
               <Link
                 href={item.actionHref}
-                className="inline-flex items-center gap-1 text-xs font-bold text-[#0E8F5D] hover:text-[#0a6c45] transition-colors"
+                className="inline-flex items-center gap-1 text-sm font-bold text-[#0E8F5D] hover:text-[#0a6c45] transition-colors"
               >
                 <span>{item.actionLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5" />

@@ -14,7 +14,7 @@ import { resolveAssetUrl } from "@/lib/asset-url";
 export type AvatarSize = "xs" | "sm" | "md" | "lg";
 
 const SIZE_CLASS: Record<AvatarSize, string> = {
-  xs: "h-5 w-5 text-[10px]",
+  xs: "h-5 w-5 text-label-sm",
   sm: "h-6 w-6 text-label-sm",
   md: "h-8 w-8 text-label-sm",
   lg: "h-10 w-10 text-body-sm",

@@ -62,10 +62,10 @@ export function UpgradeGate({
           </Badge>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
           {availableSummary && (
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-[#E3E6E0] space-y-1">
-              <span className="text-[10px] font-bold text-[#7C847E] uppercase tracking-wider block">
+              <span className="text-label-sm font-bold text-[#7C847E] uppercase tracking-wider block">
                 Currently Available
               </span>
               <div className="flex items-start gap-2 text-[#525B55]">
@@ -76,7 +76,7 @@ export function UpgradeGate({
           )}
 
           <div className="p-3 rounded-xl bg-[#E7FAF1]/50 border border-[#0E8F5D]/30 space-y-1">
-            <span className="text-[10px] font-bold text-[#0A6342] uppercase tracking-wider block">
+            <span className="text-label-sm font-bold text-[#0A6342] uppercase tracking-wider block">
               Locked Opportunities
             </span>
             <div className="flex items-start gap-2 text-[#141B16] font-medium">
@@ -88,7 +88,7 @@ export function UpgradeGate({
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-[#E3E6E0]">
           {reasonWhyItMatters && (
-            <p className="text-xs text-[#525B55] max-w-lg leading-relaxed">
+            <p className="text-sm text-[#525B55] max-w-lg leading-relaxed">
               <strong className="text-[#141B16]">Why this matters:</strong> {reasonWhyItMatters}
             </p>
           )}
@@ -97,7 +97,7 @@ export function UpgradeGate({
             <Button
               variant="primary"
               size="compact"
-              className="w-full sm:w-auto text-xs font-bold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white px-4 py-2 shadow-xs flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto text-sm font-bold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white px-4 py-2 shadow-xs flex items-center justify-center gap-1.5"
             >
               <span>Upgrade to {requiredPlan}</span>
               <ArrowRight className="h-3 w-3" />
@@ -119,20 +119,20 @@ export function UpgradeGate({
             <span className="p-1 rounded-md bg-amber-500/20 text-amber-400">
               <Lock className="h-4 w-4" />
             </span>
-            <Badge variant="warning" tone="dark" className="text-xs">
+            <Badge variant="warning" tone="dark" className="text-label-sm">
               {requiredPlan} Plan Feature
             </Badge>
           </div>
           <h3 className="text-base font-bold text-white tracking-tight">
             {isUsageExhausted ? `Monthly ${featureName} Quota Reached` : `Unlock ${featureName}`}
           </h3>
-          <p className="text-xs text-[#9EAA9F] leading-relaxed">
+          <p className="text-sm text-[#9EAA9F] leading-relaxed">
             {description}
           </p>
 
           {currentUsage !== undefined && maxUsage !== undefined && (
             <div className="pt-2 space-y-1">
-              <div className="flex justify-between text-[11px] text-[#9EAA9F]">
+              <div className="flex justify-between text-meta text-[#9EAA9F]">
                 <span>Current Usage:</span>
                 <span className="font-mono text-white font-bold">{currentUsage} / {maxUsage}</span>
               </div>
@@ -151,7 +151,7 @@ export function UpgradeGate({
             <Button
               variant="primary"
               size="default"
-              className="bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] font-bold text-xs shadow-md"
+              className="bg-[#16C784] hover:bg-[#13AD73] text-[#141B16] font-bold text-sm shadow-md"
             >
               <Sparkles className="h-3.5 w-3.5 mr-1" />
               <span>Upgrade Plan</span>

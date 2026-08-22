@@ -82,8 +82,8 @@ export function WhatChangedView({
 
         {/* Status banner */}
         {report && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t text-xs">
-            <Badge variant={report.hasPreviousComparison ? "success" : "neutral"} className="text-[11px]">
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t text-sm">
+            <Badge variant={report.hasPreviousComparison ? "success" : "neutral"} className="text-label-sm">
               {report.hasPreviousComparison ? "Longitudinal Delta Active" : "First Snapshot Baseline"}
             </Badge>
             {report.observationIntervalDays !== null && (
@@ -110,28 +110,28 @@ export function WhatChangedView({
       {loading ? (
         <Card className="p-12 text-center border rounded-2xl bg-card space-y-3">
           <RefreshCw className="w-6 h-6 text-primary animate-spin mx-auto" />
-          <p className="text-xs text-muted-foreground">Analyzing market snapshot differentials...</p>
+          <p className="text-sm text-muted-foreground">Analyzing market snapshot differentials...</p>
         </Card>
       ) : report ? (
         <div className="space-y-6">
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">New Listings</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-semibold block">New Listings</span>
               <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
                 +{report.summary.newProductsCount}
               </span>
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Price Movers</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-semibold block">Price Movers</span>
               <span className="text-xl font-black text-amber-600 dark:text-amber-400">
                 {report.summary.priceMoversCount}
               </span>
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Median Price Delta</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-semibold block">Median Price Delta</span>
               <span className="text-xl font-black text-foreground">
                 {report.summary.medianPriceDelta !== null
                   ? `${report.summary.medianPriceDelta > 0 ? "+" : ""}$${report.summary.medianPriceDelta.toFixed(2)}`
@@ -140,7 +140,7 @@ export function WhatChangedView({
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold block">Disappeared</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-semibold block">Disappeared</span>
               <span className="text-xl font-black text-muted-foreground">
                 {report.summary.disappearedProductsCount}
               </span>
@@ -149,11 +149,11 @@ export function WhatChangedView({
 
           {/* Highlights */}
           <Card className="p-5 border rounded-xl bg-card space-y-3">
-            <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
               Ranked Market Highlights
             </h3>
-            <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+            <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
               {report.rankedSignificanceHighlights.map((h, idx) => (
                 <li key={idx}>{h}</li>
               ))}
@@ -163,9 +163,9 @@ export function WhatChangedView({
           {/* Product Changes Table */}
           {report.productChanges.length > 0 && (
             <Card className="p-6 border rounded-xl bg-card space-y-4">
-              <h3 className="text-xs font-bold text-foreground">Observed Product Adjustments</h3>
+              <h3 className="text-base font-bold text-foreground">Observed Product Adjustments</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b text-muted-foreground font-semibold">
                       <th className="pb-2">Product Listing</th>
@@ -191,7 +191,7 @@ export function WhatChangedView({
                                 ? "warning"
                                 : "neutral"
                             }
-                            className="text-[10px]"
+                            className="text-label-sm"
                           >
                             {p.changeType.replace(/_/g, " ")}
                           </Badge>

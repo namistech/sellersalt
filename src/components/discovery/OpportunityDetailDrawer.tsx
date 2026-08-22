@@ -80,10 +80,10 @@ export function OpportunityDetailDrawer({
         <div className="flex items-start justify-between gap-4 border-b pb-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Badge variant="neutral" className="text-[10px] uppercase font-bold">
+              <Badge variant="neutral" className="text-label-sm uppercase font-bold">
                 {opportunity.type.replace(/_/g, " ")}
               </Badge>
-              <Badge variant="neutral" className="text-[10px] capitalize">
+              <Badge variant="neutral" className="text-label-sm capitalize">
                 {opportunity.marketplace}
               </Badge>
               <Badge
@@ -94,13 +94,13 @@ export function OpportunityDetailDrawer({
                     ? "info"
                     : "neutral"
                 }
-                className="text-[10px]"
+                className="text-label-sm"
               >
                 {opportunity.momentum}
               </Badge>
             </div>
             <h2 className="text-xl font-black text-foreground pt-1">{opportunity.title}</h2>
-            <p className="text-xs text-muted-foreground">{opportunity.subtitle}</p>
+            <p className="text-sm text-muted-foreground">{opportunity.subtitle}</p>
           </div>
 
           <button
@@ -114,23 +114,23 @@ export function OpportunityDetailDrawer({
         {/* Score & Confidence Banner */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Opportunity</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Opportunity</span>
             <span className="text-2xl font-black text-primary">{score.compositeScore}/100</span>
           </div>
 
           <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Confidence</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Confidence</span>
             <span className="text-2xl font-black text-foreground">{confidence.confidenceScore}%</span>
-            <span className="text-[9px] text-muted-foreground block">{confidence.confidenceTier}</span>
+            <span className="text-meta text-muted-foreground block">{confidence.confidenceTier}</span>
           </div>
 
           <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Demand Score</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Demand Score</span>
             <span className="text-xl font-black text-foreground">{score.demandScore}/25</span>
           </div>
 
           <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Competition</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Competition</span>
             <span className="text-xl font-black text-foreground">{score.competitionAttractivenessScore}/25</span>
           </div>
         </div>
@@ -139,10 +139,10 @@ export function OpportunityDetailDrawer({
         <Card className="p-5 border rounded-xl bg-muted/20 space-y-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-primary" />
-            <h3 className="text-xs font-bold text-foreground">Why SellerSalt Found This Opportunity</h3>
+            <h3 className="text-sm font-bold text-foreground">Why SellerSalt Found This Opportunity</h3>
           </div>
-          <p className="text-xs text-foreground leading-relaxed">{explanation.whyFound}</p>
-          <div className="flex items-center gap-2 pt-2 border-t text-[11px] text-muted-foreground">
+          <p className="text-sm text-foreground leading-relaxed">{explanation.whyFound}</p>
+          <div className="flex items-center gap-2 pt-2 border-t text-meta text-muted-foreground">
             <strong>Verdict:</strong>
             <Badge
               variant={
@@ -152,7 +152,7 @@ export function OpportunityDetailDrawer({
                   ? "info"
                   : "neutral"
               }
-              className="text-[10px]"
+              className="text-label-sm"
             >
               {explanation.verdict.replace(/_/g, " ")}
             </Badge>
@@ -161,11 +161,11 @@ export function OpportunityDetailDrawer({
 
         {/* Observed Evidence */}
         <div className="space-y-2">
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
             Observed Market Evidence
           </h3>
-          <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+          <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
             {explanation.observedEvidence.map((ev, i) => (
               <li key={i}>{ev}</li>
             ))}
@@ -175,11 +175,11 @@ export function OpportunityDetailDrawer({
         {/* Derived Signals */}
         {explanation.derivedSignals.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-sky-600" />
               Derived Strategic Signals
             </h3>
-            <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+            <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
               {explanation.derivedSignals.map((sig, i) => (
                 <li key={i}>{sig}</li>
               ))}
@@ -189,11 +189,11 @@ export function OpportunityDetailDrawer({
 
         {/* Known Limitations & Unknowns */}
         <Card className="p-4 border rounded-xl bg-card space-y-2">
-          <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+          <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
             <HelpCircle className="w-4 h-4 text-amber-500" />
             Zero-Fabrication Disclosures & Unknowns
           </h3>
-          <ul className="space-y-1 list-disc pl-4 text-[11px] text-muted-foreground">
+          <ul className="space-y-1 list-disc pl-4 text-sm text-muted-foreground">
             {confidence.unknownSignals.map((u, i) => (
               <li key={i}>{u}</li>
             ))}

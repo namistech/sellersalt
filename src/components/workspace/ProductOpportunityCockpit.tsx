@@ -139,10 +139,10 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Badge variant="neutral" className="text-[10px] font-bold uppercase">
+              <Badge variant="neutral" className="text-label-sm font-bold uppercase">
                 Opportunity Workspace
               </Badge>
-              <Badge variant="neutral" className="text-[10px] uppercase">
+              <Badge variant="neutral" className="text-label-sm uppercase">
                 {marketplaces.join(", ")}
               </Badge>
               <Badge
@@ -153,13 +153,13 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                     ? "info"
                     : "warning"
                 }
-                className="text-[10px] font-bold"
+                className="text-label-sm font-bold"
               >
                 Verdict: {commercialDecision.verdict}
               </Badge>
             </div>
             <h1 className="text-2xl font-black text-foreground">{title}</h1>
-            <p className="text-xs text-muted-foreground">{commercialDecision.why}</p>
+            <p className="text-sm text-muted-foreground">{commercialDecision.why}</p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -167,7 +167,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
               onClick={() => setShowEvidenceLedger(!showEvidenceLedger)}
               size="compact"
               variant="secondary"
-              className="text-xs font-semibold"
+              className="text-sm font-semibold"
             >
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               Evidence Ledger ({evidenceLedger.records.length})
@@ -177,7 +177,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
               disabled={isRefreshing}
               size="compact"
               variant="secondary"
-              className="text-xs font-semibold"
+              className="text-sm font-semibold"
             >
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
@@ -188,24 +188,24 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
         {/* Score KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Opportunity</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Opportunity</span>
             <span className="text-2xl font-black text-primary">{opportunityScore.compositeScore}/100</span>
           </div>
 
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Confidence</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Confidence</span>
             <span className="text-2xl font-black text-foreground">{confidenceScore}%</span>
           </div>
 
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Target Price</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Target Price</span>
             <span className="text-2xl font-black text-foreground">
               ${configuration.targetPrice?.toFixed(2) || "N/A"}
             </span>
           </div>
 
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Contribution Margin</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Contribution Margin</span>
             <span
               className={`text-2xl font-black ${
                 currentScenarioMetrics.contributionMarginPercent >= 20 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"
@@ -216,14 +216,14 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
           </div>
 
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Readiness</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Readiness</span>
             <span className="text-xl font-black text-foreground">
               {readiness.overallScore}/100
             </span>
           </div>
 
           <div className="p-4 rounded-xl bg-muted/20 border text-center space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Data Trust</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Data Trust</span>
             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
               {workspace.dataTrust?.overallTrustScore || confidenceScore}%
             </span>
@@ -231,29 +231,29 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
         </div>
 
         {/* Data Trust & Governance Transparency Strip */}
-        <div className="p-4 rounded-xl bg-muted/10 border space-y-2 text-xs">
+        <div className="p-4 rounded-xl bg-muted/10 border space-y-2 text-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span className="font-bold text-foreground">Data Trust & Provenance Breakdown</span>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="neutral" className="text-[9px]">
+              <Badge variant="neutral" className="text-label-sm">
                 {workspace.dataTrust?.observedMetricCount || 0} Observed
               </Badge>
-              <Badge variant="neutral" className="text-[9px]">
+              <Badge variant="neutral" className="text-label-sm">
                 {workspace.dataTrust?.derivedMetricCount || 0} Derived
               </Badge>
-              <Badge variant="neutral" className="text-[9px]">
+              <Badge variant="neutral" className="text-label-sm">
                 {workspace.dataTrust?.unknownSignalCount || 0} Unavailable
               </Badge>
-              <Badge variant="success" className="text-[9px] font-bold">
+              <Badge variant="success" className="text-label-sm font-bold">
                 Zero-Fabrication Guaranteed
               </Badge>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-meta text-muted-foreground">
             <span><strong>Sources:</strong> {workspace.dataTrust?.sourcesUsed.join(", ") || "Public Web"}</span>
             <span><strong>Freshness:</strong> {workspace.dataTrust?.freshnessScore || 100}%</span>
             <span><strong>Policy Status:</strong> {workspace.dataTrust?.policyComplianceStatus || "ALLOWED"}</span>
@@ -268,28 +268,28 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
               <h2 className="text-base font-bold text-foreground">Evidence Ledger & Provenance</h2>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 {evidenceLedger.records.length} Records
               </Badge>
             </div>
             <button
               onClick={() => setShowEvidenceLedger(false)}
-              className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+              className="text-muted-foreground hover:text-foreground text-sm font-bold"
             >
-              Close
+              ✕
             </button>
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
             {evidenceLedger.records.map((rec) => (
-              <div key={rec.id} className="p-3 rounded-xl border bg-muted/20 text-xs space-y-1">
+              <div key={rec.id} className="p-3 rounded-xl border bg-muted/20 text-sm space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-foreground">{rec.title}</span>
-                  <Badge variant="neutral" className="text-[9px]">
+                  <Badge variant="neutral" className="text-label-sm">
                     {rec.category} • {rec.provenance}
                   </Badge>
                 </div>
-                <p className="text-muted-foreground text-[11px]">{rec.statement}</p>
+                <p className="text-muted-foreground text-meta">{rec.statement}</p>
               </div>
             ))}
           </div>
@@ -308,7 +308,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                   <Sparkles className="w-4 h-4 text-primary" />
                   Observable Attribute & Differentiation Intelligence
                 </h2>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Extracted from {attributeIntelligence.totalSampledListings} sampled listings across {attributeIntelligence.totalSampledSellers} sellers.
                 </p>
               </div>
@@ -317,7 +317,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
             {/* Dominant vs Underrepresented Attributes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <span className="text-[11px] font-bold uppercase text-muted-foreground block">
+                <span className="text-label-sm font-bold uppercase text-muted-foreground block">
                   Dominant Market Clusters (≥25% Prevalence)
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -330,7 +330,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
               </div>
 
               <div className="space-y-2">
-                <span className="text-[11px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">
+                <span className="text-label-sm font-bold uppercase text-emerald-600 dark:text-emerald-400 block">
                   Underrepresented Attribute Gaps (&lt;15% Prevalence)
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -347,17 +347,17 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
             {differentiation.candidates.length > 0 && (
               <div className="p-4 rounded-xl border bg-muted/20 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-foreground">
+                  <span className="text-sm font-bold text-foreground">
                     Recommended Angle: {differentiation.candidates[0].title}
                   </span>
-                  <Badge variant="neutral" className="text-[10px]">
+                  <Badge variant="neutral" className="text-label-sm">
                     Target: {differentiation.candidates[0].targetMarketPosition}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {differentiation.candidates[0].description}
                 </p>
-                <div className="pt-2 border-t text-[11px] text-muted-foreground">
+                <div className="pt-2 border-t text-meta text-muted-foreground">
                   <strong>Advantage:</strong> {differentiation.candidates[0].competitiveAdvantage}
                 </div>
               </div>
@@ -371,43 +371,43 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <DollarSign className="w-4 h-4 text-primary" />
                 Empirical Market Price Positioning
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Distribution calculated across {positioning.empiricalQuantiles.sampleSize} verified price observations.
               </p>
             </div>
 
             {/* Quantiles Bar */}
-            <div className="grid grid-cols-5 gap-2 text-center text-xs">
+            <div className="grid grid-cols-5 gap-2 text-center text-sm">
               <div className="p-2.5 rounded-lg border bg-muted/20">
-                <span className="text-[9px] text-muted-foreground font-bold block">P10</span>
+                <span className="text-label-sm text-muted-foreground font-bold block">P10</span>
                 <span className="font-bold text-foreground">${positioning.empiricalQuantiles.p10?.toFixed(2) || "N/A"}</span>
               </div>
               <div className="p-2.5 rounded-lg border bg-muted/20">
-                <span className="text-[9px] text-muted-foreground font-bold block">P25</span>
+                <span className="text-label-sm text-muted-foreground font-bold block">P25</span>
                 <span className="font-bold text-foreground">${positioning.empiricalQuantiles.p25?.toFixed(2) || "N/A"}</span>
               </div>
               <div className="p-2.5 rounded-lg border bg-primary/10 border-primary/30">
-                <span className="text-[9px] text-primary font-bold block">P50 (Median)</span>
+                <span className="text-label-sm text-primary font-bold block">P50 (Median)</span>
                 <span className="font-bold text-primary">${positioning.empiricalQuantiles.p50?.toFixed(2) || "N/A"}</span>
               </div>
               <div className="p-2.5 rounded-lg border bg-muted/20">
-                <span className="text-[9px] text-muted-foreground font-bold block">P75</span>
+                <span className="text-label-sm text-muted-foreground font-bold block">P75</span>
                 <span className="font-bold text-foreground">${positioning.empiricalQuantiles.p75?.toFixed(2) || "N/A"}</span>
               </div>
               <div className="p-2.5 rounded-lg border bg-muted/20">
-                <span className="text-[9px] text-muted-foreground font-bold block">P90</span>
+                <span className="text-label-sm text-muted-foreground font-bold block">P90</span>
                 <span className="font-bold text-foreground">${positioning.empiricalQuantiles.p90?.toFixed(2) || "N/A"}</span>
               </div>
             </div>
 
             {/* Scenarios Table */}
             <div className="space-y-2">
-              <span className="text-xs font-bold text-foreground block">Positioning Scenarios</span>
+              <span className="text-sm font-bold text-foreground block">Positioning Scenarios</span>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {positioning.scenarios.map((scen) => (
                   <div
                     key={scen.tier}
-                    className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                    className={`p-3.5 rounded-xl border text-sm space-y-1.5 ${
                       scen.tier === positioning.recommendedScenario
                         ? "border-primary/50 bg-primary/5"
                         : "border-border bg-card"
@@ -417,7 +417,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                       <span className="font-bold text-foreground">{scen.label}</span>
                       <span className="font-black text-primary">${scen.candidateTargetPrice?.toFixed(2) || "—"}</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">{scen.strategicRationale}</p>
+                    <p className="text-meta text-muted-foreground">{scen.strategicRationale}</p>
                   </div>
                 ))}
               </div>
@@ -431,17 +431,17 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <Boxes className="w-4 h-4 text-primary" />
                 Product Configuration & Bill of Materials
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Synthesized concept distinguishing observed combinations from derived strategy.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div className="p-4 rounded-xl border bg-muted/20 space-y-2">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                <span className="text-label-sm uppercase font-bold text-muted-foreground block">
                   Bundle Contents & Components
                 </span>
-                <ul className="space-y-1 list-disc pl-4 text-muted-foreground">
+                <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-sm">
                   {configuration.bundleContents.map((b, i) => (
                     <li key={i}>{b}</li>
                   ))}
@@ -449,13 +449,13 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
               </div>
 
               <div className="p-4 rounded-xl border bg-muted/20 space-y-2">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                <span className="text-label-sm uppercase font-bold text-muted-foreground block">
                   Packaging & Finish Specification
                 </span>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   <strong>Finish:</strong> {configuration.finishSpecification}
                 </p>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   <strong>Packaging:</strong> {configuration.packagingRequirement}
                 </p>
               </div>
@@ -469,14 +469,14 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <Truck className="w-4 h-4 text-primary" />
                 Sourcing Specification & RFQ Checklist
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Structured requirements to send to manufacturing suppliers (no synthetic supplier data).
               </p>
             </div>
 
             <div className="space-y-3">
-              <span className="text-xs font-bold text-foreground block">RFQ Questions for Suppliers:</span>
-              <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+              <span className="text-sm font-bold text-foreground block">RFQ Questions for Suppliers:</span>
+              <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
                 {sourcing.sourcingQuestionsForSuppliers.map((q, i) => (
                   <li key={i}>{q}</li>
                 ))}
@@ -494,7 +494,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <Calculator className="w-4 h-4 text-primary" />
                 Unit Economics Simulator
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Enter your real supplier landed costs to evaluate financial sensitivity.
               </p>
             </div>
@@ -503,50 +503,50 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
             <div className="space-y-3 pt-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">
+                  <label className="text-label-sm font-bold text-muted-foreground uppercase block">
                     Target Sale Price ($)
                   </label>
                   <input
                     type="number"
                     value={salePrice}
                     onChange={(e) => setSalePrice(Number(e.target.value))}
-                    className="w-full h-8 px-2 rounded-lg border bg-background text-xs font-bold"
+                    className="w-full h-8 px-2 rounded-lg border bg-background text-sm font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">
+                  <label className="text-label-sm font-bold text-muted-foreground uppercase block">
                     Supplier Unit Cost ($)
                   </label>
                   <input
                     type="number"
                     value={unitCost}
                     onChange={(e) => setUnitCost(Number(e.target.value))}
-                    className="w-full h-8 px-2 rounded-lg border bg-background text-xs font-bold"
+                    className="w-full h-8 px-2 rounded-lg border bg-background text-sm font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">
+                  <label className="text-label-sm font-bold text-muted-foreground uppercase block">
                     Packaging / Box ($)
                   </label>
                   <input
                     type="number"
                     value={packagingCost}
                     onChange={(e) => setPackagingCost(Number(e.target.value))}
-                    className="w-full h-8 px-2 rounded-lg border bg-background text-xs"
+                    className="w-full h-8 px-2 rounded-lg border bg-background text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase block">
+                  <label className="text-label-sm font-bold text-muted-foreground uppercase block">
                     Target CAC / Ad ($)
                   </label>
                   <input
                     type="number"
                     value={adCAC}
                     onChange={(e) => setAdCAC(Number(e.target.value))}
-                    className="w-full h-8 px-2 rounded-lg border bg-background text-xs"
+                    className="w-full h-8 px-2 rounded-lg border bg-background text-sm"
                   />
                 </div>
               </div>
@@ -556,7 +556,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 disabled={isCalculatingEconomics}
                 size="compact"
                 variant="primary"
-                className="w-full text-xs font-bold"
+                className="w-full text-sm font-bold"
               >
                 {isCalculatingEconomics ? "Calculating..." : "Recalculate Economics"}
               </Button>
@@ -564,13 +564,13 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
 
             {/* Scenario Switcher */}
             <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-xs font-bold text-foreground">Scenario View:</span>
+              <span className="text-sm font-bold text-foreground">Scenario View:</span>
               <div className="flex gap-1">
                 {(["conservative", "base", "optimistic"] as const).map((scen) => (
                   <button
                     key={scen}
                     onClick={() => setActiveScenario(scen)}
-                    className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold border transition-colors ${
+                    className={`px-2 py-1 rounded-md text-label-sm uppercase font-bold border transition-colors ${
                       activeScenario === scen
                         ? "bg-primary text-white border-primary"
                         : "bg-muted/30 text-muted-foreground border-border"
@@ -583,7 +583,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
             </div>
 
             {/* Scenario Metrics */}
-            <div className="p-4 rounded-xl border bg-muted/20 space-y-2 text-xs">
+            <div className="p-4 rounded-xl border bg-muted/20 space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Gross Profit:</span>
                 <span className="font-bold text-foreground">${currentScenarioMetrics.grossProfit.toFixed(2)} ({currentScenarioMetrics.grossMarginPercent}%)</span>
@@ -615,7 +615,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                   <ShieldCheck className="w-4 h-4 text-primary" />
                   Launch Readiness
                 </h2>
-                <p className="text-xs text-muted-foreground">Multi-dimensional verification</p>
+                <p className="text-sm text-muted-foreground">Multi-dimensional verification</p>
               </div>
               <Badge variant="neutral" className="text-xs font-black">
                 {readiness.status.replace(/_/g, " ")}
@@ -624,7 +624,7 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
 
             <div className="space-y-2">
               {readiness.dimensions.map((dim) => (
-                <div key={dim.name} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/20 border">
+                <div key={dim.name} className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/20 border">
                   <span className="font-medium text-foreground">{dim.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{dim.score}/100</span>
@@ -638,9 +638,9 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
               ))}
             </div>
 
-            <div className="p-3 rounded-xl border bg-primary/5 text-xs space-y-1">
+            <div className="p-3 rounded-xl border bg-primary/5 text-sm space-y-1">
               <span className="font-bold text-primary block">Recommended Milestone:</span>
-              <p className="text-muted-foreground text-[11px]">{readiness.recommendedMilestone}</p>
+              <p className="text-muted-foreground text-meta">{readiness.recommendedMilestone}</p>
             </div>
           </Card>
 
@@ -651,22 +651,22 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <HelpCircle className="w-4 h-4 text-amber-500" />
                 What to Verify Next
               </h2>
-              <p className="text-xs text-muted-foreground">Ranked by potential decision impact</p>
+              <p className="text-sm text-muted-foreground">Ranked by potential decision impact</p>
             </div>
 
             <div className="space-y-2.5">
               {informationGaps.gaps.map((gap) => (
-                <div key={gap.id} className="p-3 rounded-xl border bg-muted/20 text-xs space-y-1">
+                <div key={gap.id} className="p-3 rounded-xl border bg-muted/20 text-sm space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground">{gap.unknownSignal}</span>
                     <Badge
                       variant={gap.decisionImpact === "CRITICAL" ? "danger" : "neutral"}
-                      className="text-[9px]"
+                      className="text-label-sm"
                     >
                       {gap.decisionImpact}
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground text-[11px]">{gap.recommendedAction}</p>
+                  <p className="text-muted-foreground text-meta">{gap.recommendedAction}</p>
                 </div>
               ))}
             </div>
@@ -679,19 +679,19 @@ export function ProductOpportunityCockpit({ initialWorkspace }: CockpitProps) {
                 <Clock className="w-4 h-4 text-primary" />
                 Prioritized Action Plan
               </h2>
-              <p className="text-xs text-muted-foreground">{actionPlan.primaryFocus}</p>
+              <p className="text-sm text-muted-foreground">{actionPlan.primaryFocus}</p>
             </div>
 
             <div className="space-y-2">
               {actionPlan.items.map((act) => (
-                <div key={act.id} className="p-3 rounded-xl border bg-muted/20 text-xs space-y-1">
+                <div key={act.id} className="p-3 rounded-xl border bg-muted/20 text-sm space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary font-black text-[10px]">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-primary font-black text-label-sm">
                       {act.priority}
                     </span>
                     <span className="font-bold text-foreground">{act.action}</span>
                   </div>
-                  <p className="text-muted-foreground text-[11px] pl-7">{act.reason}</p>
+                  <p className="text-muted-foreground text-meta pl-7">{act.reason}</p>
                 </div>
               ))}
             </div>

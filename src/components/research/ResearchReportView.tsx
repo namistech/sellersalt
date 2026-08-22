@@ -71,12 +71,12 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
             <Badge variant={report.status === "COMPLETED" ? "success" : report.status === "PARTIAL" ? "warning" : "danger"}>
               {report.status}
             </Badge>
-            <Badge variant={qualityReport.badgeVariant} className="text-[11px]">
+            <Badge variant={qualityReport.badgeVariant} className="text-label-sm">
               <Award className="w-3 h-3 mr-1" />
               {qualityReport.label} ({qualityReport.qualityScore}/100)
             </Badge>
             {report.isCached && (
-              <Badge variant="neutral" className="text-[11px]">
+              <Badge variant="neutral" className="text-label-sm">
                 <Clock className="w-3 h-3 mr-1" />
                 Cached Result
               </Badge>
@@ -85,7 +85,7 @@ export function ResearchReportView({ report, onRefresh, className = "" }: Resear
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <span>&ldquo;{report.query || "All Catalog"}&rdquo;</span>
           </h1>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-1">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground pt-1">
             <span>Marketplaces: <strong className="text-foreground capitalize">{report.marketplaces.join(", ")}</strong></span>
             <span>•</span>
             <span>Observations: <strong className="text-foreground">{report.itemCount} items</strong></span>
@@ -274,7 +274,7 @@ function ProductObservationsView({
             <div className="space-y-3">
               {/* Card Header: Marketplace + Opportunity Badge */}
               <div className="flex items-center justify-between">
-                <Badge variant="neutral" className="capitalize text-[11px]">
+                <Badge variant="neutral" className="capitalize text-label-sm">
                   {prod.marketplace}
                 </Badge>
                 {prod.opportunityScore && prod.opportunityScore.score !== null ? (
@@ -297,26 +297,26 @@ function ProductObservationsView({
                   {prod.title}
                 </a>
                 {prod.shop?.name && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     by <strong className="text-foreground">{prod.shop.name}</strong>
                   </p>
                 )}
               </div>
 
               {/* Price & Rating Row */}
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t text-xs">
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t text-sm">
                 <div>
-                  <span className="text-muted-foreground block">Observed Price</span>
+                  <span className="text-muted-foreground block text-xs">Observed Price</span>
                   <span className="font-bold text-sm text-foreground">
                     {prod.price !== null && prod.price !== undefined ? `$${prod.price.toFixed(2)}` : "—"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">Reviews & Rating</span>
+                  <span className="text-muted-foreground block text-xs">Reviews & Rating</span>
                   <span className="font-semibold text-foreground flex items-center gap-1">
                     <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 inline" />
                     {prod.rating !== null && prod.rating !== undefined ? prod.rating.toFixed(1) : "—"}
-                    <span className="text-muted-foreground font-normal">
+                    <span className="text-muted-foreground font-normal text-xs">
                       ({prod.reviewCount !== null && prod.reviewCount !== undefined ? prod.reviewCount.toLocaleString() : "0"})
                     </span>
                   </span>
@@ -325,14 +325,14 @@ function ProductObservationsView({
 
               {/* Category Breadcrumbs */}
               {prod.categoryPath && prod.categoryPath.length > 0 && (
-                <div className="text-[11px] text-muted-foreground pt-1 truncate">
+                <div className="text-meta text-muted-foreground pt-1 truncate">
                   Taxonomy: {prod.categoryPath.join(" › ")}
                 </div>
               )}
             </div>
 
             {/* Card Footer: Provenance & Action Link */}
-            <div className="pt-3 mt-3 border-t flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="pt-3 mt-3 border-t flex items-center justify-between text-meta text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 {prod.acquisitionMethod || "PUBLIC_WEB"}
@@ -364,7 +364,7 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
       <div className="p-12 text-center border rounded-xl bg-card">
         <Hash className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
         <h3 className="text-base font-semibold">No Keyword Observations</h3>
-        <p className="text-xs text-muted-foreground mt-1">No empirical keywords were extracted from public listings.</p>
+        <p className="text-sm text-muted-foreground mt-1">No empirical keywords were extracted from public listings.</p>
       </div>
     );
   }
@@ -375,8 +375,8 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
       {data.clusters && data.clusters.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {data.clusters.map((c, i) => (
-            <Card key={i} className="p-3 border rounded-xl bg-card text-xs space-y-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase">{c.theme}</span>
+            <Card key={i} className="p-3 border rounded-xl bg-card text-sm space-y-1">
+              <span className="text-label-sm font-semibold text-muted-foreground uppercase">{c.theme}</span>
               <div className="font-bold text-foreground text-sm">{c.totalOccurrences} occurrences</div>
               <p className="text-muted-foreground truncate">{c.keywords.slice(0, 4).join(", ")}</p>
             </Card>
@@ -386,7 +386,7 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
 
       {/* Keywords Table */}
       <div className="border rounded-xl bg-card overflow-hidden shadow-sm">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-left text-sm border-collapse">
           <thead className="bg-muted/50 border-b text-muted-foreground font-semibold">
             <tr>
               <th className="p-3">Harvested Keyword Term</th>
@@ -394,22 +394,15 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
               <th className="p-3">Observed Average Price</th>
               <th className="p-3">Demand Proxy</th>
               <th className="p-3">Competition Proxy</th>
-              <th className="p-3">Search Volume Feed</th>
+              <th className="p-3">Monthly Search Volume</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-border/50">
             {data.topKeywords.map((kw, i) => (
-              <tr key={i} className="hover:bg-muted/20 transition-colors">
+              <tr key={i} className="hover:bg-muted/30">
                 <td className="p-3 font-semibold text-foreground">{kw.keyword || kw.term}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{kw.listingFrequencyPercent}%</span>
-                    <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className="bg-primary h-full rounded-full" style={{ width: `${kw.listingFrequencyPercent}%` }}></div>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-3 font-medium">
+                <td className="p-3">{(kw.listingFrequencyPercent ?? 0).toFixed(1)}% of listings</td>
+                <td className="p-3 font-bold text-foreground">
                   {kw.observedAveragePrice !== null && kw.observedAveragePrice !== undefined ? `$${kw.observedAveragePrice.toFixed(2)}` : "—"}
                 </td>
                 <td className="p-3">
@@ -424,11 +417,11 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
                 </td>
                 <td className="p-3 text-muted-foreground">
                   {typeof (kw as any).searchVolume === "number" ? (
-                    <span className="text-[11px] font-mono font-bold text-foreground">
+                    <span className="text-meta font-mono font-bold text-foreground">
                       {(kw as any).searchVolume.toLocaleString()}/mo
                     </span>
                   ) : (
-                    <span className="text-[11px] bg-muted px-2 py-0.5 rounded font-mono">
+                    <span className="text-meta bg-muted px-2 py-0.5 rounded font-mono">
                       Unavailable (Zero-Fabrication)
                     </span>
                   )}
@@ -540,27 +533,27 @@ function CategoryObservationsView({ data }: { data: PublicCategoryIntelligenceRe
 
         {/* Price Percentiles */}
         {data.priceDistribution && (
-          <div className="pt-3 border-t space-y-2 text-xs">
+          <div className="pt-3 border-t space-y-2 text-sm">
             <span className="font-semibold text-muted-foreground">Price Distribution & Percentiles:</span>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <div className="p-2 border rounded-lg bg-muted/30">
-                <span className="text-muted-foreground block text-[11px]">Min Price</span>
+                <span className="text-muted-foreground block text-label-sm">Min Price</span>
                 <span className="font-bold text-foreground">${data.priceDistribution.min?.toFixed(2) || "—"}</span>
               </div>
               <div className="p-2 border rounded-lg bg-muted/30">
-                <span className="text-muted-foreground block text-[11px]">10th Percentile</span>
+                <span className="text-muted-foreground block text-label-sm">10th Percentile</span>
                 <span className="font-bold text-foreground">${data.priceDistribution.percentile10?.toFixed(2) || "—"}</span>
               </div>
               <div className="p-2 border rounded-lg bg-primary/10 border-primary/20">
-                <span className="text-primary font-semibold block text-[11px]">Median Price</span>
+                <span className="text-primary font-semibold block text-label-sm">Median Price</span>
                 <span className="font-bold text-foreground">${data.priceDistribution.median?.toFixed(2) || "—"}</span>
               </div>
               <div className="p-2 border rounded-lg bg-muted/30">
-                <span className="text-muted-foreground block text-[11px]">90th Percentile</span>
+                <span className="text-muted-foreground block text-label-sm">90th Percentile</span>
                 <span className="font-bold text-foreground">${data.priceDistribution.percentile90?.toFixed(2) || "—"}</span>
               </div>
               <div className="p-2 border rounded-lg bg-muted/30">
-                <span className="text-muted-foreground block text-[11px]">Max Price</span>
+                <span className="text-muted-foreground block text-label-sm">Max Price</span>
                 <span className="font-bold text-foreground">${data.priceDistribution.max?.toFixed(2) || "—"}</span>
               </div>
             </div>
@@ -569,19 +562,19 @@ function CategoryObservationsView({ data }: { data: PublicCategoryIntelligenceRe
 
         {/* Opportunity Distribution */}
         {data.opportunityDistribution && (
-          <div className="pt-3 border-t space-y-2 text-xs">
+          <div className="pt-3 border-t space-y-2 text-sm">
             <span className="font-semibold text-muted-foreground">Opportunity Score Distribution:</span>
             <div className="grid grid-cols-3 gap-3">
               <div className="p-2.5 border rounded-lg bg-emerald-500/10 border-emerald-500/20">
-                <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-[11px]">High Opportunity (&ge;80)</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-label-sm">High Opportunity (&ge;80)</span>
                 <span className="font-bold text-foreground text-sm">{data.opportunityDistribution.highOpportunityCount} items</span>
               </div>
               <div className="p-2.5 border rounded-lg bg-blue-500/10 border-blue-500/20">
-                <span className="text-blue-700 dark:text-blue-400 font-semibold block text-[11px]">Moderate (65–79)</span>
+                <span className="text-blue-700 dark:text-blue-400 font-semibold block text-label-sm">Moderate (65–79)</span>
                 <span className="font-bold text-foreground text-sm">{data.opportunityDistribution.moderateOpportunityCount} items</span>
               </div>
               <div className="p-2.5 border rounded-lg bg-muted/50">
-                <span className="text-muted-foreground font-semibold block text-[11px]">Competitive (&lt;65)</span>
+                <span className="text-muted-foreground font-semibold block text-label-sm">Competitive (&lt;65)</span>
                 <span className="font-bold text-foreground text-sm">{data.opportunityDistribution.competitiveCount} items</span>
               </div>
             </div>
@@ -747,7 +740,7 @@ function SignalIntelligenceView({ report }: { report: WorkbenchResearchResponse 
           <p className="text-muted-foreground">Calculates net take-home after marketplace-specific transaction and processing fees.</p>
         </div>
         <div className="p-3 border rounded-lg bg-muted/20 space-y-1">
-          <span className="font-semibold text-foreground block">3. Competition & Moat Barrier (Weight: 20%)</span>
+                <span className="font-semibold text-foreground block">3. Competition & Moat Barrier (Weight: 20%)</span>
           <p className="text-muted-foreground">Evaluates top incumbent review volume to assess entry barrier for new sellers.</p>
         </div>
         <div className="p-3 border rounded-lg bg-muted/20 space-y-1">
@@ -760,26 +753,20 @@ function SignalIntelligenceView({ report }: { report: WorkbenchResearchResponse 
 }
 
 // ----------------------------------------------------------------------------
-// PROVENANCE & RESEARCH QUALITY SUB-VIEW
+// DATASET INTEGRITY & AUDIT SUB-VIEW
 // ----------------------------------------------------------------------------
-function DataProvenanceView({
-  report,
-  qualityReport,
-}: {
-  report: WorkbenchResearchResponse;
-  qualityReport: ResearchQualityReport;
-}) {
+function DataProvenanceView({ report, qualityReport }: { report: WorkbenchResearchResponse; qualityReport: any }) {
   return (
     <div className="space-y-6">
-      {/* Quality Score Breakdown Card */}
-      <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
-        <div className="flex items-center justify-between">
+      {/* Quality Tier Breakdown Card */}
+      <Card className="p-6 border rounded-xl bg-card space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-4">
           <div>
-            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Award className="w-4 h-4 text-primary" />
               Research Quality & Dataset Trustworthiness
             </h3>
-            <p className="text-muted-foreground text-[11px] mt-0.5">
+            <p className="text-muted-foreground text-sm mt-0.5">
               Evaluates empirical data completeness, observation volume, signal coverage, and provenance.
             </p>
           </div>
@@ -789,13 +776,13 @@ function DataProvenanceView({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          {qualityReport.factors.map((f) => (
+          {qualityReport.factors?.map((f: any) => (
             <div key={f.id} className="p-3 border rounded-lg bg-muted/20 space-y-1">
               <div className="flex justify-between items-center">
-                <span className="font-bold text-foreground text-[11px]">{f.name}</span>
-                <span className="font-semibold text-primary">{f.score}/{f.maxScore}</span>
+                <span className="font-bold text-foreground text-label-sm">{f.name}</span>
+                <span className="font-semibold text-primary text-sm">{f.score}/{f.maxScore}</span>
               </div>
-              <p className="text-muted-foreground text-[10px] leading-tight">{f.description}</p>
+              <p className="text-muted-foreground text-meta leading-tight">{f.description}</p>
             </div>
           ))}
         </div>
@@ -803,11 +790,11 @@ function DataProvenanceView({
         {/* Field-level Coverage Metrics */}
         {qualityReport.fieldMetrics && qualityReport.fieldMetrics.length > 0 && (
           <div className="space-y-2 pt-3 border-t">
-            <h4 className="font-semibold text-foreground">Field-Level Signal Completeness:</h4>
+            <h4 className="font-semibold text-foreground text-sm">Field-Level Signal Completeness:</h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-              {qualityReport.fieldMetrics.map((fm) => (
+              {qualityReport.fieldMetrics.map((fm: any) => (
                 <div key={fm.field} className="p-2.5 border rounded-lg bg-muted/20 space-y-1">
-                  <div className="flex justify-between items-center text-[10px]">
+                  <div className="flex justify-between items-center text-meta">
                     <span className="font-medium text-muted-foreground truncate">{fm.label}</span>
                     <span className="font-bold text-foreground">{fm.percentage}%</span>
                   </div>
@@ -819,7 +806,7 @@ function DataProvenanceView({
                       style={{ width: `${fm.percentage}%` }}
                     />
                   </div>
-                  <span className="text-[9px] text-muted-foreground block">
+                  <span className="text-meta text-muted-foreground block">
                     {fm.observedCount}/{fm.totalCount} observed
                   </span>
                 </div>
@@ -830,8 +817,8 @@ function DataProvenanceView({
       </Card>
 
       {/* "How SellerSalt Got This Data" Source Acquisition Summary */}
-      <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
-        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+      <Card className="p-5 border rounded-xl bg-card space-y-4 text-sm">
+        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-500" />
           How SellerSalt Acquired This Data & Acquisition Pipeline
         </h3>
@@ -842,10 +829,10 @@ function DataProvenanceView({
               <Globe className="w-3.5 h-3.5 text-blue-500" />
               Primary Source: PUBLIC_WEB
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-sm">
               Direct legitimate public web observation. {report.liveCount} live observations captured.
             </p>
-            <Badge variant="success" className="text-[10px]">Active & Verified</Badge>
+            <Badge variant="success" className="text-label-sm">Active & Verified</Badge>
           </div>
 
           <div className="p-3 border rounded-lg bg-muted/30 space-y-1.5">
@@ -853,10 +840,10 @@ function DataProvenanceView({
               <Radio className="w-3.5 h-3.5 text-muted-foreground" />
               Secondary Source: MARKETPLACE_API
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-sm">
               {report.sourcesUsed.includes("MARKETPLACE_API") ? "Used for secondary metadata enrichment." : "Not required / Not used."}
             </p>
-            <Badge variant={report.sourcesUsed.includes("MARKETPLACE_API") ? "success" : "neutral"} className="text-[10px]">
+            <Badge variant={report.sourcesUsed.includes("MARKETPLACE_API") ? "success" : "neutral"} className="text-label-sm">
               {report.sourcesUsed.includes("MARKETPLACE_API") ? "Enriched" : "Optional / Unused"}
             </Badge>
           </div>
@@ -866,10 +853,10 @@ function DataProvenanceView({
               <Database className="w-3.5 h-3.5 text-muted-foreground" />
               Tertiary Fallback: HISTORICAL_DB
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-sm">
               {report.historicalCount > 0 ? `${report.historicalCount} historical observations utilized.` : "Not needed — real live data obtained."}
             </p>
-            <Badge variant="neutral" className="text-[10px]">
+            <Badge variant="neutral" className="text-label-sm">
               {report.historicalCount > 0 ? "Utilized" : "Unused"}
             </Badge>
           </div>
@@ -877,10 +864,10 @@ function DataProvenanceView({
 
         {/* Source Strategy Timeline */}
         {qualityReport.sourceTimeline && qualityReport.sourceTimeline.length > 0 && (
-          <div className="space-y-1.5 pt-2 border-t text-[11px]">
+          <div className="space-y-1.5 pt-2 border-t text-sm">
             <h4 className="font-semibold text-foreground">Strategy Resolution Timeline:</h4>
             <div className="space-y-1">
-              {qualityReport.sourceTimeline.map((step, idx) => (
+              {qualityReport.sourceTimeline.map((step: string, idx: number) => (
                 <div key={idx} className="flex items-center gap-2 text-muted-foreground">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                   <span>{step}</span>
@@ -892,14 +879,12 @@ function DataProvenanceView({
 
         <div className="space-y-2 pt-2 border-t">
           <h4 className="font-semibold text-foreground">Active Limitations for this Research Run:</h4>
-          <ul className="space-y-1.5 list-disc pl-4 text-muted-foreground">
+          <ul className="space-y-1.5 list-disc pl-4 text-muted-foreground text-sm">
             {report.limitations && report.limitations.length > 0 ? (
               report.limitations.map((lim, i) => <li key={i}>{lim}</li>)
             ) : (
               <li>No specific limitations recorded for this run.</li>
             )}
-            <li>Exact buyer monthly search volume is unavailable without licensed third-party volume provider feeds.</li>
-            <li>Longitudinal deltas require at least 2 historical snapshots separated in time.</li>
           </ul>
         </div>
       </Card>
@@ -912,23 +897,23 @@ function DataProvenanceView({
 // ----------------------------------------------------------------------------
 function DiffSummaryView({ diff }: { diff: any }) {
   return (
-    <Card className="p-5 border rounded-xl bg-card space-y-4 text-xs">
-      <h3 className="text-sm font-bold text-foreground">Longitudinal Query Changes & Deltas</h3>
+    <Card className="p-5 border rounded-xl bg-card space-y-4 text-sm">
+      <h3 className="text-base font-bold text-foreground">Longitudinal Query Changes & Deltas</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 border rounded-lg bg-emerald-500/10 border-emerald-500/20">
-          <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-[11px]">New Listings</span>
+          <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-label-sm">New Listings</span>
           <span className="font-bold text-foreground text-sm">{diff.appearingCount}</span>
         </div>
         <div className="p-3 border rounded-lg bg-red-500/10 border-red-500/20">
-          <span className="text-red-700 dark:text-red-400 font-semibold block text-[11px]">Disappeared Listings</span>
+          <span className="text-red-700 dark:text-red-400 font-semibold block text-label-sm">Disappeared Listings</span>
           <span className="font-bold text-foreground text-sm">{diff.disappearingCount}</span>
         </div>
         <div className="p-3 border rounded-lg bg-blue-500/10 border-blue-500/20">
-          <span className="text-blue-700 dark:text-blue-400 font-semibold block text-[11px]">Persisting Listings</span>
+          <span className="text-blue-700 dark:text-blue-400 font-semibold block text-label-sm">Persisting Listings</span>
           <span className="font-bold text-foreground text-sm">{diff.persistingCount}</span>
         </div>
         <div className="p-3 border rounded-lg bg-amber-500/10 border-amber-500/20">
-          <span className="text-amber-700 dark:text-amber-400 font-semibold block text-[11px]">Price Drops Detected</span>
+          <span className="text-amber-700 dark:text-amber-400 font-semibold block text-label-sm">Price Drops Detected</span>
           <span className="font-bold text-foreground text-sm">{diff.priceDropsCount}</span>
         </div>
       </div>

@@ -88,7 +88,7 @@ export function DonutChart({
             <span className="font-mono text-xl font-bold text-ink tabular-nums leading-none">
               {centerMetric.value}
             </span>
-            <span className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider mt-1">
+            <span className="text-label-sm uppercase font-bold text-ink-tertiary tracking-wider mt-1">
               {centerMetric.label}
             </span>
           </div>

@@ -43,10 +43,10 @@ export function RankingVisualizer({
     <div className={cn("p-4 rounded-xl border border-line bg-surface space-y-2.5", className)}>
       <div className="flex items-center justify-between text-xs">
         <div>
-          <span className="font-bold text-ink uppercase tracking-wide text-[11px] block">{label}</span>
-          {categoryName && <span className="text-[11px] text-ink-tertiary">vs {categoryName}</span>}
+          <span className="font-bold text-ink uppercase tracking-wide text-label-sm block">{label}</span>
+          {categoryName && <span className="text-meta text-ink-tertiary">vs {categoryName}</span>}
         </div>
-        <span className={cn("font-bold text-xs", tierColor)}>{derivedRank}</span>
+        <span className={cn("font-bold text-sm", tierColor)}>{derivedRank}</span>
       </div>
 
       {/* Visual meter bar */}
@@ -63,11 +63,11 @@ export function RankingVisualizer({
           style={{ left: `${safePercentile}%` }}
         >
           <span className="h-4 w-4 rounded-full bg-[#0E8F5D] border-2 border-white shadow-xs" />
-          <span className="text-[9px] font-bold text-ink tabular-nums mt-0.5">{safePercentile}%</span>
+          <span className="text-label-sm font-bold text-ink tabular-nums mt-0.5">{safePercentile}%</span>
         </div>
       </div>
 
-      <div className="flex justify-between text-[10px] text-ink-tertiary pt-1">
+      <div className="flex justify-between text-meta text-ink-tertiary pt-1">
         <span>0% (Entry)</span>
         <span>50% (Median)</span>
         <span>Top 10%</span>

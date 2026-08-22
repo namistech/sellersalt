@@ -119,12 +119,12 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                           {item.listingTitle}
                         </Link>
                         {isEmerging && (
-                          <span className="shrink-0 text-[10px] font-bold text-warn-strong bg-warn-subtle px-1.5 py-0.5 rounded border border-warn/30">
+                          <span className="shrink-0 text-label-sm font-bold text-warn-strong bg-warn-subtle px-1.5 py-0.5 rounded border border-warn/30">
                             🔥 Emerging
                           </span>
                         )}
                         {!isEmerging && isHiddenGem && (
-                          <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300">
+                          <span className="shrink-0 text-label-sm font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-300">
                             💎 Hidden Gem
                           </span>
                         )}
@@ -171,7 +171,7 @@ export function DashboardOpportunities({ opportunities: initialOpportunities, on
                         size="compact"
                         disabled={updatingId === item.id}
                         onClick={() => handleStatusChange(item.id, "SHORTLISTED")}
-                        className="text-xs"
+                        className="text-sm"
                       >
                         Shortlist
                       </Button>

@@ -230,7 +230,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden border-b border-[#E3E6E0]">
           <div className="max-w-6xl mx-auto px-6 relative z-10 text-center space-y-8">
             {/* Tagline Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-label-sm font-bold uppercase tracking-wider">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>Evidence-Based Ecommerce Intelligence</span>
             </div>
@@ -267,7 +267,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                 <Button
                   type="submit"
                   variant="primary"
-                  className="shrink-0 font-bold text-xs sm:text-sm px-5 sm:px-7 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11"
+                  className="shrink-0 font-bold text-sm px-5 sm:px-7 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11"
                 >
                   <span>Start Research</span>
                   <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -275,7 +275,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
               </form>
 
               {/* Sample Suggestions */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-xs text-[#7C847E]">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-sm text-[#7C847E]">
                 <span>Try exploring:</span>
                 {["ceramic pour-over", "leather passport wallet", "linen apron", "desk lamp"].map(
                   (sample) => (
@@ -283,7 +283,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                       key={sample}
                       type="button"
                       onClick={() => setHeroInput(sample)}
-                      className="px-2.5 py-1 rounded-lg border border-[#E3E6E0] bg-white hover:border-emerald-600/40 text-[#525B55] transition-colors"
+                      className="px-2.5 py-1 rounded-lg border border-[#E3E6E0] bg-white hover:border-emerald-600/40 text-[#525B55] transition-colors text-sm"
                     >
                       {sample}
                     </button>
@@ -293,7 +293,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             </div>
 
             {/* Live Research Attribution */}
-            <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-[#7C847E] font-medium border-t border-[#E3E6E0]/60 max-w-xl mx-auto">
+            <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-[#7C847E] font-medium border-t border-[#E3E6E0]/60 max-w-xl mx-auto">
               <span>Observable market research:</span>
               <div className="flex items-center gap-4 font-bold text-[#343D36]">
                 <span>Etsy</span>
@@ -314,7 +314,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section className="py-20 bg-white border-b border-[#E3E6E0]">
           <div className="max-w-6xl mx-auto px-6 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Core Principles
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
@@ -340,7 +340,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                       <h3 className="text-base font-bold text-[#141B16]">
                         {idx + 1}. {pillar.title}
                       </h3>
-                      <p className="text-xs text-[#525B55] leading-relaxed">
+                      <p className="text-sm text-[#525B55] leading-relaxed">
                         {pillar.description}
                       </p>
                     </div>
@@ -357,7 +357,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section id="features" className="py-20 md:py-28 border-b border-[#E3E6E0]">
           <div className="max-w-6xl mx-auto px-6 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Product Capabilities
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
@@ -381,7 +381,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                         <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                           <Icon className="w-5 h-5" />
                         </div>
-                        <Badge variant="neutral" className="text-[10px] font-bold">
+                        <Badge variant="neutral" className="text-label-sm font-bold">
                           {feature.badge}
                         </Badge>
                       </div>
@@ -390,13 +390,13 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                         {feature.title}
                       </h3>
 
-                      <p className="text-xs text-[#525B55] leading-relaxed">
+                      <p className="text-sm text-[#525B55] leading-relaxed">
                         {feature.description}
                       </p>
 
-                      <div className="border-t border-[#E3E6E0] pt-3 space-y-2 text-xs text-[#525B55]">
+                      <div className="border-t border-[#E3E6E0] pt-3 space-y-2 text-sm text-[#525B55]">
                         {feature.highlights.map((h, hIdx) => (
-                          <div key={hIdx} className="flex items-start gap-2 text-[11px]">
+                          <div key={hIdx} className="flex items-start gap-2 text-xs sm:text-sm">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                             <span>{h}</span>
                           </div>
@@ -417,7 +417,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
           <div className="max-w-5xl mx-auto px-6 space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7 space-y-5">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800 text-emerald-200 text-xs font-bold uppercase tracking-wider">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-800 text-emerald-200 text-label-sm font-bold uppercase tracking-wider">
                   <Bot className="w-4 h-4 text-emerald-400" />
                   <span>AI Assistant & MCP Integration</span>
                 </div>
@@ -430,7 +430,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                   Connect Claude, Gemini, or another AI agent via MCP to operate SellerSalt on your behalf, alongside integrations like Zapier, Slack, and QuickBooks.
                 </p>
 
-                <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-emerald-200">
+                <div className="pt-2 flex flex-wrap items-center gap-4 text-sm text-emerald-200">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     <span>Scoped MCP tool access</span>
@@ -448,23 +448,23 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
 
               <div className="lg:col-span-5">
                 <div className="p-6 rounded-2xl bg-emerald-950/70 border border-emerald-700/50 space-y-4 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-emerald-800 pb-3 text-xs">
+                  <div className="flex items-center justify-between border-b border-emerald-800 pb-3 text-sm">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="font-mono font-bold text-emerald-200">mcp-server / sellersalt</span>
+                      <span className="font-mono font-bold text-emerald-200 text-xs sm:text-sm">mcp-server / sellersalt</span>
                     </div>
-                    <Badge variant="neutral" className="text-[10px] text-emerald-300 border-emerald-700">
+                    <Badge variant="neutral" className="text-label-sm text-emerald-300 border-emerald-700">
                       Active
                     </Badge>
                   </div>
 
-                  <div className="font-mono text-[11px] text-emerald-300/90 space-y-2 leading-relaxed bg-emerald-950/90 p-3.5 rounded-xl border border-emerald-800">
+                  <div className="font-mono text-xs sm:text-sm text-emerald-300/90 space-y-2 leading-relaxed bg-emerald-950/90 p-3.5 rounded-xl border border-emerald-800">
                     <p className="text-emerald-400 font-semibold">&gt; claude.mcp.call(&quot;sellersalt.audit_listing&quot;)</p>
                     <p className="text-emerald-200/80">&#123; channelId: &quot;shop_482&quot;, status: &quot;complete&quot; &#125;</p>
                     <p className="text-emerald-400/90 font-medium">✓ Audit complete: 13/13 tags optimized</p>
                   </div>
 
-                  <p className="text-[11px] text-emerald-300/70 text-center font-medium">
+                  <p className="text-xs text-emerald-300/70 text-center font-medium">
                     Evidence-based research engine is deterministic; AI agent operates via MCP on your behalf.
                   </p>
                 </div>
@@ -479,7 +479,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section className="py-20 bg-white border-b border-[#E3E6E0]">
           <div className="max-w-6xl mx-auto px-6 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Built for Commerce Leaders
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
@@ -505,7 +505,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                       <h3 className="text-lg font-bold">
                         {aud.title}
                       </h3>
-                      <p className="text-xs leading-relaxed opacity-90">
+                      <p className="text-sm leading-relaxed opacity-90">
                         {aud.winning}
                       </p>
                     </div>
@@ -513,7 +513,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                     <div className="pt-2">
                       <Link
                         href="/signup"
-                        className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
+                        className="inline-flex items-center gap-1 text-sm font-bold hover:underline"
                       >
                         <span>Learn more</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -532,7 +532,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section className="py-20 bg-[#FAFAF8] border-b border-[#E3E6E0]">
           <div className="max-w-6xl mx-auto px-6 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Data Provenance
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
@@ -586,14 +586,14 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                   className={`p-5 rounded-2xl border ${item.color} space-y-3 flex flex-col justify-between`}
                 >
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider block opacity-75">
+                    <span className="text-label-sm font-black uppercase tracking-wider block opacity-75">
                       {item.class}
                     </span>
-                    <h4 className="text-xs font-bold">{item.badge}</h4>
-                    <p className="text-[11px] opacity-80 leading-relaxed">{item.desc}</p>
+                    <h4 className="text-sm font-bold">{item.badge}</h4>
+                    <p className="text-xs sm:text-sm opacity-80 leading-relaxed">{item.desc}</p>
                   </div>
 
-                  <div className="p-2.5 rounded-xl bg-white/80 border border-current/10 text-[11px] font-mono font-medium">
+                  <div className="p-2.5 rounded-xl bg-white/80 border border-current/10 text-xs font-mono font-medium">
                     {item.example}
                   </div>
                 </div>
@@ -603,7 +603,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
             <div className="text-center pt-4">
               <Link
                 href="/trust"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:underline"
               >
                 <span>Read our full Data Methodology & Trust Center</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -618,7 +618,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section id="pricing" className="py-20 md:py-28 border-b border-[#E3E6E0] bg-white">
           <div className="max-w-6xl mx-auto px-6 space-y-12">
             <div className="text-center max-w-3xl mx-auto space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Transparent Pricing
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-[#141B16] tracking-tight">
@@ -643,22 +643,22 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-black text-[#141B16]">{plan.name}</h3>
                       {plan.key === "PRO" && (
-                        <Badge variant="success" className="text-[9px] font-bold uppercase">
+                        <Badge variant="success" className="text-label-sm font-bold uppercase">
                           Most Popular
                         </Badge>
                       )}
                     </div>
 
-                    <p className="text-xs text-[#525B55] min-h-[36px]">{plan.description}</p>
+                    <p className="text-sm text-[#525B55] min-h-[36px]">{plan.description}</p>
 
                     <div className="pt-2">
                       <span className="text-3xl font-black text-[#141B16]">
                         ${plan.priceMonthlyUsd}
                       </span>
-                      <span className="text-xs text-[#7C847E] font-medium"> / month</span>
+                      <span className="text-sm text-[#7C847E] font-medium"> / month</span>
                     </div>
 
-                    <div className="border-t border-[#E3E6E0] pt-4 space-y-2.5 text-xs text-[#525B55]">
+                    <div className="border-t border-[#E3E6E0] pt-4 space-y-2.5 text-sm text-[#525B55]">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>{plan.limits.monthlyProductResearches} Product Researches / mo</span>
@@ -681,7 +681,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                   <Button
                     href="/signup"
                     variant={plan.key === "PRO" ? "primary" : "secondary"}
-                    className={`w-full text-xs font-bold rounded-xl ${
+                    className={`w-full text-sm font-bold rounded-xl ${
                       plan.key === "PRO"
                         ? "bg-emerald-600 hover:bg-emerald-700 text-white"
                         : "border-[#E3E6E0]"
@@ -701,7 +701,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
         <section id="faq" className="py-20 bg-[#FAFAF8] border-b border-[#E3E6E0]">
           <div className="max-w-4xl mx-auto px-6 space-y-10">
             <div className="text-center space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
                 Frequently Asked Questions
               </span>
               <h2 className="text-3xl font-black text-[#141B16] tracking-tight">
@@ -730,7 +730,7 @@ export function MarketingHomepage({ packages }: { packages: PackageData[] }) {
                       )}
                     </button>
                     {isOpen && (
-                      <div className="px-5 pb-5 text-xs text-[#525B55] leading-relaxed border-t border-[#E3E6E0] pt-4">
+                      <div className="px-5 pb-5 text-sm sm:text-base text-[#525B55] leading-relaxed border-t border-[#E3E6E0] pt-4">
                         {faq.a}
                       </div>
                     )}

@@ -224,28 +224,28 @@ export function AutonomousDiscoveryCenter({
           {/* Summary KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Opportunities</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-bold block">Opportunities</span>
               <span className="text-2xl font-black text-primary">
                 {result.summary.totalOpportunitiesFound}
               </span>
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Observed Products</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-bold block">Observed Products</span>
               <span className="text-2xl font-black text-foreground">
                 {result.summary.totalProductsObserved}
               </span>
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Unique Sellers</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-bold block">Unique Sellers</span>
               <span className="text-2xl font-black text-foreground">
                 {result.summary.totalUniqueSellersObserved}
               </span>
             </div>
 
             <div className="p-4 rounded-xl bg-card border text-center space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Avg Score</span>
+              <span className="text-label-sm text-muted-foreground uppercase font-bold block">Avg Score</span>
               <span className="text-2xl font-black text-foreground">
                 {result.summary.averageOpportunityScore}/100
               </span>
@@ -288,7 +288,7 @@ export function AutonomousDiscoveryCenter({
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Badge variant="neutral" className="text-[10px] uppercase font-bold">
+                      <Badge variant="neutral" className="text-label-sm uppercase font-bold">
                         {opp.type.replace(/_/g, " ")}
                       </Badge>
                       <span className="text-sm font-black text-primary">
@@ -297,12 +297,12 @@ export function AutonomousDiscoveryCenter({
                     </div>
 
                     <h3 className="text-sm font-bold text-foreground line-clamp-2">{opp.title}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                       {opp.explanation.whyFound}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t text-[11px] text-muted-foreground">
+                  <div className="flex items-center justify-between pt-3 border-t text-meta text-muted-foreground">
                     <span className="capitalize font-medium">{opp.marketplace}</span>
                     <span className="text-primary font-bold flex items-center">
                       Deep Dive <ChevronRight className="w-3.5 h-3.5 ml-0.5" />

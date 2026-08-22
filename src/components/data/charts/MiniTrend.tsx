@@ -41,7 +41,7 @@ export function MiniTrend({
       </div>
 
       {deltaPercent !== undefined && (
-        <div className="flex items-center gap-1 text-[11px] font-bold tabular-nums">
+        <div className="flex items-center gap-1 text-label-sm font-bold tabular-nums">
           {isPositive ? (
             <span className="inline-flex items-center text-[#0E8F5D] bg-[#E7FAF1] px-1.5 py-0.5 rounded">
               <ArrowUpRight className="h-3 w-3 mr-0.5" />+{Math.abs(deltaPercent).toFixed(1)}%
@@ -55,7 +55,7 @@ export function MiniTrend({
               <Minus className="h-3 w-3 mr-0.5" />0.0%
             </span>
           )}
-          {periodLabel && <span className="text-[10px] text-ink-tertiary font-normal">{periodLabel}</span>}
+          {periodLabel && <span className="text-meta text-ink-tertiary font-normal">{periodLabel}</span>}
         </div>
       )}
     </div>

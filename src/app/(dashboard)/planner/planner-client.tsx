@@ -302,71 +302,75 @@ export function PlannerClient() {
       {/* Top Metric Strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
-          <div className="text-[11px] font-bold text-ink-tertiary uppercase">Active Plans</div>
+          <div className="text-label-sm font-bold text-ink-tertiary uppercase">Active Plans</div>
           <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono">{totalActive}</div>
-          <div className="text-[11px] text-ink-tertiary">In planning & drafting pipeline</div>
+          <div className="text-meta text-ink-tertiary">In planning & drafting pipeline</div>
         </Card>
 
         <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
-          <div className="text-[11px] font-bold text-ink-tertiary uppercase">Backlog Ideas</div>
+          <div className="text-label-sm font-bold text-ink-tertiary uppercase">Backlog Ideas</div>
           <div className="text-2xl font-extrabold text-ink font-mono">
             {statusCounts[PlannerItemStatus.BACKLOG] || 0}
           </div>
-          <div className="text-[11px] text-ink-tertiary">Discovered from research engines</div>
+          <div className="text-meta text-ink-tertiary">Discovered from research engines</div>
         </Card>
 
         <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
-          <div className="text-[11px] font-bold text-ink-tertiary uppercase">Ready for Draft</div>
+          <div className="text-label-sm font-bold text-ink-tertiary uppercase">Ready for Draft</div>
           <div className="text-2xl font-extrabold text-[#B37800] font-mono">
             {statusCounts[PlannerItemStatus.READY_FOR_DRAFT] || 0}
           </div>
-          <div className="text-[11px] text-ink-tertiary">Validated for AI copy generation</div>
+          <div className="text-meta text-ink-tertiary">Validated for AI copy generation</div>
         </Card>
 
         <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
-          <div className="text-[11px] font-bold text-ink-tertiary uppercase">Published / Done</div>
+          <div className="text-label-sm font-bold text-ink-tertiary uppercase">Published / Done</div>
           <div className="text-2xl font-extrabold text-ink-secondary font-mono">
             {(statusCounts[PlannerItemStatus.PUBLISHED_TO_ETSY] || 0) + (statusCounts[PlannerItemStatus.COMPLETED] || 0)}
           </div>
-          <div className="text-[11px] text-ink-tertiary">Live products & completed tasks</div>
+          <div className="text-meta text-ink-tertiary">Live products & completed tasks</div>
         </Card>
       </div>
 
       {/* Control Bar */}
-      <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search Input */}
+      <Card padding="md" className="border-line bg-white shadow-2xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-tertiary" />
+            <input
+              type="text"
+              placeholder="Search planned items, products, keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && loadItems()}
-              placeholder="Search planner by keyword, title, or shop..."
-              className="pl-9 h-10 text-xs font-medium"
+              className="w-full bg-[#FAFAF8] border border-line rounded-lg pl-9 pr-3 py-1.5 text-sm text-ink placeholder:text-ink-tertiary focus:outline-hidden focus:border-[#0E8F5D]"
             />
-            <Search className="h-4 w-4 text-ink-tertiary absolute left-3 top-3 pointer-events-none" />
           </div>
 
-          {/* Action Buttons */}
+          {/* View Mode Toggle & Add Button */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center border border-line rounded-lg p-1 bg-[#FAFAF8]">
+            <div className="flex items-center bg-[#FAFAF8] p-1 rounded-lg border border-line">
               <button
                 type="button"
                 onClick={() => setViewMode("KANBAN")}
-                className={`p-1.5 rounded text-xs font-medium transition-colors ${
-                  viewMode === "KANBAN" ? "bg-white text-ink shadow-2xs" : "text-ink-tertiary hover:text-ink"
+                className={`p-1.5 rounded-md transition ${
+                  viewMode === "KANBAN"
+                    ? "bg-white text-ink shadow-2xs"
+                    : "text-ink-tertiary hover:text-ink"
                 }`}
-                title="Kanban Board"
+                title="Board View"
               >
                 <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("LIST")}
-                className={`p-1.5 rounded text-xs font-medium transition-colors ${
-                  viewMode === "LIST" ? "bg-white text-ink shadow-2xs" : "text-ink-tertiary hover:text-ink"
+                className={`p-1.5 rounded-md transition ${
+                  viewMode === "LIST"
+                    ? "bg-white text-ink shadow-2xs"
+                    : "text-ink-tertiary hover:text-ink"
                 }`}
-                title="Table View"
+                title="List View"
               >
                 <ListIcon className="h-4 w-4" />
               </button>
@@ -374,23 +378,24 @@ export function PlannerClient() {
 
             <Button
               variant="primary"
-              size="default"
+              size="compact"
               onClick={() => setShowCreateModal(true)}
-              className="h-10 px-4 text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+              className="bg-[#0E8F5D] hover:bg-[#0C7A52] text-white font-bold text-sm"
             >
-              <Plus className="h-4 w-4 mr-1" /> New Item
+              <Plus className="h-4 w-4 mr-1" />
+              <span>New Planner Item</span>
             </Button>
           </div>
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-line-subtle text-xs">
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-line-subtle text-sm">
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-ink-tertiary uppercase">Type:</span>
+            <span className="text-label-sm font-bold text-ink-tertiary uppercase">Type:</span>
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1 text-[11px] font-medium text-ink"
+              className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1 text-sm font-medium text-ink"
             >
               <option value="ALL">All Item Types</option>
               <option value={PlannerItemType.PRODUCT_RESEARCH}>Product Research</option>
@@ -404,11 +409,11 @@ export function PlannerClient() {
           </div>
 
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-bold text-ink-tertiary uppercase">Status:</span>
+            <span className="text-label-sm font-bold text-ink-tertiary uppercase">Status:</span>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1 text-[11px] font-medium text-ink"
+              className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1 text-sm font-medium text-ink"
             >
               <option value="ALL">All Statuses</option>
               <option value={PlannerItemStatus.BACKLOG}>Backlog</option>
@@ -421,7 +426,7 @@ export function PlannerClient() {
             </select>
           </div>
 
-          <label className="flex items-center gap-1.5 cursor-pointer text-[11px] font-medium text-ink select-none ml-auto">
+          <label className="flex items-center gap-1.5 cursor-pointer text-sm font-medium text-ink select-none ml-auto">
             <input
               type="checkbox"
               checked={includeArchived}
@@ -479,13 +484,13 @@ export function PlannerClient() {
               {/* Column Header */}
               <div className="flex items-center justify-between pb-2 border-b border-line px-1">
                 <div>
-                  <div className="font-bold text-xs text-ink flex items-center gap-1.5">
+                  <div className="font-bold text-sm text-ink flex items-center gap-1.5">
                     <span>{col.label}</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-white text-ink border border-line">
+                    <span className="px-1.5 py-0.2 rounded-full text-label-sm font-mono font-bold bg-white text-ink border border-line">
                       {col.items.length}
                     </span>
                   </div>
-                  <div className="text-[9px] text-ink-tertiary line-clamp-1">{col.description}</div>
+                  <div className="text-meta text-ink-tertiary line-clamp-1">{col.description}</div>
                 </div>
               </div>
 
@@ -503,7 +508,7 @@ export function PlannerClient() {
                       className="p-3 rounded-xl bg-white border border-line shadow-2xs hover:border-[#0E8F5D]/40 hover:shadow-xs transition-all cursor-pointer space-y-2 group"
                     >
                       <div className="flex items-start justify-between gap-1">
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold border inline-flex items-center gap-1 ${typeCfg.color}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-label-sm font-bold border inline-flex items-center gap-1 ${typeCfg.color}`}>
                           <TypeIcon className="h-2.5 w-2.5" />
                           <span>{typeCfg.label}</span>
                         </span>
@@ -540,13 +545,13 @@ export function PlannerClient() {
                         </div>
                       </div>
 
-                      <div className="font-bold text-xs text-ink line-clamp-2 leading-tight">
+                      <div className="font-bold text-sm text-ink line-clamp-2 leading-tight">
                         {item.title}
                       </div>
 
                       {/* Snapshots & Signals */}
                       {snap && (
-                        <div className="grid grid-cols-2 gap-1 pt-1.5 border-t border-line-subtle text-[10px]">
+                        <div className="grid grid-cols-2 gap-1 pt-1.5 border-t border-line-subtle text-meta">
                           {snap.opportunityScore !== undefined && (
                             <div className="text-ink-secondary">
                               Opp: <strong className="text-[#0E8F5D] font-mono">{snap.opportunityScore}</strong>
@@ -574,7 +579,7 @@ export function PlannerClient() {
                       {item.targetKeywords && item.targetKeywords.length > 0 && (
                         <div className="flex flex-wrap gap-1 pt-1">
                           {item.targetKeywords.slice(0, 2).map((k: string) => (
-                            <span key={k} className="px-1.5 py-0.2 rounded text-[9px] bg-[#FAFAF8] text-ink-secondary border border-line">
+                            <span key={k} className="px-1.5 py-0.2 rounded text-label-sm bg-[#FAFAF8] text-ink-secondary border border-line">
                               {k}
                             </span>
                           ))}
@@ -823,10 +828,10 @@ export function PlannerClient() {
                         <DataProvenanceBadge type={detailItem.researchSnapshot.shopMetricsObserved === false ? "EXTERNAL_DATA" : "ACTUAL_ETSY_DATA"} />
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                         {detailItem.researchSnapshot.opportunityScore !== undefined && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                            <div className="text-[9px] text-ink-tertiary uppercase">Score</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Score</div>
                             <div className="text-sm font-mono font-extrabold text-[#0E8F5D]">
                               {detailItem.researchSnapshot.opportunityScore}/100
                             </div>
@@ -841,7 +846,7 @@ export function PlannerClient() {
                             placeholder numbers for them. */}
                         {detailItem.researchSnapshot.estDailySales !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                            <div className="text-[9px] text-ink-tertiary uppercase">Velocity</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Velocity</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
                               {detailItem.researchSnapshot.estDailySales.toFixed(1)}/day
                             </div>
@@ -849,7 +854,7 @@ export function PlannerClient() {
                         )}
                         {detailItem.researchSnapshot.totalSales !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                            <div className="text-[9px] text-ink-tertiary uppercase">Store Orders</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Store Orders</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
                               {detailItem.researchSnapshot.totalSales.toLocaleString()}
                             </div>
@@ -857,7 +862,7 @@ export function PlannerClient() {
                         )}
                         {detailItem.researchSnapshot.reviewCount !== undefined && detailItem.researchSnapshot.shopMetricsObserved && (
                           <div className="bg-white p-2 rounded-lg border border-line-subtle">
-                            <div className="text-[9px] text-ink-tertiary uppercase">Review Moat</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Review Moat</div>
                             <div className="text-sm font-mono font-extrabold text-ink">
                               {detailItem.researchSnapshot.reviewCount.toLocaleString()}
                             </div>
@@ -867,7 +872,7 @@ export function PlannerClient() {
 
                       {detailItem.sourceListingUrl && (
                         <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
-                          <span className="text-[11px] text-ink-tertiary truncate max-w-sm">
+                          <span className="text-meta text-ink-tertiary truncate max-w-sm">
                             Source: {detailItem.sourceListingTitle || detailItem.sourceListingUrl}
                           </span>
                           <a
@@ -938,17 +943,17 @@ export function PlannerClient() {
                       const monthlyProfit = dailyVel !== null ? (dailyVel * 30.44 * netMargin).toFixed(0) : null;
 
                       return (
-                        <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line grid grid-cols-3 gap-2 text-center text-xs">
+                        <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line grid grid-cols-3 gap-2 text-center text-sm">
                           <div>
-                            <div className="text-[10px] text-ink-tertiary uppercase">Etsy Fees (9.5%+$0.20)</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Etsy Fees (9.5%+$0.20)</div>
                             <div className="font-mono font-bold text-ink-secondary">${etsyFee.toFixed(2)}</div>
                           </div>
                           <div>
-                            <div className="text-[10px] text-ink-tertiary uppercase">Net Profit / Unit</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Net Profit / Unit</div>
                             <div className="font-mono font-extrabold text-[#0E8F5D]">${netMargin.toFixed(2)} ({marginPct}%)</div>
                           </div>
                           <div>
-                            <div className="text-[10px] text-ink-tertiary uppercase">Est. Monthly Profit</div>
+                            <div className="text-label-sm text-ink-tertiary uppercase">Est. Monthly Profit</div>
                             <div className="font-mono font-extrabold text-ink">
                               {monthlyProfit !== null ? `$${monthlyProfit}/mo` : "Unavailable"}
                             </div>

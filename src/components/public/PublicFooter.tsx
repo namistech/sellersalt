@@ -15,17 +15,17 @@ export function PublicFooter() {
                 SellerSalt
               </span>
             </Link>
-            <p className="text-xs text-[#7C847E] leading-relaxed">
+            <p className="text-sm text-[#7C847E] leading-relaxed">
               Evidence-based ecommerce intelligence and commercial decision software. Know what to sell before you spend money.
             </p>
           </div>
 
           {/* Col 2: Product */}
           <div>
-            <div className="font-semibold text-xs text-[#141B16] uppercase tracking-wider mb-3">
+            <div className="font-bold text-label-sm text-[#141B16] uppercase tracking-wider mb-3">
               Platform
             </div>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/how-it-works" className="hover:text-[#141B16] transition-colors">
                   How It Works
@@ -51,10 +51,10 @@ export function PublicFooter() {
 
           {/* Col 3: Legal & Trust */}
           <div>
-            <div className="font-semibold text-xs text-[#141B16] uppercase tracking-wider mb-3">
+            <div className="font-bold text-label-sm text-[#141B16] uppercase tracking-wider mb-3">
               Trust & Governance
             </div>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/marketplaces/governance" className="hover:text-[#141B16] transition-colors">
                   Data Governance Matrix
@@ -85,10 +85,10 @@ export function PublicFooter() {
 
           {/* Col 4: Account */}
           <div>
-            <div className="font-semibold text-xs text-[#141B16] uppercase tracking-wider mb-3">
+            <div className="font-bold text-label-sm text-[#141B16] uppercase tracking-wider mb-3">
               Get Started
             </div>
-            <ul className="space-y-2 text-xs">
+            <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/login" className="hover:text-[#141B16] transition-colors">
                   Customer Sign In
@@ -109,7 +109,7 @@ export function PublicFooter() {
         </div>
 
         {/* Trust Statement */}
-        <div className="border-t border-[#E3E6E0] pt-6 pb-4 text-[11px] text-[#7C847E] leading-relaxed space-y-2">
+        <div className="border-t border-[#E3E6E0] pt-6 pb-4 text-xs text-[#7C847E] leading-relaxed space-y-2">
           <p>
             <strong>Trust & Compliance:</strong> SellerSalt operates in compliance with the terms of service of every marketplace we support. We do not scrape marketplace data, and we do not use any marketplace&apos;s API to access data belonging to sellers who haven&apos;t connected their own store to SellerSalt. Questions from a marketplace or partner? <a href="mailto:support@sellersalt.com" className="text-[#141B16] underline">support@sellersalt.com</a>.
           </p>

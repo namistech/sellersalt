@@ -230,7 +230,7 @@ export function AllMarketplacesResults({
                 <span className="text-xs font-bold text-ink">
                   {comparison.bestAvailableMarketplace.displayName}
                 </span>
-                <span className={`px-1.5 py-0.2 rounded font-mono text-[11px] border ${getScoreBadgeClasses(comparison.bestAvailableMarketplace.opportunityScore)}`}>
+                <span className={`px-1.5 py-0.2 rounded font-mono text-label-sm border ${getScoreBadgeClasses(comparison.bestAvailableMarketplace.opportunityScore)}`}>
                   {comparison.bestAvailableMarketplace.opportunityScore}/100
                 </span>
               </div>
@@ -239,7 +239,7 @@ export function AllMarketplacesResults({
 
           {/* Comparative Matrix Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-line-subtle text-ink-tertiary">
                   <th className="pb-2 font-medium">Marketplace</th>
@@ -266,14 +266,14 @@ export function AllMarketplacesResults({
                         {label}
                       </td>
                       <td className="py-2.5">
-                        <Badge variant={cfg.badgeVariant} className="text-[11px]">
+                        <Badge variant={cfg.badgeVariant} className="text-label-sm">
                           <Icon className="h-2.5 w-2.5 mr-1 inline" />
                           {cfg.label}
                         </Badge>
                       </td>
                       <td className="py-2.5">
                         {isLive && score !== null ? (
-                          <span className={`px-2 py-0.5 rounded font-mono text-xs border ${getScoreBadgeClasses(score)}`}>
+                          <span className={`px-2 py-0.5 rounded font-mono text-sm border ${getScoreBadgeClasses(score)}`}>
                             {score}/100
                           </span>
                         ) : (
@@ -282,7 +282,7 @@ export function AllMarketplacesResults({
                       </td>
                       <td className="py-2.5">
                         {isLive && conf !== null ? (
-                          <span className="font-mono text-xs text-ink-secondary">
+                          <span className="font-mono text-sm text-ink-secondary">
                             {conf}%
                           </span>
                         ) : (
@@ -293,18 +293,18 @@ export function AllMarketplacesResults({
                         {isLive && availableSignals.length > 0 ? (
                           <div className="flex items-center gap-1 flex-wrap">
                             {availableSignals.map((g) => (
-                              <span key={g} className="px-1.5 py-0.5 rounded bg-white text-ink-secondary text-[10px] border border-line-subtle">
+                              <span key={g} className="px-1.5 py-0.5 rounded bg-white text-ink-secondary text-label-sm border border-line-subtle">
                                 {g}
                               </span>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-ink-tertiary text-[11px]">
+                          <span className="text-ink-tertiary text-meta">
                             {r.status === "PARTIAL" ? "Orders only" : "API integration required"}
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 text-[11px] text-ink-secondary">
+                      <td className="py-2.5 text-sm text-ink-secondary">
                         {isLive ? (
                           <span className="font-medium text-brand-primary">
                             {score !== null && score >= 80 ? "Strong Opportunity" : "Viable Channel"}
@@ -322,7 +322,7 @@ export function AllMarketplacesResults({
 
           {/* Honest System Limitations & Data Provenance */}
           {comparison.limitations.length > 0 && (
-            <div className="pt-2 border-t border-line-subtle/70 flex items-start gap-2 text-[11px] text-ink-tertiary bg-white/50 p-2 rounded-md">
+            <div className="pt-2 border-t border-line-subtle/70 flex items-start gap-2 text-meta text-ink-tertiary bg-white/50 p-2 rounded-md">
               <Info className="h-3.5 w-3.5 text-ink-secondary shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <span className="font-medium text-ink-secondary">Data Provenance & Channel Limitations:</span>
@@ -350,7 +350,7 @@ export function AllMarketplacesResults({
                 <Heading as="h3" size="h4">
                   {label}
                 </Heading>
-                <Badge variant={config.badgeVariant}>
+                <Badge variant={config.badgeVariant} className="text-label-sm">
                   <Icon className="h-3 w-3 mr-1 inline" />
                   {config.label}
                 </Badge>
@@ -359,15 +359,15 @@ export function AllMarketplacesResults({
               {result.status === "AVAILABLE" && (
                 <div className="flex items-center gap-3">
                   {result.summary?.averageOpportunityScore !== null && result.summary?.averageOpportunityScore !== undefined && (
-                    <div className="flex items-center gap-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 text-sm">
                       <span className="text-ink-tertiary">Avg Opportunity:</span>
-                      <span className={`px-2 py-0.5 rounded font-mono text-xs border ${getScoreBadgeClasses(result.summary.averageOpportunityScore)}`}>
+                      <span className={`px-2 py-0.5 rounded font-mono text-sm border ${getScoreBadgeClasses(result.summary.averageOpportunityScore)}`}>
                         {result.summary.averageOpportunityScore}/100
                       </span>
                     </div>
                   )}
                   {result.summary?.averageConfidence !== null && result.summary?.averageConfidence !== undefined && (
-                    <Badge variant="neutral" className="text-[11px] font-mono">
+                    <Badge variant="neutral" className="text-label-sm font-mono">
                       {result.summary.averageConfidence}% Confidence
                     </Badge>
                   )}
@@ -380,15 +380,15 @@ export function AllMarketplacesResults({
 
             {/* Signal availability indicator for active marketplace */}
             {result.summary && (result.summary.availableSignalGroups.length > 0 || result.summary.unavailableSignalGroups.length > 0) && (
-              <div className="flex items-center gap-2 flex-wrap text-xs text-ink-tertiary py-1">
+              <div className="flex items-center gap-2 flex-wrap text-sm text-ink-tertiary py-1">
                 <span className="font-medium text-ink-secondary">Evaluated signals:</span>
                 {result.summary.availableSignalGroups.map((group) => (
-                  <span key={group} className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-muted text-ink text-[11px] border border-line-subtle">
+                  <span key={group} className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-muted text-ink text-label-sm border border-line-subtle">
                     ✓ {group}
                   </span>
                 ))}
                 {result.summary.unavailableSignalGroups.map((group) => (
-                  <span key={group} className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-secondary text-ink-tertiary text-[11px] line-through">
+                  <span key={group} className="inline-flex items-center px-1.5 py-0.5 rounded bg-surface-secondary text-ink-tertiary text-label-sm line-through">
                     {group}
                   </span>
                 ))}
@@ -414,7 +414,7 @@ export function AllMarketplacesResults({
                         {product.imageUrl ? (
                           <SafeImage src={product.imageUrl} alt={product.title} className="h-14 w-14 rounded-md object-cover shrink-0 border border-line-subtle" />
                         ) : (
-                          <div className="h-14 w-14 rounded-md bg-surface-muted shrink-0 flex items-center justify-center text-ink-tertiary text-xs font-medium">
+                          <div className="h-14 w-14 rounded-md bg-surface-muted shrink-0 flex items-center justify-center text-ink-tertiary text-sm font-medium">
                             No image
                           </div>
                         )}
@@ -423,13 +423,13 @@ export function AllMarketplacesResults({
                             href={product.url || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs font-semibold text-ink hover:text-brand-primary line-clamp-2 transition-colors flex items-start justify-between gap-1"
+                            className="text-sm font-semibold text-ink hover:text-brand-primary line-clamp-2 transition-colors flex items-start justify-between gap-1"
                           >
                             <span>{product.title}</span>
                             <ExternalLink className="h-3 w-3 text-ink-tertiary shrink-0 mt-0.5" />
                           </a>
 
-                          <div className="flex items-center gap-2 mt-1 text-[11px] text-ink-tertiary flex-wrap">
+                          <div className="flex items-center gap-2 mt-1 text-meta text-ink-tertiary flex-wrap">
                             {typeof product.price === "number" && (
                               <span className="font-semibold text-ink-secondary">
                                 {formatMarketplacePrice(product.price, product.currency)}
@@ -445,20 +445,20 @@ export function AllMarketplacesResults({
                           {((product.categoryPath && product.categoryPath.length > 0) || (product.badges && product.badges.length > 0) || product.brand) && (
                             <div className="flex flex-wrap items-center gap-1 mt-1">
                               {product.brand && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">{product.brand}</span>
+                                <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">{product.brand}</span>
                               )}
                               {product.categoryPath && product.categoryPath.length > 0 && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-ink-secondary">
+                                <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-surface-muted text-ink-secondary">
                                   {product.categoryPath[product.categoryPath.length - 1]}
                                 </span>
                               )}
                               {product.badges?.slice(0, 2).map((b) => (
-                                <span key={b} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
+                                <span key={b} className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-[#FFF7E6] text-[#9A6700] border border-[#F2D591]/50">{b}</span>
                               ))}
                             </div>
                           )}
                           {product.bestSellerRank && product.bestSellerRank.length > 0 && (
-                            <div className="text-[10px] text-ink-tertiary mt-1">
+                            <div className="text-meta text-ink-tertiary mt-1">
                               {product.bestSellerRank.map((r) => `#${r.rank.toLocaleString()} in ${r.category}`).join(" · ")}
                             </div>
                           )}
@@ -469,16 +469,16 @@ export function AllMarketplacesResults({
                       {opp && (
                         <div className="mt-2.5 pt-2 border-t border-line-subtle flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded font-mono text-xs border ${getScoreBadgeClasses(opp.score)}`}>
+                            <span className={`px-1.5 py-0.5 rounded font-mono text-sm border ${getScoreBadgeClasses(opp.score)}`}>
                               {opp.score !== null ? opp.score : "—"}
                             </span>
-                            <span className="text-[11px] font-medium text-ink-secondary">
+                            <span className="text-meta font-medium text-ink-secondary">
                               {opp.tier || (opp.score && opp.score >= 80 ? "High Signal" : opp.score && opp.score >= 65 ? "Moderate" : "Low")}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] font-mono text-ink-tertiary">
+                            <span className="text-label-sm font-mono text-ink-tertiary">
                               {opp.confidence}% conf
                             </span>
                           </div>

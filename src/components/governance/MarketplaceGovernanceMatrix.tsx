@@ -38,17 +38,17 @@ export function MarketplaceGovernanceMatrix() {
   const getStatusBadge = (status: PolicyPermissionStatus) => {
     switch (status) {
       case "ALLOWED":
-        return <Badge variant="success" className="text-[10px] font-bold">ALLOWED</Badge>;
+        return <Badge variant="success" className="text-label-sm font-bold">ALLOWED</Badge>;
       case "CONDITIONALLY_ALLOWED":
-        return <Badge variant="info" className="text-[10px] font-bold">CONDITIONAL</Badge>;
+        return <Badge variant="info" className="text-label-sm font-bold">CONDITIONAL</Badge>;
       case "RESTRICTED":
-        return <Badge variant="warning" className="text-[10px] font-bold">RESTRICTED</Badge>;
+        return <Badge variant="warning" className="text-label-sm font-bold">RESTRICTED</Badge>;
       case "PROHIBITED":
-        return <Badge variant="danger" className="text-[10px] font-bold">PROHIBITED</Badge>;
+        return <Badge variant="danger" className="text-label-sm font-bold">PROHIBITED</Badge>;
       case "UNKNOWN":
       case "REQUIRES_REVIEW":
       default:
-        return <Badge variant="neutral" className="text-[10px] font-bold">REVIEW REQ</Badge>;
+        return <Badge variant="neutral" className="text-label-sm font-bold">REVIEW REQ</Badge>;
     }
   };
 
@@ -116,14 +116,14 @@ export function MarketplaceGovernanceMatrix() {
                       ? "info"
                       : "neutral"
                   }
-                  className="text-[10px] font-bold"
+                  className="text-label-sm font-bold"
                 >
                   {policy.complianceStatus.replace(/_/g, " ")}
                 </Badge>
               </div>
 
               {/* Source Permissions */}
-              <div className="space-y-1.5 text-xs">
+              <div className="space-y-1.5 text-sm">
                 <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border">
                   <span className="text-muted-foreground font-medium flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-sky-500" /> Public Web
@@ -147,9 +147,9 @@ export function MarketplaceGovernanceMatrix() {
               </div>
 
               {/* Retention & Rate Limit */}
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="p-2 rounded-lg border bg-muted/10">
-                  <span className="text-[9px] font-bold uppercase text-muted-foreground block">Max Retention</span>
+                  <span className="text-label-sm font-bold uppercase text-muted-foreground block">Max Retention</span>
                   <span className="font-bold text-foreground">
                     {policy.retentionRules.maxSnapshotRetentionDays
                       ? `${policy.retentionRules.maxSnapshotRetentionDays} Days`
@@ -158,7 +158,7 @@ export function MarketplaceGovernanceMatrix() {
                 </div>
 
                 <div className="p-2 rounded-lg border bg-muted/10">
-                  <span className="text-[9px] font-bold uppercase text-muted-foreground block">Rate Limit</span>
+                  <span className="text-label-sm font-bold uppercase text-muted-foreground block">Rate Limit</span>
                   <span className="font-bold text-foreground">
                     {policy.rateLimitRules.maxRequestsPerMinute} req/min
                   </span>
@@ -170,7 +170,7 @@ export function MarketplaceGovernanceMatrix() {
               onClick={() => setSelectedPolicy(policy)}
               size="compact"
               variant="secondary"
-              className="w-full text-xs font-bold"
+              className="w-full text-sm font-bold"
             >
               <Info className="w-3.5 h-3.5 mr-1.5" /> View Governance Details
             </Button>
@@ -185,7 +185,7 @@ export function MarketplaceGovernanceMatrix() {
             <div className="flex items-start justify-between border-b pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="neutral" className="text-[10px] font-bold uppercase">
+                  <Badge variant="neutral" className="text-label-sm font-bold uppercase">
                     Governance Policy
                   </Badge>
                   <Badge
@@ -196,7 +196,7 @@ export function MarketplaceGovernanceMatrix() {
                         ? "info"
                         : "neutral"
                     }
-                    className="text-[10px] font-bold"
+                    className="text-label-sm font-bold"
                   >
                     {selectedPolicy.complianceStatus.replace(/_/g, " ")}
                   </Badge>

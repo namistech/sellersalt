@@ -72,7 +72,7 @@ export function Topbar({
           >
             <Search aria-hidden className="h-4 w-4" />
             <span>Search…</span>
-            <kbd className="rounded-sm border border-line-subtle bg-surface-muted px-1.5 py-0.5 text-[11px] text-ink-tertiary">⌘K</kbd>
+            <kbd className="rounded-sm border border-line-subtle bg-surface-muted px-1.5 py-0.5 text-label-sm text-ink-tertiary">⌘K</kbd>
           </button>
         </Tooltip>
         <IconButton icon={<Search />} variant="tertiary" aria-label="Search" onClick={onOpenSearch} className="sm:hidden" />

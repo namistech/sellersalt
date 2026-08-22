@@ -88,11 +88,11 @@ export function AccountBrand({
             {displayName}
           </span>
           {isCustomOrg ? (
-            <span className="block truncate text-[11px] font-medium text-ink-tertiary capitalize">
+            <span className="block truncate text-xs font-medium text-ink-tertiary capitalize">
               {accountType} Workspace
             </span>
           ) : (
-            <span className="block truncate text-[11px] font-medium text-[#0E8F5D]">
+            <span className="block truncate text-xs font-medium text-[#0E8F5D]">
               Etsy Intelligence
             </span>
           )}

@@ -88,11 +88,11 @@ export function OpportunityCard({
       {/* 1. Top Badges & Save Action */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="neutral" className="capitalize text-[11px] flex items-center gap-1 font-semibold">
+          <Badge variant="neutral" className="capitalize text-label-sm flex items-center gap-1 font-semibold">
             {TYPE_ICONS[opportunity.type]}
             {opportunity.type}
           </Badge>
-          <Badge variant="neutral" className="capitalize text-[11px]">
+          <Badge variant="neutral" className="capitalize text-label-sm">
             {opportunity.marketplace}
           </Badge>
           {opportunity.momentum && opportunity.momentum !== "INSUFFICIENT_DATA" && (
@@ -104,7 +104,7 @@ export function OpportunityCard({
                   ? "info"
                   : "warning"
               }
-              className="text-[10px] flex items-center gap-1"
+              className="text-label-sm flex items-center gap-1"
             >
               {opportunity.momentum === "RISING" || opportunity.momentum === "ACCELERATING" ? (
                 <TrendingUp className="w-3 h-3" />
@@ -138,7 +138,7 @@ export function OpportunityCard({
             {opportunity.title}
           </h3>
           {opportunity.subtitle && (
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p className="text-sm text-muted-foreground line-clamp-1">
               {opportunity.subtitle}
             </p>
           )}
@@ -149,30 +149,30 @@ export function OpportunityCard({
             <span className="text-2xl font-black text-foreground">
               {opportunity.score !== null ? opportunity.score : "—"}
             </span>
-            <span className="text-xs text-muted-foreground">/100</span>
+            <span className="text-sm text-muted-foreground">/100</span>
           </div>
-          <span className="text-[11px] text-muted-foreground block">
+          <span className="text-meta text-muted-foreground block">
             {opportunity.confidence}% confidence
           </span>
         </div>
       </div>
 
       {/* 3. Verdict Banner */}
-      <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 text-xs flex items-center justify-between gap-2">
+      <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 text-sm flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
           <span className="font-semibold text-foreground">
             {opportunity.verdict}
           </span>
         </div>
-        <Badge variant={opportunity.verdictVariant} className="text-[10px]">
+        <Badge variant={opportunity.verdictVariant} className="text-label-sm">
           {opportunity.tier}
         </Badge>
       </div>
 
       {/* 4. Evidence Summary & Expand Toggle */}
       <div className="space-y-2 pt-1">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
             {opportunity.supportingSignals.length} supporting • {opportunity.negativeSignals.length} risks
           </span>
@@ -190,14 +190,14 @@ export function OpportunityCard({
         </div>
 
         {expanded && (
-          <div className="p-3.5 rounded-lg bg-card border border-border text-xs space-y-3 pt-3">
+          <div className="p-3.5 rounded-lg bg-card border border-border text-sm space-y-3 pt-3">
             {/* Why Positive */}
             {opportunity.explanation.whyPositive.length > 0 && (
               <div className="space-y-1">
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400 block text-[11px]">
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400 block text-label-sm">
                   Positive Evidence:
                 </span>
-                <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-[11px]">
+                <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-sm">
                   {opportunity.explanation.whyPositive.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -208,10 +208,10 @@ export function OpportunityCard({
             {/* Watch Risks */}
             {opportunity.explanation.watchNegative.length > 0 && (
               <div className="space-y-1">
-                <span className="font-semibold text-amber-600 dark:text-amber-400 block text-[11px]">
+                <span className="font-semibold text-amber-600 dark:text-amber-400 block text-label-sm">
                   Risk / Friction Points:
                 </span>
-                <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-[11px]">
+                <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-sm">
                   {opportunity.explanation.watchNegative.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -222,11 +222,11 @@ export function OpportunityCard({
             {/* Unknown Signals */}
             {opportunity.explanation.unknownSignals.length > 0 && (
               <div className="space-y-1 pt-1 border-t">
-                <span className="font-semibold text-muted-foreground block text-[11px] flex items-center gap-1">
+                <span className="font-semibold text-muted-foreground block text-label-sm flex items-center gap-1">
                   <HelpCircle className="w-3 h-3" />
                   Unobserved / Unknown Signals:
                 </span>
-                <ul className="space-y-1 list-disc pl-4 text-muted-foreground/80 text-[10px]">
+                <ul className="space-y-1 list-disc pl-4 text-muted-foreground/80 text-meta">
                   {opportunity.explanation.unknownSignals.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -235,7 +235,7 @@ export function OpportunityCard({
             )}
 
             {/* Recommended Action & Validation Button */}
-            <div className="pt-2 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+            <div className="pt-2 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
               <div className="flex-1">
                 <span className="font-semibold text-foreground mr-1">Next Action:</span>
                 <span className="text-muted-foreground">{opportunity.explanation.recommendedAction}</span>
@@ -243,7 +243,7 @@ export function OpportunityCard({
               <a
                 href={`/validate?q=${encodeURIComponent(opportunity.title)}&marketplace=${encodeURIComponent(opportunity.marketplace)}`}
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded bg-primary text-primary-foreground font-semibold text-[10px] hover:brightness-110 transition-all shrink-0"
+                className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 transition-all shrink-0"
               >
                 Validate Product
                 <ArrowRight className="w-3 h-3" />

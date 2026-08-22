@@ -212,11 +212,11 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                 )}
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-extrabold truncate flex items-center gap-1.5 text-ink">
+                <div className="text-sm font-extrabold truncate flex items-center gap-1.5 text-ink">
                   <span>{assistantName}</span>
-                  <span className="text-[10px] font-normal text-ink-tertiary">Etsy Copilot</span>
+                  <span className="text-label-sm font-normal text-ink-tertiary">Etsy Copilot</span>
                 </div>
-                <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
+                <div className="text-meta text-ink-tertiary flex items-center gap-1.5 mt-0.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D] inline-block" />
                   <span>Domain Tool Orchestrator</span>
                 </div>
@@ -340,13 +340,13 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                                 </div>
 
                                 {card.subtitle && (
-                                  <div className="text-[11px] text-ink-secondary">
+                                  <div className="text-sm text-ink-secondary">
                                     {card.subtitle}
                                   </div>
                                 )}
 
                                 {card.metrics && (
-                                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-mono">
+                                  <div className="grid grid-cols-2 gap-1.5 pt-1 text-label-sm font-mono">
                                     {card.metrics.map((m, idx) => (
                                       <div key={idx} className="bg-white p-1.5 rounded border border-line">
                                         <span className="text-ink-tertiary">{m.label}: </span>
@@ -363,7 +363,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                                         variant="secondary"
                                         size="compact"
                                         fullWidth
-                                        className="text-[11px] h-7 bg-white hover:bg-[#F4F3EF]"
+                                        className="text-label-sm h-7 bg-white hover:bg-[#F4F3EF]"
                                       >
                                         View Details →
                                       </Button>
@@ -381,7 +381,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                             {msg.actions.map((act, idx) =>
                               act.href ? (
                                 <Link key={idx} href={act.href} onClick={() => setIsOpen(false)}>
-                                  <Button size="compact" variant="primary" className="text-[11px] bg-[#0E8F5D] hover:bg-[#0C7A52]">
+                                  <Button size="compact" variant="primary" className="text-label-sm bg-[#0E8F5D] hover:bg-[#0C7A52]">
                                     {act.label}
                                   </Button>
                                 </Link>
@@ -390,7 +390,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                                   key={idx}
                                   type="button"
                                   onClick={() => handleSendQuery(act.actionKey!)}
-                                  className="rounded-lg border border-[#0E8F5D] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E8F5D] hover:bg-[#0E8F5D]/10 transition"
+                                  className="rounded-lg border border-[#0E8F5D] bg-white px-2.5 py-1 text-label-sm font-semibold text-[#0E8F5D] hover:bg-[#0E8F5D]/10 transition"
                                 >
                                   {act.label}
                                 </button>
@@ -406,7 +406,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                 {/* Vertical Prebuilt Queries */}
                 {showSuggestions && (
                   <div className="pt-2 space-y-2">
-                    <div className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider px-1">
+                    <div className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider px-1">
                       Priority Research Queries
                     </div>
                     <div className="space-y-1.5">
@@ -416,7 +416,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                           type="button"
                           onClick={() => handleSendQuery(query)}
                           disabled={loading}
-                          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#E7FAF1] text-xs font-medium text-ink hover:text-[#0E8F5D] border border-line hover:border-[#0E8F5D]/40 transition-colors flex items-center justify-between group shadow-2xs"
+                          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#E7FAF1] text-sm font-medium text-ink hover:text-[#0E8F5D] border border-line hover:border-[#0E8F5D]/40 transition-colors flex items-center justify-between group shadow-2xs"
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             <Sparkles className="h-3.5 w-3.5 text-[#FFB020] shrink-0" />

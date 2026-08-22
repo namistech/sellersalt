@@ -543,13 +543,13 @@ export default function KeywordResearchPage() {
                 sidePanel={
                   topRecommended ? (
                     <div className="space-y-3">
-                      <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                      <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
                         Top Recommended Target Tag
                       </div>
                       <div className="text-base font-extrabold text-white truncate font-mono">
                         &ldquo;{topRecommended.term}&rdquo;
                       </div>
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span className="text-[#9EAA9F]">Sample Frequency:</span>
                           <span className="text-[#16C784] font-bold">{topRecommended.percentage}%</span>
@@ -567,7 +567,7 @@ export default function KeywordResearchPage() {
                   ) : undefined
                 }
               >
-                <div className="flex flex-wrap items-center gap-4 text-xs text-[#9EAA9F] pt-1">
+                <div className="flex flex-wrap items-center gap-4 text-sm text-[#9EAA9F] pt-1">
                   <span>Harvested: <strong className="text-white font-mono">{searchResponse.keywords.length}</strong> phrases</span>
                   <span>·</span>
                   <span>Long-Tail Ratio: <strong className="text-[#16C784] font-mono">{searchResponse.keywords.length > 0 ? Math.round((searchResponse.keywords.filter((k) => k.tailClassification === "LONG_TAIL").length / searchResponse.keywords.length) * 100) : 0}%</strong></span>
@@ -587,20 +587,20 @@ export default function KeywordResearchPage() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">{marketplaceLabel} Supply</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase">{marketplaceLabel} Supply</span>
                 <DataProvenanceBadge type={isEtsy ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
                 {searchResponse.summary.totalEtsySupply.toLocaleString()}
               </div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 Competing active listings
               </div>
             </Card>
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Search Volume</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase">Search Volume</span>
                 <DataProvenanceBadge type="EXTERNAL_DATA" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
@@ -613,7 +613,7 @@ export default function KeywordResearchPage() {
                   <span className="text-base text-ink-tertiary font-mono font-normal">UNAVAILABLE</span>
                 )}
               </div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 {typeof searchResponse.summary.searchVolume === "number"
                   ? "Google Keyword Planner data"
                   : "Google Keyword Planner required"}
@@ -622,20 +622,20 @@ export default function KeywordResearchPage() {
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Avg. Observed Price</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase">Avg. Observed Price</span>
                 <DataProvenanceBadge type={isEtsy ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
                 ${searchResponse.summary.avgPrice.toFixed(2)}
               </div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 Mean across top {searchResponse.summary.sampledListingCount} listings
               </div>
             </Card>
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Demand Proxy</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase">Demand Proxy</span>
                 <DataProvenanceBadge type="ESTIMATED" />
               </div>
               <div className="text-2xl font-extrabold text-[#0E8F5D] font-mono pt-1">
@@ -648,25 +648,25 @@ export default function KeywordResearchPage() {
                   <span className="text-base text-ink-tertiary font-sans font-normal">Unavailable</span>
                 )}
               </div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 {isEtsy ? "Avg. buyer favorites" : `${marketplaceLabel} has no "favorites"`}
               </div>
             </Card>
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Competition</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase">Competition</span>
                 <DataProvenanceBadge type="SELLERSALT_SCORE" />
               </div>
               <div className="flex items-center gap-2 pt-1">
-                <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${COMPETITION_COLORS[searchResponse.summary.competitionLevel]}`}>
+                <div className={`px-2.5 py-0.5 rounded-full text-label-sm font-bold border ${COMPETITION_COLORS[searchResponse.summary.competitionLevel]}`}>
                   {searchResponse.summary.competitionLevel.replace("_", " ")}
                 </div>
-                <span className="text-xs font-mono font-bold text-ink">
+                <span className="text-sm font-mono font-bold text-ink">
                   {searchResponse.summary.competitionScore}/100
                 </span>
               </div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 Page 1 barrier score
               </div>
             </Card>
@@ -778,13 +778,13 @@ export default function KeywordResearchPage() {
             <div className="flex flex-wrap items-center gap-3 text-xs">
               {/* Word count filter */}
               <div className="flex items-center gap-1 bg-[#FAFAF8] p-1 rounded-lg border border-line">
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase px-1.5">Words:</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase px-1.5">Words:</span>
                 {(["all", "1", "2", "3", "4plus"] as WordFilter[]).map((w) => (
                   <button
                     key={w}
                     type="button"
                     onClick={() => setWordFilter(w)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                    className={`px-2 py-0.5 rounded text-label-sm font-semibold transition-colors ${
                       wordFilter === w
                         ? "bg-[#0E8F5D] text-white"
                         : "text-ink-secondary hover:text-ink"
@@ -803,14 +803,14 @@ export default function KeywordResearchPage() {
                   onChange={(e) => setOnlyTagCompliant(e.target.checked)}
                   className="rounded border-line text-[#0E8F5D] focus:ring-[#0E8F5D]"
                 />
-                <span className="text-[11px] font-semibold text-ink">≤ 20 Chars (Etsy Compliant)</span>
+                <span className="text-label-sm font-semibold text-ink">≤ 20 Chars (Etsy Compliant)</span>
               </label>
 
               {/* Intent classification */}
               <select
                 value={selectedIntent}
                 onChange={(e) => setSelectedIntent(e.target.value)}
-                className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ink"
+                className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink"
               >
                 <option value="ALL">All Search Intents</option>
                 <option value="PRODUCT_TYPE">Product Types</option>
@@ -823,7 +823,7 @@ export default function KeywordResearchPage() {
               <select
                 value={selectedComp}
                 onChange={(e) => setSelectedComp(e.target.value)}
-                className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ink"
+                className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink"
               >
                 <option value="ALL">All Competition Levels</option>
                 <option value="VERY_LOW">Very Low Competition</option>
@@ -839,7 +839,7 @@ export default function KeywordResearchPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-ink"
+                  className="bg-[#FAFAF8] border border-line rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink"
                 >
                   <option value="frequency">Sort: Most Frequent</option>
                   <option value="relevance">Sort: Relevance Score</option>
@@ -955,14 +955,14 @@ export default function KeywordResearchPage() {
                           {typeof item.externalMonthlyVolume === "number" ? (
                             <span className="font-bold text-ink">
                               {item.externalMonthlyVolume.toLocaleString()}{" "}
-                              <span className="text-[10px] text-ink-tertiary font-sans font-normal">/mo</span>
+                              <span className="text-meta text-ink-tertiary font-sans font-normal">/mo</span>
                             </span>
                           ) : (
-                            <span className="text-[10px] text-ink-tertiary font-mono">UNAVAILABLE</span>
+                            <span className="text-label-sm text-ink-tertiary font-mono">UNAVAILABLE</span>
                           )}
                         </td>
                         <td className="p-3 font-mono font-bold text-ink tabular-nums">
-                          {item.frequency}x <span className="text-[10px] text-ink-tertiary font-sans font-normal">({item.percentage}%)</span>
+                          {item.frequency}x <span className="text-meta text-ink-tertiary font-sans font-normal">({item.percentage}%)</span>
                         </td>
                         <td className="p-3 font-mono font-bold text-[#0E8F5D] tabular-nums">
                           {item.relevanceScore}%
@@ -971,7 +971,7 @@ export default function KeywordResearchPage() {
                           {item.estimatedDemandSignal}
                         </td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${COMPETITION_COLORS[item.competitionLevel]}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-label-sm font-bold border ${COMPETITION_COLORS[item.competitionLevel]}`}>
                             {item.competitionLevel.replace("_", " ")}
                           </span>
                         </td>
@@ -981,7 +981,7 @@ export default function KeywordResearchPage() {
                             size="compact"
                             disabled={isSavedPlanner}
                             onClick={() => handleAddTermToPlanner(item)}
-                            className="text-[10px] px-2 py-1 bg-[#0E8F5D] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                            className="text-label-sm px-2.5 py-1 bg-[#0E8F5D] text-white disabled:bg-surface-muted disabled:text-ink-tertiary font-semibold"
                           >
                             {isSavedPlanner ? "Added" : "+ Planner"}
                           </Button>

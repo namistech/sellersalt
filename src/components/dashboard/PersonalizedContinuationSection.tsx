@@ -47,19 +47,19 @@ export function PersonalizedContinuationSection({
     switch (verdict.toUpperCase()) {
       case "PURSUE":
       case "STRONG_CANDIDATE":
-        return <Badge variant="success" className="text-[9px] font-bold">PURSUE</Badge>;
+        return <Badge variant="success" className="text-label-sm font-bold">PURSUE</Badge>;
       case "INVESTIGATE":
       case "WORTH_INVESTIGATING":
-        return <Badge variant="info" className="text-[9px] font-bold">INVESTIGATE</Badge>;
+        return <Badge variant="info" className="text-label-sm font-bold">INVESTIGATE</Badge>;
       case "TEST":
       case "MIXED_SIGNALS":
-        return <Badge variant="warning" className="text-[9px] font-bold">TEST</Badge>;
+        return <Badge variant="warning" className="text-label-sm font-bold">TEST</Badge>;
       case "WAIT":
       case "REJECT":
       case "HIGH_COMPETITION":
-        return <Badge variant="danger" className="text-[9px] font-bold">{verdict}</Badge>;
+        return <Badge variant="danger" className="text-label-sm font-bold">{verdict}</Badge>;
       default:
-        return <Badge variant="neutral" className="text-[9px] font-bold">{verdict}</Badge>;
+        return <Badge variant="neutral" className="text-label-sm font-bold">{verdict}</Badge>;
     }
   };
 
@@ -85,18 +85,18 @@ export function PersonalizedContinuationSection({
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Clock className="h-3.5 w-3.5" />
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-primary">
+            <span className="text-label-sm font-bold uppercase tracking-wider text-primary">
               Recent Decisions & Workspaces
             </span>
           </div>
           <h2 className="text-xl font-black text-foreground">Continue Where You Left Off</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Pick up active product evaluations, validated ideas, and workspace planning.
           </p>
         </div>
 
         <Link href="/research-center">
-          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+          <span className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline">
             View All Research History <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </Link>
@@ -114,7 +114,7 @@ export function PersonalizedContinuationSection({
                   <div className="p-1.5 rounded-lg bg-background border">
                     {getTypeIcon(item.type)}
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  <span className="text-label-sm font-bold uppercase tracking-wider text-muted-foreground">
                     {item.type.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -124,12 +124,12 @@ export function PersonalizedContinuationSection({
               <div>
                 <h3 className="text-sm font-bold text-foreground line-clamp-1">{item.title}</h3>
                 {item.subtitle && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.subtitle}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{item.subtitle}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t text-[11px]">
+            <div className="flex items-center justify-between pt-2 border-t text-meta">
               <span className="text-muted-foreground">
                 {typeof item.timestamp === "string" ? item.timestamp : new Date(item.timestamp).toLocaleDateString()}
               </span>
@@ -138,7 +138,7 @@ export function PersonalizedContinuationSection({
                 href={item.href}
                 size="compact"
                 variant="secondary"
-                className="text-xs font-semibold px-2.5 h-7"
+                className="text-sm font-semibold px-2.5 h-7"
               >
                 <span>Resume</span>
                 <ArrowRight className="w-3 h-3 ml-1" />

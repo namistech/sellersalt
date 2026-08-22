@@ -351,7 +351,7 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
                 <div className="font-bold text-sm text-[#141B16]">Direct Email</div>
                 <a
                   href={`mailto:${supportEmail}`}
-                  className="text-xs font-semibold text-[#16C784] hover:underline"
+                  className="text-sm font-semibold text-[#16C784] hover:underline"
                 >
                   {supportEmail}
                 </a>
@@ -364,7 +364,7 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
               </div>
               <div>
                 <div className="font-bold text-sm text-[#141B16]">Response Time</div>
-                <div className="text-xs text-[#7C847E]">Usually within 24 hours on business days</div>
+                <div className="text-sm text-[#7C847E]">Usually within 24 hours on business days</div>
               </div>
             </div>
 
@@ -374,21 +374,21 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
               </div>
               <div>
                 <div className="font-bold text-sm text-[#141B16]">Security & Privacy</div>
-                <div className="text-xs text-[#7C847E]">Messages handled in strict accordance with our Privacy Policy.</div>
+                <div className="text-sm text-[#7C847E]">Messages handled in strict accordance with our Privacy Policy.</div>
               </div>
             </div>
           </Card>
 
           <Card padding="md" className="border-[#E3E6E0] bg-[#FAFAF8] shadow-xs space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-[#141B16]">
+            <div className="flex items-center gap-1.5 text-sm font-bold text-[#141B16]">
               <Sparkles className="h-3.5 w-3.5 text-[#FFB020]" />
               Ready to explore opportunities?
             </div>
-            <p className="text-xs text-[#525B55] leading-relaxed">
+            <p className="text-sm text-[#525B55] leading-relaxed">
               Start researching verified Etsy sales velocity and high-converting product niches.
             </p>
             <Link href="/checkout?plan=PRO" className="block pt-1">
-              <Button variant="secondary" size="compact" fullWidth className="text-xs font-semibold">
+              <Button variant="secondary" size="compact" fullWidth className="text-sm font-semibold">
                 Get Started →
               </Button>
             </Link>

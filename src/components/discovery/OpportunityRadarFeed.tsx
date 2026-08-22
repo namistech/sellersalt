@@ -72,37 +72,37 @@ export function OpportunityRadarFeed({
         {/* Pulse Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 pt-2">
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Discovered</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Discovered</span>
             <span className="text-lg font-black text-foreground">{pulse.totalOpportunitiesDiscovered}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Emerging</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Emerging</span>
             <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">{pulse.emergingCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Rising</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Rising</span>
             <span className="text-lg font-black text-sky-600 dark:text-sky-400">{pulse.risingCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Underserved</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Underserved</span>
             <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{pulse.underservedCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Price Gaps</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Price Gaps</span>
             <span className="text-lg font-black text-amber-600 dark:text-amber-400">{pulse.priceGapCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Cross-Market</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Cross-Market</span>
             <span className="text-lg font-black text-primary">{pulse.crossMarketplaceCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-muted/20 border text-center space-y-0.5">
-            <span className="text-[9px] text-muted-foreground uppercase font-bold block">Avg Score</span>
+            <span className="text-label-sm text-muted-foreground uppercase font-bold block">Avg Score</span>
             <span className="text-lg font-black text-foreground">{pulse.averageScore}/100</span>
           </div>
         </div>
@@ -129,13 +129,13 @@ export function OpportunityRadarFeed({
           <div key={sec.id} className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <span>{sec.title}</span>
-                  <Badge variant="neutral" className="text-[10px]">
+                  <Badge variant="neutral" className="text-label-sm">
                     {sec.opportunities.length}
                   </Badge>
                 </h3>
-                <p className="text-xs text-muted-foreground">{sec.description}</p>
+                <p className="text-sm text-muted-foreground">{sec.description}</p>
               </div>
             </div>
 
@@ -148,21 +148,21 @@ export function OpportunityRadarFeed({
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Badge variant="neutral" className="text-[10px] uppercase font-bold">
+                      <Badge variant="neutral" className="text-label-sm uppercase font-bold">
                         {opp.type.replace(/_/g, " ")}
                       </Badge>
-                      <span className="text-xs font-black text-primary">
+                      <span className="text-sm font-black text-primary">
                         {opp.score.compositeScore}/100
                       </span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-foreground line-clamp-2">{opp.title}</h4>
-                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    <h4 className="text-sm font-bold text-foreground line-clamp-2">{opp.title}</h4>
+                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                       {opp.explanation.whyFound}
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between pt-2 border-t text-meta text-muted-foreground">
                     <span className="capitalize font-semibold">{opp.marketplace}</span>
                     <span className="text-primary font-bold flex items-center">
                       Inspect <ChevronRight className="w-3 h-3 ml-0.5" />

@@ -284,35 +284,35 @@ export function WorkspaceClient({
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
               <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Active Listings</div>
+                <div className="text-label-sm uppercase font-bold text-[#9EAA9F]">Active Listings</div>
                 <div className="text-base font-extrabold text-white">
                   {ownShop.actualData.activeListingsCount}
                 </div>
-                <div className="text-[9px] text-[#16C784]">[ACTUAL ETSY DATA]</div>
+                <div className="text-meta text-[#16C784]">[ACTUAL ETSY DATA]</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Est. Monthly Sales</div>
+                <div className="text-label-sm uppercase font-bold text-[#9EAA9F]">Est. Monthly Sales</div>
                 <div className="text-base font-extrabold text-white">
                   ${ownShop.estimatedMetrics.estMonthlyRevenue.toLocaleString()}
                 </div>
-                <div className="text-[9px] text-[#4E9FFF]">[ESTIMATED]</div>
+                <div className="text-meta text-[#4E9FFF]">[ESTIMATED]</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Tag Gaps Detected</div>
+                <div className="text-label-sm uppercase font-bold text-[#9EAA9F]">Tag Gaps Detected</div>
                 <div className="text-base font-extrabold text-[#FFB020]">
                   {ownShop.seoSummary.listingsWithTagGapsCount} listings
                 </div>
-                <div className="text-[9px] text-[#9EAA9F]">Unused 13-tag slots</div>
+                <div className="text-meta text-[#9EAA9F]">Unused 13-tag slots</div>
               </div>
 
               <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-                <div className="text-[10px] uppercase font-bold text-[#9EAA9F]">Underperforming</div>
+                <div className="text-label-sm uppercase font-bold text-[#9EAA9F]">Underperforming</div>
                 <div className="text-base font-extrabold text-[#FF6B6B]">
                   {ownShop.underperformingListings.length} listings
                 </div>
-                <div className="text-[9px] text-[#9EAA9F]">Below category benchmark</div>
+                <div className="text-meta text-[#9EAA9F]">Below category benchmark</div>
               </div>
             </div>
           </div>
@@ -324,45 +324,45 @@ export function WorkspaceClient({
                 <ShieldCheck className="h-4 w-4 text-[#0E8F5D]" />
                 Etsy Connector Scope & Capability Matrix
               </h4>
-              <span className="text-[11px] text-ink-tertiary">Real-time OAuth scope validation</span>
+              <span className="text-meta text-ink-tertiary">Real-time OAuth scope validation</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Shop & Listing Read */}
-              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-ink">{ownShop.capabilities.shopRead.label}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D]">
+                  <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#E7FAF1] text-[#0E8F5D]">
                     ✓ {ownShop.capabilities.shopRead.state}
                   </span>
                 </div>
-                <p className="text-[11px] text-ink-secondary leading-snug">
+                <p className="text-meta text-ink-secondary leading-snug">
                   {ownShop.capabilities.shopRead.details}
                 </p>
               </div>
 
               {/* Draft Creation */}
-              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-ink">{ownShop.capabilities.draftCreation.label}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFF9EB] text-[#664400]">
+                  <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#FFF9EB] text-[#664400]">
                     ⚠ {ownShop.capabilities.draftCreation.state}
                   </span>
                 </div>
-                <p className="text-[11px] text-ink-secondary leading-snug">
+                <p className="text-meta text-ink-secondary leading-snug">
                   {ownShop.capabilities.draftCreation.details}
                 </p>
               </div>
 
               {/* Direct Publishing (Rule 9 Gate) */}
-              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-xs">
+              <div className="p-3 rounded-xl border border-line bg-[#FAFAF8] space-y-1.5 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-ink">{ownShop.capabilities.directPublishing.label}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-surface-secondary text-ink-tertiary">
+                  <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-surface-secondary text-ink-tertiary">
                     🔒 {ownShop.capabilities.directPublishing.state}
                   </span>
                 </div>
-                <p className="text-[11px] text-ink-secondary leading-snug">
+                <p className="text-meta text-ink-secondary leading-snug">
                   {ownShop.capabilities.directPublishing.details}
                 </p>
               </div>
@@ -377,13 +377,13 @@ export function WorkspaceClient({
                   <Zap className="h-4 w-4 text-[#FFB020]" />
                   Listing Optimization Queue ({ownShop.optimizationQueue.length} items)
                 </h4>
-                <p className="text-xs text-ink-tertiary">
+                <p className="text-sm text-ink-tertiary">
                   Listings with missing 13-tag slots or velocity trailing category forecast.
                 </p>
               </div>
               <Link
                 href="/seo"
-                className="text-xs font-bold text-[#0E8F5D] hover:underline"
+                className="text-sm font-bold text-[#0E8F5D] hover:underline"
               >
                 Open Full SEO Engine →
               </Link>
@@ -397,25 +397,25 @@ export function WorkspaceClient({
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                     <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFF9EB] text-[#664400]">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#FFF9EB] text-[#664400]">
                           {item.tagSlotsRemaining > 0 ? `${item.tagSlotsRemaining} Empty Tag Slots` : "Below Velocity Forecast"}
                         </span>
-                        <span className="text-ink-tertiary text-[11px]">Listing #{item.listingId}</span>
+                        <span className="text-ink-tertiary text-meta">Listing #{item.listingId}</span>
                         <DataProvenanceBadge type="SELLERSALT_SCORE" />
                       </div>
-                      <h5 className="text-xs font-bold text-ink">{item.title}</h5>
-                      <p className="text-[11px] text-ink-secondary">{item.underperformanceReason}</p>
+                      <h5 className="text-sm font-bold text-ink">{item.title}</h5>
+                      <p className="text-meta text-ink-secondary">{item.underperformanceReason}</p>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <div className="text-[10px] uppercase text-ink-tertiary font-bold">SEO Score</div>
+                        <div className="text-label-sm uppercase text-ink-tertiary font-bold">SEO Score</div>
                         <div className="text-sm font-extrabold text-[#0E8F5D]">{item.seoScore}/100</div>
                       </div>
                       <Link
                         href={item.nextAction.actionHref || "/seo"}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
+                        className="px-3 py-1.5 rounded-lg text-sm font-bold bg-[#141B16] text-white hover:bg-[#202C23] transition shadow-2xs"
                       >
                         {item.nextAction.actionLabel} →
                       </Link>
@@ -440,7 +440,7 @@ export function WorkspaceClient({
                 <Scale className="h-5 w-5 text-[#0E8F5D]" />
                 Multi-Opportunity Comparison & Decision Mode
               </h3>
-              <p className="text-xs text-ink-tertiary">
+              <p className="text-sm text-ink-tertiary">
                 Evaluate trade-offs across margins, demand velocity, review barriers, and launch safety.
               </p>
             </div>
@@ -455,17 +455,17 @@ export function WorkspaceClient({
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#141B16] text-white">
+                    <span className="px-2 py-0.5 rounded text-label-sm font-bold bg-[#141B16] text-white">
                       {idx === 0 ? "🏆 Top Opportunity" : idx === 1 ? "💰 Top Margin" : "🛡️ Safest Entry"}
                     </span>
-                    <span className="text-xs font-extrabold text-[#0E8F5D]">{opp.opportunityScore}/100</span>
+                    <span className="text-sm font-extrabold text-[#0E8F5D]">{opp.opportunityScore}/100</span>
                   </div>
 
-                  <h5 className="text-xs font-bold text-ink line-clamp-2 leading-tight">
+                  <h5 className="text-sm font-bold text-ink line-clamp-2 leading-tight">
                     {opp.listingTitle}
                   </h5>
 
-                  <div className="space-y-1 text-xs pt-1">
+                  <div className="space-y-1 text-sm pt-1">
                     <div className="flex justify-between">
                       <span className="text-ink-tertiary">Category:</span>
                       <strong className="text-ink truncate max-w-[140px]">{opp.category}</strong>
@@ -491,7 +491,7 @@ export function WorkspaceClient({
 
                 <Link
                   href={opp.nextBestAction.actionHref || "/planner"}
-                  className="w-full text-center px-3 py-1.5 text-xs font-bold rounded-lg bg-[#141B16] text-white hover:bg-[#202C23] transition"
+                  className="w-full text-center px-3 py-1.5 text-sm font-bold rounded-lg bg-[#141B16] text-white hover:bg-[#202C23] transition"
                 >
                   Advance to Strategy →
                 </Link>

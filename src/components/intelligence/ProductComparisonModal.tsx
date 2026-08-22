@@ -94,38 +94,38 @@ export function ProductComparisonModal({
           {/* Top Shared Insights Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-[#FAFAF8] border border-line">
             <div>
-              <div className="text-[11px] font-bold text-ink-tertiary uppercase">Highest Velocity</div>
+              <div className="text-label-sm font-bold text-ink-tertiary uppercase">Highest Velocity</div>
               <div className="font-bold text-sm text-[#0E8F5D] mt-0.5 truncate">
                 {comparison.highestVelocityProduct.listing.title}
               </div>
-              <div className="text-xs text-ink-secondary">
+              <div className="text-sm text-ink-secondary">
                 {comparison.highestVelocityProduct.signals.estDailySales.toFixed(1)} sales/day
               </div>
             </div>
 
             <div>
-              <div className="text-[11px] font-bold text-ink-tertiary uppercase">Lowest Competition</div>
+              <div className="text-label-sm font-bold text-ink-tertiary uppercase">Lowest Competition</div>
               <div className="font-bold text-sm text-blue-600 mt-0.5 truncate">
                 {comparison.lowestCompetitionProduct.listing.title}
               </div>
-              <div className="text-xs text-ink-secondary">
+              <div className="text-sm text-ink-secondary">
                 {comparison.lowestCompetitionProduct.shop.reviewCount} total reviews
               </div>
             </div>
 
             <div>
-              <div className="text-[11px] font-bold text-ink-tertiary uppercase">Price Sweet Spot</div>
+              <div className="text-label-sm font-bold text-ink-tertiary uppercase">Price Sweet Spot</div>
               {comparison.priceRange ? (
                 <>
                   <div className="font-mono font-bold text-sm text-ink mt-0.5">
                     ${comparison.priceRange.min.toFixed(2)} – ${comparison.priceRange.max.toFixed(2)}
                   </div>
-                  <div className="text-xs text-ink-secondary">
+                  <div className="text-sm text-ink-secondary">
                     Avg: ${comparison.priceRange.average.toFixed(2)}
                   </div>
                 </>
               ) : (
-                <div className="text-xs text-ink-tertiary mt-0.5">Price unavailable for this sample</div>
+                <div className="text-sm text-ink-tertiary mt-0.5">Price unavailable for this sample</div>
               )}
             </div>
           </div>
@@ -133,12 +133,12 @@ export function ProductComparisonModal({
           {/* Shared Tags Cloud */}
           {comparison.sharedTags.length > 0 && (
             <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/60 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase">
+              <div className="flex items-center gap-1.5 text-label-sm font-bold text-amber-900 uppercase">
                 <Tag className="h-3.5 w-3.5 text-amber-600" /> High-Conviction Shared Tags across all selected products:
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {comparison.sharedTags.map((tag, i) => (
-                  <Badge key={i} variant="warning" className="text-xs font-semibold">
+                  <Badge key={i} variant="warning" className="text-label-sm font-semibold">
                     {tag}
                   </Badge>
                 ))}
@@ -177,18 +177,18 @@ export function ProductComparisonModal({
                           className="h-36 w-full rounded-lg object-cover border border-line"
                         />
                       ) : (
-                        <div className="h-36 w-full rounded-lg bg-surface-muted border border-line flex items-center justify-center text-xs font-bold text-ink-tertiary">
+                        <div className="h-36 w-full rounded-lg bg-surface-muted border border-line flex items-center justify-center text-sm font-bold text-ink-tertiary">
                           ETSY
                         </div>
                       )}
 
                       {isOpportunityLeader && (
-                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#0E8F5D] text-white text-[10px] font-bold shadow-xs">
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-[#0E8F5D] text-white text-label-sm font-bold shadow-xs">
                           ★ Top Radar
                         </span>
                       )}
                       {isVelocityLeader && (
-                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500 text-white text-[10px] font-bold shadow-xs">
+                        <span className="absolute top-2 right-2 px-2 py-0.5 rounded bg-amber-500 text-white text-label-sm font-bold shadow-xs">
                           🔥 Top Velocity
                         </span>
                       )}
@@ -196,7 +196,7 @@ export function ProductComparisonModal({
 
                     {/* Title & Price */}
                     <div>
-                      <div className="font-bold text-xs text-ink line-clamp-2" title={item.listing.title}>
+                      <div className="font-bold text-sm text-ink line-clamp-2" title={item.listing.title}>
                         {item.listing.title}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
@@ -208,7 +208,7 @@ export function ProductComparisonModal({
                     </div>
 
                     {/* Opportunity Radar Metrics */}
-                    <div className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle space-y-1.5 text-xs">
+                    <div className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle space-y-1.5 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-ink-tertiary">Radar Score:</span>
                         <span className="font-mono font-bold text-[#0E8F5D]">
@@ -243,12 +243,12 @@ export function ProductComparisonModal({
 
                     {/* Tags preview */}
                     <div className="space-y-1">
-                      <div className="text-[10px] font-bold text-ink-tertiary uppercase">Tags ({item.listing.tags.length}):</div>
+                      <div className="text-label-sm font-bold text-ink-tertiary uppercase">Tags ({item.listing.tags.length}):</div>
                       <div className="flex flex-wrap gap-1">
                         {item.listing.tags.slice(0, 4).map((t, i) => (
                           <span
                             key={i}
-                            className={`text-[10px] px-1.5 py-0.5 rounded border ${
+                            className={`text-label-sm px-1.5 py-0.5 rounded border ${
                               comparison.sharedTags.includes(t.toLowerCase())
                                 ? "bg-amber-100/70 border-amber-300 text-amber-900 font-semibold"
                                 : "bg-[#F4F3EF] border-line-subtle text-ink"
@@ -269,7 +269,7 @@ export function ProductComparisonModal({
                       loading={savingId === item.id}
                       disabled={isSaved}
                       onClick={() => handleSaveToPlanner(item)}
-                      className="w-full text-xs font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                      className="w-full text-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
                     >
                       {isSaved ? (
                         <>
@@ -286,7 +286,7 @@ export function ProductComparisonModal({
                       href={item.listing.listingUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-center text-ink-secondary hover:text-[#0E8F5D] flex items-center justify-center gap-1 font-medium"
+                      className="text-meta text-center text-ink-secondary hover:text-[#0E8F5D] flex items-center justify-center gap-1 font-medium"
                     >
                       View on Etsy <ExternalLink className="h-3 w-3" />
                     </a>

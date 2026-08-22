@@ -44,7 +44,7 @@ export function SafeImage({
           <ShoppingBag className="h-6 w-6 text-[#0E8F5D] opacity-40 mb-1" />
         )}
         {fallbackText && (
-          <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">
+          <span className="text-label-sm font-semibold text-ink-tertiary uppercase tracking-wider">
             {fallbackText}
           </span>
         )}

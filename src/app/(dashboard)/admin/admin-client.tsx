@@ -1231,18 +1231,18 @@ export function AdminPackagesClient() {
 
               {needsAttentionUnverified.length > 0 ? (
                 <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl p-3.5 space-y-2.5 min-w-[280px]">
-                  <div className="text-[11px] font-semibold text-[#9EAA9F] uppercase tracking-wider">
+                  <div className="text-label-sm font-semibold text-[#9EAA9F] uppercase tracking-wider">
                     Pending Unverified Users
                   </div>
                   <div className="space-y-2 max-h-36 overflow-y-auto">
                     {needsAttentionUnverified.slice(0, 3).map((u) => (
                       <div
                         key={u.id}
-                        className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#141B16] border border-[#2A362D] text-xs"
+                        className="flex items-center justify-between gap-2 p-2 rounded-lg bg-[#141B16] border border-[#2A362D] text-sm"
                       >
                         <div className="min-w-0">
                           <div className="font-semibold text-white truncate">{u.email}</div>
-                          <div className="text-[10px] text-[#9EAA9F]">
+                          <div className="text-meta text-[#9EAA9F]">
                             Sent {u.verificationEmailCount ?? 0} time(s) · Created {new Date(u.createdAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -1252,7 +1252,7 @@ export function AdminPackagesClient() {
                           loading={userActionLoading === u.id}
                           disabled={userActionLoading !== null}
                           onClick={() => handleSendVerification(u.id)}
-                          className="text-[10px] !py-1 !px-2 bg-white text-ink hover:bg-[#F4F3EF] shrink-0 disabled:opacity-50"
+                          className="text-label-sm !py-1 !px-2 bg-white text-ink hover:bg-[#F4F3EF] shrink-0 disabled:opacity-50"
                         >
                           Resend
                         </Button>
@@ -1267,7 +1267,7 @@ export function AdminPackagesClient() {
                         setUserStatusFilter("unverified");
                         searchUsers("", "unverified");
                       }}
-                      className="text-[11px] text-[#0E8F5D] hover:underline font-semibold block text-center w-full pt-1"
+                      className="text-label-sm text-[#0E8F5D] hover:underline font-semibold block text-center w-full pt-1"
                     >
                       View all {needsAttentionUnverified.length} unverified users →
                     </button>
@@ -1279,8 +1279,8 @@ export function AdminPackagesClient() {
                     <CheckCircle2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-white">Platform Health: 100%</div>
-                    <div className="text-[11px] text-[#9EAA9F]">All accounts verified</div>
+                    <div className="text-sm font-bold text-white">Platform Health: 100%</div>
+                    <div className="text-label-sm text-[#9EAA9F]">All accounts verified</div>
                   </div>
                 </div>
               )}
@@ -1291,7 +1291,7 @@ export function AdminPackagesClient() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Accounts */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+              <div className="flex items-center justify-between text-label-sm font-bold text-ink-tertiary uppercase">
                 <span>Total Accounts</span>
                 <Users className="h-4 w-4 text-[#0E8F5D]" />
               </div>
@@ -1299,16 +1299,16 @@ export function AdminPackagesClient() {
                 {metrics?.totalUsers ?? 0}
               </div>
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#E7FAF1] text-[#0E8F5D]">
+                <span className="px-1.5 py-0.5 rounded text-label-sm font-semibold bg-[#E7FAF1] text-[#0E8F5D]">
                   {metrics?.verifiedUsers ?? 0} Verified
                 </span>
                 {(metrics?.unverifiedUsers ?? 0) > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#FFF8E6] text-[#B87D00]">
+                  <span className="px-1.5 py-0.5 rounded text-label-sm font-semibold bg-[#FFF8E6] text-[#B87D00]">
                     {metrics?.unverifiedUsers ?? 0} Unverified
                   </span>
                 )}
                 {(metrics?.recentSignups7d ?? 0) > 0 && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-[#F4F3EF] text-ink-secondary">
+                  <span className="px-1.5 py-0.5 rounded text-label-sm font-medium bg-[#F4F3EF] text-ink-secondary">
                     +{metrics?.recentSignups7d} 7d
                   </span>
                 )}
@@ -1317,14 +1317,14 @@ export function AdminPackagesClient() {
 
             {/* Workspaces */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+              <div className="flex items-center justify-between text-label-sm font-bold text-ink-tertiary uppercase">
                 <span>Tenant Workspaces</span>
                 <Building className="h-4 w-4 text-blue-600" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono">
                 {metrics?.totalOrgs ?? 0}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 {metrics?.totalUsers && metrics.totalOrgs
                   ? `~${(metrics.totalUsers / metrics.totalOrgs).toFixed(1)} users / workspace`
                   : "Multi-tenant workspace isolation"}
@@ -1333,28 +1333,28 @@ export function AdminPackagesClient() {
 
             {/* Subscriptions & MRR */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+              <div className="flex items-center justify-between text-label-sm font-bold text-ink-tertiary uppercase">
                 <span>Estimated MRR</span>
                 <DollarSign className="h-4 w-4 text-[#0E8F5D]" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono">
                 ${metrics?.estimatedMrr?.toLocaleString() ?? 0}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 From {metrics?.activeSubscriptions ?? 0} active subscriptions
               </div>
             </Card>
 
             {/* Connected Etsy Shops */}
             <Card padding="md" className="border-line bg-white shadow-xs space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-ink-tertiary uppercase">
+              <div className="flex items-center justify-between text-label-sm font-bold text-ink-tertiary uppercase">
                 <span>Connected Etsy Stores</span>
                 <Store className="h-4 w-4 text-purple-600" />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono">
                 {metrics?.connectedEtsyShops ?? 0}
               </div>
-              <div className="text-[11px] text-ink-secondary">
+              <div className="text-meta text-ink-secondary">
                 Active Etsy OAuth seller authorizations
               </div>
             </Card>
@@ -1524,11 +1524,11 @@ export function AdminPackagesClient() {
                                 </div>
                               )}
                               <div>
-                                <div className="font-bold text-ink flex items-center gap-1.5">
+                                <div className="font-bold text-ink flex items-center gap-1.5 text-sm">
                                   {u.name || "—"}
                                   {u.suspended && <Badge variant="danger">Suspended</Badge>}
                                 </div>
-                                <div className="text-ink-tertiary text-[11px] font-mono">{u.email}</div>
+                                <div className="text-ink-tertiary text-meta font-mono">{u.email}</div>
                               </div>
                             </div>
 
@@ -1537,7 +1537,7 @@ export function AdminPackagesClient() {
                               <button
                                 type="button"
                                 onClick={() => openUserDetail(u.id)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-[10px] font-bold text-ink transition"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-label-sm font-bold text-ink transition"
                                 title="Inspect user dossier"
                               >
                                 <Eye className="h-2.5 w-2.5 text-ink-tertiary" /> Inspect
@@ -1548,7 +1548,7 @@ export function AdminPackagesClient() {
                                   type="button"
                                   disabled={userActionLoading !== null}
                                   onClick={() => handleSendVerification(u.id)}
-                                  className="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[10px] font-bold text-amber-800 transition"
+                                  className="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 border border-amber-200 text-label-sm font-bold text-amber-800 transition"
                                   title="Send verification email link"
                                 >
                                   Send Verify
@@ -1558,7 +1558,7 @@ export function AdminPackagesClient() {
                               <button
                                 type="button"
                                 onClick={() => handleChangeEmail(u.id, u.email)}
-                                className="px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-[10px] font-bold text-ink transition"
+                                className="px-2 py-0.5 rounded bg-white hover:bg-[#F4F3EF] border border-line text-label-sm font-bold text-ink transition"
                                 title="Change email address"
                               >
                                 Edit Email
@@ -1567,7 +1567,7 @@ export function AdminPackagesClient() {
                               <button
                                 type="button"
                                 onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
-                                className={`px-2 py-0.5 rounded border text-[10px] font-bold transition ${
+                                className={`px-2 py-0.5 rounded border text-label-sm font-bold transition ${
                                   u.suspended
                                     ? "bg-[#E7FAF1] border-[#0E8F5D]/30 text-[#0E8F5D]"
                                     : "bg-white hover:bg-amber-50 border-line text-amber-700"
@@ -1580,7 +1580,7 @@ export function AdminPackagesClient() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteUser(u.id, u.email)}
-                                className="px-2 py-0.5 rounded bg-white hover:bg-red-50 border border-line text-[10px] font-bold text-red-600 transition"
+                                className="px-2 py-0.5 rounded bg-white hover:bg-red-50 border border-line text-label-sm font-bold text-red-600 transition"
                                 title="Delete user"
                               >
                                 Delete
@@ -1594,19 +1594,19 @@ export function AdminPackagesClient() {
                           ) : (
                             <div className="flex flex-col gap-0.5">
                               <Badge variant="warning">⚠ Unverified</Badge>
-                              <span className="text-[10px] text-ink-tertiary">
+                              <span className="text-meta text-ink-tertiary">
                                 Sent {u.verificationEmailCount ?? 0} time(s)
                               </span>
                             </div>
                           )}
                         </td>
                         <td className="p-3">
-                          <div className="font-medium text-ink">{u.organizationName}</div>
+                          <div className="font-medium text-ink text-sm">{u.organizationName}</div>
                           <select
                             value={u.role}
                             disabled={!u.membershipId || userActionLoading === u.id}
                             onChange={(e) => handleUserAction(u.id, { role: e.target.value })}
-                            className="font-mono text-[10px] border border-line rounded px-1.5 py-0.5 bg-white disabled:opacity-50 mt-1"
+                            className="font-mono text-label-sm border border-line rounded px-1.5 py-0.5 bg-white disabled:opacity-50 mt-1"
                           >
                             <option value="OWNER">OWNER</option>
                             <option value="ADMIN">ADMIN</option>
@@ -1618,7 +1618,7 @@ export function AdminPackagesClient() {
                             value={packages.find((p) => p.name === u.planName)?.id ?? ""}
                             disabled={!u.organizationId || userActionLoading === u.id}
                             onChange={(e) => e.target.value && handleUserAction(u.id, { packageId: e.target.value })}
-                            className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
+                            className="text-sm border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
                           >
                             <option value="" disabled>{u.planName}</option>
                             {packages.map((p) => (
@@ -1632,26 +1632,26 @@ export function AdminPackagesClient() {
                           </div>
                         </td>
                         <td className="p-3">
-                          <div className="flex flex-col gap-0.5 text-[11px]">
+                          <div className="flex flex-col gap-0.5 text-sm">
                             <span className="text-ink-secondary capitalize">
                               {u.authMethods.length ? u.authMethods.join(", ") : "Password"}
                             </span>
-                            <span className="text-[10px] text-ink-tertiary">
+                            <span className="text-meta text-ink-tertiary">
                               Last login: {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : "Never"}
                             </span>
                             {u.etsyConnected && (
-                              <span className="text-[10px] text-[#0E8F5D] font-semibold">Etsy store connected</span>
+                              <span className="text-label-sm text-[#0E8F5D] font-semibold">Etsy store connected</span>
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-ink-tertiary">{new Date(u.memberSince).toLocaleDateString()}</td>
+                        <td className="p-3 text-ink-tertiary text-sm">{new Date(u.memberSince).toLocaleDateString()}</td>
                         <td className="p-3 text-right">
                           <div className="flex flex-wrap items-center justify-end gap-1.5">
                             <Button
                               variant="secondary"
                               size="compact"
                               onClick={() => openUserDetail(u.id)}
-                              className="text-[11px]"
+                              className="text-sm"
                               title="Inspect full user profile and security dossier"
                             >
                               <Eye className="h-3 w-3 mr-1" /> Inspect
@@ -1663,7 +1663,7 @@ export function AdminPackagesClient() {
                                 loading={userActionLoading === u.id}
                                 disabled={userActionLoading !== null}
                                 onClick={() => handleSendVerification(u.id)}
-                                className="text-[11px] disabled:opacity-50"
+                                className="text-sm disabled:opacity-50"
                                 title="Resend email verification link without cooldown"
                               >
                                 Send Verify
@@ -1674,7 +1674,7 @@ export function AdminPackagesClient() {
                               size="compact"
                               loading={userActionLoading === u.id}
                               onClick={() => handleChangeEmail(u.id, u.email)}
-                              className="text-[11px]"
+                              className="text-sm"
                             >
                               Email
                             </Button>
@@ -1683,7 +1683,7 @@ export function AdminPackagesClient() {
                               size="compact"
                               loading={userActionLoading === u.id}
                               onClick={() => handleUserAction(u.id, { suspended: !u.suspended })}
-                              className={`text-[11px] ${u.suspended ? "text-[#0E8F5D]" : "text-amber-700"}`}
+                              className={`text-sm ${u.suspended ? "text-[#0E8F5D]" : "text-amber-700"}`}
                             >
                               {u.suspended ? "Unsuspend" : "Suspend"}
                             </Button>
@@ -1692,7 +1692,7 @@ export function AdminPackagesClient() {
                               size="compact"
                               loading={userActionLoading === u.id}
                               onClick={() => handleDeleteUser(u.id, u.email)}
-                              className="text-[11px]"
+                              className="text-sm"
                             >
                               Delete
                             </Button>

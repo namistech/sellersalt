@@ -113,7 +113,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style A · Modern Area + Line Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Monthly Sales Trajectory &amp; Growth</h3>
@@ -130,7 +130,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `${v} units`}
             accessibleSummary="Area chart of monthly sales growth"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Product Intelligence (`/products/[id]`), Shop Research (`/shops/[id]`).
           </div>
         </Card>
@@ -139,7 +139,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style B · Minimal Line Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Search Volume &amp; Demand Index</h3>
@@ -157,7 +157,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `${v} index`}
             accessibleSummary="Line chart comparing search volume to baseline"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Keyword Research (`/keyword-research`), Market Research (`/spy/tracked`).
           </div>
         </Card>
@@ -166,7 +166,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style D · Modern Vertical Bar Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Estimated Gross Monthly Revenue</h3>
@@ -183,7 +183,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `$${Number(v).toLocaleString()}`}
             accessibleSummary="Vertical bar chart of monthly revenue"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Category Hunting (`/categories`), Dashboard Streams (`/dashboard`).
           </div>
         </Card>
@@ -192,7 +192,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style E · Horizontal Bar Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Tag Penetration &amp; Relevancy</h3>
@@ -206,7 +206,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `${v}% of listings`}
             accessibleSummary="Horizontal bar chart of tag frequency"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Keyword Research, Product Research Tag Audit, Category Hunting.
           </div>
         </Card>
@@ -215,7 +215,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style F · Segmented Benchmark Gauge
               </span>
               <h3 className="text-sm font-bold text-ink">Composite Opportunity Score</h3>
@@ -228,7 +228,7 @@ export function ChartShowcaseClient() {
             label="Listing Opportunity Rating"
             sublabel="Calculated across daily velocity, catalog density & moat"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Shop Strategic Verdict (`/shops/[id]`), Product Opportunity (`/products/[id]`).
           </div>
         </Card>
@@ -237,7 +237,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style G · Bullet / Target Gauge
               </span>
               <h3 className="text-sm font-bold text-ink">Daily Sales Velocity vs Benchmark</h3>
@@ -252,7 +252,7 @@ export function ChartShowcaseClient() {
             label="Velocity Moat"
             sublabel="Observed sales acceleration vs category median"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Opportunity Radar (`/radar`), Product Economics (`/products/[id]`).
           </div>
         </Card>
@@ -261,7 +261,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style H · Donut / Ring Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Catalog Product Type Breakdown</h3>
@@ -275,7 +275,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `${v}%`}
             accessibleSummary="Donut chart showing catalog product mix"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Shop Intelligence (`/shops/[id]`), Category Overview.
           </div>
         </Card>
@@ -284,7 +284,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style I · Distribution Histogram
               </span>
               <h3 className="text-sm font-bold text-ink">Market Price Spread Percentiles</h3>
@@ -297,7 +297,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `${v} competitor listings`}
             accessibleSummary="Price distribution histogram"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Category Hunting (`/categories`), Product Research.
           </div>
         </Card>
@@ -306,7 +306,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style J · Multi-Series Comparison Chart
               </span>
               <h3 className="text-sm font-bold text-ink">Competitor 7-Day Velocity Delta</h3>
@@ -325,7 +325,7 @@ export function ChartShowcaseClient() {
             valueFormatter={(v) => `+${v} orders`}
             accessibleSummary="Multi-line chart comparing competitor performance"
           />
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Shop Tracking (`/spy/tracked`), Shop Comparison.
           </div>
         </Card>
@@ -334,7 +334,7 @@ export function ChartShowcaseClient() {
         <Card padding="lg" className="border-line bg-white shadow-xs space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-tertiary">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-ink-tertiary">
                 Style C · Sparklines in Data Table
               </span>
               <h3 className="text-sm font-bold text-ink">Dense Table Row Velocity Trends</h3>
@@ -342,9 +342,9 @@ export function ChartShowcaseClient() {
             <DataProvenanceBadge type="ESTIMATED" />
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-line text-ink-tertiary uppercase text-[10px]">
+                <tr className="border-b border-line text-ink-tertiary uppercase text-label-sm">
                   <th className="py-2 pr-4 font-semibold">Store / Product</th>
                   <th className="py-2 pr-4 font-semibold text-right">Daily Sales</th>
                   <th className="py-2 pr-4 font-semibold text-center">7-Day Trend</th>

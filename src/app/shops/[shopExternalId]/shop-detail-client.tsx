@@ -793,10 +793,10 @@ export function ShopDetailClient({
         onAction={handleToggleTrack}
         sidePanel={
           <div className="space-y-3">
-            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+            <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
               Competitor Moat Profile
             </div>
-            <div className="space-y-2 text-xs">
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-[#9EAA9F]">Daily Sales Pace:</span>
                 <span className="font-bold text-[#16C784] tabular-nums">~{estDaily.toFixed(1)} / day</span>
@@ -819,23 +819,23 @@ export function ShopDetailClient({
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Catalog Scale</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Catalog Scale</span>
             <span className="text-base font-bold text-white tabular-nums">{activeListings} Listings</span>
-            <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">
+            <span className="text-label-sm text-[#16C784] block mt-0.5 font-semibold">
               {activeListings <= 60 ? "Lean & accessible catalog" : "Deep catalog depth"}
             </span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Review Moat</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Review Moat</span>
             <span className="text-base font-bold text-white tabular-nums">{reviewCount.toLocaleString()}</span>
-            <span className="text-[10px] text-[#9EAA9F] block mt-0.5">
+            <span className="text-label-sm text-[#9EAA9F] block mt-0.5">
               {reviewCount < 500 ? "Accessible entry barrier" : "Established review defense"}
             </span>
           </div>
           <div className="p-3.5 rounded-xl bg-[#1C261F] border border-[#2A362D]">
-            <span className="text-[10px] font-bold text-[#9EAA9F] uppercase block">Pricing Sweet Spot</span>
+            <span className="text-label-sm font-bold text-[#9EAA9F] uppercase block">Pricing Sweet Spot</span>
             <span className="text-base font-bold text-white tabular-nums">${avgPrice.toFixed(2)}</span>
-            <span className="text-[10px] text-[#16C784] block mt-0.5 font-semibold">Median observed price</span>
+            <span className="text-label-sm text-[#16C784] block mt-0.5 font-semibold">Median observed price</span>
           </div>
         </div>
       </IntelligenceCard>
@@ -843,60 +843,62 @@ export function ShopDetailClient({
       {/* ==================================================================== */}
       {/* SECTION 3: LEVEL 2 — SHOP KPI & MATRIX SYSTEM */}
       {/* ==================================================================== */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Heading as="h2" size="h4">
-            Store Performance &amp; Revenue Intelligence
-          </Heading>
-          <span className="text-xs text-ink-tertiary">Verified marketplace data and mathematical estimations</span>
+          <div>
+            <h2 className="text-base font-bold text-ink">Shop Benchmark Profile</h2>
+            <p className="text-sm text-ink-tertiary">
+              Observed catalog composition, sales velocity, and listing efficiency.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Lifetime Sales</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Lifetime Sales</span>
               <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
             </div>
             <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               {totalSales.toLocaleString()}{" "}
               <span className="text-xs font-normal text-ink-tertiary">orders</span>
             </div>
-            <div className="text-[11px] text-ink-tertiary">Verified transaction count</div>
+            <div className="text-meta text-ink-tertiary">Verified transaction count</div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Daily Sales Velocity</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Daily Sales Velocity</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
             <div className="text-2xl font-bold text-[#0E8F5D] pt-1 tabular-nums">
               ~{estDaily.toFixed(1)}{" "}
               <span className="text-xs font-normal text-ink-tertiary">/ day</span>
             </div>
-            <div className="text-[11px] text-ink-tertiary">~{estMonthlySales.toLocaleString()} monthly orders</div>
+            <div className="text-meta text-ink-tertiary">~{estMonthlySales.toLocaleString()} monthly orders</div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Est. Monthly Revenue</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Est. Monthly Revenue</span>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
             <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               ${estMonthlyRevenue.toLocaleString()}
             </div>
-            <div className="text-[11px] text-ink-tertiary">At ${avgPrice.toFixed(2)} average item price</div>
+            <div className="text-meta text-ink-tertiary">At ${avgPrice.toFixed(2)} average item price</div>
           </Card>
 
           <Card padding="md" className="border-line bg-white shadow-xs space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-ink-tertiary uppercase">Catalog Efficiency</span>
+              <span className="text-label-sm font-bold text-ink-tertiary uppercase">Catalog Efficiency</span>
               <DataProvenanceBadge type="SELLERSALT_SCORE" />
             </div>
             <div className="text-2xl font-bold text-ink pt-1 tabular-nums">
               {sellingRatio.toFixed(1)}{" "}
               <span className="text-xs font-normal text-ink-tertiary">sales/item</span>
             </div>
-            <div className="text-[11px] text-ink-tertiary">
+            <div className="text-meta text-ink-tertiary">
               {activeListings} active catalog listings
             </div>
           </Card>

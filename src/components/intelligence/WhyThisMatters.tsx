@@ -22,17 +22,17 @@ export function WhyThisMatters({
 
   if (compact) {
     return (
-      <div className={`p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-2 text-xs ${className}`}>
+      <div className={`p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-2 text-sm ${className}`}>
         <div className="flex items-center justify-between">
-          <span className="font-bold text-[#16C784] flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+          <span className="font-bold text-[#16C784] flex items-center gap-1.5 text-label-sm uppercase tracking-wider">
             <span>{action.icon}</span> Why This Matters
           </span>
           <DataProvenanceBadge type={action.provenance} />
         </div>
-        <p className="text-white text-[11px] leading-relaxed">
+        <p className="text-white text-sm leading-relaxed">
           <strong className="text-[#16C784]">Signal:</strong> {action.signal}
         </p>
-        <p className="text-[#9EAA9F] text-[11px] leading-relaxed">
+        <p className="text-[#9EAA9F] text-sm leading-relaxed">
           <strong className="text-white">Action:</strong> {action.whyYouShouldCare}
         </p>
       </div>
@@ -40,7 +40,7 @@ export function WhyThisMatters({
   }
 
   return (
-    <div className={`rounded-xl border border-[#2A362D] bg-[#141B16] overflow-hidden text-xs transition-all ${className}`}>
+    <div className={`rounded-xl border border-[#2A362D] bg-[#141B16] overflow-hidden text-sm transition-all ${className}`}>
       {/* Header Bar */}
       <button
         type="button"
@@ -49,13 +49,13 @@ export function WhyThisMatters({
       >
         <div className="flex items-center gap-2">
           <span className="text-sm">{action.icon}</span>
-          <span className="font-bold text-white text-xs uppercase tracking-wider">
+          <span className="font-bold text-white text-sm uppercase tracking-wider">
             Why This Matters: {action.headline}
           </span>
           <DataProvenanceBadge type={action.provenance} />
         </div>
         <div className="flex items-center gap-2 text-[#9EAA9F]">
-          <span className="text-[11px] hidden sm:inline">
+          <span className="text-label-sm hidden sm:inline">
             {expanded ? "Hide Reasoning" : "Explain Reasoning"}
           </span>
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -68,30 +68,30 @@ export function WhyThisMatters({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* 1. Signal */}
             <div className="p-3 rounded-lg bg-[#1C261F] border border-[#2A362D]/70 space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FFB020] flex items-center gap-1">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-[#FFB020] flex items-center gap-1">
                 📡 Observed Signal
               </span>
-              <p className="text-white text-[11px] leading-relaxed">
+              <p className="text-white text-sm leading-relaxed">
                 {action.signal}
               </p>
             </div>
 
             {/* 2. Interpretation */}
             <div className="p-3 rounded-lg bg-[#1C261F] border border-[#2A362D]/70 space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#16C784] flex items-center gap-1">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-[#16C784] flex items-center gap-1">
                 🧠 Intelligence Interpretation
               </span>
-              <p className="text-[#9EAA9F] text-[11px] leading-relaxed">
+              <p className="text-[#9EAA9F] text-sm leading-relaxed">
                 {action.interpretation}
               </p>
             </div>
 
             {/* 3. Why You Should Care */}
             <div className="p-3 rounded-lg bg-[#1C261F] border border-[#2A362D]/70 space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#4E9FFF] flex items-center gap-1">
+              <span className="text-label-sm font-bold uppercase tracking-wider text-[#4E9FFF] flex items-center gap-1">
                 🎯 Why You Should Care
               </span>
-              <p className="text-white text-[11px] leading-relaxed">
+              <p className="text-white text-sm leading-relaxed">
                 {action.whyYouShouldCare}
               </p>
             </div>
@@ -99,14 +99,14 @@ export function WhyThisMatters({
             {/* 4. Recommended Action */}
             <div className="p-3 rounded-lg bg-[#1C261F] border border-[#2A362D]/70 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#16C784] flex items-center gap-1">
+                <span className="text-label-sm font-bold uppercase tracking-wider text-[#16C784] flex items-center gap-1">
                   ⚡ Recommended Action
                 </span>
-                <span className="text-[10px] font-mono text-[#9EAA9F]">
+                <span className="text-label-sm font-mono text-[#9EAA9F]">
                   Est. Impact: {action.scoreImpactEstimated}
                 </span>
               </div>
-              <p className="text-white font-medium text-[11px] leading-relaxed">
+              <p className="text-white font-medium text-sm leading-relaxed">
                 {action.actionLabel}
               </p>
             </div>

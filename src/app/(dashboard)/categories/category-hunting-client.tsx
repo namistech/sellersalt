@@ -359,10 +359,10 @@ export function CategoryHuntingClient({
                   className="w-full p-3 text-left hover:bg-[#FAFAF8] transition flex items-center justify-between group"
                 >
                   <div>
-                    <div className="font-bold text-xs text-ink group-hover:text-[#0E8F5D]">{res.name}</div>
-                    <div className="text-[11px] text-ink-tertiary">{res.fullPath}</div>
+                    <div className="font-bold text-sm text-ink group-hover:text-[#0E8F5D]">{res.name}</div>
+                    <div className="text-meta text-ink-tertiary">{res.fullPath}</div>
                   </div>
-                  <span className="text-[10px] font-bold text-[#0E8F5D] px-2 py-0.5 rounded bg-[#E7FAF1]">
+                  <span className="text-label-sm font-bold text-[#0E8F5D] px-2 py-0.5 rounded bg-[#E7FAF1]">
                     Level {res.level}
                   </span>
                 </button>
@@ -371,8 +371,8 @@ export function CategoryHuntingClient({
           )}
 
           {/* Quick Root Taxonomy Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-ink-tertiary text-[11px] font-bold uppercase shrink-0 mr-1">Roots:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-sm">
+            <span className="text-ink-tertiary text-label-sm font-bold uppercase shrink-0 mr-1">Roots:</span>
             {roots.slice(0, 8).map((root) => (
               <button
                 key={root.id}
@@ -542,10 +542,10 @@ export function CategoryHuntingClient({
             onAction={handleAddCategoryToPlanner}
             sidePanel={
               <div className="space-y-3">
-                <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+                <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
                   Market Saturation &amp; Entry
                 </div>
-                <div className="space-y-2 text-xs">
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#9EAA9F]">Saturation Index:</span>
                     <span className="font-bold text-white">{profile.benchmarks.nicheSaturationIndex}</span>
@@ -566,7 +566,7 @@ export function CategoryHuntingClient({
               </div>
             }
           >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm pt-1">
               <div className="p-3 rounded-xl bg-[#1C261F] border border-[#2A362D] space-y-1">
                 <div className="font-bold text-white flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-[#FBBF24]" /> What to Study:
@@ -593,101 +593,101 @@ export function CategoryHuntingClient({
           {/* ==================================================================== */}
           {/* 3. CORE MARKET METRICS (8-KPI BENCHMARK MATRIX) */}
           {/* ==================================================================== */}
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Heading as="h2" size="h4">
-                Core Market Metrics &amp; Benchmarks
+              <Heading as="h3" size="h3" className="text-base font-bold text-ink">
+                Category Commercial Benchmarks
               </Heading>
-              <span className="text-xs text-ink-tertiary">Etsy category sampling &amp; metrics</span>
+              <span className="text-sm text-ink-tertiary">Etsy category sampling &amp; metrics</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Sampled Supply</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Sampled Supply</span>
                   <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
                 </div>
                 <div className="text-xl font-bold text-ink tabular-nums">
                   {profile.benchmarks.observedListingsCount} listings
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Top ranking sample</div>
+                <div className="text-meta text-ink-tertiary">Top ranking sample</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Median Price</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Median Price</span>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
                 <div className="text-xl font-bold text-ink tabular-nums">
                   ${profile.benchmarks.medianPrice.toFixed(2)}
                 </div>
-                <div className="text-[10px] text-ink-tertiary">50th percentile</div>
+                <div className="text-meta text-ink-tertiary">50th percentile</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">10th-90th Spread</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">10th-90th Spread</span>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
                 <div className="text-sm font-bold text-ink pt-1 truncate tabular-nums">
                   ${profile.benchmarks.price10thPercentile.toFixed(2)} - ${profile.benchmarks.price90thPercentile.toFixed(2)}
                 </div>
-                <div className="text-[10px] text-ink-tertiary">${profile.benchmarks.priceDistribution.priceSpread.toFixed(2)} spread</div>
+                <div className="text-meta text-ink-tertiary">${profile.benchmarks.priceDistribution.priceSpread.toFixed(2)} spread</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Daily Velocity</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Daily Velocity</span>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
                 <div className="text-xl font-bold text-[#0E8F5D] tabular-nums">
                   {profile.benchmarks.avgDailySalesProxy.toFixed(1)}/day
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Avg across stores</div>
+                <div className="text-meta text-ink-tertiary">Avg across stores</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Catalog Yield</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Catalog Yield</span>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
                 <div className="text-xl font-bold text-ink tabular-nums">
                   {profile.benchmarks.catalogYieldProxy.toFixed(1)}
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Sales / active listing</div>
+                <div className="text-meta text-ink-tertiary">Sales / active listing</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Avg Reviews</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Avg Reviews</span>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
                 <div className="text-xl font-bold text-ink tabular-nums">
                   {profile.benchmarks.reviewSaturationAverage.toLocaleString()}
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Incumbent density</div>
+                <div className="text-meta text-ink-tertiary">Incumbent density</div>
               </Card>
 
               <Card padding="sm" className="border-line bg-white shadow-2xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Saturation</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Saturation</span>
                   <DataProvenanceBadge type="SELLERSALT_SCORE" />
                 </div>
                 <div className="text-base font-bold text-ink pt-0.5">
                   {profile.benchmarks.nicheSaturationIndex}
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Competition barrier</div>
+                <div className="text-meta text-ink-tertiary">Competition barrier</div>
               </Card>
 
               <Card variant="feature" padding="sm" className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase">Opp. Score</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase">Opp. Score</span>
                   <DataProvenanceBadge type="SELLERSALT_SCORE" />
                 </div>
                 <div className="text-2xl font-bold text-[#0E8F5D] tabular-nums">
                   {profile.benchmarks.opportunityScore}/100
                 </div>
-                <div className="text-[10px] text-ink-tertiary">Composite rubric</div>
+                <div className="text-meta text-ink-tertiary">Composite rubric</div>
               </Card>
             </div>
           </div>
@@ -756,10 +756,10 @@ export function CategoryHuntingClient({
                     className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] hover:shadow-2xs text-left transition flex items-center justify-between group"
                   >
                     <div className="min-w-0">
-                      <div className="font-bold text-xs text-ink group-hover:text-[#0E8F5D] truncate">
+                      <div className="font-bold text-sm text-ink group-hover:text-[#0E8F5D] truncate">
                         {child.name}
                       </div>
-                      <div className="text-[10px] text-ink-tertiary">
+                      <div className="text-meta text-ink-tertiary">
                         {child.childCount > 0 ? `${child.childCount} sub-branches` : "Leaf node"}
                       </div>
                     </div>
@@ -777,10 +777,10 @@ export function CategoryHuntingClient({
             <Card padding="md" className="border-line bg-white shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-line-subtle">
                 <div>
-                  <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
                     <ShoppingBag className="h-3.5 w-3.5 text-[#0E8F5D]" /> Breakout Products in Category ({profile.productSamples.length})
                   </span>
-                  <p className="text-[11px] text-ink-tertiary">High-velocity listings discovered within this category.</p>
+                  <p className="text-meta text-ink-tertiary">High-velocity listings discovered within this category.</p>
                 </div>
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
               </div>
@@ -803,22 +803,22 @@ export function CategoryHuntingClient({
                           <div className="flex items-start justify-between gap-1.5">
                             <Link
                               href={`/products/${product.id}`}
-                              className="font-bold text-xs text-ink hover:text-[#0E8F5D] transition-colors line-clamp-2"
+                              className="font-bold text-sm text-ink hover:text-[#0E8F5D] transition-colors line-clamp-2"
                             >
                               {product.listing.title}
                             </Link>
-                            <Badge variant="success" className="text-[10px] shrink-0">
+                            <Badge variant="success" className="text-label-sm shrink-0">
                               🔥 {product.opportunity.opportunityScore}/100
                             </Badge>
                           </div>
-                          <div className="flex items-center justify-between text-xs text-ink-secondary mt-1">
+                          <div className="flex items-center justify-between text-sm text-ink-secondary mt-1">
                             <span className="font-bold text-ink tabular-nums">{product.listing.price !== null ? `$${product.listing.price.toFixed(2)}` : "Price unavailable"}</span>
                             <span className="text-[#0E8F5D] font-bold tabular-nums">~{product.signals.estDailySales.toFixed(1)} / day</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="text-[10px] text-ink-tertiary flex items-center justify-between pt-1 border-t border-line-subtle">
+                      <div className="text-meta text-ink-tertiary flex items-center justify-between pt-1 border-t border-line-subtle">
                         <span>Shop: <Link href={`/shops/${product.shop.shopId}`} className="text-ink hover:underline">{product.shop.shopName}</Link></span>
                         <span>{product.shop.reviewCount} reviews</span>
                       </div>
@@ -826,7 +826,7 @@ export function CategoryHuntingClient({
 
                     <div className="pt-2 flex items-center justify-between gap-2">
                       <Link href={`/products/${product.id}`} className="flex-1">
-                        <Button variant="secondary" size="compact" className="w-full text-[11px] h-7">
+                        <Button variant="secondary" size="compact" className="w-full text-sm h-7">
                           Research Product
                         </Button>
                       </Link>
@@ -837,7 +837,7 @@ export function CategoryHuntingClient({
                         loading={savingPlannerListingId === product.id}
                         disabled={Boolean(savedPlannerListingIds[product.id])}
                         onClick={() => handleAddProductToPlanner(product)}
-                        className="text-[11px] h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+                        className="text-sm h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
                       >
                         {savedPlannerListingIds[product.id] ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                       </Button>

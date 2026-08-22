@@ -133,7 +133,7 @@ export function ProductResearchCommandCenter({
           {/* Marketplace selection & Depth mode */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-1 text-xs border-t border-border/50 pt-3">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="text-muted-foreground font-semibold text-[11px]">Marketplaces:</span>
+              <span className="text-muted-foreground font-semibold text-label-sm">Marketplaces:</span>
               {(["amazon", "ebay", "walmart", "etsy"] as const).map((mp) => {
                 const isSelected = selectedMarketplaces.includes(mp);
                 return (
@@ -141,7 +141,7 @@ export function ProductResearchCommandCenter({
                     key={mp}
                     type="button"
                     onClick={() => toggleMarketplace(mp)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors capitalize ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-label-sm font-medium border transition-colors capitalize ${
                       isSelected
                         ? "bg-primary/10 border-primary text-primary font-semibold"
                         : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
@@ -155,13 +155,13 @@ export function ProductResearchCommandCenter({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-semibold text-[11px]">Depth:</span>
+              <span className="text-muted-foreground font-semibold text-label-sm">Depth:</span>
               {(["QUICK", "STANDARD", "DEEP"] as const).map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDepth(d)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`px-2.5 py-1 rounded-md text-label-sm font-medium transition-colors ${
                     depth === d
                       ? "bg-primary text-primary-foreground font-bold shadow-xs"
                       : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -222,20 +222,20 @@ export function ProductResearchCommandCenter({
               {/* KPI Score Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 <div className="p-3 rounded-xl bg-muted/40 border text-center space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">Opportunity</span>
+                  <span className="text-label-sm text-muted-foreground font-semibold uppercase block">Opportunity</span>
                   <span className="text-xl font-black text-primary">{result.overview.overallOpportunityScore ?? "—"}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border text-center space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">Demand</span>
+                  <span className="text-label-sm text-muted-foreground font-semibold uppercase block">Demand</span>
                   <span className="text-xl font-black text-foreground">{result.overview.overallDemandScore ?? "—"}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border text-center space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">Competition</span>
+                  <span className="text-label-sm text-muted-foreground font-semibold uppercase block">Competition</span>
                   <span className="text-xl font-black text-foreground">{result.overview.overallCompetitionScore ?? "—"}</span>
                 </div>
                 <div className="p-3 rounded-xl bg-muted/40 border text-center space-y-0.5">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase block">Momentum</span>
-                  <Badge variant="neutral" className="text-[10px] mt-1">
+                  <span className="text-label-sm text-muted-foreground font-semibold uppercase block">Momentum</span>
+                  <Badge variant="neutral" className="text-label-sm mt-1">
                     {result.overview.overallMomentum}
                   </Badge>
                 </div>
@@ -243,7 +243,7 @@ export function ProductResearchCommandCenter({
             </div>
 
             {/* Commercial Verdict Strip */}
-            <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-4 h-4 text-primary shrink-0" />
                 <div>
@@ -253,7 +253,7 @@ export function ProductResearchCommandCenter({
               </div>
               <a
                 href={`/validate?q=${encodeURIComponent(result.query)}`}
-                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-xs hover:brightness-110 shrink-0"
+                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:brightness-110 shrink-0"
               >
                 Validate in Studio
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -262,7 +262,7 @@ export function ProductResearchCommandCenter({
           </Card>
 
           {/* 3. Navigation Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b pb-2 text-xs font-semibold">
+          <div className="flex flex-wrap items-center gap-2 border-b pb-2 text-sm font-semibold">
             {[
               { id: "products", label: `Observed Products (${result.products.length})`, icon: <ShoppingBag className="w-3.5 h-3.5" /> },
               { id: "keywords", label: `Keyword Clusters (${result.keywords.length})`, icon: <Compass className="w-3.5 h-3.5" /> },
@@ -297,7 +297,7 @@ export function ProductResearchCommandCenter({
                 <Card key={idx} className="p-4 border rounded-xl bg-card space-y-3 shadow-xs hover:border-primary/40 transition-colors flex flex-col justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <Badge variant="neutral" className="capitalize text-[10px]">
+                      <Badge variant="neutral" className="capitalize text-label-sm">
                         {p.marketplace}
                       </Badge>
                       {p.price !== null && (
@@ -307,11 +307,11 @@ export function ProductResearchCommandCenter({
                       )}
                     </div>
 
-                    <h3 className="text-xs font-bold text-foreground line-clamp-2" title={p.title}>
+                    <h3 className="text-sm font-bold text-foreground line-clamp-2" title={p.title}>
                       {p.title}
                     </h3>
 
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta text-muted-foreground">
                       {p.rating !== null && p.rating !== undefined && (
                         <span className="flex items-center gap-1 text-amber-500 font-medium">
                           <Star className="w-3 h-3 fill-amber-500" />
@@ -327,7 +327,7 @@ export function ProductResearchCommandCenter({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t flex items-center justify-between text-[11px]">
+                  <div className="pt-2 border-t flex items-center justify-between text-meta">
                     <a
                       href={`/validate?q=${encodeURIComponent(p.title)}&marketplace=${p.marketplace}`}
                       className="text-primary hover:underline font-semibold flex items-center gap-1"
@@ -359,13 +359,13 @@ export function ProductResearchCommandCenter({
                 <h3 className="text-sm font-bold text-foreground">
                   Empirical Keyword Prevalence & Intent Clusters
                 </h3>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-meta text-muted-foreground">
                   Search volume: strictly UNAVAILABLE
                 </span>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b text-muted-foreground font-semibold">
                       <th className="pb-2">Keyword Term</th>
@@ -380,7 +380,7 @@ export function ProductResearchCommandCenter({
                       <tr key={i} className="hover:bg-muted/30">
                         <td className="py-2.5 font-bold text-foreground">{kw.term}</td>
                         <td className="py-2.5">
-                          <Badge variant="neutral" className="text-[10px]">
+                          <Badge variant="neutral" className="text-label-sm">
                             {kw.category}
                           </Badge>
                         </td>
@@ -389,7 +389,7 @@ export function ProductResearchCommandCenter({
                         <td className="py-2.5">
                           <a
                             href={`/validate?q=${encodeURIComponent(kw.term)}`}
-                            className="text-primary hover:underline font-semibold text-[11px]"
+                            className="text-primary hover:underline font-semibold text-sm"
                           >
                             Validate
                           </a>
@@ -406,27 +406,27 @@ export function ProductResearchCommandCenter({
           {activeTab === "competition" && (
             <Card className="p-6 border rounded-xl bg-card space-y-5 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-base font-bold text-foreground">
                   Dominant Competitor Merchants & Concentration
                 </h3>
                 <Badge variant="neutral" className="text-xs">
                   Barrier: {result.competition.reviewBarrierRating}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {result.competition.explanation}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 {result.competition.dominantSellers.map((seller, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-muted/30 border space-y-2 text-xs">
+                  <div key={idx} className="p-4 rounded-xl bg-muted/30 border space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-foreground truncate">{seller.name}</span>
-                      <Badge variant="neutral" className="text-[10px] capitalize">
+                      <Badge variant="neutral" className="text-label-sm capitalize">
                         {seller.marketplace}
                       </Badge>
                     </div>
-                    <div className="space-y-1 text-muted-foreground text-[11px]">
+                    <div className="space-y-1 text-muted-foreground text-meta">
                       <div>Observed Catalog Share: <span className="font-semibold text-foreground">{seller.shareOfObservedCatalogPercent}%</span></div>
                       <div>Observed Reviews: <span className="font-semibold text-foreground">{seller.observedTotalReviews ?? "—"}</span></div>
                       <div>Barrier Rating: <span className="font-semibold text-foreground">{seller.establishedBarrier}</span></div>
@@ -443,18 +443,18 @@ export function ProductResearchCommandCenter({
               {result.opportunities.map((opp, idx) => (
                 <Card key={idx} className="p-5 border rounded-xl bg-card space-y-3 shadow-xs">
                   <div className="flex items-center justify-between">
-                    <Badge variant="neutral" className="text-[10px]">
+                    <Badge variant="neutral" className="text-label-sm">
                       {opp.type}
                     </Badge>
-                    <Badge variant={opp.verdictVariant} className="text-[10px]">
+                    <Badge variant={opp.verdictVariant} className="text-label-sm">
                       Score: {opp.score}/100
                     </Badge>
                   </div>
                   <h4 className="text-sm font-bold text-foreground">{opp.title}</h4>
-                  <p className="text-xs text-muted-foreground">{opp.explanation.headline}</p>
+                  <p className="text-sm text-muted-foreground">{opp.explanation.headline}</p>
 
-                  <div className="pt-2 border-t flex items-center justify-between text-xs">
-                    <span className="text-[11px] text-muted-foreground">{opp.confidence}% confidence</span>
+                  <div className="pt-2 border-t flex items-center justify-between text-sm">
+                    <span className="text-meta text-muted-foreground">{opp.confidence}% confidence</span>
                     <a
                       href={`/validate?q=${encodeURIComponent(opp.title)}&marketplace=${opp.marketplace}`}
                       className="text-primary font-bold hover:underline"
@@ -471,11 +471,11 @@ export function ProductResearchCommandCenter({
           {activeTab === "decision" && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="p-5 border rounded-xl bg-card space-y-3">
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 block flex items-center gap-1.5">
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 block flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
                   Top Drivers to Pursue
                 </span>
-                <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+                <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
                   {result.commercialDecision.topReasons.map((r, i) => (
                     <li key={i}>{r}</li>
                   ))}
@@ -483,11 +483,11 @@ export function ProductResearchCommandCenter({
               </Card>
 
               <Card className="p-5 border rounded-xl bg-card space-y-3">
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 block flex items-center gap-1.5">
+                <span className="text-sm font-bold text-amber-600 dark:text-amber-400 block flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4" />
                   Strongest Risks
                 </span>
-                <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground">
+                <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground">
                   {result.commercialDecision.topRisks.map((r, i) => (
                     <li key={i}>{r}</li>
                   ))}
@@ -495,11 +495,11 @@ export function ProductResearchCommandCenter({
               </Card>
 
               <Card className="p-5 border rounded-xl bg-card space-y-3">
-                <span className="text-xs font-bold text-muted-foreground block flex items-center gap-1.5">
+                <span className="text-sm font-bold text-muted-foreground block flex items-center gap-1.5">
                   <HelpCircle className="w-4 h-4" />
                   Unknown Signals
                 </span>
-                <ul className="space-y-1.5 list-disc pl-4 text-xs text-muted-foreground/80">
+                <ul className="space-y-1.5 list-disc pl-4 text-sm text-muted-foreground/80">
                   {result.commercialDecision.unobservedSignals.map((u, i) => (
                     <li key={i}>{u}</li>
                   ))}
@@ -512,7 +512,7 @@ export function ProductResearchCommandCenter({
           {activeTab === "quality" && (
             <Card className="p-6 border rounded-xl bg-card space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-foreground">
+                <h3 className="text-base font-bold text-foreground">
                   Data Quality & Trust Breakdown
                 </h3>
                 <Badge variant={result.researchQuality.qualityTier === "HIGH" ? "success" : "info"} className="text-xs">
@@ -520,13 +520,13 @@ export function ProductResearchCommandCenter({
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 text-sm">
                 {result.marketplaceCoverage.map((mc, idx) => (
                   <div key={idx} className="p-3 rounded-lg bg-muted/30 border space-y-1">
                     <span className="font-bold text-foreground capitalize block">{mc.marketplace}</span>
-                    <div className="text-[11px] text-muted-foreground">Status: <span className="font-medium text-foreground">{mc.status}</span></div>
-                    <div className="text-[11px] text-muted-foreground">Observed: <span className="font-medium text-foreground">{mc.itemCount} listings</span></div>
-                    <div className="text-[11px] text-muted-foreground">Completeness: <span className="font-medium text-foreground">{mc.fieldCompletenessPercent}%</span></div>
+                    <div className="text-meta text-muted-foreground">Status: <span className="font-medium text-foreground">{mc.status}</span></div>
+                    <div className="text-meta text-muted-foreground">Observed: <span className="font-medium text-foreground">{mc.itemCount} listings</span></div>
+                    <div className="text-meta text-muted-foreground">Completeness: <span className="font-medium text-foreground">{mc.fieldCompletenessPercent}%</span></div>
                   </div>
                 ))}
               </div>
@@ -536,10 +536,10 @@ export function ProductResearchCommandCenter({
           {/* Tab: Acquisition Trace */}
           {activeTab === "trace" && (
             <Card className="p-6 border rounded-xl bg-card space-y-4 shadow-sm">
-              <h3 className="text-sm font-bold text-foreground">
+              <h3 className="text-base font-bold text-foreground">
                 Compliant Public Acquisition Trace
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Verifiable execution steps across public ingestion streams, query normalizers, and memory repositories.
               </p>
 
@@ -547,18 +547,18 @@ export function ProductResearchCommandCenter({
                 {result.acquisitionTrace.map((step, idx) => (
                   <div key={idx} className="p-3 rounded-lg bg-muted/30 border flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-label-sm font-bold flex items-center justify-center">
                         {step.stepIndex}
                       </span>
                       <span className="font-bold text-foreground">{step.action}</span>
                       {step.marketplace && (
-                        <Badge variant="neutral" className="text-[10px] uppercase font-sans">
+                        <Badge variant="neutral" className="text-label-sm uppercase font-sans">
                           {step.marketplace}
                         </Badge>
                       )}
                       <span className="text-muted-foreground font-sans">{step.details}</span>
                     </div>
-                    <span className="text-muted-foreground text-[10px] shrink-0 font-sans">{step.durationMs}ms</span>
+                    <span className="text-muted-foreground text-label-sm shrink-0 font-sans">{step.durationMs}ms</span>
                   </div>
                 ))}
               </div>
@@ -583,13 +583,13 @@ export function ProductResearchCommandCenter({
             <h3 className="text-base font-bold text-foreground">
               Ready to Execute Market Research
             </h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Enter a product idea, keyword, or niche above to analyze empirical pricing distributions (P10–P90), review count barriers, dominant seller shares, and keyword cluster prevalence across live catalogs.
             </p>
           </div>
 
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="text-muted-foreground text-[11px]">Popular starting searches:</span>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="text-muted-foreground text-label-sm">Popular starting searches:</span>
             {["wooden desk organizer", "ceramic pour-over dripper", "linen apron", "leather passport wallet"].map((sample) => (
               <button
                 key={sample}
@@ -597,7 +597,7 @@ export function ProductResearchCommandCenter({
                 onClick={() => {
                   setQuery(sample);
                 }}
-                className="px-3 py-1 rounded-lg border bg-muted/40 hover:bg-muted text-foreground text-xs transition-colors"
+                className="px-3 py-1 rounded-lg border bg-muted/40 hover:bg-muted text-foreground text-sm transition-colors"
               >
                 {sample}
               </button>

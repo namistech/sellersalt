@@ -68,19 +68,19 @@ export function FirstTimeMerchantGuide() {
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
               <ShieldCheck className="h-3.5 w-3.5" />
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">
+            <span className="text-label-sm font-bold uppercase tracking-wider text-emerald-600">
               Merchant Launchpad
             </span>
           </div>
           <h2 className="text-xl font-black text-foreground">
             How SellerSalt Powers Your Ecommerce Decisions
           </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Turn observable marketplace signals into profitable product launches before committing capital.
           </p>
         </div>
 
-        <Badge variant="success" className="text-[10px] font-bold uppercase shrink-0">
+        <Badge variant="success" className="text-label-sm font-bold uppercase shrink-0">
           Zero-Fabrication Intelligence
         </Badge>
       </div>
@@ -98,14 +98,14 @@ export function FirstTimeMerchantGuide() {
                   <div className={`p-2 rounded-xl ${s.color}`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <Badge variant="neutral" className="text-[9px] font-bold">
+                  <Badge variant="neutral" className="text-label-sm font-bold">
                     Step {s.step}
                   </Badge>
                 </div>
 
                 <div>
                   <h3 className="text-sm font-bold text-foreground">{s.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                     {s.description}
                   </p>
                 </div>
@@ -115,7 +115,7 @@ export function FirstTimeMerchantGuide() {
                 href={s.href}
                 size="compact"
                 variant="secondary"
-                className="w-full text-xs font-semibold"
+                className="w-full text-sm font-semibold"
               >
                 <span>{s.cta}</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />

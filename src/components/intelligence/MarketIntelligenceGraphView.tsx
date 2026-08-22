@@ -72,11 +72,11 @@ export function MarketIntelligenceGraphView({
           </div>
 
           {stats && (
-            <div className="flex items-center gap-2 text-xs">
-              <Badge variant="neutral" className="text-[11px]">
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="neutral" className="text-label-sm">
                 {stats.nodeCount} Total Entities
               </Badge>
-              <Badge variant="neutral" className="text-[11px]">
+              <Badge variant="neutral" className="text-label-sm">
                 {stats.edgeCount} Verified Relationships
               </Badge>
             </div>
@@ -87,7 +87,7 @@ export function MarketIntelligenceGraphView({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t">
             {/* Graph Nodes List */}
             <div className="lg:col-span-2 space-y-3">
-              <h3 className="text-xs font-bold text-foreground">
+              <h3 className="text-sm font-bold text-foreground">
                 Connected Nodes ({subgraph.nodes.length}) & Edges ({subgraph.edges.length})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-96 overflow-y-auto pr-1">
@@ -95,23 +95,23 @@ export function MarketIntelligenceGraphView({
                   <div
                     key={node.id}
                     onClick={() => setSelectedNode(node)}
-                    className={`p-3 rounded-xl border text-xs cursor-pointer transition-colors space-y-1 ${
+                    className={`p-3 rounded-xl border text-sm cursor-pointer transition-colors space-y-1 ${
                       selectedNode?.id === node.id
                         ? "bg-primary/10 border-primary"
                         : "bg-muted/30 border-border hover:bg-muted/50"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <Badge variant="neutral" className="text-[10px]">
+                      <Badge variant="neutral" className="text-label-sm">
                         {node.entityType}
                       </Badge>
                       {node.marketplace && (
-                        <span className="text-[10px] text-muted-foreground capitalize">{node.marketplace}</span>
+                        <span className="text-label-sm text-muted-foreground capitalize">{node.marketplace}</span>
                       )}
                     </div>
                     <p className="font-bold text-foreground truncate">{node.label}</p>
                     {node.metrics?.price !== undefined && (
-                      <span className="text-[11px] text-primary font-semibold">
+                      <span className="text-sm text-primary font-semibold">
                         ${node.metrics.price.toFixed(2)}
                       </span>
                     )}
@@ -122,21 +122,21 @@ export function MarketIntelligenceGraphView({
 
             {/* Selected Node Details */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-foreground">Entity Details</h3>
+              <h3 className="text-sm font-bold text-foreground">Entity Details</h3>
               {selectedNode ? (
-                <div className="p-4 rounded-xl bg-card border space-y-3 text-xs">
-                  <Badge variant="neutral" className="text-[10px]">
+                <div className="p-4 rounded-xl bg-card border space-y-3 text-sm">
+                  <Badge variant="neutral" className="text-label-sm">
                     {selectedNode.entityType}
                   </Badge>
                   <h4 className="font-bold text-foreground">{selectedNode.label}</h4>
-                  <div className="space-y-1.5 text-muted-foreground text-[11px]">
-                    <div>Canonical ID: <code className="text-[10px] block truncate">{selectedNode.id}</code></div>
+                  <div className="space-y-1.5 text-muted-foreground text-meta">
+                    <div>Canonical ID: <code className="text-label-sm block truncate">{selectedNode.id}</code></div>
                     {selectedNode.marketplace && <div>Marketplace: <span className="capitalize text-foreground font-medium">{selectedNode.marketplace}</span></div>}
                     {selectedNode.metrics?.price !== undefined && <div>Price: <span className="text-foreground font-semibold">${selectedNode.metrics.price.toFixed(2)}</span></div>}
                   </div>
                 </div>
               ) : (
-                <div className="p-8 rounded-xl bg-muted/20 border text-center text-xs text-muted-foreground">
+                <div className="p-8 rounded-xl bg-muted/20 border text-center text-sm text-muted-foreground">
                   Select a node to inspect entity metrics and relationships.
                 </div>
               )}

@@ -187,12 +187,12 @@ export function ProductResearchDrawer({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center p-3 rounded-lg bg-[#FAFAF8] border border-line-subtle">
               <div className="text-center sm:text-left sm:border-r border-line-subtle sm:pr-4">
-                <div className="text-[11px] font-bold text-ink-tertiary uppercase">Radar Score</div>
+                <div className="text-label-sm font-bold text-ink-tertiary uppercase">Radar Score</div>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="font-mono text-3xl font-extrabold text-[#0E8F5D]">
                     {opportunity.opportunityScore}
                   </span>
-                  <span className="text-xs text-ink-tertiary">/100</span>
+                  <span className="text-sm text-ink-tertiary">/100</span>
                 </div>
               </div>
 
@@ -202,7 +202,7 @@ export function ProductResearchDrawer({
                     {opportunity.classificationEmoji} {opportunity.classificationLabel}
                   </span>
                 </div>
-                <div className="text-xs text-ink-secondary leading-snug">
+                <div className="text-sm text-ink-secondary leading-snug">
                   {opportunity.reason}
                 </div>
               </div>
@@ -325,25 +325,25 @@ export function ProductResearchDrawer({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
                 <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                  <div className="text-[10px] text-ink-tertiary">Lifetime Sales</div>
+                  <div className="text-label-sm text-ink-tertiary">Lifetime Sales</div>
                   <div className="font-bold font-mono text-sm text-ink mt-0.5">
                     {shop.totalSales.toLocaleString()}
                   </div>
                 </div>
                 <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                  <div className="text-[10px] text-ink-tertiary">Active Listings</div>
+                  <div className="text-label-sm text-ink-tertiary">Active Listings</div>
                   <div className="font-bold font-mono text-sm text-ink mt-0.5">
                     {shop.activeListings}
                   </div>
                 </div>
                 <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                  <div className="text-[10px] text-ink-tertiary">Reviews / Rating</div>
+                  <div className="text-label-sm text-ink-tertiary">Reviews / Rating</div>
                   <div className="font-bold font-mono text-sm text-ink mt-0.5">
                     {shop.reviewCount} ★ {shop.reviewAverage ? shop.reviewAverage.toFixed(1) : "—"}
                   </div>
                 </div>
                 <div className="bg-[#FAFAF8] p-2 rounded-lg border border-line-subtle">
-                  <div className="text-[10px] text-ink-tertiary">Shop Age</div>
+                  <div className="text-label-sm text-ink-tertiary">Shop Age</div>
                   <div className="font-bold font-mono text-sm text-ink mt-0.5">
                     {Math.round(shop.shopAgeMonths)} mos
                   </div>

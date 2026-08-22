@@ -134,7 +134,7 @@ export function MarketplaceSelector({
               {liveNow ? (
                 <span className="h-1.5 w-1.5 rounded-full bg-[#16C784]" />
               ) : (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-muted border border-line text-ink-tertiary">
+                <span className="text-label-sm font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-muted border border-line text-ink-tertiary">
                   {m.status === "ARCHITECTURE_READY" ? "Coming soon" : "Partial"}
                 </span>
               )}
@@ -145,7 +145,7 @@ export function MarketplaceSelector({
 
       {/* Non-intrusive notification when clicking an unavailable marketplace */}
       {tooltipMarketplace && (
-        <div className="text-[11px] text-ink-secondary bg-surface-muted border border-line px-3 py-1.5 rounded-lg flex items-center gap-1.5 animate-fadeIn">
+        <div className="text-meta text-ink-secondary bg-surface-muted border border-line px-3 py-1.5 rounded-lg flex items-center gap-1.5 animate-fadeIn">
           <span>ℹ️</span>
           <span>
             <strong>{tooltipMarketplace}</strong> research is not yet available. Full product research and listing intelligence are currently live on <strong>Etsy</strong>.

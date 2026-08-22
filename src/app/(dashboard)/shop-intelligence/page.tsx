@@ -551,7 +551,7 @@ export default function ShopIntelligencePage() {
                           >
                             {shop.shopName}
                           </Link>
-                          <div className="text-[11px] text-ink-tertiary">
+                          <div className="text-meta text-ink-tertiary">
                             Tracking since {new Date(shop.trackingSince).toLocaleDateString()}
                           </div>
                         </div>
@@ -559,7 +559,7 @@ export default function ShopIntelligencePage() {
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         {shop.velocity.isSpike && (
-                          <Badge variant="warning" className="text-[10px]">
+                          <Badge variant="warning" className="text-label-sm">
                             ⚡ Spike
                           </Badge>
                         )}
@@ -570,33 +570,33 @@ export default function ShopIntelligencePage() {
                     </div>
 
                     {/* Strategic Competition Verdict */}
-                    <div className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle flex items-center justify-between text-xs">
+                    <div className="p-2.5 rounded-lg bg-[#FAFAF8] border border-line-subtle flex items-center justify-between text-sm">
                       <div>
-                        <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Strategic Verdict</span>
+                        <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Strategic Verdict</span>
                         <span className="font-bold text-ink">{verdictLabel}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Opportunity</span>
+                        <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Opportunity</span>
                         <span className="font-bold text-[#0E8F5D] tabular-nums">{compScore}/100</span>
                       </div>
                     </div>
 
                     {/* Core Metric Delta Grid */}
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
                       <div className="p-2 rounded-lg bg-surface-muted">
-                        <span className="text-[10px] text-ink-tertiary block">6h Delta</span>
+                        <span className="text-meta text-ink-tertiary block">6h Delta</span>
                         <span className="font-bold text-[#0E8F5D] tabular-nums">
                           +{shop.deltas.salesDelta6h ?? 0}
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-surface-muted">
-                        <span className="text-[10px] text-ink-tertiary block">24h Delta</span>
+                        <span className="text-meta text-ink-tertiary block">24h Delta</span>
                         <span className="font-bold text-ink tabular-nums">
                           +{shop.deltas.salesDelta24h ?? shop.deltas.salesDeltaToday ?? 0}
                         </span>
                       </div>
                       <div className="p-2 rounded-lg bg-surface-muted">
-                        <span className="text-[10px] text-ink-tertiary block">7d Delta</span>
+                        <span className="text-meta text-ink-tertiary block">7d Delta</span>
                         <span className="font-bold text-[#0E8F5D] tabular-nums">
                           +{shop.deltas.salesDelta7d ?? 0}
                         </span>
@@ -604,7 +604,7 @@ export default function ShopIntelligencePage() {
                     </div>
 
                     {/* Summary Row */}
-                    <div className="space-y-1.5 text-xs text-ink-secondary pt-1">
+                    <div className="space-y-1.5 text-sm text-ink-secondary pt-1">
                       <div className="flex justify-between">
                         <span>Lifetime Sales [ACTUAL]:</span>
                         <span className="font-bold text-ink tabular-nums">
@@ -635,14 +635,14 @@ export default function ShopIntelligencePage() {
                   {/* Actions Bar (Internal Research First) */}
                   <div className="pt-3 border-t border-line-subtle flex items-center justify-between gap-2">
                     <Link href={`/shops/${shop.shopExternalId}`} className="flex-1">
-                      <Button variant="primary" size="compact" className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-xs font-bold text-white">
+                      <Button variant="primary" size="compact" className="w-full bg-[#0E8F5D] hover:bg-[#0C7A52] text-sm font-bold text-white">
                         Analyze Listings
                       </Button>
                     </Link>
 
                     <Link
                       href={`/keyword-research?query=${encodeURIComponent(shop.shopName)}`}
-                      className="p-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-[#E7FAF1] text-ink hover:text-[#0E8F5D] text-xs font-bold transition flex items-center gap-1"
+                      className="p-1.5 rounded-lg border border-line bg-[#FAFAF8] hover:bg-[#E7FAF1] text-ink hover:text-[#0E8F5D] text-sm font-bold transition flex items-center gap-1"
                       title="Mine Keyword Cluster from Shop"
                     >
                       <Tag className="h-3.5 w-3.5" />
@@ -652,7 +652,7 @@ export default function ShopIntelligencePage() {
                       variant="secondary"
                       size="compact"
                       onClick={() => openHistoryModal(shop.shopExternalId)}
-                      className="text-xs px-2"
+                      className="text-sm px-2"
                       title="View Historical Growth"
                     >
                       <History className="h-3.5 w-3.5" />
@@ -674,9 +674,9 @@ export default function ShopIntelligencePage() {
         ) : (
           /* Dense Table View */
           <Card padding="md" className="border-line bg-white shadow-xs overflow-x-auto">
-            <table className="w-full text-left text-xs text-ink">
+            <table className="w-full text-left text-sm text-ink">
               <thead>
-                <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-line text-ink-tertiary uppercase tracking-wider text-label-sm">
                   <th className="py-2.5 pr-4 font-bold">Shop Name</th>
                   <th className="py-2.5 pr-4 font-bold text-right">Lifetime Sales</th>
                   <th className="py-2.5 pr-4 font-bold text-right">6h Delta</th>
@@ -698,7 +698,7 @@ export default function ShopIntelligencePage() {
                       >
                         {shop.shopName}
                       </Link>
-                      <div className="text-[10px] text-ink-tertiary">
+                      <div className="text-meta text-ink-tertiary">
                         Tracking since {new Date(shop.trackingSince).toLocaleDateString()}
                       </div>
                     </td>
@@ -728,7 +728,7 @@ export default function ShopIntelligencePage() {
                     <td className="py-3 pr-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/shops/${shop.shopExternalId}`}>
-                          <Button variant="secondary" size="compact" className="text-[11px] h-7 px-2">
+                          <Button variant="secondary" size="compact" className="text-label-sm h-7 px-2">
                             Research
                           </Button>
                         </Link>

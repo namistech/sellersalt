@@ -72,7 +72,7 @@ export function TaxonomyTreeBrowser({
 
           {hasChildren && (
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded font-mono shrink-0 ${
+              className={`text-label-sm px-1.5 py-0.2 rounded font-mono shrink-0 ${
                 isSelected ? "bg-white/20 text-white" : "bg-surface-muted text-ink-tertiary"
               }`}
             >
@@ -98,7 +98,7 @@ export function TaxonomyTreeBrowser({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Filter taxonomy nodes..."
-          className="text-xs pl-8 h-8"
+          className="text-sm pl-8 h-8"
         />
         <Search className="h-3.5 w-3.5 text-ink-tertiary absolute left-2.5 top-2.5 pointer-events-none" />
       </div>
@@ -108,7 +108,7 @@ export function TaxonomyTreeBrowser({
         {searchQuery.trim() ? (
           searchResults && searchResults.length > 0 ? (
             <div className="space-y-1">
-              <div className="text-[10px] uppercase font-bold text-ink-tertiary px-2">
+              <div className="text-label-sm uppercase font-bold text-ink-tertiary px-2">
                 Matching Categories ({searchResults.length})
               </div>
               {searchResults.map((result) => {
@@ -117,7 +117,7 @@ export function TaxonomyTreeBrowser({
                   <div
                     key={result.id}
                     onClick={() => onSelectCategory(result.id)}
-                    className={`p-2 rounded-lg text-xs cursor-pointer transition-colors ${
+                    className={`p-2 rounded-lg text-sm cursor-pointer transition-colors ${
                       isSelected
                         ? "bg-[#0E8F5D] text-white font-bold"
                         : "text-ink-secondary hover:bg-surface-muted hover:text-ink font-medium"
@@ -125,11 +125,11 @@ export function TaxonomyTreeBrowser({
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate font-semibold">{result.name}</span>
-                      <span className={`text-[10px] font-mono ${isSelected ? "text-white/80" : "text-ink-tertiary"}`}>
+                      <span className={`text-label-sm font-mono ${isSelected ? "text-white/80" : "text-ink-tertiary"}`}>
                         L{result.level}
                       </span>
                     </div>
-                    <div className={`text-[10px] truncate mt-0.5 ${isSelected ? "text-white/80" : "text-ink-tertiary"}`}>
+                    <div className={`text-meta truncate mt-0.5 ${isSelected ? "text-white/80" : "text-ink-tertiary"}`}>
                       {result.fullPath}
                     </div>
                   </div>
