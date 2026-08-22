@@ -87,7 +87,7 @@
   background: var(--text-main);
   color: #FFFFFF;
   padding: 10px 16px;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
   text-align: center;
   position: relative;
@@ -467,7 +467,7 @@
   transform: translateX(-50%);
   background: var(--accent);
   color: #FFFFFF;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   padding: 4px 12px;
   border-radius: var(--radius-pill);
@@ -497,7 +497,7 @@
 }
 
 .sellersalt-marketing .pricing-trial-note {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--accent-dark);
   font-weight: 600;
   margin-bottom: 24px;
@@ -608,7 +608,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -642,7 +642,7 @@
   gap: 8px;
   padding: 8px 16px;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -699,7 +699,7 @@
 }
 
 .sellersalt-marketing .workflow-step-num {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
   color: var(--accent);
   background: var(--accent-soft);
