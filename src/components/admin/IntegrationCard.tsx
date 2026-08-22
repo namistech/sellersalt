@@ -80,6 +80,18 @@ export function IntegrationCard({
   const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  React.useEffect(() => {
+    setFieldValues((prev) => {
+      const next = { ...prev };
+      for (const f of fields) {
+        if (!f.isSecret && f.value !== undefined && (prev[f.key] === undefined || prev[f.key] === "")) {
+          next[f.key] = f.value;
+        }
+      }
+      return next;
+    });
+  }, [fields]);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -266,7 +278,7 @@ export function IntegrationCard({
                     {field.type === "select" ? (
                       <select
                         id={`input-${field.key}`}
-                        value={fieldValues[field.key] || ""}
+                        value={fieldValues[field.key] !== undefined ? fieldValues[field.key] : (field.value || "")}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
                         className="w-full text-xs bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                       >
@@ -280,8 +292,8 @@ export function IntegrationCard({
                       <input
                         id={`input-${field.key}`}
                         type={isMasked ? "password" : field.type || "text"}
-                        placeholder={field.placeholder || (field.isSecret ? "••••••••••••••••" : "")}
-                        value={fieldValues[field.key] || ""}
+                        placeholder={field.placeholder || (field.isSecret ? (field.hasValue ? "•••••••••••••••• (Configured)" : "••••••••••••••••") : "")}
+                        value={fieldValues[field.key] !== undefined ? fieldValues[field.key] : (field.isSecret ? "" : (field.value || ""))}
                         onChange={(e) => handleFieldChange(field.key, e.target.value)}
                         className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink placeholder:text-ink-tertiary focus:bg-white focus:outline-none focus:border-[#0E8F5D] pr-10"
                       />

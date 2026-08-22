@@ -237,8 +237,8 @@ export function AdminSidebar({
   onToggleCollapse: externalToggle,
   className,
 }: AdminSidebarProps) {
-  // Default to auto-collapsed as requested
-  const [internalCollapsed, setInternalCollapsed] = useState(true);
+  // Default to open/expanded
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;

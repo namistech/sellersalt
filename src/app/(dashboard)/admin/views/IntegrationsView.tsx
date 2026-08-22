@@ -48,6 +48,11 @@ export function IntegrationsView({
 
   const handleBulkSave = async (updates: Record<string, string>) => {
     for (const [k, v] of Object.entries(updates)) {
+      const setting = settings.find((item) => item.key === k);
+      // If field is secret and already has a configured value in DB, do not overwrite with empty string if unedited
+      if (setting?.isSecret && setting.hasValue && !v) {
+        continue;
+      }
       if (v !== getVal(k)) {
         await onSaveSetting(k, v);
       }

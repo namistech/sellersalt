@@ -38,6 +38,10 @@ export function FreePlanConfigView({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  React.useEffect(() => {
+    setEnabled(freePlanEnabled);
+  }, [freePlanEnabled]);
+
   // Limits
   const [limits, setLimits] = useState({
     keywordSearchesPerMonth: freePackage?.limits?.keywordSearchesPerMonth ?? 10,
@@ -50,6 +54,22 @@ export function FreePlanConfigView({
     connectedStoresMax: freePackage?.limits?.connectedStoresMax ?? 1,
     canExportData: Boolean(freePackage?.limits?.canExportData ?? false),
   });
+
+  React.useEffect(() => {
+    if (freePackage?.limits) {
+      setLimits({
+        keywordSearchesPerMonth: freePackage.limits.keywordSearchesPerMonth ?? 10,
+        productSearchesPerMonth: freePackage.limits.productSearchesPerMonth ?? 10,
+        competitorsTracked: freePackage.limits.competitorsTracked ?? 1,
+        listingsTracked: freePackage.limits.listingsTracked ?? 5,
+        shopsTracked: freePackage.limits.shopsTracked ?? 1,
+        aiGenerationsPerMonth: freePackage.limits.aiGenerationsPerMonth ?? 3,
+        plannerItemsMax: freePackage.limits.plannerItemsMax ?? 10,
+        connectedStoresMax: freePackage.limits.connectedStoresMax ?? 1,
+        canExportData: Boolean(freePackage.limits.canExportData ?? false),
+      });
+    }
+  }, [freePackage]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

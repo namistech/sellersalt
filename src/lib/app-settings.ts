@@ -245,3 +245,27 @@ export async function setSetting(key: SettingKey, value: string): Promise<void> 
     update: { value: def.isSecret ? encrypt(normalized) : normalized },
   });
 }
+
+/**
+ * Idempotent — inserts default values only for setting keys that do not already exist in the database.
+ * Never overwrites or updates any existing setting that an administrator has set.
+ */
+export async function ensureDefaultSettings(defaults: Partial<Record<SettingKey, string>> = {}): Promise<void> {
+  const keys = Object.keys(defaults) as SettingKey[];
+  if (keys.length === 0) return;
+
+  const existing = await prisma.appSetting.findMany({
+    where: { key: { in: keys } },
+    select: { key: true },
+  });
+  const existingKeys = new Set(existing.map((r: { key: string }) => r.key));
+
+  for (const key of keys) {
+    if (!existingKeys.has(key)) {
+      const val = defaults[key];
+      if (val !== undefined && val !== null) {
+        await setSetting(key, val);
+      }
+    }
+  }
+}

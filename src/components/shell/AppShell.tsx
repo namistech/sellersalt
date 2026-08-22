@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X, AlertCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/components/ui";
 import { buildNavigation } from "@/services/navigation";
@@ -125,16 +125,26 @@ export function AppShell({ context, notifications: initialNotifications, searchR
     }
   }
 
+  const pathname = usePathname() ?? "";
+  const isAdminRoute = pathname.startsWith("/admin");
+
   // SSR-safe: default to expanded on first render (matches server markup),
-  // then read the persisted preference once mounted.
+  // auto-collapse when inside /admin, or read persisted preference on normal routes.
   useEffect(() => {
+    if (isAdminRoute) {
+      setCollapsed(true);
+      return;
+    }
     const stored = window.localStorage.getItem(COLLAPSE_STORAGE_KEY);
     if (stored === "true") setCollapsed(true);
-  }, []);
+    else if (stored === "false") setCollapsed(false);
+  }, [isAdminRoute]);
 
   useEffect(() => {
-    window.localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
-  }, [collapsed]);
+    if (!isAdminRoute) {
+      window.localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
+    }
+  }, [collapsed, isAdminRoute]);
 
   useEffect(() => {
     function handleKeydown(e: KeyboardEvent) {

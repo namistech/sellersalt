@@ -37,6 +37,7 @@ interface BrandingSeoViewProps {
 
 export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: BrandingSeoViewProps) {
   const getVal = (key: string) => settings.find((s) => s.key === key)?.value || "";
+  const getFieldValue = (key: string) => (formData[key] !== undefined ? formData[key] : (getVal(key) || ""));
 
   const [formData, setFormData] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {};
@@ -45,6 +46,18 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
     }
     return map;
   });
+
+  React.useEffect(() => {
+    setFormData((prev) => {
+      const next: Record<string, string> = { ...prev };
+      for (const s of settings) {
+        if (s.value !== undefined && (prev[s.key] === undefined || prev[s.key] === "")) {
+          next[s.key] = s.value;
+        }
+      }
+      return next;
+    });
+  }, [settings]);
 
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
@@ -57,10 +70,10 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
   const handleSaveAll = async () => {
     setSaveStatus("saving");
     try {
-      const keysToSave = Object.keys(formData);
-      for (const key of keysToSave) {
-        if (formData[key] !== getVal(key)) {
-          await onSaveSetting(key, formData[key]);
+      for (const s of settings) {
+        const currentVal = formData[s.key] !== undefined ? formData[s.key] : (s.value || "");
+        if (currentVal !== (s.value || "")) {
+          await onSaveSetting(s.key, currentVal);
         }
       }
       await onRefreshSettings();
@@ -141,7 +154,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
           <div className="flex-1 min-w-[200px] space-y-2">
             <input
               type="text"
-              value={formData[key] || ""}
+              value={getFieldValue(key)}
               placeholder="https://assets.sellersalt.com/branding/..."
               onChange={(e) => handleChange(key, e.target.value)}
               className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-1.5 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -367,7 +380,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="text"
-                  value={formData["seo_default_title"] || ""}
+                  value={getFieldValue("seo_default_title")}
                   onChange={(e) => handleChange("seo_default_title", e.target.value)}
                   placeholder="SellerSalt — The Operating System for High-Volume Etsy Sellers"
                   className="w-full text-xs bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -380,7 +393,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <textarea
                   rows={3}
-                  value={formData["seo_default_description"] || ""}
+                  value={getFieldValue("seo_default_description")}
                   onChange={(e) => handleChange("seo_default_description", e.target.value)}
                   placeholder="Comprehensive competitor intelligence, SEO keyword research, and shop analytics..."
                   className="w-full text-xs bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -393,7 +406,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="url"
-                  value={formData["seo_canonical_url"] || ""}
+                  value={getFieldValue("seo_canonical_url")}
                   onChange={(e) => handleChange("seo_canonical_url", e.target.value)}
                   placeholder="https://sellersalt.com"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -420,7 +433,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="text"
-                  value={formData["seo_google_site_verification"] || ""}
+                  value={getFieldValue("seo_google_site_verification")}
                   onChange={(e) => handleChange("seo_google_site_verification", e.target.value)}
                   placeholder="e.g. google-site-verification token or full tag"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -434,7 +447,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="text"
-                  value={formData["seo_bing_site_verification"] || ""}
+                  value={getFieldValue("seo_bing_site_verification")}
                   onChange={(e) => handleChange("seo_bing_site_verification", e.target.value)}
                   placeholder="e.g. msvalidate.01 token or XML code"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -448,7 +461,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="text"
-                  value={formData["seo_meta_domain_verification"] || ""}
+                  value={getFieldValue("seo_meta_domain_verification")}
                   onChange={(e) => handleChange("seo_meta_domain_verification", e.target.value)}
                   placeholder="e.g. facebook-domain-verification token"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -462,7 +475,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 </label>
                 <input
                   type="text"
-                  value={formData["seo_pinterest_site_verification"] || ""}
+                  value={getFieldValue("seo_pinterest_site_verification")}
                   onChange={(e) => handleChange("seo_pinterest_site_verification", e.target.value)}
                   placeholder="e.g. p:domain_verify token"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -477,7 +490,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
               </label>
               <textarea
                 rows={3}
-                value={formData["seo_custom_meta_tags"] || ""}
+                value={getFieldValue("seo_custom_meta_tags")}
                 onChange={(e) => handleChange("seo_custom_meta_tags", e.target.value)}
                 placeholder={'<meta name="custom-verification" content="xyz" />\nor name=content pairs'}
                 className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -500,7 +513,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 <label className="text-xs font-semibold text-ink block mb-1">Organization Schema Name</label>
                 <input
                   type="text"
-                  value={formData["seo_schema_org_name"] || ""}
+                  value={getFieldValue("seo_schema_org_name")}
                   onChange={(e) => handleChange("seo_schema_org_name", e.target.value)}
                   placeholder="SellerSalt Technologies Inc."
                   className="w-full text-xs bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
@@ -511,7 +524,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 <label className="text-xs font-semibold text-ink block mb-1">WebSite Schema Name</label>
                 <input
                   type="text"
-                  value={formData["seo_schema_website_name"] || ""}
+                  value={getFieldValue("seo_schema_website_name")}
                   onChange={(e) => handleChange("seo_schema_website_name", e.target.value)}
                   placeholder="SellerSalt"
                   className="w-full text-xs bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"

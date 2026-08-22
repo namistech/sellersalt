@@ -266,7 +266,7 @@ interface EmailTemplateSummary {
 
 export function AdminPackagesClient() {
   const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogEntry[]>([]);

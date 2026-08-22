@@ -54,6 +54,19 @@ export function SecurityAbuseView({
   const [disposableDraft, setDisposableDraft] = useState(disposableDomainsVal);
   const [allowedFreeDraft, setAllowedFreeDraft] = useState(allowedFreeDomainsVal);
   const [maxFreeDraft, setMaxFreeDraft] = useState(maxFreePerBusinessVal);
+
+  React.useEffect(() => {
+    setDisposableDraft((prev) => (prev === "" || prev === undefined ? disposableDomainsVal : prev));
+  }, [disposableDomainsVal]);
+
+  React.useEffect(() => {
+    setAllowedFreeDraft((prev) => (prev === "" || prev === undefined ? allowedFreeDomainsVal : prev));
+  }, [allowedFreeDomainsVal]);
+
+  React.useEffect(() => {
+    setMaxFreeDraft((prev) => (prev === "" || prev === undefined ? maxFreePerBusinessVal : prev));
+  }, [maxFreePerBusinessVal]);
+
   const [savingField, setSavingField] = useState<string | null>(null);
   const [successField, setSuccessField] = useState<string | null>(null);
   const [logFilter, setLogFilter] = useState("");
