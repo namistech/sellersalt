@@ -59,18 +59,39 @@ Keep `CLAUDE.md`/`AGENTS.md` at repo root short, pointing into this tree.
 
 ## 5. Promotion to Main & Migration Safety Protocol
 
-Whenever promoting code from `staging` to `main`:
+Production and staging use **completely separate PostgreSQL database instances** (e.g. `sellersalt:prod-db` on port 5433 vs `sellersalt:staging-db` on port 15432). Consequently:
+- Applying a Prisma migration in staging **never** updates the production database.
+- Any code promoted to `main` must have its migrations verified against production specifically, not assumed complete because staging is current.
+- Running migrations against production requires strict verification before promoting code.
 
-1. **Verify Migration Status Against Target**:
-   - Check pending migrations against the target database:
-     `DATABASE_URL=<TARGET_DATABASE_URL> npx prisma@5.22.0 migrate status`
+### Automated Runtime Safeguard (Container Entrypoints)
+To prevent the application or worker processes from booting against a stale schema:
+1. **Web Container Entrypoint (`docker/entrypoint-web.sh`)**:
+   - Executes `npx prisma migrate deploy` upon container boot.
+   - If migration fails for any reason (connectivity, lock, SQL constraint), the entrypoint exits immediately with code `1`, halting container launch and triggering orchestration/Coolify auto-rollback rather than silently serving errors.
+2. **Worker Container Entrypoint (`docker/entrypoint-worker.sh`)**:
+   - Executes `npx prisma migrate deploy` before launching background queues (`npx tsx src/workers/index.ts`), ensuring background jobs never process payloads against unmigrated tables.
+
+### Manual Pre-Promotion Checklist (Required for All Main Releases)
+While container entrypoints provide automated runtime protection, developers and agents must perform the following manual verification steps before promoting `staging` to `main`:
+
+1. **Verify Pending Migrations Against Production**:
+   ```bash
+   DATABASE_URL="<PROD_DATABASE_URL>" npx prisma migrate status
+   ```
+   Confirm whether any migrations in `prisma/migrations` are pending on the production database.
+
 2. **Pre-Migration Production Snapshot**:
-   - Always export a verified snapshot of all tables before applying migrations to live production.
-3. **Execute Migration Deployment**:
-   - Run `DATABASE_URL=<TARGET_DATABASE_URL> npx prisma@5.22.0 migrate deploy`
+   Take a complete table export or database snapshot of production prior to running any disruptive schema changes.
+
+3. **Deploy Pending Migrations Explicitly**:
+   ```bash
+   DATABASE_URL="<PROD_DATABASE_URL>" npx prisma migrate deploy
+   ```
+
 4. **Direct DDL & Schema Verification**:
-   - Query `information_schema.columns` on the target database to verify that new columns and tables exist.
-   - Confirm foreign key constraints and enums are created.
-5. **Container Boot Automation**:
-   - `docker/entrypoint-web.sh` runs `npx prisma migrate deploy` on container boot to ensure zero schema-code mismatch on deployment.
+   Verify against live PostgreSQL `information_schema.columns` and `information_schema.tables` that the expected columns, tables, and foreign key constraints exist on production.
+
+5. **Promote Git Branch**:
+   Only after production database schema is verified synchronized, merge or push `staging` to `main`.
 
