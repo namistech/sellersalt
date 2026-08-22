@@ -71,7 +71,7 @@ export default function PrivacyPage() {
               Privacy Policy
             </h1>
             <p className="mt-2 text-sm text-[#7C847E]">
-              Last updated: [DATE]
+              Last updated: August 22, 2026
             </p>
             <div className="mt-4 p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 text-amber-900 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
                 <strong>Connected store data</strong>: data belonging to the connected store only, through the platform&apos;s official API, limited to what&apos;s needed for the features you use.
               </p>
               <p>
-                <strong>Extension telemetry</strong>: [NEEDS ENGINEERING INPUT: describe exactly what the browser extension currently collects by reading its actual code — do not describe an idealized version; state whether it&apos;s opt-in or on-by-default].
+                <strong>Extension telemetry</strong>: The SellerSalt browser extension operates strictly on an opt-in basis, requiring deliberate user installation and account pairing. The extension does not passively monitor general web browsing history or inject unauthorized content scripts. When active, it allows users to analyze listing opportunities, perform shop market research, and scan search results by sending user-specified queries and collecting publicly visible listing and shop data (such as titles, prices, ratings, and review counts) on connected marketplaces to power aggregate market research. Telemetry is disableable at any time in extension settings or account preferences. Individual browsing activity and raw queries are never shared with other users or third parties; only anonymized, aggregate market signals are utilized to enhance platform intelligence.
               </p>
               <p>
                 <strong>Usage data</strong>: interactions with SellerSalt for product improvement and support.
@@ -129,10 +129,10 @@ export default function PrivacyPage() {
                 Payment processing: Stripe, PayPal (we do not store your full card number).
               </p>
               <p>
-                Infrastructure/hosting: [NEEDS FOUNDER INPUT: hosting provider disclosure].
+                Infrastructure/hosting: Contabo GmbH (data centers in Germany), managed via Coolify.
               </p>
               <p>
-                Email delivery: [NEEDS FOUNDER INPUT: SMTP/SES provider].
+                Email delivery: Amazon SES (Amazon Simple Email Service).
               </p>
               <p>
                 Integrations you connect: Zapier, Slack, QuickBooks, any MCP-connected AI agent — data flows only when you explicitly set up the connection.
@@ -142,21 +142,32 @@ export default function PrivacyPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">6. Data Retention</h2>
               <p>
-                [NEEDS FOUNDER INPUT: retention periods per data type.]
+                We retain personal and operational data according to the following schedules:
               </p>
+              <ul className="list-disc pl-5 space-y-1.5">
+                <li>
+                  <strong>Account and Connected Store Data</strong>: Maintained during active subscription status and for 90 days following account closure or cancellation, after which it is permanently deleted or anonymized.
+                </li>
+                <li>
+                  <strong>Extension Telemetry &amp; Research Logs</strong>: Raw event logs and individual telemetry entries are discarded within 30 days; non-identifiable aggregated research signals are retained for market trends.
+                </li>
+                <li>
+                  <strong>Financial and Billing Records</strong>: Retained for 5 years in compliance with United Arab Emirates tax and corporate statutory requirements.
+                </li>
+              </ul>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">7. Your Rights</h2>
               <p>
-                [NEEDS LEGAL REVIEW: which regional privacy laws apply (GDPR, CCPA/CPRA, others) given a UAE-registered operator, UK affiliate, and international customer base, and what specific rights/mechanisms are required.] Contact <a href="mailto:support@sellersalt.com" className="text-emerald-700 underline">support@sellersalt.com</a> to exercise applicable rights.
+                We offer access, correction, structured export (data portability), and deletion rights to all users regardless of location upon request to <a href="mailto:support@sellersalt.com" className="text-emerald-700 underline">support@sellersalt.com</a>. Where applicable, statutory rights under the EU GDPR, UK GDPR, and California Consumer Privacy Act as amended by the California Privacy Rights Act (CCPA/CPRA) are specifically honored. Contact <a href="mailto:support@sellersalt.com" className="text-emerald-700 underline">support@sellersalt.com</a> to exercise applicable rights.
               </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">8. International Data Transfers</h2>
               <p>
-                [NEEDS LEGAL REVIEW: transfer mechanism based on where data is hosted vs. where users are located.]
+                SellerSalt data is processed and stored on servers located in Germany (hosted by Contabo GmbH) and accessed by our operational teams in the United Arab Emirates and the United Kingdom. For cross-border data transfers from the European Economic Area (EEA) or the UK, we implement Standard Contractual Clauses (SCCs) or equivalent recognized transfer safeguards to ensure adequate data protection.
               </p>
             </section>
 

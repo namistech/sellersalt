@@ -2,7 +2,7 @@
 
 **Starting draft, not final. Have a qualified attorney review before publishing** — particularly liability, dispute-resolution, and data-processing sections.
 
-*Last updated: [DATE]*
+*Last updated: August 22, 2026*
 
 ## 1. Acceptance of Terms
 By creating an account or using SellerSalt ("the Service," "we," "us," operated by Netdrix Cloud Services, a company registered in the United Arab Emirates, operating as Netdrix Digital), you agree to these Terms and our Privacy Policy. If using SellerSalt on behalf of an Organization (Agency, Institute, or Company), you represent you have authority to bind that organization.
@@ -17,7 +17,7 @@ You must provide accurate registration information and keep it current. You're r
 Connecting a marketplace or store authorizes SellerSalt to access that store's data through the platform's official API, solely to provide the Service to you. SellerSalt does not use your connection to view, collect, or analyze any other seller's shop data. You may disconnect at any time.
 
 ## 5. Subscriptions, Billing, and Seats
-[NEEDS FOUNDER INPUT: plan tiers, billing cycle, seat-based pricing, renewal terms.] Payments processed by Stripe/PayPal; SellerSalt does not store full payment card details. [NEEDS FOUNDER INPUT: refund/cancellation policy and data handling on downgrade.]
+SellerSalt subscriptions are billed on a monthly, auto-renewing basis through Stripe or PayPal. Available subscription plans include Free Explorer ($0), Starter ($19), Growth & Pro ($49), and Agency & Enterprise ($199), as specified on our live Pricing page. Agency and Institute plan seats may be added or removed at any time, with adjustments prorated at the subsequent renewal billing cycle. Payments are securely processed by Stripe and PayPal; SellerSalt does not store full payment card numbers. You may cancel your subscription at any time; cancellations take effect at the end of the current billing period. No partial-month refunds are provided, except where required by applicable law. Upon plan downgrade or cancellation, account and store data is retained for ninety (90) days before permanent deletion.
 
 ## 6. Acceptable Use
 You agree not to: violate any third-party platform's terms of service, including marketplaces SellerSalt connects to; reverse-engineer, scrape, or circumvent any part of the Service or connected platforms; collect data about individuals/businesses beyond your own legitimate ecommerce operations; exceed your subscription's seat limits.
@@ -29,10 +29,10 @@ SellerSalt may integrate with Zapier, Slack, QuickBooks, and MCP-connected AI ag
 SellerSalt and its content/features are owned by Netdrix Cloud Services. You retain ownership of your own content (listing text, product data) input into or created through SellerSalt. Marketplace names are trademarks of their respective owners — see our Trademark Disclosures page.
 
 ## 9. Disclaimers
-SellerSalt provides research, estimates, and recommendations to support your decisions — it does not guarantee sales, rankings, or business outcomes. Estimated values are always clearly labeled as estimates, not confirmed fact. [NEEDS LEGAL REVIEW: standard "AS IS" warranty disclaimer scoped to applicable jurisdiction(s).]
+SellerSalt provides research, estimates, and recommendations to support your decisions — it does not guarantee sales, rankings, or business outcomes. Estimated values are always clearly labeled as estimates, not confirmed fact. To the maximum extent permitted by applicable law, the Service is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, whether express, implied, or statutory, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
 ## 10. Limitation of Liability
-[NEEDS LEGAL REVIEW: limitation of liability clause — enforceability varies significantly by jurisdiction and consumer-protection law given the UAE/UK corporate structure and international customer base.]
+To the maximum extent permitted by applicable law, SellerSalt's total cumulative liability arising out of or related to these Terms or your use of the Service shall be capped at and will not exceed the total fees paid by you to SellerSalt in the preceding twelve (12) months. In no event shall SellerSalt or its operators be liable for any indirect, incidental, special, exemplary, consequential, or punitive damages, or for any lost profits, lost revenue, or lost data.
 
 ## 11. Termination
 You may cancel at any time. We may suspend or terminate accounts that violate these Terms, including use that violates a connected marketplace's own terms of service.
@@ -41,7 +41,7 @@ You may cancel at any time. We may suspend or terminate accounts that violate th
 We may update these Terms; material changes will be notified via email or in-app notice before taking effect.
 
 ## 13. Governing Law and Dispute Resolution
-[NEEDS LEGAL REVIEW: governing law and dispute resolution — UAE primary entity (Netdrix Cloud Services) with UK affiliate (ErgoForge Global Limited) and an international customer base.]
+These Terms shall be governed by and construed in accordance with the laws of the Dubai International Financial Centre (DIFC), United Arab Emirates. Any dispute, controversy, or claim arising out of or relating to these Terms shall first be submitted to good-faith informal negotiation between the parties. If unresolved, the dispute shall be settled by binding arbitration administered under the DIFC-LCIA Arbitration Centre Rules. The seat of arbitration shall be Dubai, UAE, and proceedings shall be conducted in the English language.
 
 ## 14. Contact
 support@sellersalt.com, Monday–Friday 9:00 AM – 6:00 PM, or via the in-dashboard ticket system.

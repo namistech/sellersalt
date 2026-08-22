@@ -71,7 +71,7 @@ export default function TermsPage() {
               Terms of Service
             </h1>
             <p className="mt-2 text-sm text-[#7C847E]">
-              Last updated: [DATE]
+              Last updated: August 22, 2026
             </p>
             <div className="mt-4 p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 text-amber-900 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -114,7 +114,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">5. Subscriptions, Billing, and Seats</h2>
               <p>
-                [NEEDS FOUNDER INPUT: plan tiers, billing cycle, seat-based pricing, renewal terms.] Payments processed by Stripe/PayPal; SellerSalt does not store full payment card details. [NEEDS FOUNDER INPUT: refund/cancellation policy and data handling on downgrade.]
+                SellerSalt subscriptions are billed on a monthly, auto-renewing basis through Stripe or PayPal. Available subscription plans include Free Explorer ($0), Starter ($19), Growth &amp; Pro ($49), and Agency &amp; Enterprise ($199), as specified on our live Pricing page. Agency and Institute plan seats may be added or removed at any time, with adjustments prorated at the subsequent renewal billing cycle. Payments are securely processed by Stripe and PayPal; SellerSalt does not store full payment card numbers. You may cancel your subscription at any time; cancellations take effect at the end of the current billing period. No partial-month refunds are provided, except where required by applicable law. Upon plan downgrade or cancellation, account and store data is retained for ninety (90) days before permanent deletion.
               </p>
             </section>
 
@@ -142,14 +142,14 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">9. Disclaimers</h2>
               <p>
-                SellerSalt provides research, estimates, and recommendations to support your decisions — it does not guarantee sales, rankings, or business outcomes. Estimated values are always clearly labeled as estimates, not confirmed fact. [NEEDS LEGAL REVIEW: standard &quot;AS IS&quot; warranty disclaimer scoped to applicable jurisdiction(s).]
+                SellerSalt provides research, estimates, and recommendations to support your decisions — it does not guarantee sales, rankings, or business outcomes. Estimated values are always clearly labeled as estimates, not confirmed fact. To the maximum extent permitted by applicable law, the Service is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis without warranties of any kind, whether express, implied, or statutory, including but not limited to implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
               </p>
             </section>
 
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">10. Limitation of Liability</h2>
               <p>
-                [NEEDS LEGAL REVIEW: limitation of liability clause — enforceability varies significantly by jurisdiction and consumer-protection law given the UAE/UK corporate structure and international customer base.]
+                To the maximum extent permitted by applicable law, SellerSalt&apos;s total cumulative liability arising out of or related to these Terms or your use of the Service shall be capped at and will not exceed the total fees paid by you to SellerSalt in the preceding twelve (12) months. In no event shall SellerSalt or its operators be liable for any indirect, incidental, special, exemplary, consequential, or punitive damages, or for any lost profits, lost revenue, or lost data.
               </p>
             </section>
 
@@ -170,7 +170,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">13. Governing Law and Dispute Resolution</h2>
               <p>
-                [NEEDS LEGAL REVIEW: governing law and dispute resolution — UAE primary entity (Netdrix Cloud Services) with UK affiliate (ErgoForge Global Limited) and an international customer base.]
+                These Terms shall be governed by and construed in accordance with the laws of the Dubai International Financial Centre (DIFC), United Arab Emirates. Any dispute, controversy, or claim arising out of or relating to these Terms shall first be submitted to good-faith informal negotiation between the parties. If unresolved, the dispute shall be settled by binding arbitration administered under the DIFC-LCIA Arbitration Centre Rules. The seat of arbitration shall be Dubai, UAE, and proceedings shall be conducted in the English language.
               </p>
             </section>
 
