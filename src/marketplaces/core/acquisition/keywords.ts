@@ -197,6 +197,83 @@ export async function harvestPublicMarketplaceKeywords(
   query: PublicKeywordQuery
 ): Promise<KeywordResearchSummary> {
   registerAllConnectors();
+
+  if (query.marketplace === "ebay") {
+    try {
+      const { harvestEbayBrowseKeywords } = await import("@/services/ebay-browse-api");
+      const harvestRes = await harvestEbayBrowseKeywords(query.query, query.limit || 50, query.organizationId);
+      if (harvestRes.success && harvestRes.items.length > 0) {
+        const h = harvestRes.items[0];
+        const freshness = evaluateFreshness(h.fetchedAt, "general");
+
+        const topKeywords: CanonicalKeywordObservation[] = (h.relatedKeywords || []).map((k) => ({
+          keyword: k.keyword,
+          marketplace: "ebay",
+          occurrenceCount: k.occurrenceCount,
+          listingFrequencyPercent: k.listingFrequency,
+          observedAveragePrice: h.averagePrice,
+          demandProxyScore: k.demandProxy,
+          competitionProxy: (k.listingFrequency > 60 ? "HIGH" : k.listingFrequency > 25 ? "MODERATE" : "LOW") as "HIGH" | "MODERATE" | "LOW",
+          searchVolume: null,
+          searchVolumeProvenance: "UNAVAILABLE" as const,
+          freshness,
+          provenance: "ACTUAL_DATA" as SignalProvenance,
+          observedAt: h.fetchedAt,
+        }));
+
+        return {
+          query: h.query,
+          marketplace: "ebay",
+          totalListingsObserved: h.observedListingsCount,
+          averageObservedPrice: h.averagePrice,
+          demandProxyScore: h.demandProxyScore,
+          topKeywords,
+          clusters: buildDeterministicKeywordClusters(topKeywords),
+          tags: (h.topTags || []).map((t) => ({ tag: t.tag, count: t.count })),
+          freshness,
+          provenance: "ACTUAL_DATA",
+          limitations: [
+            "Exact monthly search volume is unavailable without licensed third-party volume feeds. SellerSalt uses observed listing prevalence percentage.",
+          ],
+        };
+      } else {
+        const freshness = evaluateFreshness(null, "general");
+        return {
+          query: query.query,
+          marketplace: "ebay",
+          totalListingsObserved: 0,
+          averageObservedPrice: null,
+          demandProxyScore: null,
+          topKeywords: [],
+          clusters: [],
+          tags: [],
+          freshness,
+          provenance: "UNAVAILABLE",
+          limitations: [
+            harvestRes.error || "eBay keyword research requires configured eBay Browse API credentials.",
+          ],
+        };
+      }
+    } catch (err: any) {
+      const freshness = evaluateFreshness(null, "general");
+      return {
+        query: query.query,
+        marketplace: "ebay",
+        totalListingsObserved: 0,
+        averageObservedPrice: null,
+        demandProxyScore: null,
+        topKeywords: [],
+        clusters: [],
+        tags: [],
+        freshness,
+        provenance: "UNAVAILABLE",
+        limitations: [
+          err.message || "eBay keyword research failed.",
+        ],
+      };
+    }
+  }
+
   const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(query.marketplace);
 
   if (!adapter || !adapter.capabilities.keywordDiscovery) {

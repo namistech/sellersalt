@@ -87,6 +87,9 @@ export async function aggregatePublicCategoryIntelligence(
 
   if (directProducts && directProducts.length > 0) {
     products = directProducts;
+  } else if (marketplace === "ebay") {
+    const { aggregateEbayCategoryIntelligence } = await import("@/services/ebay-browse-api");
+    return aggregateEbayCategoryIntelligence(categoryName, limit);
   } else {
     registerAllConnectors();
     const adapter = MarketplaceRegistry.tryGetPublicWebAdapter(marketplace);

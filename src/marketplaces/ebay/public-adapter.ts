@@ -1,6 +1,9 @@
 /**
  * SellerSalt eBay Public Web Acquisition Adapter
  * 
+ * DEPRECATED / UNUSED: Superseded by official eBay Buy Browse REST API in src/services/ebay-browse-api.ts.
+ * Flagged for removal in subsequent cleanup.
+ * 
  * Extracts structured commerce observations from eBay search and listing pages
  * (JSON-LD, OpenGraph, semantic search cards).
  */

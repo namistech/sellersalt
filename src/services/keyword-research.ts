@@ -405,11 +405,12 @@ async function fetchSingleMarketplaceKeywordResearch(
       if (marketplace === "etsy") {
         return fetchStandaloneKeywordResearch(organizationId, request);
       }
+      const isCredsError = harvestRes.limitations.some((l) => /credentials|App ID|Cert ID|REQUIRES_CREDENTIALS/i.test(l));
       return {
         available: false,
         marketplace,
         capability: "keywordResearch",
-        reason: marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "UPSTREAM_ERROR" : "CONNECTOR_NOT_IMPLEMENTED",
+        reason: isCredsError ? "REQUIRES_CREDENTIALS" : (marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "UPSTREAM_ERROR" : "CONNECTOR_NOT_IMPLEMENTED"),
         message: harvestRes.limitations.join("; ") || `${marketplace} keyword research is temporarily unavailable.`,
       };
     }

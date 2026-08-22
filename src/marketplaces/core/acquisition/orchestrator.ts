@@ -100,7 +100,12 @@ function classifyUnavailableReason(
   limitations: string[],
   publicWebFailureReasons: string[] = []
 ): AcquisitionUnavailableReason | undefined {
-  if (apiStatusCodes.some((c) => c === 401 || c === 403)) return "REQUIRES_CREDENTIALS";
+  if (
+    apiStatusCodes.some((c) => c === 401 || c === 403) ||
+    limitations.some((l) => /REQUIRES_CREDENTIALS|credentials|App ID|Cert ID/i.test(l))
+  ) {
+    return "REQUIRES_CREDENTIALS";
+  }
   if (
     apiStatusCodes.some((c) => c === 429) ||
     publicWebStatusCodes.some((c) => c === 429) ||
@@ -282,29 +287,61 @@ export async function orchestrateProductResearch(
     (publicObservations.length === 0 || policy.enableMultiSourceEnrichment)
   ) {
     sourcesAttempted.push("MARKETPLACE_API");
-    const connector = MarketplaceRegistry.tryGetConnector(request.marketplace);
 
-    if (connector && connector.capabilities.research && connector.searchProducts) {
+    if (request.marketplace === "ebay") {
       try {
-        const products = await connector.searchProducts({
-          keywords: request.query ? [request.query] : [],
+        const { searchEbayBrowseProducts } = await import("@/services/ebay-browse-api");
+        const browseRes = await searchEbayBrowseProducts({
+          query: request.query,
+          keywords: resolveSearchKeywords(request),
           limit: request.limit,
+          minPrice: request.minPrice,
+          maxPrice: request.maxPrice,
           organizationId: request.organizationId,
         });
 
-        if (products && products.length > 0) {
+        if (browseRes.available && browseRes.items.length > 0) {
           sourcesSucceeded.push("MARKETPLACE_API");
-          apiObservations = products;
+          apiObservations = browseRes.items;
+        } else if (!browseRes.available) {
+          sourcesFailed.push("MARKETPLACE_API");
+          limitations.push(browseRes.message || "eBay Browse API is unavailable.");
+          if (browseRes.reason === "REQUIRES_CREDENTIALS") {
+            apiStatusCodes.push(401);
+          }
         } else {
           sourcesFailed.push("MARKETPLACE_API");
         }
       } catch (err: any) {
         sourcesFailed.push("MARKETPLACE_API");
-        limitations.push(`Official API connector error: ${err.message}`);
+        limitations.push(`eBay Browse API error: ${err.message}`);
         if (typeof err.statusCode === "number") apiStatusCodes.push(err.statusCode);
       }
     } else {
-      sourcesFailed.push("MARKETPLACE_API");
+      const connector = MarketplaceRegistry.tryGetConnector(request.marketplace);
+
+      if (connector && connector.capabilities.research && connector.searchProducts) {
+        try {
+          const products = await connector.searchProducts({
+            keywords: request.query ? [request.query] : [],
+            limit: request.limit,
+            organizationId: request.organizationId,
+          });
+
+          if (products && products.length > 0) {
+            sourcesSucceeded.push("MARKETPLACE_API");
+            apiObservations = products;
+          } else {
+            sourcesFailed.push("MARKETPLACE_API");
+          }
+        } catch (err: any) {
+          sourcesFailed.push("MARKETPLACE_API");
+          limitations.push(`Official API connector error: ${err.message}`);
+          if (typeof err.statusCode === "number") apiStatusCodes.push(err.statusCode);
+        }
+      } else {
+        sourcesFailed.push("MARKETPLACE_API");
+      }
     }
   }
 

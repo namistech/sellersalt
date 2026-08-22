@@ -475,6 +475,26 @@ export function IntegrationsView({
           instructions: "Registered RuName matching the redirect URL.",
         },
       ],
+      onTestConnection: async () => {
+        try {
+          const res = await fetch("/api/admin/diagnostics/ebay", {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (data.ok) {
+            return {
+              ok: true,
+              message: data.message || "eBay Browse API connection successful! OAuth2 token verified and test query succeeded.",
+            };
+          }
+          return {
+            ok: false,
+            message: data.message || data.error || "eBay Browse API connection test failed.",
+          };
+        } catch (e: any) {
+          return { ok: false, message: e.message || "Failed to reach eBay diagnostic endpoint." };
+        }
+      },
     },
 
     // 7. WooCommerce
