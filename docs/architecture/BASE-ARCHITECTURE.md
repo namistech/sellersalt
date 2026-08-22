@@ -56,3 +56,21 @@ docs/
   decisions/<ADR-style short files>
 ```
 Keep `CLAUDE.md`/`AGENTS.md` at repo root short, pointing into this tree.
+
+## 5. Promotion to Main & Migration Safety Protocol
+
+Whenever promoting code from `staging` to `main`:
+
+1. **Verify Migration Status Against Target**:
+   - Check pending migrations against the target database:
+     `DATABASE_URL=<TARGET_DATABASE_URL> npx prisma@5.22.0 migrate status`
+2. **Pre-Migration Production Snapshot**:
+   - Always export a verified snapshot of all tables before applying migrations to live production.
+3. **Execute Migration Deployment**:
+   - Run `DATABASE_URL=<TARGET_DATABASE_URL> npx prisma@5.22.0 migrate deploy`
+4. **Direct DDL & Schema Verification**:
+   - Query `information_schema.columns` on the target database to verify that new columns and tables exist.
+   - Confirm foreign key constraints and enums are created.
+5. **Container Boot Automation**:
+   - `docker/entrypoint-web.sh` runs `npx prisma migrate deploy` on container boot to ensure zero schema-code mismatch on deployment.
+
