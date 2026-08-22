@@ -9,6 +9,8 @@ import { DashboardShell } from "@/app/(dashboard)/dashboard-shell";
 import { resolveWorkspaceContextForUser } from "@/services/session";
 import { ShopsDirectoryClient, type PublicShopItem } from "./shops-client";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -21,14 +23,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/shops`,
+    siteName: "SellerSalt",
     title: "Etsy Shop Intelligence Directory — Top Sellers & Niches | SellerSalt",
     description:
       "Browse verified Etsy shops, daily sales velocity, and product opportunities uncovered by SellerSalt.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Etsy Shop Directory",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Etsy Shop Intelligence Directory — Top Sellers & Niches | SellerSalt",
     description: "Browse verified Etsy shop sales velocity and catalog yield.",
+    images: [`${SITE_URL}/brand/og-image.png`],
   },
 };
 
@@ -131,14 +143,26 @@ export default async function PublicShopsPage() {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemListElement: shops.slice(0, 30).map((shop, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: shop.shopName,
-      url: `${SITE_URL}/shops`,
-      description: `${shop.shopName} on Etsy with ${shop.totalSales.toLocaleString()} sales and ${shop.activeListings} active listings.`,
-    })),
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Etsy Shop Intelligence Directory", url: "/shops" },
+        ],
+        SITE_URL
+      ),
+      {
+        "@type": "ItemList",
+        name: "High-Performing Etsy Shops",
+        itemListElement: shops.slice(0, 30).map((shop, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: shop.shopName,
+          url: `${SITE_URL}/shops`,
+          description: `${shop.shopName} on Etsy with ${shop.totalSales.toLocaleString()} sales and ${shop.activeListings} active listings.`,
+        })),
+      },
+    ],
   };
 
   const content = (

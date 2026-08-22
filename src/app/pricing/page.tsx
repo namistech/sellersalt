@@ -4,6 +4,12 @@ import { PublicFooter } from "@/components/public/PublicFooter";
 import { PricingClient } from "./pricing-client";
 import { HelpCircle } from "lucide-react";
 
+import {
+  buildBreadcrumbListSchema,
+  buildFaqPageSchema,
+  buildSoftwareApplicationSchema,
+} from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -14,8 +20,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/pricing`,
+    siteName: "SellerSalt",
+    title: "Pricing Plans — Ecommerce Intelligence Platform | SellerSalt",
+    description:
+      "Explore transparent subscription plans for SellerSalt's multi-marketplace research engine, Opportunity Radar, product validation, and sourcing workspaces.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Pricing & Plans",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "Pricing Plans — Ecommerce Intelligence Platform | SellerSalt",
     description: "Validate product opportunities and model unit economics with SellerSalt.",
+    images: [`${SITE_URL}/brand/og-image.png`],
   },
 };
 
@@ -47,35 +69,26 @@ const FAQ_ITEMS = [
 ];
 
 export default function PublicPricingPage() {
-  const jsonLd = {
+  const pricingStructuredData = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: "SellerSalt Ecommerce Intelligence Platform",
-    description: "Multi-marketplace product research, Opportunity Radar, and commercial validation software.",
-  };
-
-  const faqJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: FAQ_ITEMS.map((item) => ({
-      "@type": "Question",
-      name: item.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.a,
-      },
-    })),
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Pricing", url: "/pricing" },
+        ],
+        SITE_URL
+      ),
+      buildSoftwareApplicationSchema(SITE_URL),
+      buildFaqPageSchema(FAQ_ITEMS),
+    ],
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingStructuredData) }}
       />
       <PublicHeader currentPath="/pricing" />
 

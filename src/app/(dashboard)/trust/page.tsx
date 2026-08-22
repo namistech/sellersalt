@@ -18,14 +18,57 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
+const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
+
 export const metadata: Metadata = {
   title: "Trust Center & Data Governance | SellerSalt",
   description: "How SellerSalt acquires, protects, classifies, and retains ecommerce intelligence data.",
+  alternates: { canonical: `${SITE_URL}/trust` },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/trust`,
+    siteName: "SellerSalt",
+    title: "Trust Center & Data Governance | SellerSalt",
+    description: "How SellerSalt acquires, protects, classifies, and retains ecommerce intelligence data.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Trust Center",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trust Center & Data Governance | SellerSalt",
+    description: "How SellerSalt acquires, protects, classifies, and retains ecommerce intelligence data.",
+    images: [`${SITE_URL}/brand/og-image.png`],
+  },
 };
 
 export default function TrustCenterPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Trust Center", url: "/trust" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-10 pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Hero */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">

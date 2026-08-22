@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { authOptions } from "@/lib/auth";
@@ -5,6 +6,38 @@ import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/shell";
 import { Card, Badge, Text, Heading } from "@/components/ui";
 import { MarketplaceRegistry, registerAllConnectors } from "@/marketplaces/core/registry";
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
+const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
+
+export const metadata: Metadata = {
+  title: "Multi-Marketplace Architecture & Connectors | SellerSalt",
+  description:
+    "Explore SellerSalt's unified multi-marketplace intelligence architecture across Etsy, Shopify, WooCommerce, Amazon, eBay, and TikTok Shop.",
+  alternates: { canonical: `${SITE_URL}/marketplaces` },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/marketplaces`,
+    siteName: "SellerSalt",
+    title: "Multi-Marketplace Architecture & Connectors | SellerSalt",
+    description:
+      "Explore SellerSalt's unified multi-marketplace intelligence architecture across Etsy, Shopify, WooCommerce, Amazon, eBay, and TikTok Shop.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Marketplaces",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Multi-Marketplace Architecture & Connectors | SellerSalt",
+    description: "Unified multi-marketplace intelligence across major commerce channels.",
+    images: [`${SITE_URL}/brand/og-image.png`],
+  },
+};
 
 // Reads live from the marketplace connector registry (src/marketplaces/core)
 // rather than a hardcoded list — a marketplace only shows a real capability
@@ -26,8 +59,25 @@ export default async function MarketplacesOverviewPage() {
 
   const connectors = MarketplaceRegistry.list();
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Marketplaces", url: "/marketplaces" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="space-y-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PageHeader
         title="Marketplaces"
         description="SellerSalt is a marketplace-agnostic intelligence platform — Etsy, Shopify, WooCommerce, Amazon, eBay, and TikTok Shop are all connectors into the same research and optimization engine."
