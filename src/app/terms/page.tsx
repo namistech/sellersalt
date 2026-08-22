@@ -80,7 +80,7 @@ export default function TermsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-bold text-[#141B16]">6. Acceptable Use</h2>
               <p>
-                You agree not to: violate any third-party platform&apos;s terms of service, including marketplaces SellerSalt connects to; reverse-engineer, scrape, or circumvent any part of the Service or connected platforms; collect data about individuals/businesses beyond your own legitimate ecommerce operations; exceed your subscription&apos;s seat limits. [Add Influencer/UGC marketplace clauses once that feature ships — prohibit undisclosed sponsored content, require FTC-compliant disclosure.]
+                You agree not to: violate any third-party platform&apos;s terms of service, including marketplaces SellerSalt connects to; reverse-engineer, scrape, or circumvent any part of the Service or connected platforms; collect data about individuals/businesses beyond your own legitimate ecommerce operations; exceed your subscription&apos;s seat limits.
               </p>
             </section>
 

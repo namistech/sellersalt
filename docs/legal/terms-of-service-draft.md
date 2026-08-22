@@ -20,7 +20,7 @@ Connecting a marketplace or store authorizes SellerSalt to access that store's d
 [NEEDS FOUNDER INPUT: plan tiers, billing cycle, seat-based pricing, renewal terms.] Payments processed by Stripe/PayPal; SellerSalt does not store full payment card details. [NEEDS FOUNDER INPUT: refund/cancellation policy and data handling on downgrade.]
 
 ## 6. Acceptable Use
-You agree not to: violate any third-party platform's terms of service, including marketplaces SellerSalt connects to; reverse-engineer, scrape, or circumvent any part of the Service or connected platforms; collect data about individuals/businesses beyond your own legitimate ecommerce operations; exceed your subscription's seat limits. [Add Influencer/UGC marketplace clauses once that feature ships — prohibit undisclosed sponsored content, require FTC-compliant disclosure.]
+You agree not to: violate any third-party platform's terms of service, including marketplaces SellerSalt connects to; reverse-engineer, scrape, or circumvent any part of the Service or connected platforms; collect data about individuals/businesses beyond your own legitimate ecommerce operations; exceed your subscription's seat limits.
 
 ## 7. Third-Party Integrations
 SellerSalt may integrate with Zapier, Slack, QuickBooks, and MCP-connected AI agents at your direction. Your use of those is governed by their own terms; SellerSalt is not responsible for third-party service availability or behavior.
