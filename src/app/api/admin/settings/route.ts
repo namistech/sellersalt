@@ -44,8 +44,8 @@ export async function POST(req: Request) {
   if (!SETTING_DEFINITIONS.some((d) => d.key === key)) {
     return NextResponse.json({ error: `Unknown setting "${key}".` }, { status: 400 });
   }
-  if (typeof value !== "string" || !value.trim()) {
-    return NextResponse.json({ error: "value is required." }, { status: 400 });
+  if (typeof value !== "string") {
+    return NextResponse.json({ error: "value is required as a string." }, { status: 400 });
   }
 
   await setSetting(key as SettingKey, value.trim());

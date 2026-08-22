@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { resolveAssetUrl } from "@/lib/asset-url";
+import { ImageDisplaySettingsCard } from "@/components/admin/ImageDisplaySettingsCard";
 
 interface SettingItem {
   key: string;
@@ -305,91 +306,47 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
             )}
           </div>
 
-          {/* Auth Artwork & Focal Position Section */}
-          <div className="p-6 rounded-2xl border border-line bg-white shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Auth Artwork & Layout Spacing Section */}
+          <div className="space-y-4">
+            <div className="p-6 rounded-2xl border border-line bg-white shadow-xs space-y-4">
               <div>
-                <h3 className="font-bold text-base text-ink">Login & Signup Page Marketing Artwork</h3>
+                <h3 className="font-bold text-base text-ink">Get Started & Auth Page Side Artwork Asset</h3>
                 <p className="text-xs text-ink-secondary mt-0.5">
-                  Side illustration displayed on desktop login, registration, and password recovery pages.
+                  High-resolution marketing illustration displayed on desktop login, registration, and onboarding flows.
                 </p>
               </div>
-              <Badge variant="neutral">
-                Focal Alignment Controls
-              </Badge>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {renderAssetUploader(
                   "auth_page_image_url",
-                  "Side Artwork Image URL",
-                  "Upload high-resolution marketing graphic.",
-                  "1080x1920 PNG/JPG",
-                  "h-32 w-20"
+                  "Side Artwork Graphic",
+                  "Upload high-resolution illustration or product dashboard screenshot.",
+                  "1080x1920 PNG / WebP",
+                  "h-24 w-32"
                 )}
 
-                <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line space-y-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-ink">
-                    <Sliders className="w-4 h-4 text-[#0E8F5D]" />
-                    <span>Artwork Focal Positioning</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-ink-secondary">
-                      <span>Horizontal Alignment (X-Axis)</span>
-                      <span className="font-mono text-ink">{formData["auth_page_image_position_x"] || "50"}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData["auth_page_image_position_x"] || "50"}
-                      onChange={(e) => handleChange("auth_page_image_position_x", e.target.value)}
-                      className="w-full h-1.5 bg-white border border-line rounded-lg appearance-none cursor-pointer accent-[#0E8F5D]"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-ink-secondary">
-                      <span>Vertical Alignment (Y-Axis)</span>
-                      <span className="font-mono text-ink">{formData["auth_page_image_position_y"] || "50"}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={formData["auth_page_image_position_y"] || "50"}
-                      onChange={(e) => handleChange("auth_page_image_position_y", e.target.value)}
-                      className="w-full h-1.5 bg-white border border-line rounded-lg appearance-none cursor-pointer accent-[#0E8F5D]"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Preview Box */}
-              <div className="rounded-xl border border-line bg-zinc-950 p-4 text-white flex flex-col justify-between overflow-hidden relative min-h-[260px]">
-                <div
-                  className="absolute inset-0 bg-cover opacity-80"
-                  style={{
-                    backgroundImage: `url(${resolveAssetUrl(formData["auth_page_image_url"]) || "/images/login-artwork.png"})`,
-                    backgroundPosition: `${formData["auth_page_image_position_x"] || 50}% ${
-                      formData["auth_page_image_position_y"] || 50
-                    }%`,
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="relative z-10 flex items-center justify-between">
-                  <Badge tone="dark" variant="neutral">
-                    Live Frame Preview
-                  </Badge>
-                </div>
-                <div className="relative z-10">
-                  <p className="text-xs font-bold">SellerSalt Intelligence</p>
-                  <p className="text-[11px] text-zinc-300">Live positioning simulates viewport alignment.</p>
-                </div>
+                {renderAssetUploader(
+                  "auth_page_logo_url",
+                  "Auth Screen Logo Override",
+                  "Optional dark-background logo mark displayed inside the side artwork pane.",
+                  "240x60 PNG / SVG",
+                  "h-24 w-32"
+                )}
               </div>
             </div>
+
+            {/* Generic Reusable Image Spacing, Padding, Dimensions, and Alignment Component */}
+            <ImageDisplaySettingsCard
+              title="Get Started / Auth Artwork Spacing & Display Layout"
+              description="Control container padding, outer margins, frame scale, alignment, focal point, and border radius to eliminate unwanted surrounding space."
+              prefix="auth_page_image"
+              formData={formData}
+              onChange={handleChange}
+              imageUrl={formData["auth_page_image_url"]}
+              defaultBgColor="#0B2B22"
+              defaultWidth="85%"
+              defaultHeight="80%"
+            />
           </div>
         </div>
       )}

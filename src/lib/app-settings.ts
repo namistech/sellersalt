@@ -37,11 +37,25 @@ export const SETTING_DEFINITIONS = [
   { key: "seo_schema_org_name", label: "Structured Data Organization Name", isSecret: false },
   { key: "seo_schema_website_name", label: "Structured Data WebSite Name", isSecret: false },
 
-  // Auth Page Artwork
+  // Auth Page Artwork & Display Spacing
   { key: "auth_page_logo_url", label: "Login/signup page logo (URL)", isSecret: false },
   { key: "auth_page_image_url", label: "Login/signup page side image (URL)", isSecret: false },
   { key: "auth_page_image_position_x", label: "Login page image horizontal position (0-100)", isSecret: false },
   { key: "auth_page_image_position_y", label: "Login page image vertical position (0-100)", isSecret: false },
+  { key: "auth_page_image_margin_top", label: "Login page artwork top margin (px or %)", isSecret: false },
+  { key: "auth_page_image_margin_bottom", label: "Login page artwork bottom margin (px or %)", isSecret: false },
+  { key: "auth_page_image_margin_left", label: "Login page artwork left margin (px or %)", isSecret: false },
+  { key: "auth_page_image_margin_right", label: "Login page artwork right margin (px or %)", isSecret: false },
+  { key: "auth_page_image_padding_top", label: "Login page container top padding (px or %)", isSecret: false },
+  { key: "auth_page_image_padding_bottom", label: "Login page container bottom padding (px or %)", isSecret: false },
+  { key: "auth_page_image_padding_left", label: "Login page container left padding (px or %)", isSecret: false },
+  { key: "auth_page_image_padding_right", label: "Login page container right padding (px or %)", isSecret: false },
+  { key: "auth_page_image_alignment", label: "Login page image alignment (center, left, right, top, bottom, stretch)", isSecret: false },
+  { key: "auth_page_image_fit", label: "Login page image object-fit (cover, contain, fill, scale-down)", isSecret: false },
+  { key: "auth_page_image_width", label: "Login page image frame width (% or px, e.g. 100% or 85%)", isSecret: false },
+  { key: "auth_page_image_height", label: "Login page image frame height (% or px, e.g. 100% or 80%)", isSecret: false },
+  { key: "auth_page_image_border_radius", label: "Login page image border radius (px, e.g. 16 or 0)", isSecret: false },
+  { key: "auth_page_image_bg_color", label: "Login page artwork background color (hex, e.g. #0B2B22)", isSecret: false },
 
   // Identity & Google OAuth Credentials
   { key: "google_client_id", label: "Google OAuth Client ID", isSecret: false },
