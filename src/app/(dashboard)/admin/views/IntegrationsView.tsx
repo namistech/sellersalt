@@ -118,6 +118,109 @@ export function IntegrationsView({
       },
     },
 
+    // 1b. Google Ads / Keyword Planner API
+    {
+      id: "google-ads-keyword-planner",
+      category: "Productivity",
+      name: "Google Ads / Keyword Planner",
+      description:
+        "Official Google Ads Keyword Planning API for exact monthly search volumes, historical trends, CPC bid ranges, and search competition indices.",
+      icon: "📈",
+      provenanceBadge: "[EXTERNAL DATA]",
+      status:
+        hasVal("google_ads_developer_token") &&
+        hasVal("google_ads_client_id") &&
+        hasVal("google_ads_client_secret") &&
+        hasVal("google_ads_refresh_token")
+          ? "CONFIGURED"
+          : "NOT_CONFIGURED",
+      documentationUrl: "https://developers.google.com/google-ads/api/docs/keyword-planning/generate-keyword-ideas",
+      documentationLabel: "Google Ads Keyword Planning Docs",
+      callbackUrls: [
+        {
+          label: "Production OAuth Callback URI",
+          description: "Authorized redirect URI for generating Google Ads Refresh Token",
+          url: `${PROD_BASE}/api/auth/callback/google`,
+        },
+        {
+          label: "Staging OAuth Callback URI",
+          description: "Authorized redirect URI for staging",
+          url: `${STAGING_BASE}/api/auth/callback/google`,
+        },
+      ],
+      fields: [
+        {
+          key: "google_ads_developer_token",
+          label: "Developer Token",
+          isSecret: true,
+          placeholder: "xxxx-xxxx-xxxx-xxxx",
+          value: getVal("google_ads_developer_token"),
+          hasValue: hasVal("google_ads_developer_token"),
+          instructions: "Approved Google Ads API Developer Token from your Google Ads Manager Account (MCC) Tools & Settings → API Center.",
+        },
+        {
+          key: "google_ads_client_id",
+          label: "OAuth Client ID",
+          placeholder: "xxxx.apps.googleusercontent.com",
+          value: getVal("google_ads_client_id"),
+          hasValue: hasVal("google_ads_client_id"),
+          instructions: "OAuth 2.0 Web Client ID from Google Cloud Console.",
+        },
+        {
+          key: "google_ads_client_secret",
+          label: "OAuth Client Secret",
+          isSecret: true,
+          value: getVal("google_ads_client_secret"),
+          hasValue: hasVal("google_ads_client_secret"),
+          instructions: "Client Secret for OAuth token refresh. Encrypted at rest.",
+        },
+        {
+          key: "google_ads_refresh_token",
+          label: "OAuth Refresh Token",
+          isSecret: true,
+          value: getVal("google_ads_refresh_token"),
+          hasValue: hasVal("google_ads_refresh_token"),
+          instructions: "Long-lived OAuth refresh token authorized with scope 'https://www.googleapis.com/auth/adwords'.",
+        },
+        {
+          key: "google_ads_login_customer_id",
+          label: "Login Customer ID (MCC / Manager Account ID)",
+          placeholder: "1234567890",
+          value: getVal("google_ads_login_customer_id"),
+          hasValue: hasVal("google_ads_login_customer_id"),
+          instructions: "10-digit Manager Account ID (without hyphens) if accessing client accounts via MCC.",
+        },
+        {
+          key: "google_ads_customer_id",
+          label: "Target Customer ID (Operating Account ID)",
+          placeholder: "9876543210",
+          value: getVal("google_ads_customer_id"),
+          hasValue: hasVal("google_ads_customer_id"),
+          instructions: "10-digit operating Google Ads account ID used to generate keyword ideas and historical metrics.",
+        },
+      ],
+      onTestConnection: async () => {
+        try {
+          const res = await fetch("/api/admin/diagnostics/google-ads", {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (data.ok) {
+            return {
+              ok: true,
+              message: data.message || "Google Ads API connection successful! Ready to fetch search volume metrics.",
+            };
+          }
+          return {
+            ok: false,
+            message: data.message || data.error || "Google Ads API connection test failed.",
+          };
+        } catch (e: any) {
+          return { ok: false, message: e.message || "Failed to reach diagnostic endpoint." };
+        }
+      },
+    },
+
     // 2. Etsy Open API v3
     {
       id: "etsy-channel",

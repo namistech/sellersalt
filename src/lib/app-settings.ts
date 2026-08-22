@@ -61,6 +61,14 @@ export const SETTING_DEFINITIONS = [
   { key: "google_client_id", label: "Google OAuth Client ID", isSecret: false },
   { key: "google_client_secret", label: "Google OAuth Client Secret", isSecret: true },
 
+  // Search Intelligence: Google Ads / Keyword Planner API
+  { key: "google_ads_developer_token", label: "Google Ads API Developer Token", isSecret: true },
+  { key: "google_ads_client_id", label: "Google Ads OAuth Client ID", isSecret: false },
+  { key: "google_ads_client_secret", label: "Google Ads OAuth Client Secret", isSecret: true },
+  { key: "google_ads_refresh_token", label: "Google Ads OAuth Refresh Token", isSecret: true },
+  { key: "google_ads_login_customer_id", label: "Google Ads Login Customer ID (Manager/MCC Account ID)", isSecret: false },
+  { key: "google_ads_customer_id", label: "Google Ads Target Customer ID (Operating Account ID)", isSecret: false },
+
   // Marketplace: Etsy Integration Credentials
   { key: "etsy_seller_client_id", label: "Etsy Seller App Keystring (for Seller OAuth)", isSecret: false },
   { key: "etsy_seller_client_secret", label: "Etsy Seller App Shared Secret", isSecret: true },
