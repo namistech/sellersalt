@@ -31,6 +31,8 @@ import {
   Clock,
   Key,
   Upload,
+  PanelLeft,
+  PanelLeftClose,
 } from "lucide-react";
 import {
   Card,
@@ -38,6 +40,7 @@ import {
   Text,
   Badge,
   Button,
+  IconButton,
   Input,
   Select,
   Alert,
@@ -263,6 +266,7 @@ interface EmailTemplateSummary {
 
 export function AdminPackagesClient() {
   const [activeTab, setActiveTab] = useState<AdminTabId>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -1154,7 +1158,15 @@ export function AdminPackagesClient() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <IconButton
+              icon={sidebarCollapsed ? <PanelLeft className="w-4 h-4 text-[#0E8F5D]" /> : <PanelLeftClose className="w-4 h-4 text-ink-secondary" />}
+              variant="tertiary"
+              size="compact"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              aria-label={sidebarCollapsed ? "Expand admin sidebar" : "Collapse admin sidebar"}
+              className="hidden lg:inline-flex bg-white border border-line shadow-xs"
+            />
             <Heading as="h1" size="h2">
               Admin Operations Console
             </Heading>
@@ -1179,14 +1191,16 @@ export function AdminPackagesClient() {
         </Button>
       </div>
 
-      {/* 2-Column Responsive Layout with AdminSidebar */}
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* 2-Column Responsive Layout with Sticky & Collapsible AdminSidebar */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
         <AdminSidebar
           activeTab={activeTab}
           onSelectTab={setActiveTab}
           userCount={users.length}
           orgCount={orgs.length}
           unverifiedCount={needsAttentionUnverified.length}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
         />
 
         <div className="flex-1 min-w-0 w-full space-y-6">

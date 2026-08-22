@@ -55,7 +55,7 @@ describe("Google OAuth Flow & Authentication Verification", () => {
         picture: "https://lh3.googleusercontent.com/a/test-avatar",
       };
 
-      const result = await sessionFn({ session, token } as any);
+      const result: any = await sessionFn({ session, token } as any);
       assert.strictEqual(result.user.id, "usr_google_123");
       assert.strictEqual(result.user.organizationId, "org_google_123");
       assert.strictEqual(result.user.organizationName, "Test Workspace");
