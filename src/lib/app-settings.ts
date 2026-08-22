@@ -31,6 +31,9 @@ export const SETTING_DEFINITIONS = [
   { key: "seo_og_image_url", label: "OpenGraph / Social Preview Image (URL)", isSecret: false },
   { key: "seo_google_site_verification", label: "Google Search Console Verification Token", isSecret: false },
   { key: "seo_bing_site_verification", label: "Bing Webmaster Tools Verification Token", isSecret: false },
+  { key: "seo_meta_domain_verification", label: "Meta / Facebook Domain Verification Token", isSecret: false },
+  { key: "seo_pinterest_site_verification", label: "Pinterest Domain Verification Token", isSecret: false },
+  { key: "seo_custom_meta_tags", label: "Custom <meta> Verification Tags", isSecret: false },
   { key: "seo_schema_org_name", label: "Structured Data Organization Name", isSecret: false },
   { key: "seo_schema_website_name", label: "Structured Data WebSite Name", isSecret: false },
 

@@ -446,33 +446,88 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
           </div>
 
           <div className="p-6 rounded-2xl border border-line bg-white shadow-xs space-y-4">
-            <h3 className="font-bold text-base text-ink">Search Engine Verification</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-base text-ink">Search Engine & Third-Party Verification</h3>
+                <p className="text-xs text-ink-secondary">
+                  Meta verification tags injected into the &lt;head&gt; across all public and application pages.
+                </p>
+              </div>
+              <Badge variant="neutral">Domain Ownership</Badge>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-ink block mb-1">
-                  Google Search Console Verification Token
+                  Google Search Console Verification
                 </label>
                 <input
                   type="text"
                   value={formData["seo_google_site_verification"] || ""}
                   onChange={(e) => handleChange("seo_google_site_verification", e.target.value)}
-                  placeholder="google-site-verification=xxxx..."
+                  placeholder="e.g. google-site-verification token or full tag"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
+                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;google-site-verification&quot; content=&quot;...&quot; /&gt;</p>
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-ink block mb-1">
-                  Bing Webmaster Tools Verification Token
+                  Bing Webmaster Tools Verification
                 </label>
                 <input
                   type="text"
                   value={formData["seo_bing_site_verification"] || ""}
                   onChange={(e) => handleChange("seo_bing_site_verification", e.target.value)}
-                  placeholder="msvalidate.01=xxxx..."
+                  placeholder="e.g. msvalidate.01 token or XML code"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
+                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;msvalidate.01&quot; content=&quot;...&quot; /&gt;</p>
               </div>
+
+              <div>
+                <label className="text-xs font-semibold text-ink block mb-1">
+                  Meta (Facebook/Instagram) Domain Verification
+                </label>
+                <input
+                  type="text"
+                  value={formData["seo_meta_domain_verification"] || ""}
+                  onChange={(e) => handleChange("seo_meta_domain_verification", e.target.value)}
+                  placeholder="e.g. facebook-domain-verification token"
+                  className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
+                />
+                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;...&quot; /&gt;</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-ink block mb-1">
+                  Pinterest Domain Verification
+                </label>
+                <input
+                  type="text"
+                  value={formData["seo_pinterest_site_verification"] || ""}
+                  onChange={(e) => handleChange("seo_pinterest_site_verification", e.target.value)}
+                  placeholder="e.g. p:domain_verify token"
+                  className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
+                />
+                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;p:domain_verify&quot; content=&quot;...&quot; /&gt;</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-ink block mb-1">
+                Custom Verification &amp; Header &lt;meta&gt; Tags
+              </label>
+              <textarea
+                rows={3}
+                value={formData["seo_custom_meta_tags"] || ""}
+                onChange={(e) => handleChange("seo_custom_meta_tags", e.target.value)}
+                placeholder={'<meta name="custom-verification" content="xyz" />\nor name=content pairs'}
+                className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
+              />
+              <p className="text-[11px] text-ink-tertiary mt-1">
+                Optional custom meta tags for unlisted verification providers, search engines, or domain audits.
+              </p>
             </div>
           </div>
         </div>
