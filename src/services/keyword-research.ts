@@ -14,6 +14,7 @@ import type { MarketplaceId } from "@/marketplaces/core/types";
 import { fanOutMarketplaceRequest, type MarketplaceFanOutResult } from "@/marketplaces/core/research-pipeline";
 import { resolveSearchKeywords } from "@/marketplaces/core/acquisition/orchestrator";
 import { persistKeywordObservations } from "@/marketplaces/core/acquisition/persistence";
+import { fetchGoogleKeywordPlannerMetrics } from "@/services/google-keyword-planner";
 import type {
   KeywordSearchRequest,
   KeywordSearchResponse,
@@ -246,12 +247,108 @@ export function harvestTagsAndNgrams(
  * KeywordObservationSnapshot on genuine change) — the live Keyword Research
  * UI/API path previously never persisted anything (persistKeywordObservations
  * was only ever called from the separate admin/batch workbench). Non-blocking:
+/**
+ * Enriches harvested keywords and root query summary with real Google Ads Keyword Planner metrics.
+ * ZERO-FABRICATION: If credentials are missing or API fails, fields strictly remain null / UNAVAILABLE.
+ */
+export async function enrichKeywordsWithGoogleKeywordPlanner(
+  keywords: any[],
+  query: string,
+  summary: any
+): Promise<{ sourceUsed: string }> {
+  const termsToQuery = [query, ...keywords.map((k) => k.term || k.keyword || "").filter(Boolean)];
+
+  try {
+    const plannerRes = await fetchGoogleKeywordPlannerMetrics(termsToQuery);
+
+    if (plannerRes.available && Object.keys(plannerRes.metrics).length > 0) {
+      for (const k of keywords) {
+        const termKey = (k.term || k.keyword || "").toLowerCase().trim();
+        const m = plannerRes.metrics[termKey];
+        if (m) {
+          k.externalMonthlyVolume = m.avgMonthlySearches ?? undefined;
+          k.searchVolume = m.avgMonthlySearches ?? null;
+          k.searchVolumeProvenance = "OBSERVED";
+          if (m.highTopOfPageBid || m.lowTopOfPageBid) {
+            k.cpc = m.highTopOfPageBid ?? m.lowTopOfPageBid ?? undefined;
+          }
+          if (m.monthlySearchVolumes && m.monthlySearchVolumes.length > 0) {
+            k.externalTrend = m.monthlySearchVolumes.map((v) => v.searches);
+          }
+          k.source = "google_keyword_planner";
+        } else {
+          k.searchVolume = null;
+          k.searchVolumeProvenance = "UNAVAILABLE";
+        }
+      }
+
+      const queryMetric = plannerRes.metrics[query.toLowerCase().trim()];
+      if (queryMetric) {
+        summary.searchVolume = queryMetric.avgMonthlySearches ?? null;
+        summary.externalMonthlyVolume = queryMetric.avgMonthlySearches ?? undefined;
+        summary.searchVolumeProvenance = "OBSERVED";
+        summary.searchVolumeStatus = "CONFIGURED";
+        if (summary.fieldProvenance) {
+          summary.fieldProvenance.searchVolume = {
+            value: queryMetric.avgMonthlySearches,
+            provenance: "ACTUAL_DATA",
+            source: "EXTERNAL_DATA",
+            observedAt: new Date().toISOString(),
+          };
+        }
+      } else {
+        summary.searchVolume = null;
+        summary.searchVolumeProvenance = "UNAVAILABLE";
+        summary.searchVolumeStatus = "CONFIGURED";
+      }
+
+      return { sourceUsed: "google_keyword_planner" };
+    } else {
+      for (const k of keywords) {
+        k.externalMonthlyVolume = undefined;
+        k.searchVolume = null;
+        k.searchVolumeProvenance = "UNAVAILABLE";
+      }
+      summary.searchVolume = null;
+      summary.externalMonthlyVolume = undefined;
+      summary.searchVolumeProvenance = "UNAVAILABLE";
+      summary.searchVolumeStatus = "UNAVAILABLE";
+      summary.searchVolumeMessage = plannerRes.message || "Google Keyword Planner credentials not configured in Admin Hub.";
+      if (summary.fieldProvenance) {
+        summary.fieldProvenance.searchVolume = {
+          value: null,
+          provenance: "UNAVAILABLE",
+          source: "EXTERNAL_DATA",
+          observedAt: new Date().toISOString(),
+        };
+      }
+      return { sourceUsed: "PUBLIC_WEB" };
+    }
+  } catch {
+    for (const k of keywords) {
+      k.externalMonthlyVolume = undefined;
+      k.searchVolume = null;
+      k.searchVolumeProvenance = "UNAVAILABLE";
+    }
+    summary.searchVolume = null;
+    summary.searchVolumeProvenance = "UNAVAILABLE";
+    summary.searchVolumeStatus = "UNAVAILABLE";
+    return { sourceUsed: "PUBLIC_WEB" };
+  }
+}
+
+/**
+ * Batch 40: persists harvested keywords into KeywordObservation (+ a
+ * KeywordObservationSnapshot on genuine change) — the live Keyword Research
+ * UI/API path previously never persisted anything (persistKeywordObservations
+ * was only ever called from the separate admin/batch workbench). Non-blocking:
  * a persistence failure must never fail the user-facing search response.
  */
 async function persistHarvestedKeywordsNonBlocking(
   harvestedKeywords: any[],
   organizationId: string,
-  marketplace: MarketplaceId
+  marketplace: MarketplaceId,
+  source: string = "PUBLIC_WEB"
 ): Promise<void> {
   if (!harvestedKeywords || harvestedKeywords.length === 0) return;
   try {
@@ -264,8 +361,9 @@ async function persistHarvestedKeywordsNonBlocking(
         demandProxyScore: k.estimatedDemandSignal ?? 50,
         competitionProxy: k.competitionLevel === "HIGH" || k.competitionLevel === "VERY_HIGH" ? "HIGH" : k.competitionLevel === "LOW" || k.competitionLevel === "VERY_LOW" ? "LOW" : "MODERATE",
         intentCategory: k.intentClassification,
+        source: k.source || source,
       })),
-      { organizationId, marketplace }
+      { organizationId, marketplace, source }
     );
   } catch {
     // Non-blocking — a persistence failure must never break a real-time search response.
@@ -377,7 +475,8 @@ async function fetchSingleMarketplaceKeywordResearch(
       },
     };
 
-    await persistHarvestedKeywordsNonBlocking(harvestedKeywords, organizationId, marketplace);
+    const { sourceUsed } = await enrichKeywordsWithGoogleKeywordPlanner(harvestedKeywords, request.query, summary);
+    await persistHarvestedKeywordsNonBlocking(harvestedKeywords, organizationId, marketplace, sourceUsed);
 
     return {
       query: request.query,
@@ -667,6 +766,9 @@ export async function fetchStandaloneKeywordResearch(
 
   // Harvest all tags & title n-grams
   const keywords = harvestTagsAndNgrams(listings, query);
+
+  const { sourceUsed } = await enrichKeywordsWithGoogleKeywordPlanner(keywords, query, summary);
+  await persistHarvestedKeywordsNonBlocking(keywords, organizationId, "etsy", sourceUsed);
 
   return {
     query,

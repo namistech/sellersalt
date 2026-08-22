@@ -317,6 +317,7 @@ export interface PersistableKeywordObservation {
   competitionProxy?: "LOW" | "MODERATE" | "HIGH" | "UNAVAILABLE";
   intentCategory?: string;
   intent?: string;
+  source?: string;
 }
 
 /**
@@ -327,6 +328,7 @@ export async function persistKeywordObservations(
   options: {
     organizationId?: string;
     marketplace?: MarketplaceId | string;
+    source?: string;
   } = {}
 ): Promise<{ savedCount: number; snapshotsCreated: number }> {
   if (!keywords || keywords.length === 0 || !options.organizationId) {
@@ -351,6 +353,7 @@ export async function persistKeywordObservations(
         competitionProxy: k.competitionProxy || "UNAVAILABLE",
       };
       const newFingerprint = computeKeywordObservationFingerprint(incoming);
+      const rowSource = k.source || options.source || "PUBLIC_WEB";
 
       const existing = await prisma.keywordObservation.findUnique({
         where: {
@@ -376,6 +379,7 @@ export async function persistKeywordObservations(
           ...incoming,
           fingerprint: newFingerprint,
           intentCategory: (k as any).intentCategory || (k as any).intent || "GENERAL",
+          source: k.source || options.source || existing?.source || "PUBLIC_WEB",
           observedAt: new Date(),
         },
         create: {
@@ -385,7 +389,7 @@ export async function persistKeywordObservations(
           ...incoming,
           fingerprint: newFingerprint,
           intentCategory: (k as any).intentCategory || (k as any).intent || "GENERAL",
-          source: "PUBLIC_WEB",
+          source: rowSource,
           observedAt: new Date(),
         },
       });
