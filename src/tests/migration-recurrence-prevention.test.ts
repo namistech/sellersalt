@@ -10,16 +10,18 @@ test("Migration Recurrence Prevention: Web and Worker entrypoint scripts and Doc
   const webScriptPath = path.join(root, "docker/entrypoint-web.sh");
   assert.ok(fs.existsSync(webScriptPath), "docker/entrypoint-web.sh must exist");
   const webScript = fs.readFileSync(webScriptPath, "utf-8");
+  assert.ok(webScript.includes("set -e"), "entrypoint-web.sh must specify set -e");
   assert.ok(webScript.includes("npx prisma migrate deploy"), "entrypoint-web.sh must run prisma migrate deploy");
-  assert.ok(webScript.includes("exit 1"), "entrypoint-web.sh must fail loudly (exit 1) on migration failure");
+  assert.ok(!webScript.includes("|| echo"), "entrypoint-web.sh must NEVER swallow migration failures with || echo");
   assert.ok(webScript.includes("exec node server.js"), "entrypoint-web.sh must start node server.js");
 
   // 2. Worker Entrypoint Script
   const workerScriptPath = path.join(root, "docker/entrypoint-worker.sh");
   assert.ok(fs.existsSync(workerScriptPath), "docker/entrypoint-worker.sh must exist");
   const workerScript = fs.readFileSync(workerScriptPath, "utf-8");
+  assert.ok(workerScript.includes("set -e"), "entrypoint-worker.sh must specify set -e");
   assert.ok(workerScript.includes("npx prisma migrate deploy"), "entrypoint-worker.sh must run prisma migrate deploy");
-  assert.ok(workerScript.includes("exit 1"), "entrypoint-worker.sh must fail loudly (exit 1) on migration failure");
+  assert.ok(!workerScript.includes("|| echo"), "entrypoint-worker.sh must NEVER swallow migration failures with || echo");
   assert.ok(workerScript.includes("exec npx tsx src/workers/index.ts"), "entrypoint-worker.sh must start worker process");
 
   // 3. Dockerfile.web
