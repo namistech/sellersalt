@@ -297,7 +297,7 @@ export function SaltBot({ open: controlledOpen, onOpenChange }: SaltBotProps = {
                       >
                         {/* Tool Execution Stamp */}
                         {msg.toolCall && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-ink-tertiary font-mono border-b border-line-subtle pb-1">
+                          <div className="flex items-center gap-1.5 text-label-sm text-ink-tertiary font-mono border-b border-line-subtle pb-1">
                             <Zap className="h-3 w-3 text-amber-500" />
                             <span>Executed Tool: {msg.toolCall.toolName}</span>
                           </div>

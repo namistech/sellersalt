@@ -703,7 +703,7 @@ export function CategoryHuntingClient({
                   <span className="text-xs font-bold text-ink uppercase tracking-wide">
                     Market Pricing Corridor
                   </span>
-                  <p className="text-[11px] text-ink-tertiary">10th percentile, median, and 90th percentile entry brackets.</p>
+                  <p className="text-meta text-ink-tertiary">10th percentile, median, and 90th percentile entry brackets.</p>
                 </div>
                 <DataProvenanceBadge type="ESTIMATED" />
               </div>
@@ -727,7 +727,7 @@ export function CategoryHuntingClient({
                   <span className="text-xs font-bold text-ink uppercase tracking-wide">
                     Category Seasonality Curve
                   </span>
-                  <p className="text-[11px] text-ink-tertiary">12-month demand trajectory index vs baseline.</p>
+                  <p className="text-meta text-ink-tertiary">12-month demand trajectory index vs baseline.</p>
                 </div>
                 <DataProvenanceBadge type="ESTIMATED" />
               </div>
@@ -858,7 +858,7 @@ export function CategoryHuntingClient({
                   <span className="text-xs font-bold text-ink uppercase tracking-wide flex items-center gap-1.5">
                     <Store className="h-3.5 w-3.5 text-[#0E8F5D]" /> Leading Competitor Shops in Category
                   </span>
-                  <p className="text-[11px] text-ink-tertiary">Stores generating market volume in this niche.</p>
+                  <p className="text-meta text-ink-tertiary">Stores generating market volume in this niche.</p>
                 </div>
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
               </div>
@@ -890,19 +890,19 @@ export function CategoryHuntingClient({
                         >
                           {shop.shopName}
                         </Link>
-                        <Badge variant="neutral" className="text-[10px]">
+                        <Badge variant="neutral" className="text-label-sm">
                           {shop.activeListings} listings
                         </Badge>
                       </div>
 
-                      <div className="text-[11px] text-ink-secondary flex justify-between">
+                      <div className="text-data-sm text-ink-secondary flex justify-between">
                         <span>Total Sales: <strong className="text-ink tabular-nums">{shop.totalSales.toLocaleString()}</strong></span>
                         <span>Reviews: <strong className="text-ink tabular-nums">{shop.reviewCount}</strong></span>
                       </div>
                     </div>
 
                     <Link href={`/shops/${shop.shopExternalId}`}>
-                      <Button variant="secondary" size="compact" className="w-full text-[11px] h-7">
+                      <Button variant="secondary" size="compact" className="w-full text-label-sm h-7">
                         Inspect Shop Dossier →
                       </Button>
                     </Link>
@@ -932,14 +932,14 @@ export function CategoryHuntingClient({
                   >
                     <div className="min-w-0 space-y-0.5">
                       <div className="text-xs font-bold text-ink truncate">{item.tag}</div>
-                      <div className="text-[10px] text-ink-tertiary">
+                      <div className="text-meta text-ink-tertiary">
                         {item.count}x observed ({item.percentage}% of category sample)
                       </div>
                     </div>
 
                     <Link
                       href={`/keyword-research?q=${encodeURIComponent(item.tag)}`}
-                      className="text-[10px] font-bold text-[#0E8F5D] hover:underline px-2 py-1 rounded bg-[#E7FAF1] shrink-0"
+                      className="text-label-sm font-bold text-[#0E8F5D] hover:underline px-2 py-1 rounded bg-[#E7FAF1] shrink-0"
                     >
                       Audit Tag
                     </Link>
@@ -967,12 +967,12 @@ export function CategoryHuntingClient({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-ink">{prop.display_name}</span>
                       {prop.is_required && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                        <span className="text-label-sm font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
                           Required
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] text-ink-tertiary">
+                    <div className="text-meta text-ink-tertiary">
                       {prop.possible_values.length > 0
                         ? `${prop.possible_values.length} allowed options`
                         : prop.supports_custom_values

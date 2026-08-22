@@ -121,7 +121,7 @@ export function SystemHealthView({
         {etsyDiag?.diagnostic && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] uppercase font-sans font-bold">Config Status</div>
+              <div className="text-ink-tertiary text-label-sm uppercase font-sans font-bold">Config Status</div>
               <div className="font-bold">
                 <Badge variant={etsyDiag.diagnostic.configured ? "success" : "warning"}>
                   {etsyDiag.diagnostic.configured ? "CONFIGURED" : "MISSING CLIENT ID"}
@@ -130,22 +130,22 @@ export function SystemHealthView({
             </div>
 
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] uppercase font-sans font-bold">Environment</div>
+              <div className="text-ink-tertiary text-label-sm uppercase font-sans font-bold">Environment</div>
               <div className="font-bold text-ink">{etsyDiag.diagnostic.environment?.toUpperCase()}</div>
             </div>
 
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] uppercase font-sans font-bold">Masked Keystring</div>
+              <div className="text-ink-tertiary text-label-sm uppercase font-sans font-bold">Masked Keystring</div>
               <div className="font-bold text-ink">{etsyDiag.diagnostic.maskedClientId}</div>
             </div>
 
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] uppercase font-sans font-bold">PKCE / State</div>
+              <div className="text-ink-tertiary text-label-sm uppercase font-sans font-bold">PKCE / State</div>
               <div className="font-bold text-[#0E8F5D]">S256 ACTIVE</div>
             </div>
 
             <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1 md:col-span-2 lg:col-span-4">
-              <div className="text-ink-tertiary text-[10px] uppercase font-sans font-bold">Resolved Redirect URI</div>
+              <div className="text-ink-tertiary text-label-sm uppercase font-sans font-bold">Resolved Redirect URI</div>
               <div className="text-ink font-bold select-all truncate">{etsyDiag.diagnostic.redirectUri}</div>
             </div>
           </div>

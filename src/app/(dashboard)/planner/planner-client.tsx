@@ -590,7 +590,7 @@ export function PlannerClient() {
                 })}
 
                 {col.items.length === 0 && (
-                  <div className="py-8 text-center text-[11px] text-ink-tertiary italic">
+                  <div className="py-8 text-center text-meta text-ink-tertiary italic">
                     No items
                   </div>
                 )}
@@ -605,7 +605,7 @@ export function PlannerClient() {
         <Card padding="sm" className="border-line bg-white shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] text-[10px] font-bold text-ink-tertiary uppercase border-b border-line">
+              <thead className="bg-[#FAFAF8] text-label-sm font-bold text-ink-tertiary uppercase border-b border-line">
                 <tr>
                   <th className="py-3 px-4">Planner Item</th>
                   <th className="py-3 px-3">Type</th>
@@ -628,18 +628,18 @@ export function PlannerClient() {
                       <td className="py-3 px-4">
                         <div className="font-bold text-xs text-ink">{item.title}</div>
                         {item.sourceListingTitle && (
-                          <div className="text-[10px] text-ink-tertiary truncate max-w-sm">
+                          <div className="text-meta text-ink-tertiary truncate max-w-sm">
                             Source: {item.sourceListingTitle}
                           </div>
                         )}
                       </td>
                       <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${typeCfg.color}`}>
+                        <span className={`px-2 py-0.5 rounded text-label-sm font-bold border ${typeCfg.color}`}>
                           {typeCfg.label}
                         </span>
                       </td>
                       <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-muted text-ink border border-line">
+                        <span className="px-2 py-0.5 rounded text-label-sm font-semibold bg-surface-muted text-ink border border-line">
                           {item.status.replace(/_/g, " ")}
                         </span>
                       </td>
@@ -649,13 +649,13 @@ export function PlannerClient() {
                       <td className="py-3 px-3">
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {(item.targetKeywords || []).slice(0, 3).map((k: string) => (
-                            <span key={k} className="px-1.5 py-0.2 rounded text-[10px] bg-surface-muted text-ink border border-line">
+                            <span key={k} className="px-1.5 py-0.2 rounded text-label-sm bg-surface-muted text-ink border border-line">
                               {k}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="py-3 px-3 text-[11px] text-ink-tertiary">
+                      <td className="py-3 px-3 text-meta text-ink-tertiary">
                         {new Date(item.createdAt).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 text-right">
@@ -698,7 +698,7 @@ export function PlannerClient() {
               <div className="flex items-start justify-between pb-4 border-b border-line gap-3">
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${TYPE_CONFIG[detailItem.type as PlannerItemType]?.color}`}>
+                    <span className={`px-2 py-0.5 rounded text-label-sm font-bold border ${TYPE_CONFIG[detailItem.type as PlannerItemType]?.color}`}>
                       {TYPE_CONFIG[detailItem.type as PlannerItemType]?.label}
                     </span>
                     <DataProvenanceBadge type="SELLERSALT_SCORE" />
@@ -725,7 +725,7 @@ export function PlannerClient() {
               {/* Status & Type Bar */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Workflow Status</label>
+                  <label className="text-label-sm font-bold text-ink-tertiary uppercase">Workflow Status</label>
                   <select
                     value={detailItem.status}
                     onChange={(e) => setDetailItem({ ...detailItem, status: e.target.value as PlannerItemStatus })}
@@ -741,7 +741,7 @@ export function PlannerClient() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Planner Item Type</label>
+                  <label className="text-label-sm font-bold text-ink-tertiary uppercase">Planner Item Type</label>
                   <select
                     value={detailItem.type}
                     onChange={(e) => setDetailItem({ ...detailItem, type: e.target.value as PlannerItemType })}
@@ -1008,7 +1008,7 @@ export function PlannerClient() {
                         className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#FAFAF8] text-ink border border-line flex items-center gap-1.5 shadow-2xs"
                       >
                         <span>#{kw}</span>
-                        <span className="text-[10px] text-ink-tertiary font-mono">
+                        <span className="text-meta text-ink-tertiary font-mono">
                           {kw.length}/20 chars
                         </span>
                       </span>
@@ -1017,7 +1017,7 @@ export function PlannerClient() {
 
                   <div className="p-3 rounded-xl bg-surface-muted text-xs text-ink-secondary space-y-1 border border-line">
                     <div className="font-bold text-ink">Etsy Tag Rules:</div>
-                    <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-ink-tertiary">
+                    <ul className="list-disc pl-4 space-y-0.5 text-meta text-ink-tertiary">
                       <li>Up to 13 tags per listing</li>
                       <li>Maximum 20 characters per tag</li>
                       <li>Multi-word phrases (long-tail) rank higher than single words</li>
@@ -1056,7 +1056,7 @@ export function PlannerClient() {
                         <CheckCircle2 className="h-4 w-4" />
                         <span>{opportunityPackage?.strategy?.verdictLabel || "Good Opportunity — High Feasibility"}</span>
                       </div>
-                      <p className="text-[11px] text-ink-secondary">
+                      <p className="text-meta text-ink-secondary">
                         Deterministic recommendation derived from price corridor, velocity, and review moat.
                       </p>
                     </div>
@@ -1068,7 +1068,7 @@ export function PlannerClient() {
                   {/* 6 Strategy Pillars Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">1. Positioning Strategy</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">1. Positioning Strategy</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.positioning ||
                           `Compete on premium artisan craftsmanship and personalized gifting options in ${detailItem.targetCategory || "Handmade Goods"}.`}
@@ -1076,7 +1076,7 @@ export function PlannerClient() {
                     </Card>
 
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">2. Primary Buyer Intent</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">2. Primary Buyer Intent</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.primaryBuyerIntent ||
                           `Shoppers searching for '${detailItem.targetKeywords?.[0] || detailItem.title}' with custom personalization and fast dispatch.`}
@@ -1084,7 +1084,7 @@ export function PlannerClient() {
                     </Card>
 
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">3. Keyword Priority (First 40 Chars)</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">3. Keyword Priority (First 40 Chars)</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.keywordStrategy ||
                           `Lock '${detailItem.targetKeywords?.[0] || detailItem.title}' in the first 40 title characters with long-tail secondary tags.`}
@@ -1092,7 +1092,7 @@ export function PlannerClient() {
                     </Card>
 
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">4. Pricing Corridor &amp; Margin</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">4. Pricing Corridor &amp; Margin</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.pricingStrategy ||
                           `Target $${detailItem.targetPrice || "32.00"} with estimated 60%+ net profit margin after Etsy fees.`}
@@ -1100,7 +1100,7 @@ export function PlannerClient() {
                     </Card>
 
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">5. Differentiation Points</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">5. Differentiation Points</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.differentiation ||
                           "Emphasize custom engraving options, superior photography, and transparent care instructions."}
@@ -1108,7 +1108,7 @@ export function PlannerClient() {
                     </Card>
 
                     <Card padding="md" className="border-line bg-[#FAFAF8] space-y-1.5">
-                      <div className="text-[10px] font-bold uppercase text-ink-tertiary">6. Competitive Risk Mitigation</div>
+                      <div className="text-label-sm font-bold uppercase text-ink-tertiary">6. Competitive Risk Mitigation</div>
                       <div className="text-xs font-semibold text-ink">
                         {opportunityPackage?.strategy?.competitiveRisk ||
                           "Incumbent stores have accumulated reviews; focus on long-tail high-intent search tags to bypass broad keyword competition."}
@@ -1161,7 +1161,7 @@ export function PlannerClient() {
                         <span className="font-bold text-[#0E8F5D]">
                           🛡️ {generatedContent.originalityReport.verdict}
                         </span>
-                        <span className="font-mono text-[10px] font-bold text-ink-secondary">
+                        <span className="font-mono text-label-sm font-bold text-ink-secondary">
                           {generatedContent.originalityReport.competitorSimilarityPercent}% competitor overlap
                         </span>
                       </div>
@@ -1209,7 +1209,7 @@ export function PlannerClient() {
                               className="px-2 py-0.5 rounded-md text-xs font-semibold bg-[#FAFAF8] text-ink border border-line flex items-center gap-1"
                             >
                               <span>{t.tag}</span>
-                              <span className="text-[9px] text-ink-tertiary font-mono">({t.characterCount})</span>
+                              <span className="text-meta text-ink-tertiary font-mono">({t.characterCount})</span>
                             </span>
                           ))}
                         </div>
@@ -1239,7 +1239,7 @@ export function PlannerClient() {
                     <div className="py-12 text-center rounded-xl border border-dashed border-line bg-[#FAFAF8] space-y-2">
                       <Sparkles className="h-8 w-8 text-ink-tertiary mx-auto opacity-50" />
                       <div className="text-xs font-bold text-ink">Listing Content Not Yet Generated</div>
-                      <p className="text-[11px] text-ink-tertiary max-w-sm mx-auto">
+                      <p className="text-meta text-ink-tertiary max-w-sm mx-auto">
                         Click &quot;Generate Content&quot; to synthesize an optimized title, 13 tags, and structured description from this opportunity&apos;s keyword cluster.
                       </p>
                     </div>
@@ -1257,7 +1257,7 @@ export function PlannerClient() {
                       <ShieldCheck className="h-4 w-4 text-amber-700" />
                       <span>Rule 9: Human Review &amp; Approval Gate</span>
                     </div>
-                    <p className="text-[11px] text-amber-800">
+                    <p className="text-meta text-amber-800">
                       SellerSalt drafts are created strictly in <strong>draft</strong> state. Content is never published live to marketplace customers without your explicit approval.
                     </p>
                   </div>

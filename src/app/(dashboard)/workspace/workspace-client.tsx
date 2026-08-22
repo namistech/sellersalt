@@ -135,7 +135,7 @@ export function WorkspaceClient({
               <span>{t.label}</span>
               {t.count !== undefined && (
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                  className={`px-1.5 py-0.5 rounded-full text-label-sm font-mono ${
                     isActive ? "bg-white/20 text-white" : "bg-line text-ink-tertiary"
                   }`}
                 >
@@ -180,16 +180,16 @@ export function WorkspaceClient({
                   href={st.href}
                   className="p-3 rounded-xl border border-line bg-[#FAFAF8] hover:bg-white hover:border-[#0E8F5D] transition flex flex-col justify-between text-center gap-1 group shadow-2xs"
                 >
-                  <div className="text-[10px] font-bold text-ink-tertiary group-hover:text-[#0E8F5D]">
+                  <div className="text-label-sm font-bold text-ink-tertiary group-hover:text-[#0E8F5D]">
                     #{st.stageNumber}
                   </div>
                   <div className="text-lg font-extrabold text-ink group-hover:text-[#0E8F5D]">
                     {st.count}
                   </div>
-                  <div className="text-[10px] font-semibold text-ink-secondary truncate" title={st.label}>
+                  <div className="text-label-sm font-semibold text-ink-secondary truncate" title={st.label}>
                     {st.label}
                   </div>
-                  <div className="text-[9px] font-mono text-ink-tertiary">
+                  <div className="text-meta font-mono text-ink-tertiary">
                     {st.conversionRatePercent}% conv
                   </div>
                 </Link>
@@ -201,7 +201,7 @@ export function WorkspaceClient({
               <div className="flex items-start gap-2.5">
                 <AlertCircle className="h-4 w-4 text-[#FFB020] shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <span className="font-bold text-[#664400] text-[11px] uppercase tracking-wide">
+                  <span className="font-bold text-[#664400] text-label-sm uppercase tracking-wide">
                     Primary Pipeline Bottleneck: {pipeline.bottleneckLabel}
                   </span>
                   <p className="text-[#664400] text-xs leading-relaxed">
@@ -236,15 +236,15 @@ export function WorkspaceClient({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left max-w-lg mx-auto pt-2">
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
                 <div className="text-xs font-bold text-ink">1. Connect Store</div>
-                <div className="text-[11px] text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
+                <div className="text-meta text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
                 <div className="text-xs font-bold text-ink">2. Audit Catalog</div>
-                <div className="text-[11px] text-ink-tertiary">Detect empty tag slots and title gaps.</div>
+                <div className="text-meta text-ink-tertiary">Detect empty tag slots and title gaps.</div>
               </div>
               <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
                 <div className="text-xs font-bold text-ink">3. Boost Sales</div>
-                <div className="text-[11px] text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
+                <div className="text-meta text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
               </div>
             </div>
             <div className="pt-2">

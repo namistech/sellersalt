@@ -385,7 +385,7 @@ export function ChartShowcaseClient() {
               </tbody>
             </table>
           </div>
-          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-line-subtle">
+          <div className="text-meta text-ink-tertiary pt-1 border-t border-line-subtle">
             <strong>Used in:</strong> Opportunity Radar Table (`/radar`), Tracked Shops List (`/spy/tracked`).
           </div>
         </Card>

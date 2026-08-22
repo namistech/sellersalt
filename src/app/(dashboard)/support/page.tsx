@@ -160,15 +160,15 @@ export default function SupportPage() {
   function getStatusBadge(status: string) {
     switch (status) {
       case "OPEN":
-        return <Badge variant="warning" className="text-[10px] font-bold">Open</Badge>;
+        return <Badge variant="warning" className="text-label-sm font-bold">Open</Badge>;
       case "IN_PROGRESS":
-        return <Badge variant="info" className="text-[10px] font-bold">In Progress</Badge>;
+        return <Badge variant="info" className="text-label-sm font-bold">In Progress</Badge>;
       case "RESOLVED":
-        return <Badge variant="success" className="text-[10px] font-bold">Resolved</Badge>;
+        return <Badge variant="success" className="text-label-sm font-bold">Resolved</Badge>;
       case "CLOSED":
-        return <Badge variant="neutral" className="text-[10px] font-bold">Closed</Badge>;
+        return <Badge variant="neutral" className="text-label-sm font-bold">Closed</Badge>;
       default:
-        return <Badge variant="neutral" className="text-[10px] font-bold">{status}</Badge>;
+        return <Badge variant="neutral" className="text-label-sm font-bold">{status}</Badge>;
     }
   }
 
@@ -220,7 +220,7 @@ export default function SupportPage() {
             <h3 className="text-xs font-bold text-ink uppercase tracking-wide">
               Your Support Tickets ({tickets.length})
             </h3>
-            <span className="text-[11px] text-ink-tertiary">Direct support queue</span>
+            <span className="text-meta text-ink-tertiary">Direct support queue</span>
           </div>
 
           <div className="space-y-3">
@@ -263,7 +263,7 @@ export default function SupportPage() {
                     <p className="text-xs text-ink-secondary line-clamp-2 leading-relaxed">
                       {t.message}
                     </p>
-                    <div className="pt-1 flex items-center justify-between text-[10px] text-ink-tertiary">
+                    <div className="pt-1 flex items-center justify-between text-label-sm text-ink-tertiary">
                       <span className="px-1.5 py-0.5 rounded bg-surface-muted border border-line-subtle font-semibold">
                         {t.category.replace("_", " ")}
                       </span>
@@ -290,7 +290,7 @@ export default function SupportPage() {
                   <div className="font-bold text-ink flex items-start gap-1.5">
                     <span className="text-[#0E8F5D] font-bold">Q:</span> {faq.question}
                   </div>
-                  <p className="text-ink-secondary pl-4 leading-relaxed text-[11px]">
+                  <p className="text-ink-secondary pl-4 leading-relaxed text-meta">
                     {faq.answer}
                   </p>
                 </div>
@@ -326,9 +326,9 @@ export default function SupportPage() {
                     <div className="flex items-center gap-2 font-bold text-ink">
                       <User className="h-3.5 w-3.5 text-ink-tertiary" />
                       <span>{selectedTicket.authorName}</span>
-                      <span className="text-[10px] font-normal text-ink-tertiary">(Author)</span>
+                      <span className="text-meta font-normal text-ink-tertiary">(Author)</span>
                     </div>
-                    <span className="text-[10px] text-ink-tertiary">
+                    <span className="text-meta text-ink-tertiary">
                       {new Date(selectedTicket.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
@@ -353,7 +353,7 @@ export default function SupportPage() {
                           <>
                             <Headphones className="h-3.5 w-3.5 text-[#0E8F5D]" />
                             <span className="text-[#0E8F5D]">{reply.authorName}</span>
-                            <Badge variant="success" className="text-[9px] px-1 py-0 font-bold">
+                            <Badge variant="success" className="text-label-sm px-1 py-0 font-bold">
                               STAFF
                             </Badge>
                           </>
@@ -364,7 +364,7 @@ export default function SupportPage() {
                           </>
                         )}
                       </div>
-                      <span className="text-[10px] text-ink-tertiary">
+                      <span className="text-meta text-ink-tertiary">
                         {new Date(reply.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
@@ -385,7 +385,7 @@ export default function SupportPage() {
                 />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-ink-tertiary flex items-center gap-1">
+                  <span className="text-meta text-ink-tertiary flex items-center gap-1">
                     <ShieldCheck className="h-3.5 w-3.5 text-[#0E8F5D]" /> Encrypted support communication
                   </span>
                   <Button

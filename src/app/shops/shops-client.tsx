@@ -315,7 +315,7 @@ export function ShopsDirectoryClient({
                       {shop.keywords.map((k) => (
                         <span
                           key={k}
-                          className="rounded bg-[#F4F3EF] px-2 py-0.5 text-[11px] font-medium text-[#525B55]"
+                          className="rounded bg-[#F4F3EF] px-2 py-0.5 text-label-sm font-medium text-[#525B55]"
                         >
                           {k}
                         </span>
@@ -326,7 +326,7 @@ export function ShopsDirectoryClient({
                   {/* Key Metrics Chips */}
                   <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-[#FAFAF8] border border-[#E3E6E0] mb-4 text-center">
                     <div>
-                      <div className="text-[10px] uppercase font-semibold text-[#7C847E]">
+                      <div className="text-label-sm uppercase font-semibold text-[#7C847E]">
                         Daily Sales
                       </div>
                       <div className="font-mono text-xs font-bold text-[#0E8F5D]">
@@ -334,7 +334,7 @@ export function ShopsDirectoryClient({
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase font-semibold text-[#7C847E]">
+                      <div className="text-label-sm uppercase font-semibold text-[#7C847E]">
                         Total Sales
                       </div>
                       <div className="font-mono text-xs font-bold text-[#141B16]">
@@ -342,7 +342,7 @@ export function ShopsDirectoryClient({
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase font-semibold text-[#7C847E]">
+                      <div className="text-label-sm uppercase font-semibold text-[#7C847E]">
                         Yield / Listing
                       </div>
                       <div className="font-mono text-xs font-bold text-[#141B16]">
@@ -362,10 +362,10 @@ export function ShopsDirectoryClient({
                         />
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-[11px] text-[#141B16] font-medium truncate">
+                        <div className="text-meta text-[#141B16] font-medium truncate">
                           {shop.topListing.title}
                         </div>
-                        <div className="text-[10px] text-[#7C847E]">
+                        <div className="text-meta text-[#7C847E]">
                           Listing price: {shop.topListing.price !== null ? `$${shop.topListing.price.toFixed(2)}` : "Unavailable"}
                         </div>
                       </div>

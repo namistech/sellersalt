@@ -387,7 +387,7 @@ export function ValidationReportView({
                 <Calculator className="w-4 h-4 text-primary" />
                 Unit Economics Cost Inputs
               </h2>
-              <Badge variant="neutral" className="text-[10px]">
+              <Badge variant="neutral" className="text-label-sm">
                 USER_DERIVED
               </Badge>
             </div>

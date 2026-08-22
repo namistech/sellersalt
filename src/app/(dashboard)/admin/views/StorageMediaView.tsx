@@ -191,16 +191,16 @@ export function StorageMediaView({
                   <h4 className="text-xs font-extrabold text-ink truncate" title={asset.name}>
                     {asset.name}
                   </h4>
-                  <Badge variant={asset.isReferenced ? "success" : "neutral"} className="text-[10px]">
+                  <Badge variant={asset.isReferenced ? "success" : "neutral"} className="text-label-sm">
                     {asset.type}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-ink-tertiary">
+                <div className="flex items-center justify-between text-meta text-ink-tertiary">
                   <span>{asset.size}</span>
                   <span>{asset.uploadDate}</span>
                 </div>
                 {asset.usageLabel && (
-                  <div className="text-[11px] text-[#0E8F5D] font-bold">
+                  <div className="text-label-sm text-[#0E8F5D] font-bold">
                     ✓ {asset.usageLabel}
                   </div>
                 )}

@@ -116,9 +116,9 @@ function PasswordStrengthMeter({ password }: { password: string }) {
             />
           ))}
         </div>
-        <span className={`text-[11px] font-semibold ${textColor}`}>{label}</span>
+        <span className={`text-label-sm font-semibold ${textColor}`}>{label}</span>
       </div>
-      <div className="flex flex-wrap gap-1.5 text-[10px]">
+      <div className="flex flex-wrap gap-1.5 text-label-sm">
         {checklistItems.map((item) => (
           <span
             key={item.key}
@@ -824,18 +824,18 @@ export default function ProfilePage() {
         {!isEditingProfile ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Display Name</div>
+              <div className="text-ink-tertiary text-label-sm font-bold uppercase">Display Name</div>
               <div className="font-extrabold text-sm text-ink">{name || "—"}</div>
-              <div className="text-[11px] text-ink-tertiary">Shown in team channels and header bar.</div>
+              <div className="text-meta text-ink-tertiary">Shown in team channels and header bar.</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Login Email</div>
+              <div className="text-ink-tertiary text-label-sm font-bold uppercase">Login Email</div>
               <div className="font-extrabold text-sm text-ink flex items-center gap-2">
                 <span>{email}</span>
-                {profileData?.emailVerified && <Badge variant="success" className="text-[10px]">Verified</Badge>}
+                {profileData?.emailVerified && <Badge variant="success" className="text-label-sm">Verified</Badge>}
               </div>
-              <div className="text-[11px] text-ink-tertiary">Primary account authentication address.</div>
+              <div className="text-meta text-ink-tertiary">Primary account authentication address.</div>
             </div>
           </div>
         ) : (
@@ -868,7 +868,7 @@ export default function ProfilePage() {
                 <div className="text-xs font-bold text-amber-900">
                   Confirm Email Change
                 </div>
-                <p className="text-[11px] text-amber-800">
+                <p className="text-meta text-amber-800">
                   To protect your account, enter your current password to confirm updating your login address.
                 </p>
                 <Input
@@ -936,21 +936,21 @@ export default function ProfilePage() {
         {!isEditingWorkspace ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Workspace Title</div>
+              <div className="text-ink-tertiary text-label-sm font-bold uppercase">Workspace Title</div>
               <div className="font-extrabold text-sm text-ink">{organizationName || "—"}</div>
-              <div className="text-[11px] text-ink-tertiary">Organization workspace name.</div>
+              <div className="text-meta text-ink-tertiary">Organization workspace name.</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Subscription Tier</div>
+              <div className="text-ink-tertiary text-label-sm font-bold uppercase">Subscription Tier</div>
               <div className="font-extrabold text-sm text-[#0E8F5D]">{profileData?.planName || "Starter"}</div>
-              <div className="text-[11px] text-ink-tertiary">Active plan entitlements.</div>
+              <div className="text-meta text-ink-tertiary">Active plan entitlements.</div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-              <div className="text-ink-tertiary text-[10px] font-bold uppercase">Your Role</div>
+              <div className="text-ink-tertiary text-label-sm font-bold uppercase">Your Role</div>
               <div className="font-extrabold text-sm text-ink">{profileData?.role || "OWNER"}</div>
-              <div className="text-[11px] text-ink-tertiary">Workspace permission level.</div>
+              <div className="text-meta text-ink-tertiary">Workspace permission level.</div>
             </div>
           </div>
         ) : (
@@ -963,7 +963,7 @@ export default function ProfilePage() {
                 onChange={(e) => setOrganizationName(e.target.value)}
                 placeholder="e.g. Acme Handmade Studio"
               />
-              <span className="text-[11px] text-ink-tertiary mt-1 block">
+              <span className="text-meta text-ink-tertiary mt-1 block">
                 Brand title shown on team reports and exports.
               </span>
             </div>
@@ -1019,7 +1019,7 @@ export default function ProfilePage() {
             />
             <div>
               <div className="text-xs font-bold text-ink">Product Opportunity Alerts</div>
-              <div className="text-[11px] text-ink-tertiary">Real-time alerts when new high-score opportunities match your saved searches.</div>
+              <div className="text-meta text-ink-tertiary">Real-time alerts when new high-score opportunities match your saved searches.</div>
             </div>
           </label>
 
@@ -1032,7 +1032,7 @@ export default function ProfilePage() {
             />
             <div>
               <div className="text-xs font-bold text-ink">Competitor Sales Velocity Spikes</div>
-              <div className="text-[11px] text-ink-tertiary">Alerts when tracked competitor shops launch winning listings or surge in daily sales.</div>
+              <div className="text-meta text-ink-tertiary">Alerts when tracked competitor shops launch winning listings or surge in daily sales.</div>
             </div>
           </label>
 
@@ -1045,7 +1045,7 @@ export default function ProfilePage() {
             />
             <div>
               <div className="text-xs font-bold text-ink">Catalog SEO &amp; Tag Gap Audits</div>
-              <div className="text-[11px] text-ink-tertiary">Weekly diagnostic digests highlighting unused tag slots in your connected store.</div>
+              <div className="text-meta text-ink-tertiary">Weekly diagnostic digests highlighting unused tag slots in your connected store.</div>
             </div>
           </label>
 
@@ -1058,7 +1058,7 @@ export default function ProfilePage() {
             />
             <div>
               <div className="text-xs font-bold text-ink">Account &amp; Security Notices</div>
-              <div className="text-[11px] text-ink-tertiary">Critical notifications regarding 2FA, passkeys, and password changes.</div>
+              <div className="text-meta text-ink-tertiary">Critical notifications regarding 2FA, passkeys, and password changes.</div>
             </div>
           </label>
         </div>
@@ -1095,7 +1095,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <div className="font-bold text-xs text-ink">Google Account</div>
-                <div className="text-[11px] text-ink-tertiary">Single sign-on authentication</div>
+                <div className="text-meta text-ink-tertiary">Single sign-on authentication</div>
               </div>
             </div>
             <Badge variant="success">Connected</Badge>
@@ -1108,7 +1108,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <div className="font-bold text-xs text-ink">Etsy Seller Store</div>
-                <div className="text-[11px] text-ink-tertiary">
+                <div className="text-meta text-ink-tertiary">
                   {profileData?.connectedEtsyShop ? profileData.connectedEtsyShop.label : "Store OAuth integration"}
                 </div>
               </div>
@@ -1147,7 +1147,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <div className="font-bold text-xs text-ink">Authenticator App</div>
-                  <div className="text-[11px] text-ink-tertiary">Google Authenticator, 1Password, Authy</div>
+                  <div className="text-meta text-ink-tertiary">Google Authenticator, 1Password, Authy</div>
                 </div>
               </div>
               <Badge variant={twoFactorEnabled ? "success" : "neutral"}>
@@ -1205,7 +1205,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <div className="font-bold text-xs text-ink">Passkeys</div>
-                    <div className="text-[11px] text-ink-tertiary">Touch ID, Face ID, Windows Hello, or Security Key</div>
+                    <div className="text-meta text-ink-tertiary">Touch ID, Face ID, Windows Hello, or Security Key</div>
                   </div>
                 </div>
                 <Badge variant={passkeys.length > 0 ? "success" : "neutral"}>
@@ -1223,7 +1223,7 @@ export default function ProfilePage() {
                     >
                       <div className="min-w-0">
                         <div className="font-semibold text-ink truncate">{p.name || "Device passkey"}</div>
-                        <div className="text-[10px] text-ink-tertiary">
+                        <div className="text-meta text-ink-tertiary">
                           Added {new Date(p.createdAt).toLocaleDateString()}
                           {p.lastUsedAt ? ` · Last used ${new Date(p.lastUsedAt).toLocaleDateString()}` : ""}
                         </div>
@@ -1253,7 +1253,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="pt-2 border-t border-line-subtle flex items-center justify-between">
-              <span className="text-[11px] text-ink-tertiary">{passkeyStatus || "Biometric / Device Security"}</span>
+              <span className="text-meta text-ink-tertiary">{passkeyStatus || "Biometric / Device Security"}</span>
               <Button
                 variant="secondary"
                 size="compact"
@@ -1285,12 +1285,12 @@ export default function ProfilePage() {
         <form onSubmit={handleChangePassword} className="space-y-4">
           {twoFactorEnabled && (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-ink-tertiary">Verify your identity with:</span>
+              <span className="text-meta text-ink-tertiary">Verify your identity with:</span>
               <div className="inline-flex rounded-md border border-line overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setPasswordReauthMethod("password")}
-                  className={`px-2.5 py-1 text-[11px] font-medium ${
+                  className={`px-2.5 py-1 text-label-sm font-medium ${
                     passwordReauthMethod === "password" ? "bg-[#0E8F5D] text-white" : "bg-white text-ink hover:bg-surface-muted"
                   }`}
                 >
@@ -1299,7 +1299,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setPasswordReauthMethod("code")}
-                  className={`px-2.5 py-1 text-[11px] font-medium border-l border-line ${
+                  className={`px-2.5 py-1 text-label-sm font-medium border-l border-line ${
                     passwordReauthMethod === "code" ? "bg-[#0E8F5D] text-white" : "bg-white text-ink hover:bg-surface-muted"
                   }`}
                 >
@@ -1406,7 +1406,7 @@ export default function ProfilePage() {
                 Current Web Browser Session
                 <span className="h-1.5 w-1.5 rounded-full bg-[#0E8F5D]" />
               </div>
-              <div className="text-[11px] text-ink-tertiary mt-0.5">
+              <div className="text-meta text-ink-tertiary mt-0.5">
                 Active now · Authenticated via JWT Session
               </div>
             </div>
@@ -1506,12 +1506,12 @@ export default function ProfilePage() {
             <>
               {/* QR Code Display */}
               <div className="flex flex-col items-center justify-center p-4 bg-[#FAFAF8] rounded-xl border border-line space-y-2">
-                <div className="text-[11px] font-bold text-ink">Scan with Authenticator App:</div>
+                <div className="text-label-sm font-bold text-ink">Scan with Authenticator App:</div>
                 <div className="p-2 bg-white rounded-lg border border-line shadow-2xs h-44 w-44 flex items-center justify-center">
                   {totpQrDataUrl ? (
                     <img src={totpQrDataUrl} alt="2FA QR Code" className="h-full w-full" />
                   ) : (
-                    <span className="text-[10px] text-ink-tertiary">Generating QR code…</span>
+                    <span className="text-meta text-ink-tertiary">Generating QR code…</span>
                   )}
                 </div>
               </div>

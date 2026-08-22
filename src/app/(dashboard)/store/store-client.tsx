@@ -90,15 +90,15 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left max-w-lg mx-auto pt-2">
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
               <div className="text-xs font-bold text-ink">1. Connect Store</div>
-              <div className="text-[11px] text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
+              <div className="text-meta text-ink-tertiary">Secure official OAuth 2.0 connection.</div>
             </div>
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
               <div className="text-xs font-bold text-ink">2. Audit Catalog</div>
-              <div className="text-[11px] text-ink-tertiary">Detect empty tag slots and title gaps.</div>
+              <div className="text-meta text-ink-tertiary">Detect empty tag slots and title gaps.</div>
             </div>
             <div className="p-3.5 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
               <div className="text-xs font-bold text-ink">3. Boost Sales</div>
-              <div className="text-[11px] text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
+              <div className="text-meta text-ink-tertiary">Apply optimized keywords in Content Studio.</div>
             </div>
           </div>
 
@@ -195,13 +195,13 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
 
           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-line-subtle text-xs">
             <div>
-              <span className="text-[10px] text-ink-tertiary">Active Listings</span>
+              <span className="text-label-sm text-ink-tertiary">Active Listings</span>
               <div className="font-bold font-mono text-ink mt-0.5">
                 {actualData.activeListingsCount}
               </div>
             </div>
             <div>
-              <span className="text-[10px] text-ink-tertiary">13-Tag Coverage</span>
+              <span className="text-label-sm text-ink-tertiary">13-Tag Coverage</span>
               <div className="font-bold font-mono text-[#0E8F5D] mt-0.5">
                 {seoSummary.perfect13TagListingsCount}/{actualData.activeListingsCount} full
               </div>
@@ -216,7 +216,7 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
               <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0E8F5D]">
                 <Zap className="h-4 w-4" /> Top Next Best Action
               </span>
-              <Badge variant="gold" className="text-[10px] uppercase font-bold">
+              <Badge variant="gold" className="text-label-sm uppercase font-bold">
                 {primaryNextAction.urgency} Urgency
               </Badge>
             </div>
@@ -290,7 +290,7 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
         {/* Listings Table */}
         <div className="border border-line rounded-xl overflow-hidden bg-white shadow-xs">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+            <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-label-sm">
               <tr>
                 <th className="p-3.5">Listing Title</th>
                 <th className="p-3.5">Price</th>
@@ -308,7 +308,7 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
                     <div className="truncate" title={item.title}>
                       {item.title}
                     </div>
-                    <div className="text-[10px] text-ink-tertiary font-mono mt-0.5">
+                    <div className="text-meta text-ink-tertiary font-mono mt-0.5">
                       ID: {item.listingId}
                     </div>
                   </td>
@@ -320,7 +320,7 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
                       {item.tagsCount}/13
                     </span>
                     {item.tagSlotsRemaining > 0 && (
-                      <span className="text-[10px] text-[#D97706] ml-1.5 font-medium">
+                      <span className="text-label-sm text-[#D97706] ml-1.5 font-medium">
                         ({item.tagSlotsRemaining} slots empty)
                       </span>
                     )}
@@ -331,7 +331,7 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
                   <td className="p-3.5 font-mono font-semibold text-ink-secondary">
                     {item.estDailySales.toFixed(1)}/day
                   </td>
-                  <td className="p-3.5 text-ink-secondary max-w-xs text-[11px]">
+                  <td className="p-3.5 text-ink-secondary max-w-xs text-data-sm">
                     {item.underperformanceReason || "Healthy tag utilization and search indexation."}
                   </td>
                   <td className="p-3.5 text-right">
@@ -388,19 +388,19 @@ export function StoreOperationsClient({ report, organizationId }: StoreOperation
 
               <div className="grid grid-cols-3 gap-3 text-xs bg-[#FAFAF8] p-3 rounded-xl border border-line-subtle">
                 <div>
-                  <span className="text-[10px] text-ink-tertiary">Listing Price</span>
+                  <span className="text-label-sm text-ink-tertiary">Listing Price</span>
                   <div className="font-bold font-mono text-ink mt-0.5">
                     ${selectedListing.price.toFixed(2)}
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-ink-tertiary">Tags Populated</span>
+                  <span className="text-label-sm text-ink-tertiary">Tags Populated</span>
                   <div className="font-bold font-mono text-ink mt-0.5">
                     {selectedListing.tagsCount}/13 tags
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] text-ink-tertiary">SEO Score</span>
+                  <span className="text-label-sm text-ink-tertiary">SEO Score</span>
                   <div className="font-bold font-mono text-[#0E8F5D] mt-0.5">
                     {selectedListing.seoScore}/100
                   </div>

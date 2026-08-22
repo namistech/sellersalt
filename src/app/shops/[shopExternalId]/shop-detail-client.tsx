@@ -1055,7 +1055,7 @@ export function ShopDetailClient({
           </div>
 
           {durationNotice && (
-            <div className="p-2.5 rounded-lg bg-[#FFF7ED] border border-[#FDBA74] text-[11px] text-[#9A3412] font-semibold flex items-center gap-1.5">
+            <div className="p-2.5 rounded-lg bg-[#FFF7ED] border border-[#FDBA74] text-meta text-[#9A3412] font-semibold flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5 shrink-0" /> {durationNotice}
             </div>
           )}
@@ -1087,33 +1087,33 @@ export function ShopDetailClient({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Sales Δ</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Sales Δ</span>
                   <span className="text-sm font-extrabold text-[#0E8F5D]">
                     {report.shopMetrics.totalSalesDelta !== null ? `${report.shopMetrics.totalSalesDelta >= 0 ? "+" : ""}${report.shopMetrics.totalSalesDelta}` : "—"}
                   </span>
-                  <p className="text-[11px] text-ink-secondary">
+                  <p className="text-meta text-ink-secondary">
                     {report.shopMetrics.totalSalesStart ?? "—"} → {report.shopMetrics.totalSalesEnd ?? "—"} lifetime sales
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Catalog Δ</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Catalog Δ</span>
                   <span className="text-sm font-extrabold text-ink">
                     {report.shopMetrics.activeListingsDelta !== null ? `${report.shopMetrics.activeListingsDelta >= 0 ? "+" : ""}${report.shopMetrics.activeListingsDelta}` : "—"}
                   </span>
-                  <p className="text-[11px] text-ink-secondary">
+                  <p className="text-meta text-ink-secondary">
                     {report.shopMetrics.activeListingsStart ?? "—"} → {report.shopMetrics.activeListingsEnd ?? "—"} active listings
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                  <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Velocity [ESTIMATED]</span>
+                  <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Velocity [ESTIMATED]</span>
                   <span className="text-sm font-extrabold text-ink">~{report.velocity.estDailySales.toFixed(1)}/day</span>
-                  <p className="text-[11px] text-ink-secondary">
+                  <p className="text-meta text-ink-secondary">
                     {report.velocity.isSpike ? "Sales spike detected" : `${report.velocity.velocityGrowthRate >= 0 ? "+" : ""}${report.velocity.velocityGrowthRate}% vs baseline`}
                   </p>
                 </div>
               </div>
               {report.listingChanges.length > 0 && (
-                <p className="text-[11px] text-ink-tertiary">
+                <p className="text-meta text-ink-tertiary">
                   {report.listingChanges.length} tracked listing{report.listingChanges.length === 1 ? "" : "s"} changed price or favorites in this window — included in the CSV export.
                 </p>
               )}
@@ -1123,19 +1123,19 @@ export function ShopDetailClient({
           {latestSnapshot && (
             <div className="p-3.5 rounded-xl bg-white border border-line grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
               <div>
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Last Snapshot</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Last Snapshot</span>
                 <span className="font-bold text-ink">{new Date(latestSnapshot.capturedAt).toLocaleString()}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Recorded Sales</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Recorded Sales</span>
                 <span className="font-bold text-[#0E8F5D] tabular-nums">{latestSnapshot.totalSales?.toLocaleString() ?? "—"}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Active Listings</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Active Listings</span>
                 <span className="font-bold text-ink tabular-nums">{latestSnapshot.activeListings}</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Data Provenance</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Data Provenance</span>
                 <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
               </div>
             </div>
@@ -1149,19 +1149,19 @@ export function ShopDetailClient({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Observed Velocity</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Observed Velocity</span>
                 <span className="text-sm font-extrabold text-[#0E8F5D]">~{estDaily.toFixed(1)} sales/day</span>
-                <p className="text-[11px] text-ink-secondary">Stable transaction momentum across 30-day baseline.</p>
+                <p className="text-meta text-ink-secondary">Stable transaction momentum across 30-day baseline.</p>
               </div>
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Catalog Yield Ratio</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Catalog Yield Ratio</span>
                 <span className="text-sm font-extrabold text-ink">{sellingRatio.toFixed(1)} sales/listing</span>
-                <p className="text-[11px] text-ink-secondary">{catalog.catalogEfficiency === "HIGH_YIELD" ? "High efficiency top-tier storefront." : "Standard catalog distribution."}</p>
+                <p className="text-meta text-ink-secondary">{catalog.catalogEfficiency === "HIGH_YIELD" ? "High efficiency top-tier storefront." : "Standard catalog distribution."}</p>
               </div>
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
-                <span className="text-[10px] font-bold text-ink-tertiary uppercase block">Strategic Takeaway</span>
+                <span className="text-label-sm font-bold text-ink-tertiary uppercase block">Strategic Takeaway</span>
                 <span className="text-sm font-extrabold text-ink">{evaluatedScore.verdictLabel}</span>
-                <p className="text-[11px] text-ink-secondary">Focus on unique product variations &amp; bundle positioning.</p>
+                <p className="text-meta text-ink-secondary">Focus on unique product variations &amp; bundle positioning.</p>
               </div>
             </div>
           </div>
@@ -1230,7 +1230,7 @@ export function ShopDetailClient({
         {viewMode === "table" ? (
           <div className="border border-line rounded-xl overflow-hidden">
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-label-sm">
                 <tr>
                   <th className="p-3.5">Product Title</th>
                   <th className="p-3.5 text-right">Price</th>
@@ -1267,14 +1267,14 @@ export function ShopDetailClient({
                         ~{listing.estDailySales.toFixed(1)}/day
                       </td>
                       <td className="p-3.5 text-center">
-                        <Badge variant="success" className="text-[10px]">
+                        <Badge variant="success" className="text-label-sm">
                           🔥 {listing.opportunityScore}/100
                         </Badge>
                       </td>
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/products/${listing.listingId}`}>
-                            <Button variant="secondary" size="compact" className="text-[11px] h-7 px-2">
+                            <Button variant="secondary" size="compact" className="text-label-sm h-7 px-2">
                               Research
                             </Button>
                           </Link>
@@ -1293,7 +1293,7 @@ export function ShopDetailClient({
                             loading={savingPlannerId === listing.listingId}
                             disabled={isSaved}
                             onClick={() => handleAddListingToPlanner(listing)}
-                            className="text-[11px] h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+                            className="text-label-sm h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
                           >
                             {isSaved ? <Check className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
                           </Button>
@@ -1328,7 +1328,7 @@ export function ShopDetailClient({
                       >
                         {listing.title}
                       </Link>
-                      <Badge variant="success" className="text-[10px] shrink-0">
+                      <Badge variant="success" className="text-label-sm shrink-0">
                         🔥 {listing.opportunityScore}/100
                       </Badge>
                     </div>
@@ -1341,7 +1341,7 @@ export function ShopDetailClient({
 
                   <div className="pt-2 flex items-center justify-between gap-2">
                     <Link href={`/products/${listing.listingId}`} className="flex-1">
-                      <Button variant="secondary" size="compact" className="w-full text-[11px] h-7">
+                      <Button variant="secondary" size="compact" className="w-full text-label-sm h-7">
                         Research Product
                       </Button>
                     </Link>
@@ -1352,7 +1352,7 @@ export function ShopDetailClient({
                       loading={savingPlannerId === listing.listingId}
                       disabled={isSaved}
                       onClick={() => handleAddListingToPlanner(listing)}
-                      className="text-[11px] h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
+                      className="text-label-sm h-7 px-2.5 bg-[#0E8F5D] hover:bg-[#0C7A52] text-white"
                     >
                       {isSaved ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                     </Button>
@@ -1390,7 +1390,7 @@ export function ShopDetailClient({
               >
                 <div className="min-w-0 space-y-0.5">
                   <div className="font-bold text-xs text-ink truncate">{item.tag}</div>
-                  <div className="text-[10px] text-ink-tertiary">
+                  <div className="text-meta text-ink-tertiary">
                     {item.count}x in catalog ({item.percentage}% usage)
                   </div>
                 </div>

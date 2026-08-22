@@ -258,7 +258,7 @@ export function DiscoveryClient({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-ink">{niche.nicheName}</span>
-                        <Badge variant="neutral" className="text-[10px] uppercase">
+                        <Badge variant="neutral" className="text-label-sm uppercase">
                           {niche.marketplace}
                         </Badge>
                       </div>
@@ -272,7 +272,7 @@ export function DiscoveryClient({
                       <span className={`px-2 py-0.5 rounded font-mono text-xs border ${getScoreBadgeClasses(niche.opportunityScore)}`}>
                         {niche.opportunityScore !== null ? `${niche.opportunityScore}/100` : "—"}
                       </span>
-                      <span className="text-[10px] font-mono text-ink-tertiary">
+                      <span className="text-meta font-mono text-ink-tertiary">
                         {niche.confidence}% conf
                       </span>
                     </div>
@@ -281,34 +281,34 @@ export function DiscoveryClient({
                   {/* 3-Pill Signal Summary */}
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t border-line-subtle text-xs">
                     <div className="p-2 rounded bg-surface-secondary/70 border border-line-subtle space-y-0.5">
-                      <div className="text-[10px] font-medium text-ink-tertiary">Demand Signal</div>
+                      <div className="text-meta font-medium text-ink-tertiary">Demand Signal</div>
                       <div className="font-bold text-ink flex items-center gap-1">
                         <Zap className="h-3 w-3 text-brand-primary" />
                         {niche.demand.strength}
                       </div>
-                      <div className="text-[10px] text-ink-secondary truncate">
+                      <div className="text-meta text-ink-secondary truncate">
                         {niche.demand.observedDailyVelocity !== null ? `${niche.demand.observedDailyVelocity} units/day` : "Proxy unavailable"}
                       </div>
                     </div>
 
                     <div className="p-2 rounded bg-surface-secondary/70 border border-line-subtle space-y-0.5">
-                      <div className="text-[10px] font-medium text-ink-tertiary">Competition</div>
+                      <div className="text-meta font-medium text-ink-tertiary">Competition</div>
                       <div className="font-bold text-ink flex items-center gap-1">
                         <ShieldCheck className="h-3 w-3 text-warn" />
                         {niche.competition.intensity}
                       </div>
-                      <div className="text-[10px] text-ink-secondary truncate">
+                      <div className="text-meta text-ink-secondary truncate">
                         {niche.competition.topShopConcentration !== null ? `${niche.competition.topShopConcentration}% top shops` : "—"}
                       </div>
                     </div>
 
                     <div className="p-2 rounded bg-surface-secondary/70 border border-line-subtle space-y-0.5">
-                      <div className="text-[10px] font-medium text-ink-tertiary">Freshness</div>
+                      <div className="text-meta font-medium text-ink-tertiary">Freshness</div>
                       <div className="font-bold text-ink flex items-center gap-1">
                         <TrendingUp className="h-3 w-3 text-[#0E8F5D]" />
                         {niche.momentum.direction}
                       </div>
-                      <div className="text-[10px] text-ink-secondary truncate">
+                      <div className="text-meta text-ink-secondary truncate">
                         {niche.momentum.freshnessRatio !== null ? `${niche.momentum.freshnessRatio}% <90 days` : "—"}
                       </div>
                     </div>
@@ -317,10 +317,10 @@ export function DiscoveryClient({
                   {/* Subcategories & Keywords */}
                   {niche.topSubcategories.length > 0 && (
                     <div className="space-y-1 text-xs">
-                      <span className="text-[10px] font-medium text-ink-tertiary">Strongest Sub-branches:</span>
+                      <span className="text-label-sm font-medium text-ink-tertiary">Strongest Sub-branches:</span>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {niche.topSubcategories.map((sub) => (
-                          <span key={sub.name} className="px-1.5 py-0.5 rounded bg-surface-muted text-ink text-[11px] border border-line-subtle">
+                          <span key={sub.name} className="px-1.5 py-0.5 rounded bg-surface-muted text-ink text-label-sm border border-line-subtle">
                             {sub.name} ({sub.productCount})
                           </span>
                         ))}
@@ -355,11 +355,11 @@ export function DiscoveryClient({
 
                 {/* Verdict & Action */}
                 <div className="pt-2 border-t border-line-subtle flex items-center justify-between gap-2 text-xs">
-                  <span className="font-medium text-brand-primary text-[11px] truncate">
+                  <span className="font-medium text-brand-primary text-meta truncate">
                     {niche.verdict}
                   </span>
                   <Link href={`/prospects`}>
-                    <Button variant="ghost" size="compact" className="text-[11px] h-6 px-2 text-[#0E8F5D]">
+                    <Button variant="ghost" size="compact" className="text-label-sm h-6 px-2 text-[#0E8F5D]">
                       Inspect Listings <ArrowRight className="h-3 w-3 ml-0.5" />
                     </Button>
                   </Link>
@@ -371,7 +371,7 @@ export function DiscoveryClient({
 
         {/* Limitations Callout */}
         {summary.marketLimitations.length > 0 && (
-          <div className="p-3 rounded-md bg-surface-secondary/50 border border-line-subtle text-[11px] text-ink-tertiary flex items-start gap-2">
+          <div className="p-3 rounded-md bg-surface-secondary/50 border border-line-subtle text-meta text-ink-tertiary flex items-start gap-2">
             <Info className="h-4 w-4 text-ink-secondary shrink-0 mt-0.5" />
             <div>
               <span className="font-medium text-ink-secondary">Data Provenance & Limitations:</span>

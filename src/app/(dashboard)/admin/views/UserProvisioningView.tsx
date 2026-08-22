@@ -164,7 +164,7 @@ export function UserProvisioningView({
                 placeholder="••••••••••••"
                 className="w-full text-xs border border-line rounded-lg px-3 py-2 bg-white text-ink font-mono focus:outline-none focus:border-[#0E8F5D]"
               />
-              <span className="text-[10px] text-ink-tertiary">Must be 8+ chars with uppercase, lowercase, digit & symbol.</span>
+              <span className="text-meta text-ink-tertiary">Must be 8+ chars with uppercase, lowercase, digit & symbol.</span>
             </div>
 
             <div className="space-y-1.5">
@@ -216,7 +216,7 @@ export function UserProvisioningView({
           <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="text-xs font-bold text-ink">Send Welcome Verification Email</div>
-              <div className="text-[11px] text-ink-tertiary">Dispatches an administrative onboarding email with verification link.</div>
+              <div className="text-meta text-ink-tertiary">Dispatches an administrative onboarding email with verification link.</div>
             </div>
             <input
               type="checkbox"

@@ -297,13 +297,13 @@ function SeoAuditContent() {
 
           <div className="flex items-center gap-3">
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
-              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Tag Target</div>
+              <div className="text-label-sm text-[#A6B2A8] uppercase font-bold tracking-wider">Tag Target</div>
               <div className="text-lg font-mono font-extrabold text-[#16C784]">
                 {activeTab === "DRAFT_PLAYGROUND" ? (draftRules.tagCount !== null ? `${draftRules.tagCount}/${draftRules.tagCount}` : "N/A") : "13/13"}
               </div>
             </div>
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
-              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Title Target</div>
+              <div className="text-label-sm text-[#A6B2A8] uppercase font-bold tracking-wider">Title Target</div>
               <div className="text-lg font-mono font-extrabold text-white">
                 {activeTab === "DRAFT_PLAYGROUND"
                   ? draftRules.titleMinRecommended !== null && draftRules.titleMaxLength !== null
@@ -313,7 +313,7 @@ function SeoAuditContent() {
               </div>
             </div>
             <div className="bg-[#1C261F] border border-[#2A362D] rounded-xl px-4 py-3 text-center">
-              <div className="text-[10px] text-[#A6B2A8] uppercase font-bold tracking-wider">Synergy</div>
+              <div className="text-label-sm text-[#A6B2A8] uppercase font-bold tracking-wider">Synergy</div>
               <div className="text-lg font-mono font-extrabold text-[#FBBF24]">Exact Match</div>
             </div>
           </div>
@@ -441,7 +441,7 @@ function SeoAuditContent() {
                   })}
                 </select>
                 {selectedChannelId && (
-                  <p className="text-[11px] text-ink-tertiary">
+                  <p className="text-meta text-ink-tertiary">
                     Scoring against {MARKETPLACE_LABELS[effectiveDraftMarketplace] ?? effectiveDraftMarketplace}'s real rules —
                     determined by this connected store, not the marketplace picker below.
                   </p>
@@ -464,7 +464,7 @@ function SeoAuditContent() {
                 <label className="font-bold text-ink">
                   Listing Title {draftRules.titleMaxLength !== null ? `(${draftTitle.length}/${draftRules.titleMaxLength} chars)` : `(${draftTitle.length} chars)`}
                 </label>
-                <span className={`font-mono text-[11px] ${draftRules.titleMaxLength !== null && draftTitle.length > draftRules.titleMaxLength ? "text-red-600 font-bold" : "text-ink-tertiary"}`}>
+                <span className={`font-mono text-meta ${draftRules.titleMaxLength !== null && draftTitle.length > draftRules.titleMaxLength ? "text-red-600 font-bold" : "text-ink-tertiary"}`}>
                   {draftRules.titleMaxLength !== null
                     ? `${draftRules.titleMaxLength - draftTitle.length} chars left`
                     : `No published limit yet for ${MARKETPLACE_LABELS[draftRules.marketplace] ?? draftRules.marketplace}`}
@@ -601,7 +601,7 @@ function SeoAuditContent() {
                   )}
                   <div className="flex items-center gap-2 pt-1">
                     <DataProvenanceBadge type="ACTUAL_ETSY_DATA" />
-                    <span className="text-[11px] text-ink-tertiary">
+                    <span className="text-meta text-ink-tertiary">
                       {shopAuditResult.actualData.sampleListingsAudited} listings analyzed
                     </span>
                   </div>
@@ -752,19 +752,19 @@ function SeoAuditContent() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1 border-t border-line-subtle">
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                        <div className="text-label-sm uppercase font-bold text-ink-tertiary tracking-wider">
                           Observed Signal
                         </div>
                         <div className="text-ink-secondary mt-0.5">{rec.observedSignal}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                        <div className="text-label-sm uppercase font-bold text-ink-tertiary tracking-wider">
                           Why It Matters
                         </div>
                         <div className="text-ink-secondary mt-0.5">{rec.whyItMatters}</div>
                       </div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold text-ink-tertiary tracking-wider">
+                        <div className="text-label-sm uppercase font-bold text-ink-tertiary tracking-wider">
                           Recommended Action
                         </div>
                         <div className="text-ink font-medium mt-0.5">{rec.recommendedAction}</div>
@@ -902,7 +902,7 @@ function SeoAuditContent() {
                   >
                     <div className="space-y-1 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${SEVERITY_COLORS[diag.severity]}`}>
+                        <span className={`px-2 py-0.5 rounded text-label-sm font-bold border ${SEVERITY_COLORS[diag.severity]}`}>
                           {diag.severity}
                         </span>
                         <span className="font-bold text-xs text-ink">{diag.title}</span>
@@ -935,12 +935,12 @@ function SeoAuditContent() {
                 <div className="text-xs font-bold text-ink flex items-center gap-1.5">
                   <Check className="h-4 w-4 text-[#0E8F5D]" /> Matching Phrases in Title & Tags ({auditResult.synergyAnalysis.matchingPhrases.length})
                 </div>
-                <p className="text-[11px] text-ink-secondary">
+                <p className="text-meta text-ink-secondary">
                   Exact keywords appearing in both title and tags maximize ranking power on {MARKETPLACE_LABELS[resultMarketplace] ?? resultMarketplace}.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {auditResult.synergyAnalysis.matchingPhrases.map((p) => (
-                    <span key={p} className="px-2 py-0.5 rounded bg-[#E7FAF1] text-[11px] font-semibold text-[#0E8F5D] border border-[#16C784]/30">
+                    <span key={p} className="px-2 py-0.5 rounded bg-[#E7FAF1] text-label-sm font-semibold text-[#0E8F5D] border border-[#16C784]/30">
                       {p}
                     </span>
                   ))}
@@ -954,12 +954,12 @@ function SeoAuditContent() {
                 <div className="text-xs font-bold text-ink flex items-center gap-1.5">
                   <SlidersHorizontal className="h-4 w-4 text-ink-tertiary" /> Tags Not in Title ({auditResult.synergyAnalysis.missingFromTitle.length})
                 </div>
-                <p className="text-[11px] text-ink-secondary">
+                <p className="text-meta text-ink-secondary">
                   Secondary search tags providing broader discovery.
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-1 max-h-24 overflow-y-auto">
                   {auditResult.synergyAnalysis.missingFromTitle.map((p) => (
-                    <span key={p} className="px-2 py-0.5 rounded bg-white text-[11px] font-medium text-ink-secondary border border-line">
+                    <span key={p} className="px-2 py-0.5 rounded bg-white text-label-sm font-medium text-ink-secondary border border-line">
                       {p}
                     </span>
                   ))}

@@ -542,7 +542,7 @@ export function StudioClient() {
                 <button
                   type="button"
                   onClick={handleOpenLogs}
-                  className="text-[11px] text-[#0E8F5D] hover:underline flex items-center gap-1"
+                  className="text-meta text-[#0E8F5D] hover:underline flex items-center gap-1"
                 >
                   <History className="h-3 w-3" /> Audit Logs
                 </button>
@@ -551,7 +551,7 @@ export function StudioClient() {
               {/* Connected Channel Selector */}
               {channels.length > 0 ? (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-ink-tertiary uppercase">Target Etsy Shop</label>
+                  <label className="text-label-sm font-bold text-ink-tertiary uppercase">Target Etsy Shop</label>
                   <select
                     value={selectedChannelId || ""}
                     onChange={(e) => setSelectedChannelId(e.target.value)}
@@ -565,7 +565,7 @@ export function StudioClient() {
                   </select>
                 </div>
               ) : (
-                <div className="p-2.5 rounded-lg bg-[#FFF8E6] border border-[#FFE58F] text-[11px] text-[#B37800]">
+                <div className="p-2.5 rounded-lg bg-[#FFF8E6] border border-[#FFE58F] text-meta text-[#B37800]">
                   No Etsy Seller Channel connected. Connect your shop in{" "}
                   <Link href="/settings/channels" className="underline font-semibold">
                     Settings → Channels
@@ -590,7 +590,7 @@ export function StudioClient() {
                     href={activeDraft.etsyDraftUrl || `https://www.etsy.com/your/shops/me/listing-editor/edit/${activeDraft.etsyListingId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0E8F5D] hover:underline"
+                    className="mt-1 inline-flex items-center gap-1 text-meta font-semibold text-[#0E8F5D] hover:underline"
                   >
                     <span>Open in Etsy Shop Manager</span>
                     <ExternalLink className="h-3 w-3" />
@@ -682,7 +682,7 @@ export function StudioClient() {
                 </span>
               </div>
 
-              <div className="text-[11px] text-ink-secondary space-y-1">
+              <div className="text-meta text-ink-secondary space-y-1">
                 <div className="flex items-center justify-between">
                   <span>Threshold Status:</span>
                   <strong className="text-ink">
@@ -724,7 +724,7 @@ export function StudioClient() {
                 {plannerItem.targetKeywords && plannerItem.targetKeywords.length > 0 && (
                   <div className="flex flex-wrap gap-1 pt-1">
                     {plannerItem.targetKeywords.map((k: string) => (
-                      <span key={k} className="px-1.5 py-0.2 rounded text-[9px] bg-white text-ink border border-line">
+                      <span key={k} className="px-1.5 py-0.2 rounded text-label-sm bg-white text-ink border border-line">
                         {k}
                       </span>
                     ))}
@@ -735,7 +735,7 @@ export function StudioClient() {
 
             {/* AI Model Generation Metadata */}
             {activeDraft.aiModelUsed && (
-              <div className="text-[10px] text-ink-tertiary p-2 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
+              <div className="text-meta text-ink-tertiary p-2 rounded-lg bg-[#FAFAF8] border border-line space-y-1">
                 <div>AI Model: <strong>{activeDraft.aiModelUsed}</strong></div>
                 <div>Generated: {new Date(activeDraft.createdAt).toLocaleString()}</div>
               </div>
@@ -780,7 +780,7 @@ export function StudioClient() {
                 }`}
               />
 
-              <div className="flex items-center justify-between text-[11px] text-ink-tertiary">
+              <div className="flex items-center justify-between text-meta text-ink-tertiary">
                 <span>Etsy best practice: 120–140 chars with high-intent keywords in first 40 chars.</span>
               </div>
             </Card>
@@ -792,7 +792,7 @@ export function StudioClient() {
                   <label className="text-xs font-bold text-ink uppercase tracking-wide">
                     13 Formatted Etsy Tags
                   </label>
-                  <div className="text-[11px] text-ink-tertiary">
+                  <div className="text-meta text-ink-tertiary">
                     Exactly 13 tags, each ≤ 20 characters, lowercase, no punctuation.
                   </div>
                 </div>
@@ -816,7 +816,7 @@ export function StudioClient() {
                           : "border-line bg-white"
                       }`}
                     >
-                      <span className="text-[10px] font-mono font-bold text-ink-tertiary w-5 text-center shrink-0">
+                      <span className="text-label-sm font-mono font-bold text-ink-tertiary w-5 text-center shrink-0">
                         {i + 1}
                       </span>
                       <input
@@ -826,7 +826,7 @@ export function StudioClient() {
                         placeholder="Long-tail tag phrase"
                         className="w-full bg-transparent text-xs text-ink focus:outline-hidden font-medium px-1"
                       />
-                      <span className={`text-[10px] font-mono shrink-0 px-1 ${
+                      <span className={`text-meta font-mono shrink-0 px-1 ${
                         isOver ? "text-red-600 font-bold" : "text-ink-tertiary"
                       }`}>
                         {tagVal.length}/20
@@ -918,7 +918,7 @@ export function StudioClient() {
                 <label className="text-xs font-bold text-ink uppercase tracking-wide">Pricing & Stock</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-ink-tertiary uppercase">Price ($)</span>
+                    <span className="text-label-sm font-bold text-ink-tertiary uppercase">Price ($)</span>
                     <Input
                       type="number"
                       step="0.01"
@@ -928,7 +928,7 @@ export function StudioClient() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-ink-tertiary uppercase">Stock Quantity</span>
+                    <span className="text-label-sm font-bold text-ink-tertiary uppercase">Stock Quantity</span>
                     <Input
                       type="number"
                       value={quantity}
@@ -1033,7 +1033,7 @@ export function StudioClient() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-secondary">Tags ({tags.length}):</span>
-                <span className="text-ink font-mono text-[11px] truncate max-w-[240px]">{tags.join(", ")}</span>
+                <span className="text-ink font-mono text-meta truncate max-w-[240px]">{tags.join(", ")}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-secondary">Etsy Listing ID:</span>
@@ -1106,22 +1106,22 @@ export function StudioClient() {
                           </Badge>
                           <span className="font-mono font-bold text-ink">{log.operationType}</span>
                         </div>
-                        <span className="text-[10px] text-ink-tertiary">{new Date(log.createdAt).toLocaleString()}</span>
+                        <span className="text-meta text-ink-tertiary">{new Date(log.createdAt).toLocaleString()}</span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-[11px] text-ink-secondary pt-1">
-                        <div>Idempotency Key: <code className="text-[10px] bg-white px-1 py-0.5 rounded border border-line">{log.idempotencyKey}</code></div>
+                      <div className="grid grid-cols-2 gap-2 text-meta text-ink-secondary pt-1">
+                        <div>Idempotency Key: <code className="text-label-sm bg-white px-1 py-0.5 rounded border border-line">{log.idempotencyKey}</code></div>
                         <div>HTTP Status: <strong className="font-mono text-ink">{log.responseStatusCode || "—"}</strong></div>
                       </div>
 
                       {log.etsyResourceId && (
-                        <div className="text-[11px] text-ink-secondary">
+                        <div className="text-meta text-ink-secondary">
                           Etsy Resource ID: <strong className="font-mono text-ink">{log.etsyResourceId}</strong>
                         </div>
                       )}
 
                       {log.errorMessage && (
-                        <div className="text-[11px] text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                        <div className="text-meta text-red-600 bg-red-50 p-2 rounded border border-red-200">
                           Error: {log.errorMessage}
                         </div>
                       )}

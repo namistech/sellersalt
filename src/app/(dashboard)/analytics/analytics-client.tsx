@@ -216,19 +216,19 @@ export function AnalyticsClient() {
               <span className="font-semibold text-ink flex items-center gap-1">
                 <ShieldCheck className="h-3.5 w-3.5 text-[#0E8F5D]" /> 4-Tier Integrity
               </span>
-              <p className="text-[11px]">Strictly separates actual Etsy receipts from modeled heuristics.</p>
+              <p className="text-meta">Strictly separates actual Etsy receipts from modeled heuristics.</p>
             </div>
             <div className="space-y-1">
               <span className="font-semibold text-ink flex items-center gap-1">
                 <Percent className="h-3.5 w-3.5 text-[#FFB020]" /> True Net Profit
               </span>
-              <p className="text-[11px]">Deducts listing, transaction, payment, and offsite ads fees.</p>
+              <p className="text-meta">Deducts listing, transaction, payment, and offsite ads fees.</p>
             </div>
             <div className="space-y-1">
               <span className="font-semibold text-ink flex items-center gap-1">
                 <Layers className="h-3.5 w-3.5 text-[#0E8F5D]" /> Listing Yield
               </span>
-              <p className="text-[11px]">Identifies top revenue drivers and profit contributors.</p>
+              <p className="text-meta">Identifies top revenue drivers and profit contributors.</p>
             </div>
           </div>
         </Card>
@@ -521,7 +521,7 @@ export function AnalyticsClient() {
                 <span className="text-xs font-bold text-ink uppercase tracking-wide">
                   P&L Component Breakdown ({waterfall.currency})
                 </span>
-                <p className="text-[11px] text-ink-tertiary">Visual comparison of gross receipts, platform fees, operational costs, and retained earnings.</p>
+                <p className="text-meta text-ink-tertiary">Visual comparison of gross receipts, platform fees, operational costs, and retained earnings.</p>
               </div>
               <DataProvenanceBadge type="ESTIMATED" />
             </div>
@@ -863,7 +863,7 @@ export function AnalyticsClient() {
                     <span>Etsy Fees ({calcResult.platformFeePercentage}%)</span>
                     <span className="font-mono">${calcResult.totalPlatformFeesPerUnit.toFixed(2)}</span>
                   </div>
-                  <div className="space-y-1 text-[11px] text-blue-800 pt-1 border-t border-blue-200">
+                  <div className="space-y-1 text-meta text-blue-800 pt-1 border-t border-blue-200">
                     <div className="flex justify-between"><span>• Listing Fee:</span><strong className="font-mono">${calcResult.listingFeePerUnit.toFixed(2)}</strong></div>
                     <div className="flex justify-between"><span>• Transaction (6.5%):</span><strong className="font-mono">${calcResult.transactionFeePerUnit.toFixed(2)}</strong></div>
                     <div className="flex justify-between"><span>• Payment Proc:</span><strong className="font-mono">${calcResult.processingFeePerUnit.toFixed(2)}</strong></div>
@@ -879,7 +879,7 @@ export function AnalyticsClient() {
                     <span>Production Costs ({calcResult.productCostPercentage}%)</span>
                     <span className="font-mono">${calcResult.totalProductCostsPerUnit.toFixed(2)}</span>
                   </div>
-                  <div className="space-y-1 text-[11px] text-amber-800 pt-1 border-t border-amber-200">
+                  <div className="space-y-1 text-meta text-amber-800 pt-1 border-t border-amber-200">
                     <div className="flex justify-between"><span>• Unit COGS:</span><strong className="font-mono">${calcResult.unitCogs.toFixed(2)}</strong></div>
                     <div className="flex justify-between"><span>• Shipping Cost:</span><strong className="font-mono">${calcResult.shippingCostIncurred.toFixed(2)}</strong></div>
                     <div className="flex justify-between"><span>• Packaging Cost:</span><strong className="font-mono">${calcResult.packagingCost.toFixed(2)}</strong></div>
@@ -915,7 +915,7 @@ export function AnalyticsClient() {
                 onChange={(e) => setAssumptions({ ...assumptions, defaultCogsPercent: parseFloat(e.target.value) || 0 })}
                 className="h-9 text-xs font-mono"
               />
-              <p className="text-[11px] text-ink-tertiary">Standard benchmark: 20-30% for physical goods, 5-10% for digital files.</p>
+              <p className="text-meta text-ink-tertiary">Standard benchmark: 20-30% for physical goods, 5-10% for digital files.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

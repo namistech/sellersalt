@@ -1147,7 +1147,7 @@ export function IntegrationsView({
             >
               <span>{cat.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                className={`text-label-sm px-1.5 py-0.2 rounded-full ${
                   selectedCategory === cat.id
                     ? "bg-white/20 text-white"
                     : "bg-[#FAFAF8] text-ink-tertiary border border-line"

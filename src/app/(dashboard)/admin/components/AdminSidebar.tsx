@@ -113,7 +113,7 @@ function AdminCollapsedTooltip({
       <span>{label}</span>
       {badge !== undefined && (
         <span
-          className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+          className={`text-label-sm font-bold px-1.5 py-0.2 rounded-md ${
             badgeVariant === "warning"
               ? "bg-amber-500/20 text-amber-300"
               : badgeVariant === "success"
@@ -184,7 +184,7 @@ function AdminSidebarButton({
 
       {!collapsed && item.badge !== undefined && (
         <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+          className={`text-label-sm font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
             isActive
               ? "bg-white/20 text-white"
               : item.badgeVariant === "warning"

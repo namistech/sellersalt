@@ -180,7 +180,7 @@ export function ResearchWorkbenchCard({
       </div>
 
       {/* Limitations / Transparency Notice */}
-      <div className="mt-3 pt-2 border-t text-[11px] text-muted-foreground flex items-start gap-1.5">
+      <div className="mt-3 pt-2 border-t text-meta text-muted-foreground flex items-start gap-1.5">
         <AlertCircle className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
         <span>
           {limitations[0] || "SellerSalt research observations are acquired from public marketplace web signals with field-level provenance tracking. Missing values remain explicitly unavailable."}

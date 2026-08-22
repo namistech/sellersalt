@@ -488,17 +488,17 @@ export function AnnouncementsView({
                     <span className="font-bold text-sm text-ink">{ann.title}</span>
                     {getPriorityBadge(ann.priority)}
                     {getPlacementBadge(ann.placement)}
-                    <Badge variant="neutral" className="text-[10px]">
+                    <Badge variant="neutral" className="text-label-sm">
                       Audience: {ann.audience}
                     </Badge>
-                    <Badge variant={ann.isActive ? "success" : "neutral"} className="text-[10px]">
+                    <Badge variant={ann.isActive ? "success" : "neutral"} className="text-label-sm">
                       {ann.isActive ? "Live" : "Paused"}
                     </Badge>
                   </div>
 
                   <p className="text-xs text-ink-secondary leading-relaxed">{ann.message}</p>
 
-                  <div className="flex items-center gap-4 text-[11px] text-ink-tertiary pt-1">
+                  <div className="flex items-center gap-4 text-meta text-ink-tertiary pt-1">
                     <span>Created: {new Date(ann.createdAt).toLocaleDateString()}</span>
                     <span>Dismissals: {ann.readsCount || 0}</span>
                     {ann.ctaText && ann.ctaUrl && (

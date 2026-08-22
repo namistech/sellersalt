@@ -20,15 +20,15 @@ import { RELEASES, type ChangeType } from "@/services/changelog";
 function getChangeBadge(type: ChangeType) {
   switch (type) {
     case "NEW":
-      return <Badge variant="success" className="font-bold text-[10px]">NEW</Badge>;
+      return <Badge variant="success" className="font-bold text-label-sm">NEW</Badge>;
     case "IMPROVED":
-      return <Badge variant="info" className="font-bold text-[10px]">IMPROVED</Badge>;
+      return <Badge variant="info" className="font-bold text-label-sm">IMPROVED</Badge>;
     case "FIXED":
-      return <Badge variant="warning" className="font-bold text-[10px]">FIXED</Badge>;
+      return <Badge variant="warning" className="font-bold text-label-sm">FIXED</Badge>;
     case "PERFORMANCE":
-      return <Badge variant="neutral" className="font-bold text-[10px]">SPEED</Badge>;
+      return <Badge variant="neutral" className="font-bold text-label-sm">SPEED</Badge>;
     case "SECURITY":
-      return <Badge variant="neutral" className="font-bold text-[10px]">SECURITY</Badge>;
+      return <Badge variant="neutral" className="font-bold text-label-sm">SECURITY</Badge>;
   }
 }
 
@@ -90,7 +90,7 @@ export default function WhatsNewPage() {
                 <Calendar className="h-3.5 w-3.5" />
                 <span>{release.date}</span>
                 {idx === 0 && (
-                  <Badge variant="success" className="ml-2 text-[10px] font-bold">
+                  <Badge variant="success" className="ml-2 text-label-sm font-bold">
                     Latest Release
                   </Badge>
                 )}
@@ -102,7 +102,7 @@ export default function WhatsNewPage() {
             </p>
 
             <div className="space-y-2.5 pt-2">
-              <div className="text-[11px] font-bold text-ink-tertiary uppercase tracking-wider">
+              <div className="text-label-sm font-bold text-ink-tertiary uppercase tracking-wider">
                 Release Highlights
               </div>
               <div className="grid grid-cols-1 gap-2.5">

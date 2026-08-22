@@ -129,7 +129,7 @@ export default function TrustCenterPage() {
       {/* Section 1: Signal Classification Framework */}
       <Card className="p-6 md:p-8 border rounded-2xl bg-card space-y-6 shadow-xs">
         <div className="space-y-1">
-          <Badge variant="neutral" className="text-[10px] font-bold uppercase">
+          <Badge variant="neutral" className="text-label-sm font-bold uppercase">
             Data Methodology
           </Badge>
           <h2 className="text-xl font-black text-foreground">Signal Classification Framework</h2>
@@ -142,9 +142,9 @@ export default function TrustCenterPage() {
           <div className="p-4 rounded-xl border bg-muted/15 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">1. OBSERVED</span>
-              <Badge variant="success" className="text-[9px]">Empirical</Badge>
+              <Badge variant="success" className="text-label-sm">Empirical</Badge>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Directly captured from live public catalog listings or official API responses (e.g. Price, Review Count, Star Rating, Title, Category).
             </p>
           </div>
@@ -152,9 +152,9 @@ export default function TrustCenterPage() {
           <div className="p-4 rounded-xl border bg-muted/15 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">2. DERIVED</span>
-              <Badge variant="info" className="text-[9px]">Calculated</Badge>
+              <Badge variant="info" className="text-label-sm">Calculated</Badge>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Deterministically computed from verified observations without synthetic modeling (e.g. Median Price P50, Attribute Prevalence %, Price Spread).
             </p>
           </div>
@@ -162,9 +162,9 @@ export default function TrustCenterPage() {
           <div className="p-4 rounded-xl border bg-muted/15 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">3. ESTIMATED</span>
-              <Badge variant="warning" className="text-[9px]">Statistical</Badge>
+              <Badge variant="warning" className="text-label-sm">Statistical</Badge>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Statistical algorithmic models with explicit confidence ratings (e.g. Opportunity Score 3.0, Launch Readiness Index, Market Momentum).
             </p>
           </div>
@@ -172,9 +172,9 @@ export default function TrustCenterPage() {
           <div className="p-4 rounded-xl border bg-muted/15 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">4. USER_DERIVED</span>
-              <Badge variant="neutral" className="text-[9px]">Merchant Grounded</Badge>
+              <Badge variant="neutral" className="text-label-sm">Merchant Grounded</Badge>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Calculated exclusively from user-entered landed manufacturing costs, packaging quotes, and target advertising CAC in the workspace.
             </p>
           </div>
@@ -182,9 +182,9 @@ export default function TrustCenterPage() {
           <div className="p-4 rounded-xl border bg-muted/15 space-y-2 sm:col-span-2 lg:col-span-2">
             <div className="flex items-center justify-between">
               <span className="font-bold text-foreground">5. UNAVAILABLE</span>
-              <Badge variant="danger" className="text-[9px]">Zero-Fabrication</Badge>
+              <Badge variant="danger" className="text-label-sm">Zero-Fabrication</Badge>
             </div>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Private or unlicensed signals (such as competitor store revenue or hidden search volume) are explicitly labeled unavailable with transparent rationale.
             </p>
           </div>
@@ -195,7 +195,7 @@ export default function TrustCenterPage() {
       <Card className="p-6 md:p-8 border rounded-2xl bg-card space-y-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <Badge variant="neutral" className="text-[10px] font-bold uppercase">
+            <Badge variant="neutral" className="text-label-sm font-bold uppercase">
               Marketplace Compliance
             </Badge>
             <h2 className="text-xl font-black text-foreground">Marketplace Data Boundaries & Anti-Circumvention</h2>

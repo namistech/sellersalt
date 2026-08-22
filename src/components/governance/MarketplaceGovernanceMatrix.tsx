@@ -218,7 +218,7 @@ export function MarketplaceGovernanceMatrix() {
                 <div className="flex flex-wrap gap-1">
                   {selectedPolicy.allowedResearchDomains.length > 0 ? (
                     selectedPolicy.allowedResearchDomains.map((d) => (
-                      <Badge key={d} variant="neutral" className="text-[11px]">
+                      <Badge key={d} variant="neutral" className="text-label-sm">
                         {d}
                       </Badge>
                     ))
@@ -232,7 +232,7 @@ export function MarketplaceGovernanceMatrix() {
                 <span className="font-bold text-foreground block">Prohibited Private Portal Paths (Hard-Gated):</span>
                 <div className="flex flex-wrap gap-1">
                   {selectedPolicy.prohibitedPathPatterns.map((p) => (
-                    <Badge key={p} variant="danger" className="text-[10px]">
+                    <Badge key={p} variant="danger" className="text-label-sm">
                       {p}
                     </Badge>
                   ))}
@@ -244,7 +244,7 @@ export function MarketplaceGovernanceMatrix() {
             {selectedPolicy.displayRules.requireMarketplaceDisclaimer && (
               <div className="p-3.5 rounded-xl border bg-primary/5 space-y-1 text-xs">
                 <span className="font-bold text-primary block">Mandatory Trademark Disclaimer:</span>
-                <p className="text-muted-foreground text-[11px] leading-relaxed">
+                <p className="text-muted-foreground text-meta leading-relaxed">
                   {selectedPolicy.displayRules.disclaimerText}
                 </p>
               </div>
@@ -253,7 +253,7 @@ export function MarketplaceGovernanceMatrix() {
             {/* Known Limitations */}
             <div className="space-y-2 text-xs">
               <span className="font-bold text-foreground block">Known Limitations & Disclosures:</span>
-              <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-[11px]">
+              <ul className="space-y-1 list-disc pl-4 text-muted-foreground text-meta">
                 {selectedPolicy.knownLimitations.map((lim, i) => (
                   <li key={i}>{lim}</li>
                 ))}

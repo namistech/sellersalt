@@ -98,7 +98,7 @@ export function GeneralAppSettingsView({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Application Name</span>
-              {successKey === "app_name" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "app_name" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -118,13 +118,13 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Used in page titles and navigation.</span>
+            <span className="text-meta text-ink-tertiary">Used in page titles and navigation.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Canonical App URL</span>
-              {successKey === "app_url" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "app_url" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -144,13 +144,13 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Primary domain used for OAuth callbacks and emails.</span>
+            <span className="text-meta text-ink-tertiary">Primary domain used for OAuth callbacks and emails.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Public Support Email</span>
-              {successKey === "support_email" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "support_email" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -170,13 +170,13 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Contact address displayed in footers and alerts.</span>
+            <span className="text-meta text-ink-tertiary">Contact address displayed in footers and alerts.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Default Timezone</span>
-              {successKey === "default_timezone" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "default_timezone" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <select
@@ -195,13 +195,13 @@ export function GeneralAppSettingsView({
                 <option value="Asia/Karachi">Asia/Karachi (PKT)</option>
               </select>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Baseline timezone for scheduled tracking snapshots.</span>
+            <span className="text-meta text-ink-tertiary">Baseline timezone for scheduled tracking snapshots.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Default Currency</span>
-              {successKey === "default_currency" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "default_currency" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <select
@@ -219,13 +219,13 @@ export function GeneralAppSettingsView({
                 <option value="AUD">AUD ($ Australian Dollar)</option>
               </select>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Default unit economics display currency.</span>
+            <span className="text-meta text-ink-tertiary">Default unit economics display currency.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Default Signup Plan</span>
-              {successKey === "default_signup_plan" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "default_signup_plan" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <select
@@ -242,7 +242,7 @@ export function GeneralAppSettingsView({
                 <option value="AGENCY">Agency Plan</option>
               </select>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Assigned to newly registering organic users.</span>
+            <span className="text-meta text-ink-tertiary">Assigned to newly registering organic users.</span>
           </div>
         </div>
       </Card>
@@ -266,7 +266,7 @@ export function GeneralAppSettingsView({
                   {getVal("registration_enabled", "true") === "true" ? "ENABLED" : "DISABLED"}
                 </Badge>
               </div>
-              <p className="text-[11px] text-ink-secondary">
+              <p className="text-meta text-ink-secondary">
                 Allow new visitors to register accounts via `/signup` and Google login.
               </p>
             </div>
@@ -292,7 +292,7 @@ export function GeneralAppSettingsView({
                   {getVal("free_plan_enabled", "true") === "true" ? "ACTIVE" : "HIDDEN"}
                 </Badge>
               </div>
-              <p className="text-[11px] text-ink-secondary">
+              <p className="text-meta text-ink-secondary">
                 Display Free Explorer ($0/mo) on homepage and checkout without forcing trial checkout.
               </p>
             </div>
@@ -318,7 +318,7 @@ export function GeneralAppSettingsView({
                   {getVal("maintenance_mode", "false") === "true" ? "ACTIVE" : "INACTIVE"}
                 </Badge>
               </div>
-              <p className="text-[11px] text-ink-secondary">
+              <p className="text-meta text-ink-secondary">
                 Render a maintenance barrier to non-admin visitors during major migrations.
               </p>
             </div>
@@ -357,7 +357,7 @@ export function GeneralAppSettingsView({
                   {getVal("university_enabled", "true") === "true" ? "SHOWN" : "HIDDEN"}
                 </Badge>
               </div>
-              <p className="text-[11px] text-ink-secondary">
+              <p className="text-meta text-ink-secondary">
                 Display the &quot;University&quot; link in top navigation and sidebar for all logged-in sellers.
               </p>
             </div>
@@ -378,7 +378,7 @@ export function GeneralAppSettingsView({
           <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] space-y-3">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>University Destination URL</span>
-              {successKey === "university_url" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "university_url" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -398,7 +398,7 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">External academy or Notion knowledge base portal.</span>
+            <span className="text-meta text-ink-tertiary">External academy or Notion knowledge base portal.</span>
           </div>
         </div>
       </Card>
@@ -417,7 +417,7 @@ export function GeneralAppSettingsView({
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Custom Disposable Email Domains (Comma-separated)</span>
-              {successKey === "disposable_email_domains_custom" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "disposable_email_domains_custom" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -437,13 +437,13 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Additional domains to block during signup.</span>
+            <span className="text-meta text-ink-tertiary">Additional domains to block during signup.</span>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Max Free Accounts Per Business Domain</span>
-              {successKey === "max_free_accounts_per_business_domain" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successKey === "max_free_accounts_per_business_domain" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -465,7 +465,7 @@ export function GeneralAppSettingsView({
                 Save
               </Button>
             </div>
-            <span className="text-[11px] text-ink-tertiary">Limits multiple free trial accounts created under a corporate domain.</span>
+            <span className="text-meta text-ink-tertiary">Limits multiple free trial accounts created under a corporate domain.</span>
           </div>
         </div>
       </Card>

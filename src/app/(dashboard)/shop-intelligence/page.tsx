@@ -297,7 +297,7 @@ export default function ShopIntelligencePage() {
           description={`Currently analyzing ${totalTracked} research benchmark store${totalTracked === 1 ? "" : "s"}. Average 7-day sales growth across your portfolio is +${avg7dSales} orders. Snapshots are recorded automatically to reveal demand patterns.`}
           sidePanel={
             <div className="space-y-3">
-              <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+              <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
                 Market Benchmarks
               </div>
               <div className="space-y-2 text-xs">
@@ -341,19 +341,19 @@ export default function ShopIntelligencePage() {
                     >
                       {s.shopName}
                     </Link>
-                    <Badge variant={s.badgeVariant} tone="dark" className="text-[10px] px-1.5 py-0">
+                    <Badge variant={s.badgeVariant} tone="dark" className="text-label-sm px-1.5 py-0">
                       {s.verdict}
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-[#9EAA9F]">{s.category}</div>
-                  <div className="text-[11px] text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
+                  <div className="text-meta text-[#9EAA9F]">{s.category}</div>
+                  <div className="text-meta text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
                     {s.reason}
                   </div>
                   <div className="pt-1 flex items-center justify-between">
-                    <span className="text-[10px] text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
+                    <span className="text-label-sm text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
                     <Link
                       href={`/shops/${s.shopExternalId}`}
-                      className="text-[10px] text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
+                      className="text-label-sm text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
                     >
                       Research <ChevronRight className="h-3 w-3" />
                     </Link>
@@ -410,19 +410,19 @@ export default function ShopIntelligencePage() {
                     >
                       {s.shopName}
                     </Link>
-                    <Badge variant={s.badgeVariant} tone="dark" className="text-[10px] px-1.5 py-0">
+                    <Badge variant={s.badgeVariant} tone="dark" className="text-label-sm px-1.5 py-0">
                       {s.verdict}
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-[#9EAA9F]">{s.category}</div>
-                  <div className="text-[11px] text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
+                  <div className="text-meta text-[#9EAA9F]">{s.category}</div>
+                  <div className="text-meta text-[#A5B2A6] leading-tight pt-1 border-t border-[#2A362D]">
                     {s.reason}
                   </div>
                   <div className="pt-1 flex items-center justify-between">
-                    <span className="text-[10px] text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
+                    <span className="text-label-sm text-[#16C784] font-bold tabular-nums">~{s.velocity}/day</span>
                     <Link
                       href={`/shops/${s.shopExternalId}`}
-                      className="text-[10px] text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
+                      className="text-label-sm text-[#16C784] hover:underline font-bold inline-flex items-center gap-0.5"
                     >
                       Research <ChevronRight className="h-3 w-3" />
                     </Link>
@@ -763,19 +763,19 @@ export default function ShopIntelligencePage() {
           <div className="space-y-5 text-xs p-1">
             <div className="grid grid-cols-3 gap-3">
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line">
-                <span className="text-[10px] uppercase font-bold text-ink-tertiary">7-Day Delta</span>
+                <span className="text-label-sm uppercase font-bold text-ink-tertiary">7-Day Delta</span>
                 <div className="text-xl font-bold text-[#0E8F5D] mt-1 tabular-nums">
                   +{selectedHistory.deltas.salesDelta7d ?? 0}
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line">
-                <span className="text-[10px] uppercase font-bold text-ink-tertiary">Daily Velocity</span>
+                <span className="text-label-sm uppercase font-bold text-ink-tertiary">Daily Velocity</span>
                 <div className="text-xl font-bold text-ink mt-1 tabular-nums">
                   ~{selectedHistory.velocity.estDailySales}/day
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-[#FAFAF8] border border-line">
-                <span className="text-[10px] uppercase font-bold text-ink-tertiary">Active Listings</span>
+                <span className="text-label-sm uppercase font-bold text-ink-tertiary">Active Listings</span>
                 <div className="text-xl font-bold text-ink mt-1 tabular-nums">
                   {selectedHistory.snapshots[selectedHistory.snapshots.length - 1]?.activeListings ?? "—"}
                 </div>
@@ -815,7 +815,7 @@ export default function ShopIntelligencePage() {
             <div className="space-y-2">
               <h4 className="font-bold text-ink">Captured Snapshot Records</h4>
               <div className="max-h-48 overflow-y-auto border border-line rounded-lg">
-                <table className="w-full text-left text-[11px] text-ink">
+                <table className="w-full text-left text-data-sm text-ink">
                   <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary">
                     <tr>
                       <th className="p-2">Captured Timestamp</th>
@@ -827,7 +827,7 @@ export default function ShopIntelligencePage() {
                   <tbody className="divide-y divide-line-subtle">
                     {selectedHistory.snapshots.map((s: any) => (
                       <tr key={s.id}>
-                        <td className="p-2 font-mono text-[10px]">{new Date(s.capturedAt).toLocaleString()}</td>
+                        <td className="p-2 font-mono text-meta">{new Date(s.capturedAt).toLocaleString()}</td>
                         <td className="p-2 text-right font-bold tabular-nums">{s.totalSales ?? "—"}</td>
                         <td className="p-2 text-right tabular-nums">{s.activeListings}</td>
                         <td className="p-2 text-right tabular-nums">{s.reviewCount}</td>

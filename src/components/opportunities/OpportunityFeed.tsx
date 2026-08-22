@@ -116,13 +116,13 @@ export function OpportunityFeed({
         {/* 2. Type & Marketplace Filter Badges */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground font-semibold text-[11px] mr-1">Type:</span>
+            <span className="text-muted-foreground font-semibold text-label-sm mr-1">Type:</span>
             {(["ALL", "PRODUCT", "KEYWORD", "NICHE", "CATEGORY", "SELLER"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setSelectedType(t)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-md text-label-sm font-medium transition-colors ${
                   selectedType === t
                     ? "bg-primary text-primary-foreground font-bold shadow-xs"
                     : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -134,7 +134,7 @@ export function OpportunityFeed({
           </div>
 
           <div className="flex items-center gap-2">
-            <label className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium cursor-pointer">
+            <label className="text-label-sm text-muted-foreground flex items-center gap-1 font-medium cursor-pointer">
               <input
                 type="checkbox"
                 checked={filterSavedOnly}

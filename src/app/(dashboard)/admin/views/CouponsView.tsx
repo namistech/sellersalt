@@ -179,7 +179,7 @@ export function CouponsView({
             <Badge variant="gold">Type A</Badge>
           </div>
           <h4 className="font-bold text-xs text-ink">$1 First Month</h4>
-          <p className="text-[11px] text-ink-secondary leading-normal">
+          <p className="text-meta text-ink-secondary leading-normal">
             $1 trial on any tier for month 1, renews at full price.
           </p>
         </button>
@@ -207,7 +207,7 @@ export function CouponsView({
             <Badge variant="info">Type B</Badge>
           </div>
           <h4 className="font-bold text-xs text-ink">3 Months Reduced</h4>
-          <p className="text-[11px] text-ink-secondary leading-normal">
+          <p className="text-meta text-ink-secondary leading-normal">
             Fixed % discount repeating for 3 consecutive billing cycles.
           </p>
         </button>
@@ -234,7 +234,7 @@ export function CouponsView({
             <Badge variant="success">Type C</Badge>
           </div>
           <h4 className="font-bold text-xs text-ink">Flat % Across Tiers</h4>
-          <p className="text-[11px] text-ink-secondary leading-normal">
+          <p className="text-meta text-ink-secondary leading-normal">
             Universal % off regardless of selected subscription package.
           </p>
         </button>
@@ -261,7 +261,7 @@ export function CouponsView({
             <Badge variant="neutral">Type D</Badge>
           </div>
           <h4 className="font-bold text-xs text-ink">Plan-Specific Match</h4>
-          <p className="text-[11px] text-ink-secondary leading-normal">
+          <p className="text-meta text-ink-secondary leading-normal">
             Applies strictly to a target plan with lifetime or recurring validity.
           </p>
         </button>
@@ -449,7 +449,7 @@ export function CouponsView({
                           )}
                         </button>
                       </div>
-                      {coupon.notes && <p className="text-[11px] text-ink-tertiary mt-0.5">{coupon.notes}</p>}
+                      {coupon.notes && <p className="text-meta text-ink-tertiary mt-0.5">{coupon.notes}</p>}
                     </td>
 
                     <td className="py-3.5 px-4 font-semibold text-ink">

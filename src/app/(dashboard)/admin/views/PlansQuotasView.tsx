@@ -166,7 +166,7 @@ export function PlansQuotasView({
               <div className="flex items-center justify-between gap-2 mb-2">
                 <span className="font-bold text-sm tracking-tight">{pkg.name}</span>
                 <span
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-md font-semibold ${
+                  className={`text-label-sm font-mono px-2 py-0.5 rounded-md font-semibold ${
                     isSelected
                       ? "bg-white/20 text-white"
                       : "bg-[#FAFAF8] border border-line text-ink-secondary"
@@ -181,7 +181,7 @@ export function PlansQuotasView({
                 <span className={`text-xs ${isSelected ? "text-zinc-300" : "text-ink-tertiary"}`}>/mo</span>
               </div>
 
-              <div className={`text-[11px] mt-2 pt-2 border-t flex items-center justify-between ${
+              <div className={`text-meta mt-2 pt-2 border-t flex items-center justify-between ${
                 isSelected ? "border-white/20 text-zinc-300" : "border-line text-ink-tertiary"
               }`}>
                 <span>{pkg._count?.organizations || 0} Workspaces</span>
@@ -292,7 +292,7 @@ export function PlansQuotasView({
                   disabled
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink opacity-60"
                 />
-                <span className="text-[10px] text-ink-tertiary">Calculated with 2-months annual discount.</span>
+                <span className="text-meta text-ink-tertiary">Calculated with 2-months annual discount.</span>
               </div>
             </div>
           </div>
@@ -315,7 +315,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxSearchConfigs", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Active keyword research monitors.</span>
+                <span className="text-meta text-ink-tertiary">Active keyword research monitors.</span>
               </div>
 
               <div>
@@ -329,7 +329,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxScheduledSearches", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Daily automated refresh runs.</span>
+                <span className="text-meta text-ink-tertiary">Daily automated refresh runs.</span>
               </div>
 
               <div>
@@ -343,7 +343,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxTrackedShops", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Live radar tracking slots.</span>
+                <span className="text-meta text-ink-tertiary">Live radar tracking slots.</span>
               </div>
 
               <div>
@@ -357,7 +357,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxProspectsPerMonth", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Discovered items saved per cycle.</span>
+                <span className="text-meta text-ink-tertiary">Discovered items saved per cycle.</span>
               </div>
             </div>
           </div>
@@ -380,7 +380,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxConnectors", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Maximum OAuth seller store connections.</span>
+                <span className="text-meta text-ink-tertiary">Maximum OAuth seller store connections.</span>
               </div>
 
               <div>
@@ -394,7 +394,7 @@ export function PlansQuotasView({
                   onChange={(e) => updateDraftField("maxTrackingDays", Number(e.target.value))}
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <span className="text-[10px] text-ink-tertiary">Retention horizon for sales telemetry graphs.</span>
+                <span className="text-meta text-ink-tertiary">Retention horizon for sales telemetry graphs.</span>
               </div>
             </div>
           </div>

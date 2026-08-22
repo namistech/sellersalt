@@ -120,44 +120,44 @@ export function SecurityAbuseView({
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Signups</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Signups</div>
             <div className="text-base font-extrabold text-ink font-mono">5 / hr</div>
-            <div className="text-[10px] text-ink-secondary">Per IP sliding window</div>
+            <div className="text-meta text-ink-secondary">Per IP sliding window</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Auth / Logins</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Auth / Logins</div>
             <div className="text-base font-extrabold text-ink font-mono">10 / min</div>
-            <div className="text-[10px] text-ink-secondary">Credential brute force block</div>
+            <div className="text-meta text-ink-secondary">Credential brute force block</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Password Resets</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Password Resets</div>
             <div className="text-base font-extrabold text-ink font-mono">4 / 15m</div>
-            <div className="text-[10px] text-ink-secondary">Email flooding prevention</div>
+            <div className="text-meta text-ink-secondary">Email flooding prevention</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Email Verify</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Email Verify</div>
             <div className="text-base font-extrabold text-ink font-mono">6 / 15m</div>
-            <div className="text-[10px] text-ink-secondary">User verification throttle</div>
+            <div className="text-meta text-ink-secondary">User verification throttle</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Expensive Search</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Expensive Search</div>
             <div className="text-base font-extrabold text-ink font-mono">40 / min</div>
-            <div className="text-[10px] text-ink-secondary">Keyword & Product engines</div>
+            <div className="text-meta text-ink-secondary">Keyword & Product engines</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Etsy Proxies</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Etsy Proxies</div>
             <div className="text-base font-extrabold text-ink font-mono">30 / min</div>
-            <div className="text-[10px] text-ink-secondary">Queue ceiling 8 req/sec</div>
+            <div className="text-meta text-ink-secondary">Queue ceiling 8 req/sec</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">AI Generation</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">AI Generation</div>
             <div className="text-base font-extrabold text-ink font-mono">15 / min</div>
-            <div className="text-[10px] text-ink-secondary">Content Studio & SaltBot</div>
+            <div className="text-meta text-ink-secondary">Content Studio & SaltBot</div>
           </div>
           <div className="p-3 rounded-xl bg-[#FAFAF8] border border-line space-y-1">
-            <div className="text-ink-tertiary text-[10px] font-bold uppercase">Admin Actions</div>
+            <div className="text-ink-tertiary text-label-sm font-bold uppercase">Admin Actions</div>
             <div className="text-base font-extrabold text-ink font-mono">120 / min</div>
-            <div className="text-[10px] text-ink-secondary">Administrative API rate</div>
+            <div className="text-meta text-ink-secondary">Administrative API rate</div>
           </div>
         </div>
       </Card>
@@ -176,7 +176,7 @@ export function SecurityAbuseView({
           <div className="space-y-2">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Max Free Accounts / Business Domain</span>
-              {successField === "max_free" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successField === "max_free" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -197,7 +197,7 @@ export function SecurityAbuseView({
                 Save Limit
               </Button>
             </div>
-            <p className="text-[11px] text-ink-tertiary">
+            <p className="text-meta text-ink-tertiary">
               Limits independent free workspaces created on custom corporate domains.
             </p>
           </div>
@@ -205,7 +205,7 @@ export function SecurityAbuseView({
           <div className="space-y-2 lg:col-span-2">
             <label className="text-xs font-bold text-ink flex items-center justify-between">
               <span>Custom Disposable Domains Blocklist (Comma-separated)</span>
-              {successField === "disposable" && <span className="text-[10px] text-[#0E8F5D] font-bold">Saved!</span>}
+              {successField === "disposable" && <span className="text-label-sm text-[#0E8F5D] font-bold">Saved!</span>}
             </label>
             <div className="flex gap-2">
               <input
@@ -225,7 +225,7 @@ export function SecurityAbuseView({
                 Save
               </Button>
             </div>
-            <p className="text-[11px] text-ink-tertiary">
+            <p className="text-meta text-ink-tertiary">
               Appended to SellerSalt's built-in 250+ disposable domain database.
             </p>
           </div>
@@ -265,7 +265,7 @@ export function SecurityAbuseView({
         <div className="overflow-x-auto max-h-96">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-line text-[10px] font-bold text-ink-tertiary uppercase">
+              <tr className="border-b border-line text-label-sm font-bold text-ink-tertiary uppercase">
                 <th className="py-2 px-3">Timestamp</th>
                 <th className="py-2 px-3">Event Type</th>
                 <th className="py-2 px-3">Actor</th>
@@ -273,7 +273,7 @@ export function SecurityAbuseView({
                 <th className="py-2 px-3">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line font-mono text-[11px]">
+            <tbody className="divide-y divide-line font-mono text-data-sm">
               {filteredLogs.slice(0, 30).map((log) => (
                 <tr key={log.id} className="hover:bg-[#FAFAF8]">
                   <td className="py-2 px-3 text-ink-tertiary whitespace-nowrap">

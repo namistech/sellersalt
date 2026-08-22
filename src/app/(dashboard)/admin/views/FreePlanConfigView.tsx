@@ -108,7 +108,7 @@ export function FreePlanConfigView({
           <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="text-xs font-bold text-ink">Public Tier Availability</div>
-              <div className="text-[11px] text-ink-tertiary">
+              <div className="text-meta text-ink-tertiary">
                 Display Free Explorer on public pricing table and allow $0 checkout without payment method.
               </div>
             </div>
@@ -202,7 +202,7 @@ export function FreePlanConfigView({
             <div className="p-4 rounded-xl border border-line bg-[#FAFAF8] flex items-center justify-between">
               <div className="space-y-0.5">
                 <div className="text-xs font-bold text-ink">CSV / Excel Data Exports</div>
-                <div className="text-[11px] text-ink-tertiary">Allow Free Explorer users to download spreadsheet exports.</div>
+                <div className="text-meta text-ink-tertiary">Allow Free Explorer users to download spreadsheet exports.</div>
               </div>
               <input
                 type="checkbox"

@@ -245,7 +245,7 @@ export default function RoadmapPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold text-ink-tertiary uppercase">Filter:</span>
+            <span className="text-label-sm font-bold text-ink-tertiary uppercase">Filter:</span>
             {["ALL", "MARKET_RESEARCH", "SEO_STUDIO", "PRODUCT_HUNTING", "SHOP_RESEARCH", "WORKSPACE_PLANNER"].map(
               (cat) => (
                 <button
@@ -313,7 +313,7 @@ export default function RoadmapPage() {
                             title="Upvote this feature"
                           >
                             <ThumbsUp className={`h-3 w-3 ${item.hasUpvoted ? "fill-current" : ""}`} />
-                            <span className="text-[10px] tabular-nums mt-0.5 font-bold">{item.upvotes}</span>
+                            <span className="text-label-sm tabular-nums mt-0.5 font-bold">{item.upvotes}</span>
                           </button>
                         </div>
 
@@ -322,8 +322,8 @@ export default function RoadmapPage() {
                         </p>
 
                         {item.adminResponse && (
-                          <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-[11px] text-[#0E8F5D] font-semibold space-y-0.5">
-                            <span className="text-[10px] uppercase font-bold text-ink-tertiary block">
+                          <div className="p-2 rounded-lg bg-[#FAFAF8] border border-line-subtle text-meta text-[#0E8F5D] font-semibold space-y-0.5">
+                            <span className="text-label-sm uppercase font-bold text-ink-tertiary block">
                               Team Note
                             </span>
                             {item.adminResponse}
@@ -331,7 +331,7 @@ export default function RoadmapPage() {
                         )}
                       </div>
 
-                      <div className="pt-2 border-t border-line-subtle flex items-center justify-between text-[10px] text-ink-tertiary">
+                      <div className="pt-2 border-t border-line-subtle flex items-center justify-between text-meta text-ink-tertiary">
                         <span className="px-1.5 py-0.5 rounded bg-surface border border-line-subtle font-semibold">
                           {item.category.replace("_", " ")}
                         </span>
@@ -381,7 +381,7 @@ export default function RoadmapPage() {
                   </li>
                 ))}
               </ul>
-              <div className="text-[11px] text-[#92400E]">
+              <div className="text-meta text-[#92400E]">
                 Consider upvoting existing requests to help them ship faster!
               </div>
             </div>

@@ -238,7 +238,7 @@ export function OnboardingClient({ userName }: { userName: string }) {
                     >
                       <div>
                         <div className="text-xs font-bold">{mp.label}</div>
-                        <div className="text-[10px] text-[#7C847E]">{mp.badge}</div>
+                        <div className="text-label-sm text-[#7C847E]">{mp.badge}</div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-emerald-600" />}
                     </button>
@@ -268,7 +268,7 @@ export function OnboardingClient({ userName }: { userName: string }) {
                       <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isSelected ? "text-emerald-600" : "text-[#7C847E]"}`} />
                       <div>
                         <div className="text-xs font-bold text-[#141B16]">{g.title}</div>
-                        <div className="text-[11px] text-[#7C847E] mt-0.5">{g.description}</div>
+                        <div className="text-meta text-[#7C847E] mt-0.5">{g.description}</div>
                       </div>
                     </button>
                   );
@@ -311,21 +311,21 @@ export function OnboardingClient({ userName }: { userName: string }) {
             <div className="space-y-3 text-xs">
               <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-1">
                 <span className="font-bold text-emerald-900 block">OBSERVED Signals</span>
-                <p className="text-[#525B55] text-[11px]">
+                <p className="text-[#525B55] text-meta">
                   Real listing prices, review counts, star ratings, and seller tags captured directly from permitted public catalogs.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-sky-200 bg-sky-50/40 space-y-1">
                 <span className="font-bold text-sky-900 block">DERIVED & ESTIMATED Decision Models</span>
-                <p className="text-[#525B55] text-[11px]">
+                <p className="text-[#525B55] text-meta">
                   Deterministic price positioning quantiles ($P_{10} - P_{90}$), seller concentration indices, and commercial feasibility scores.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
                 <span className="font-bold text-slate-900 block">Zero-Fabrication Contract</span>
-                <p className="text-[#525B55] text-[11px]">
+                <p className="text-[#525B55] text-meta">
                   Unobservable metrics (like competitor store revenues or private search volumes) remain strictly <strong>UNAVAILABLE</strong> (never fake zeros).
                 </p>
               </div>

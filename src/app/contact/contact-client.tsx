@@ -240,7 +240,7 @@ export function ContactClient({ supportEmail }: { supportEmail: string }) {
                       setSubject(cat.contactSubject);
                       document.getElementById("contact-form")?.scrollIntoView({ behavior: "smooth" });
                     }}
-                    className="text-[11px] font-semibold text-[#0E8F5D] hover:underline pt-1"
+                    className="text-meta font-semibold text-[#0E8F5D] hover:underline pt-1"
                   >
                     Still need help with this? Contact support →
                   </button>

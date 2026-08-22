@@ -235,7 +235,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Ecommerce Research Center</h1>
-            <Badge variant="success" className="text-[11px]">
+            <Badge variant="success" className="text-label-sm">
               <ShieldCheck className="w-3 h-3 mr-1" />
               Public Ingestion Active
             </Badge>
@@ -327,7 +327,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
                   </div>
                   <div>
                     <span className="font-bold text-xs block">{tab.label}</span>
-                    <span className="text-[10px] text-muted-foreground line-clamp-1">{tab.description}</span>
+                    <span className="text-meta text-muted-foreground line-clamp-1">{tab.description}</span>
                   </div>
                 </button>
               );
@@ -376,7 +376,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
                   <div className="lg:col-span-5 space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-foreground">Target Marketplace</label>
-                      <Badge variant={currentCapability.badgeVariant} className="text-[10px] py-0 px-1.5">
+                      <Badge variant={currentCapability.badgeVariant} className="text-label-sm py-0 px-1.5">
                         {currentCapability.statusLabel}
                       </Badge>
                     </div>
@@ -508,7 +508,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
 
             {/* Marketplace Capability Transparency Footer */}
             {activeTab !== "RADAR" && currentCapability.limitations.length > 0 && (
-              <div className="p-3 bg-muted/30 border rounded-lg text-[11px] text-muted-foreground flex items-start gap-2">
+              <div className="p-3 bg-muted/30 border rounded-lg text-meta text-muted-foreground flex items-start gap-2">
                 <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-foreground">{currentCapability.displayName} Public Web Capabilities:</strong>{" "}
@@ -547,7 +547,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
                   }}
                 />
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[11px] text-muted-foreground pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-meta text-muted-foreground pt-1">
                 <span className={progressStage === "PREPARING" ? "text-primary font-bold" : ""}>1. Prepare</span>
                 <span className={progressStage === "CHECKING_SOURCES" ? "text-primary font-bold" : ""}>2. Check Sources</span>
                 <span className={progressStage === "ACQUIRING_DATA" ? "text-primary font-bold" : ""}>3. Public Ingestion</span>
@@ -605,7 +605,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
                   {recentRuns.map((run) => (
                     <tr key={run.id} className="hover:bg-muted/20 transition-colors">
                       <td className="p-3">
-                        <Badge variant="neutral" className="text-[11px] font-bold">
+                        <Badge variant="neutral" className="text-label-sm font-bold">
                           {run.type}
                         </Badge>
                       </td>
@@ -695,19 +695,19 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
               <h3 className="text-base font-bold text-foreground">Comparison Summary & Deltas</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 border rounded-lg bg-emerald-500/10 border-emerald-500/20">
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-[11px]">New / Appearing</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold block text-meta">New / Appearing</span>
                   <span className="font-bold text-foreground text-sm">{compareResult.appearingCount || 0} listings</span>
                 </div>
                 <div className="p-3 border rounded-lg bg-red-500/10 border-red-500/20">
-                  <span className="text-red-700 dark:text-red-400 font-semibold block text-[11px]">Disappeared</span>
+                  <span className="text-red-700 dark:text-red-400 font-semibold block text-meta">Disappeared</span>
                   <span className="font-bold text-foreground text-sm">{compareResult.disappearingCount || 0} listings</span>
                 </div>
                 <div className="p-3 border rounded-lg bg-blue-500/10 border-blue-500/20">
-                  <span className="text-blue-700 dark:text-blue-400 font-semibold block text-[11px]">Persisting</span>
+                  <span className="text-blue-700 dark:text-blue-400 font-semibold block text-meta">Persisting</span>
                   <span className="font-bold text-foreground text-sm">{compareResult.persistingCount || 0} listings</span>
                 </div>
                 <div className="p-3 border rounded-lg bg-amber-500/10 border-amber-500/20">
-                  <span className="text-amber-700 dark:text-amber-400 font-semibold block text-[11px]">Price Drops</span>
+                  <span className="text-amber-700 dark:text-amber-400 font-semibold block text-meta">Price Drops</span>
                   <span className="font-bold text-foreground text-sm">{compareResult.priceDropsCount || 0} items</span>
                 </div>
               </div>
@@ -734,7 +734,7 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
                       <span className="text-xl">{m.icon}</span>
                       <div>
                         <h3 className="font-bold text-sm text-foreground">{m.displayName}</h3>
-                        <span className="text-[11px] text-muted-foreground">{m.primaryAcquisitionMethod}</span>
+                        <span className="text-meta text-muted-foreground">{m.primaryAcquisitionMethod}</span>
                       </div>
                     </div>
                     <Badge variant={m.badgeVariant}>
@@ -744,22 +744,22 @@ export function ResearchClient({ initialRecentRuns, initialSourceHealth }: Resea
 
                   <div className="grid grid-cols-3 gap-2 pt-2 border-t text-xs">
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Operational State</span>
+                      <span className="text-muted-foreground block text-meta">Operational State</span>
                       <strong className="text-foreground">{liveHealth?.status || "HEALTHY"}</strong>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Avg Latency</span>
+                      <span className="text-muted-foreground block text-meta">Avg Latency</span>
                       <strong className="text-foreground">{liveHealth?.latencyMs ? `${liveHealth.latencyMs}ms` : "—"}</strong>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Consecutive Errors</span>
+                      <span className="text-muted-foreground block text-meta">Consecutive Errors</span>
                       <strong className="text-foreground">{liveHealth?.consecutiveFailures || 0}</strong>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t space-y-1">
-                    <span className="text-[11px] font-semibold text-muted-foreground block">Supported Capabilities:</span>
-                    <div className="flex flex-wrap gap-1.5 text-[10px]">
+                    <span className="text-meta font-semibold text-muted-foreground block">Supported Capabilities:</span>
+                    <div className="flex flex-wrap gap-1.5 text-label-sm">
                       {m.publicWebCapabilities.productSearch && <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">Product Search</span>}
                       {m.publicWebCapabilities.keywordDiscovery && <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">Keyword Discovery</span>}
                       {m.publicWebCapabilities.shopResearch && <span className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">Shop Research</span>}

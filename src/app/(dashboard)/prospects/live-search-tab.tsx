@@ -755,7 +755,7 @@ export function LiveSearchTab() {
                       <span className="text-xs font-mono font-bold text-[#0E8F5D]">
                         {item.opportunity.opportunityScore}
                       </span>
-                      <span className="text-[10px] text-ink-tertiary">/100</span>
+                      <span className="text-meta text-ink-tertiary">/100</span>
                     </div>
                   </div>
 

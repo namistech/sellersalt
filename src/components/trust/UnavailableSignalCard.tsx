@@ -44,14 +44,14 @@ export function UnavailableSignalCard({
           <HelpCircle className="w-3.5 h-3.5 text-muted-foreground" />
           <span>{signalName}</span>
         </div>
-        <Badge variant="neutral" className="text-[9px] font-bold">
+        <Badge variant="neutral" className="text-label-sm font-bold">
           UNAVAILABLE
         </Badge>
       </div>
-      <p className="text-[11px] text-muted-foreground leading-relaxed">
+      <p className="text-meta text-muted-foreground leading-relaxed">
         {reason || getDefaultExplanation()}
       </p>
-      <div className="flex items-center gap-1 text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold pt-1 border-t">
+      <div className="flex items-center gap-1 text-meta text-emerald-600 dark:text-emerald-400 font-semibold pt-1 border-t">
         <ShieldAlert className="w-3 h-3 shrink-0" />
         <span>Zero-Fabrication Guarantee: SellerSalt never generates synthetic estimates for private data.</span>
       </div>

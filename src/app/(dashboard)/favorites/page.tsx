@@ -360,7 +360,7 @@ export default function FavoritesPage() {
                       <span className="font-bold text-xs text-ink truncate">{s.shopName}</span>
                       <Badge variant="success">Active</Badge>
                     </div>
-                    <div className="text-[11px] text-ink-tertiary mt-1">
+                    <div className="text-meta text-ink-tertiary mt-1">
                       Tracked since {new Date(s.trackingSince).toLocaleDateString()}
                     </div>
                   </div>
@@ -370,7 +370,7 @@ export default function FavoritesPage() {
                       href={`https://www.etsy.com/shop/${encodeURIComponent(s.shopName)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[11px] text-ink-tertiary hover:text-ink flex items-center gap-1"
+                      className="text-meta text-ink-tertiary hover:text-ink flex items-center gap-1"
                     >
                       Etsy Store <ExternalLink className="h-3 w-3" />
                     </a>
@@ -445,7 +445,7 @@ export default function FavoritesPage() {
                       <td className="p-3 font-mono">{k.keyword.split(/\s+/).length} words</td>
                       <td className="p-3">
                         {k.source && k.source !== "UNAVAILABLE" ? (
-                          <span className="font-mono text-[11px] text-ink font-medium bg-[#FAFAF8] px-2 py-0.5 rounded border border-line-subtle">
+                          <span className="font-mono text-label-sm text-ink font-medium bg-[#FAFAF8] px-2 py-0.5 rounded border border-line-subtle">
                             {k.source === "google_keyword_planner" ? "Google Keyword Planner" : k.source}
                           </span>
                         ) : k.sourceListingUrl ? (
@@ -458,7 +458,7 @@ export default function FavoritesPage() {
                             Evidence listing <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="text-ink-tertiary font-mono text-[11px]">UNAVAILABLE</span>
+                          <span className="text-ink-tertiary font-mono text-label-sm">UNAVAILABLE</span>
                         )}
                       </td>
                       <td className="p-3 font-mono text-ink-tertiary">{new Date(k.createdAt).toLocaleDateString()}</td>

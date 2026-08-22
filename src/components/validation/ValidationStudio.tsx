@@ -132,13 +132,13 @@ export function ValidationStudio({
           {/* Depth Modes Switcher */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs">
             <div className="flex items-center gap-2">
-              <span className="text-muted-foreground font-semibold text-[11px]">Validation Depth:</span>
+              <span className="text-muted-foreground font-semibold text-label-sm">Validation Depth:</span>
               {(["QUICK", "STANDARD", "DEEP"] as const).map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDepth(d)}
-                  className={`px-3 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-md text-label-sm font-medium transition-colors ${
                     depth === d
                       ? "bg-primary text-primary-foreground font-bold shadow-xs"
                       : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -148,7 +148,7 @@ export function ValidationStudio({
                 </button>
               ))}
             </div>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-meta text-muted-foreground">
               {depth === "QUICK"
                 ? "Fast sample evaluation"
                 : depth === "STANDARD"

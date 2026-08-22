@@ -171,7 +171,7 @@ export function DraftsClient() {
         }}
         sidePanel={
           <div className="space-y-2 text-xs">
-            <div className="text-[11px] font-bold text-[#9EAA9F] uppercase tracking-wider">
+            <div className="text-label-sm font-bold text-[#9EAA9F] uppercase tracking-wider">
               Safety &amp; Compliance Gates
             </div>
             <div className="flex items-center gap-1.5 text-white font-medium">
@@ -245,7 +245,7 @@ export function DraftsClient() {
                     <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-[#E7FAF1] text-[#0E8F5D]">
                       ${draft.price.toFixed(2)}
                     </span>
-                    <Badge variant="neutral" className="text-[10px] font-mono">
+                    <Badge variant="neutral" className="text-label-sm font-mono">
                       SEO {draft.seoScore || 92}/100
                     </Badge>
                   </div>
@@ -254,7 +254,7 @@ export function DraftsClient() {
                     <h3 className="text-xs font-bold text-ink leading-snug line-clamp-2" title={draft.title}>
                       {draft.title}
                     </h3>
-                    <div className="flex items-center gap-1.5 text-[10px] text-ink-tertiary mt-1">
+                    <div className="flex items-center gap-1.5 text-meta text-ink-tertiary mt-1">
                       <span>{draft.title.length}/140 chars</span>
                       <span>·</span>
                       <span>{draft.tags.length}/13 tags</span>
@@ -268,13 +268,13 @@ export function DraftsClient() {
                     {draft.tags.slice(0, 4).map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#FAFAF8] text-ink border border-line"
+                        className="px-2 py-0.5 rounded text-label-sm font-semibold bg-[#FAFAF8] text-ink border border-line"
                       >
                         #{tag}
                       </span>
                     ))}
                     {draft.tags.length > 4 && (
-                      <span className="px-1.5 py-0.5 text-[10px] text-ink-tertiary">
+                      <span className="px-1.5 py-0.5 text-meta text-ink-tertiary">
                         +{draft.tags.length - 4} more
                       </span>
                     )}
@@ -307,7 +307,7 @@ export function DraftsClient() {
         ) : (
           <div className="border border-line rounded-xl overflow-hidden bg-white shadow-xs">
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-label-sm">
                 <tr>
                   <th className="p-3">Draft Title</th>
                   <th className="p-3">Price</th>
@@ -333,7 +333,7 @@ export function DraftsClient() {
                       {draft.seoScore || 92}/100
                     </td>
                     <td className="p-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
+                      <span className="px-2 py-0.5 rounded-full text-label-sm font-bold bg-[#E7FAF1] text-[#0E8F5D] border border-[#16C784]/30">
                         {draft.state}
                       </span>
                     </td>
@@ -408,7 +408,7 @@ export function DraftsClient() {
               <ShieldCheck className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
               <div>
                 <strong className="block font-bold">Rule 9: Human Review &amp; Approval Gate</strong>
-                <p className="text-[11px] text-amber-800 mt-0.5">
+                <p className="text-meta text-amber-800 mt-0.5">
                   This listing draft is created in draft state. It will never be published live to customers without your direct confirmation in Etsy Listing Manager.
                 </p>
               </div>
@@ -454,7 +454,7 @@ export function DraftsClient() {
                     className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#FAFAF8] text-ink border border-line flex items-center gap-1"
                   >
                     <span>#{tag}</span>
-                    <span className="text-[10px] text-ink-tertiary font-mono">({tag.length}/20)</span>
+                    <span className="text-meta text-ink-tertiary font-mono">({tag.length}/20)</span>
                   </span>
                 ))}
               </div>

@@ -1170,7 +1170,7 @@ export function AdminPackagesClient() {
             <Heading as="h1" size="h2">
               Admin Operations Console
             </Heading>
-            <Badge variant="neutral" className="bg-[#141B16] text-white border-[#2A362D] text-[10px] uppercase font-bold tracking-wider">
+            <Badge variant="neutral" className="bg-[#141B16] text-white border-[#2A362D] text-label-sm uppercase font-bold tracking-wider">
               Internal Surface
             </Badge>
           </div>
@@ -1765,7 +1765,7 @@ export function AdminPackagesClient() {
                   value={createUserPassword}
                   onChange={(e) => setCreateUserPassword(e.target.value)}
                 />
-                <p className="text-[11px] text-ink-tertiary mt-1">
+                <p className="text-meta text-ink-tertiary mt-1">
                   Use at least 8 characters, including an uppercase letter, a number, and a symbol.
                 </p>
               </div>
@@ -1873,7 +1873,7 @@ export function AdminPackagesClient() {
                         )}
                       </div>
                       <div className="text-xs text-ink-secondary">{userDetail.email}</div>
-                      <div className="text-[11px] text-ink-tertiary mt-1">
+                      <div className="text-meta text-ink-tertiary mt-1">
                         Member since {new Date(userDetail.createdAt).toLocaleDateString()} · Account ID: {userDetail.id}
                       </div>
                     </div>
@@ -1891,7 +1891,7 @@ export function AdminPackagesClient() {
                         <div className="font-bold text-ink">{m.organization?.name}</div>
                         <Badge variant="neutral">{m.role}</Badge>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-ink-secondary pt-1 border-t border-line-subtle">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-data-sm text-ink-secondary pt-1 border-t border-line-subtle">
                         <div>
                           <span className="text-ink-tertiary block">Plan Tier:</span>
                           <span className="font-semibold text-ink">{m.organization?.package?.name || "Started"}</span>
@@ -1923,13 +1923,13 @@ export function AdminPackagesClient() {
                     Sign-In Security & Passkeys
                   </div>
                   <div className="p-3.5 rounded-xl border border-line bg-white space-y-3 text-xs">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-meta">
                       <span className="text-ink-secondary">Sign-in methods used:</span>
                       <span className="font-semibold text-ink capitalize">
                         {userDetail.authMethods?.length ? userDetail.authMethods.join(", ") : "Password credentials"}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-meta">
                       <span className="text-ink-secondary">Last login timestamp:</span>
                       <span className="font-semibold text-ink">
                         {userDetail.lastLoginAt ? new Date(userDetail.lastLoginAt).toLocaleString() : "Never recorded"}
@@ -1937,13 +1937,13 @@ export function AdminPackagesClient() {
                     </div>
 
                     <div className="pt-2 border-t border-line-subtle">
-                      <div className="text-[11px] font-semibold text-ink mb-1.5">
+                      <div className="text-meta font-semibold text-ink mb-1.5">
                         Registered Passkey Hardware / Biometrics ({userDetail.passkeys?.length || 0})
                       </div>
                       {userDetail.passkeys && userDetail.passkeys.length > 0 ? (
                         <div className="space-y-1.5">
                           {userDetail.passkeys.map((pk: any) => (
-                            <div key={pk.id} className="p-2 rounded-lg bg-[#FAFAF8] border border-line text-[11px] flex items-center justify-between">
+                            <div key={pk.id} className="p-2 rounded-lg bg-[#FAFAF8] border border-line text-meta flex items-center justify-between">
                               <span className="font-semibold text-ink">{pk.name || "Device Passkey"}</span>
                               <span className="text-ink-tertiary">
                                 Added {new Date(pk.createdAt).toLocaleDateString()}
@@ -1953,7 +1953,7 @@ export function AdminPackagesClient() {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-[11px] text-ink-tertiary">No passkeys registered on this account.</div>
+                        <div className="text-meta text-ink-tertiary">No passkeys registered on this account.</div>
                       )}
                     </div>
                   </div>
@@ -1966,19 +1966,19 @@ export function AdminPackagesClient() {
                   </div>
                   <div className="p-3.5 rounded-xl border border-line bg-white grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                     <div>
-                      <span className="text-ink-tertiary text-[11px] block">Status:</span>
+                      <span className="text-ink-tertiary text-meta block">Status:</span>
                       <span className="font-semibold text-ink">
                         {userDetail.emailVerified ? "✓ Verified" : "⚠ Pending Confirmation"}
                       </span>
                     </div>
                     <div>
-                      <span className="text-ink-tertiary text-[11px] block">Emails Sent:</span>
+                      <span className="text-ink-tertiary text-meta block">Emails Sent:</span>
                       <span className="font-semibold text-ink">
                         {userDetail.verificationEmailCount ?? 0} time(s) (Unrestricted Admin Resend)
                       </span>
                     </div>
                     <div>
-                      <span className="text-ink-tertiary text-[11px] block">Last Email Sent:</span>
+                      <span className="text-ink-tertiary text-meta block">Last Email Sent:</span>
                       <span className="font-semibold text-ink">
                         {userDetail.lastVerificationEmailAt
                           ? new Date(userDetail.lastVerificationEmailAt).toLocaleString()
@@ -2003,7 +2003,7 @@ export function AdminPackagesClient() {
                             <th className="p-2">Date</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-line-subtle text-[11px]">
+                        <tbody className="divide-y divide-line-subtle text-data-sm">
                           {userDetail.recentAuditLogs.map((log: any) => (
                             <tr key={log.id}>
                               <td className="p-2 font-semibold text-ink">{log.event}</td>
@@ -2110,7 +2110,7 @@ export function AdminPackagesClient() {
                     <tr key={o.id} className="hover:bg-[#FAFAF8]">
                       <td className="p-3 font-bold text-ink">
                         <div>{o.name}</div>
-                        <div className="text-[10px] text-ink-tertiary font-mono">{o.id}</div>
+                        <div className="text-meta text-ink-tertiary font-mono">{o.id}</div>
                       </td>
                       <td className="p-3 text-ink-secondary">{o.ownerEmail || "—"}</td>
                       <td className="p-3 font-semibold text-ink">{o.membersCount ?? 1}</td>
@@ -2119,7 +2119,7 @@ export function AdminPackagesClient() {
                           value={o.package?.id ?? ""}
                           disabled={orgActionLoading === o.id}
                           onChange={(e) => e.target.value && handleOrgAction(o.id, "PATCH", { packageId: e.target.value })}
-                          className="text-[11px] border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
+                          className="text-data-sm border border-line rounded px-1.5 py-1 bg-white disabled:opacity-50 max-w-[110px]"
                         >
                           <option value="" disabled>{o.package?.name ?? "Starter"}</option>
                           {packages.map((p) => (
@@ -2132,7 +2132,7 @@ export function AdminPackagesClient() {
                           {o.subscription?.status ?? "INCOMPLETE"}
                         </Badge>
                       </td>
-                      <td className="p-3 font-mono text-[11px] text-ink-tertiary">
+                      <td className="p-3 font-mono text-data-sm text-ink-tertiary">
                         {o.usage?.prospects ?? 0} prospects · {o.usage?.searchConfigs ?? 0} streams · {o.usage?.trackedShops ?? 0} tracked
                       </td>
                       <td className="p-3 text-ink-tertiary">{new Date(o.createdAt).toLocaleDateString()}</td>
@@ -2146,7 +2146,7 @@ export function AdminPackagesClient() {
                               o.package?.id &&
                               handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "TRIALING" }, "/subscription")
                             }
-                            className="text-[11px]"
+                            className="text-label-sm"
                             title="Grant a trialing subscription on the current package"
                           >
                             Extend Trial
@@ -2159,7 +2159,7 @@ export function AdminPackagesClient() {
                               o.package?.id &&
                               handleOrgAction(o.id, "PUT", { packageId: o.package.id, status: "ACTIVE" }, "/subscription")
                             }
-                            className="text-[11px]"
+                            className="text-label-sm"
                             title="Grant an active subscription on the current package, bypassing billing"
                           >
                             Grant Access
@@ -2170,7 +2170,7 @@ export function AdminPackagesClient() {
                               size="compact"
                               loading={orgActionLoading === o.id}
                               onClick={() => handleOrgAction(o.id, "DELETE", undefined, "/subscription")}
-                              className="text-[11px]"
+                              className="text-label-sm"
                             >
                               Cancel Sub
                             </Button>
@@ -2253,7 +2253,7 @@ export function AdminPackagesClient() {
                         <div className="text-xs text-ink-tertiary">{meta.description}</div>
                       </div>
                     </div>
-                    <a href={meta.dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink-tertiary hover:text-ink flex items-center gap-1">
+                    <a href={meta.dashboardUrl} target="_blank" rel="noopener noreferrer" className="text-meta text-ink-tertiary hover:text-ink flex items-center gap-1">
                       Dashboard <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
@@ -2262,14 +2262,14 @@ export function AdminPackagesClient() {
                     <button
                       type="button"
                       onClick={() => requestModeSwitch(providerKey, "SANDBOX")}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${currentMode === "SANDBOX" ? "bg-[#141B16] text-white" : "bg-surface-muted text-ink-secondary"}`}
+                      className={`px-2.5 py-1 rounded-md text-label-sm font-semibold ${currentMode === "SANDBOX" ? "bg-[#141B16] text-white" : "bg-surface-muted text-ink-secondary"}`}
                     >
                       Sandbox
                     </button>
                     <button
                       type="button"
                       onClick={() => requestModeSwitch(providerKey, "LIVE")}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${currentMode === "LIVE" ? "bg-[#B42318] text-white" : "bg-surface-muted text-ink-secondary"}`}
+                      className={`px-2.5 py-1 rounded-md text-label-sm font-semibold ${currentMode === "LIVE" ? "bg-[#B42318] text-white" : "bg-surface-muted text-ink-secondary"}`}
                     >
                       Live
                     </button>
@@ -2284,8 +2284,8 @@ export function AdminPackagesClient() {
                     <Alert variant="warning">
                       Switching to LIVE will process real charges once active. Confirm?
                       <div className="flex gap-2 mt-2">
-                        <Button size="compact" variant="destructive" onClick={() => row && confirmSwitchToLive(row)} className="text-[11px]">Confirm Live</Button>
-                        <Button size="compact" variant="secondary" onClick={() => setPendingLiveConfirm(null)} className="text-[11px]">Cancel</Button>
+                        <Button size="compact" variant="destructive" onClick={() => row && confirmSwitchToLive(row)} className="text-label-sm">Confirm Live</Button>
+                        <Button size="compact" variant="secondary" onClick={() => setPendingLiveConfirm(null)} className="text-label-sm">Cancel</Button>
                       </div>
                     </Alert>
                   )}
@@ -2293,7 +2293,7 @@ export function AdminPackagesClient() {
                   <div className="p-3 bg-[#FAFAF8] rounded-lg border border-line-subtle space-y-2">
                     {PROVIDER_FIELDS[providerKey]!.map((field) => (
                       <div key={field.key} className="flex items-center gap-2">
-                        <label className="text-[11px] text-ink-tertiary w-32 shrink-0">{field.label}</label>
+                        <label className="text-label-sm text-ink-tertiary w-32 shrink-0">{field.label}</label>
                         <input
                           type={field.secret ? "password" : "text"}
                           value={draft[field.key] ?? ""}
@@ -2306,7 +2306,7 @@ export function AdminPackagesClient() {
                   </div>
 
                   {providerTestResult[providerKey] && (
-                    <p className="text-[11px] text-ink-secondary">{providerTestResult[providerKey]}</p>
+                    <p className="text-meta text-ink-secondary">{providerTestResult[providerKey]}</p>
                   )}
 
                   <div className="flex items-center gap-2">
@@ -2316,7 +2316,7 @@ export function AdminPackagesClient() {
                       loading={providerSaving === providerKey}
                       disabled={Object.keys(draft).length === 0}
                       onClick={() => handleSaveProviderCredentials(providerKey, currentMode, meta.label)}
-                      className="text-[11px] bg-[#0E8F5D] hover:bg-[#0C7A52]"
+                      className="text-label-sm bg-[#0E8F5D] hover:bg-[#0C7A52]"
                     >
                       Save {currentMode}
                     </Button>
@@ -2326,7 +2326,7 @@ export function AdminPackagesClient() {
                       loading={providerSaving === providerKey}
                       disabled={!hasCredsForMode && Object.keys(draft).length === 0}
                       onClick={() => row && handleTestProviderConnection(row, currentMode)}
-                      className="text-[11px]"
+                      className="text-label-sm"
                     >
                       Test Connection
                     </Button>
@@ -2336,7 +2336,7 @@ export function AdminPackagesClient() {
                         size="compact"
                         loading={providerSaving === providerKey}
                         onClick={() => handleToggleProviderActive(row)}
-                        className="text-[11px] ml-auto"
+                        className="text-label-sm ml-auto"
                       >
                         {row.isActive ? "Deactivate" : "Activate"}
                       </Button>
@@ -2365,12 +2365,12 @@ export function AdminPackagesClient() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-bold text-sm text-ink">{row.label}</div>
-                      <div className="text-[11px] text-ink-tertiary mt-0.5">
+                      <div className="text-meta text-ink-tertiary mt-0.5">
                         Models last updated: {timeAgo(row.modelsLastFetchedAt)}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] font-bold text-ink-tertiary uppercase">Priority</label>
+                      <label className="text-label-sm font-bold text-ink-tertiary uppercase">Priority</label>
                       <input
                         type="number"
                         min="1"
@@ -2399,14 +2399,14 @@ export function AdminPackagesClient() {
                       loading={busy}
                       disabled={!aiKeyDrafts[row.provider]}
                       onClick={() => handleSaveAiKey(row.provider)}
-                      className="text-[11px] shrink-0"
+                      className="text-label-sm shrink-0"
                     >
                       Save Key
                     </Button>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-ink-tertiary uppercase">Default Model</label>
+                    <label className="text-label-sm font-bold text-ink-tertiary uppercase">Default Model</label>
                     <select
                       value={row.defaultModelId ?? ""}
                       disabled={busy || row.models.length === 0}
@@ -2426,22 +2426,22 @@ export function AdminPackagesClient() {
                       )}
                     </select>
                     {row.models.length > 0 && (
-                      <div className="text-[11px] text-ink-tertiary mt-1">{row.models.length} model(s) available</div>
+                      <div className="text-meta text-ink-tertiary mt-1">{row.models.length} model(s) available</div>
                     )}
                   </div>
 
-                  {result && <p className="text-[11px] text-ink-secondary">{result}</p>}
+                  {result && <p className="text-meta text-ink-secondary">{result}</p>}
                   {!result && row.lastTestMessage && (
-                    <p className="text-[11px] text-ink-tertiary">
+                    <p className="text-meta text-ink-tertiary">
                       Last check ({timeAgo(row.lastTestedAt)}): {row.lastTestOk ? "✓" : "✗"} {row.lastTestMessage}
                     </p>
                   )}
 
                   <div className="flex items-center gap-2">
-                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleTestAiProvider(row)} className="text-[11px]">
+                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleTestAiProvider(row)} className="text-label-sm">
                       Test Connection
                     </Button>
-                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleRefreshAiModels(row)} className="text-[11px]">
+                    <Button variant="secondary" size="compact" loading={busy} onClick={() => handleRefreshAiModels(row)} className="text-label-sm">
                       Refresh Models
                     </Button>
                     <Button
@@ -2449,7 +2449,7 @@ export function AdminPackagesClient() {
                       size="compact"
                       loading={busy}
                       onClick={() => handleToggleAiActive(row)}
-                      className="text-[11px] ml-auto"
+                      className="text-label-sm ml-auto"
                     >
                       {row.isActive ? "Deactivate" : "Activate"}
                     </Button>
@@ -2481,7 +2481,7 @@ export function AdminPackagesClient() {
 
             <form onSubmit={handleSaveEmailSettings} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Host</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">Host</label>
                 <input
                   required
                   value={emailSettingsDraft.host ?? emailSettings?.host ?? ""}
@@ -2491,7 +2491,7 @@ export function AdminPackagesClient() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Port</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">Port</label>
                 <input
                   required
                   type="number"
@@ -2501,7 +2501,7 @@ export function AdminPackagesClient() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Encryption</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">Encryption</label>
                 <select
                   value={emailSettingsDraft.secure ?? String(emailSettings?.secure ?? false)}
                   onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, secure: e.target.value }))}
@@ -2512,7 +2512,7 @@ export function AdminPackagesClient() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Username</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">Username</label>
                 <input
                   required
                   value={emailSettingsDraft.username ?? emailSettings?.username ?? ""}
@@ -2522,7 +2522,7 @@ export function AdminPackagesClient() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">Password</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">Password</label>
                 <input
                   type="password"
                   value={emailSettingsDraft.password ?? ""}
@@ -2532,7 +2532,7 @@ export function AdminPackagesClient() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">From Email</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">From Email</label>
                 <input
                   required
                   type="email"
@@ -2542,7 +2542,7 @@ export function AdminPackagesClient() {
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-ink-tertiary uppercase">From Name</label>
+                <label className="text-label-sm font-bold text-ink-tertiary uppercase">From Name</label>
                 <input
                   value={emailSettingsDraft.fromName ?? emailSettings?.fromName ?? "SellerSalt"}
                   onChange={(e) => setEmailSettingsDraft((p) => ({ ...p, fromName: e.target.value }))}
@@ -2567,8 +2567,8 @@ export function AdminPackagesClient() {
                 <Button type="button" variant="secondary" size="compact" loading={smtpTesting} disabled={!emailSettings} onClick={handleTestSmtp} className="text-xs">
                   Send Test Email
                 </Button>
-                {emailSettingsResult && <span className="text-[11px] text-ink-secondary">{emailSettingsResult}</span>}
-                {smtpTestResult && <span className="text-[11px] text-ink-secondary">{smtpTestResult}</span>}
+                {emailSettingsResult && <span className="text-meta text-ink-secondary">{emailSettingsResult}</span>}
+                {smtpTestResult && <span className="text-meta text-ink-secondary">{smtpTestResult}</span>}
               </div>
             </form>
           </Card>
@@ -2600,7 +2600,7 @@ export function AdminPackagesClient() {
                     }`}
                   >
                     <div className="font-semibold">{t.name}</div>
-                    <div className="text-[10px] text-ink-tertiary truncate">{t.key}</div>
+                    <div className="text-meta text-ink-tertiary truncate">{t.key}</div>
                   </button>
                 ))}
               </div>
@@ -2613,7 +2613,7 @@ export function AdminPackagesClient() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#FAFAF8] rounded-xl border border-line">
                     <div>
                       <div className="font-bold text-xs text-ink">{selectedTemplate.name}</div>
-                      <div className="text-[11px] text-ink-tertiary">Subject: {selectedTemplate.defaultSubject}</div>
+                      <div className="text-meta text-ink-tertiary">Subject: {selectedTemplate.defaultSubject}</div>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -2643,7 +2643,7 @@ export function AdminPackagesClient() {
                   )}
 
                   <div className="border border-line rounded-xl overflow-hidden shadow-2xs">
-                    <div className="p-2 bg-[#FAFAF8] border-b border-line text-[11px] font-bold text-ink-tertiary">
+                    <div className="p-2 bg-[#FAFAF8] border-b border-line text-label-sm font-bold text-ink-tertiary">
                       Live HTML Output Preview
                     </div>
                     <div

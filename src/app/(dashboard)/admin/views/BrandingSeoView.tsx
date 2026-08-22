@@ -130,7 +130,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
             <h4 className="text-xs font-bold text-ink">{label}</h4>
             <p className="text-xs text-ink-secondary mt-0.5 leading-relaxed">{description}</p>
           </div>
-          <Badge variant="neutral" className="text-[10px] shrink-0">
+          <Badge variant="neutral" className="text-label-sm shrink-0">
             {aspectHint}
           </Badge>
         </div>
@@ -438,7 +438,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                   placeholder="e.g. google-site-verification token or full tag"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;google-site-verification&quot; content=&quot;...&quot; /&gt;</p>
+                <p className="text-meta text-ink-tertiary mt-1">Renders &lt;meta name=&quot;google-site-verification&quot; content=&quot;...&quot; /&gt;</p>
               </div>
 
               <div>
@@ -452,7 +452,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                   placeholder="e.g. msvalidate.01 token or XML code"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;msvalidate.01&quot; content=&quot;...&quot; /&gt;</p>
+                <p className="text-meta text-ink-tertiary mt-1">Renders &lt;meta name=&quot;msvalidate.01&quot; content=&quot;...&quot; /&gt;</p>
               </div>
 
               <div>
@@ -466,7 +466,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                   placeholder="e.g. facebook-domain-verification token"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;...&quot; /&gt;</p>
+                <p className="text-meta text-ink-tertiary mt-1">Renders &lt;meta name=&quot;facebook-domain-verification&quot; content=&quot;...&quot; /&gt;</p>
               </div>
 
               <div>
@@ -480,7 +480,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                   placeholder="e.g. p:domain_verify token"
                   className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
                 />
-                <p className="text-[11px] text-ink-tertiary mt-1">Renders &lt;meta name=&quot;p:domain_verify&quot; content=&quot;...&quot; /&gt;</p>
+                <p className="text-meta text-ink-tertiary mt-1">Renders &lt;meta name=&quot;p:domain_verify&quot; content=&quot;...&quot; /&gt;</p>
               </div>
             </div>
 
@@ -495,7 +495,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
                 placeholder={'<meta name="custom-verification" content="xyz" />\nor name=content pairs'}
                 className="w-full text-xs font-mono bg-[#FAFAF8] border border-line px-3.5 py-2 rounded-xl text-ink focus:bg-white focus:outline-none focus:border-[#0E8F5D]"
               />
-              <p className="text-[11px] text-ink-tertiary mt-1">
+              <p className="text-meta text-ink-tertiary mt-1">
                 Optional custom meta tags for unlisted verification providers, search engines, or domain audits.
               </p>
             </div>
@@ -545,7 +545,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-ink">/robots.txt</p>
-                  <p className="text-[11px] text-ink-secondary">Allows search indexing for public paths.</p>
+                  <p className="text-meta text-ink-secondary">Allows search indexing for public paths.</p>
                 </div>
                 <a
                   href="/robots.txt"
@@ -561,7 +561,7 @@ export function BrandingSeoView({ settings, onSaveSetting, onRefreshSettings }: 
               <div className="p-4 rounded-xl bg-[#FAFAF8] border border-line flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-ink">/sitemap.xml</p>
-                  <p className="text-[11px] text-ink-secondary">Dynamic XML sitemap of all public pages.</p>
+                  <p className="text-meta text-ink-secondary">Dynamic XML sitemap of all public pages.</p>
                 </div>
                 <a
                   href="/sitemap.xml"

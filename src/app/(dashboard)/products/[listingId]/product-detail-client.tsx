@@ -729,7 +729,7 @@ export function ProductDetailClient({ product, isAuthenticated = true }: Product
         {viewMode === "table" ? (
           <div className="border border-line rounded-xl overflow-hidden">
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+              <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-label-sm">
                 <tr>
                   <th className="p-3.5">Keyword / Tag</th>
                   <th className="p-3.5">Search Opportunity</th>

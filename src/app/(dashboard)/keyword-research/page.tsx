@@ -409,7 +409,7 @@ export default function KeywordResearchPage() {
               />
               <Search className="h-4 w-4 text-ink-tertiary absolute left-3.5 top-3.5 pointer-events-none" />
               {splitKeywordsPreviewLabel(query) && (
-                <div className="absolute -bottom-5 left-0 text-[11px] text-ink-tertiary">
+                <div className="absolute -bottom-5 left-0 text-meta text-ink-tertiary">
                   {splitKeywordsPreviewLabel(query)}
                 </div>
               )}
@@ -488,7 +488,7 @@ export default function KeywordResearchPage() {
                     {result.data.keywords.slice(0, 12).map((k) => (
                       <span
                         key={k.term}
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${COMPETITION_COLORS[k.competitionLevel]}`}
+                        className={`px-2 py-0.5 rounded-full text-label-sm font-bold border ${COMPETITION_COLORS[k.competitionLevel]}`}
                       >
                         {k.term}
                       </span>
@@ -684,7 +684,7 @@ export default function KeywordResearchPage() {
                     <span className="text-xs font-bold text-ink uppercase tracking-wide">
                       Top Tags by Catalog Penetration (%)
                     </span>
-                    <p className="text-[11px] text-ink-tertiary">Observed recurrence frequency across analyzed page 1 listings.</p>
+                    <p className="text-meta text-ink-tertiary">Observed recurrence frequency across analyzed page 1 listings.</p>
                   </div>
                   <DataProvenanceBadge type={(searchResponse.marketplace ?? marketplace) === "etsy" ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
                 </div>
@@ -711,7 +711,7 @@ export default function KeywordResearchPage() {
                     <span className="text-xs font-bold text-ink uppercase tracking-wide">
                       Avg. Buyer Demand by Phrase Length
                     </span>
-                    <p className="text-[11px] text-ink-tertiary">Average buyer favorites proxy across head, mid-tail, and long-tail phrases.</p>
+                    <p className="text-meta text-ink-tertiary">Average buyer favorites proxy across head, mid-tail, and long-tail phrases.</p>
                   </div>
                   <DataProvenanceBadge type="ESTIMATED" />
                 </div>
@@ -865,7 +865,7 @@ export default function KeywordResearchPage() {
                     <div className="text-xs font-bold text-[#0E8F5D]">
                       Keyword Cluster Selected ({selectedCount} tags)
                     </div>
-                    <p className="text-[11px] text-ink-secondary">
+                    <p className="text-meta text-ink-secondary">
                       Synthesize and link this keyword cluster directly to your Opportunity Planner.
                     </p>
                   </div>
@@ -897,7 +897,7 @@ export default function KeywordResearchPage() {
           {viewMode === "table" ? (
             <div className="border border-line rounded-xl overflow-hidden bg-white">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-[10px]">
+                <thead className="bg-[#FAFAF8] border-b border-line text-ink-tertiary font-bold uppercase text-label-sm">
                   <tr>
                     <th className="p-3 w-8">
                       <input
@@ -1026,7 +1026,7 @@ export default function KeywordResearchPage() {
                             >
                               {item.term}
                             </button>
-                            <div className="text-[10px] text-ink-tertiary flex items-center gap-1.5 mt-0.5">
+                            <div className="text-meta text-ink-tertiary flex items-center gap-1.5 mt-0.5">
                               <span>{item.wordCount} words</span>
                               <span>·</span>
                               <span className={item.isTagCompliant ? "text-[#0E8F5D] font-medium" : "text-amber-700"}>
@@ -1036,7 +1036,7 @@ export default function KeywordResearchPage() {
                           </div>
                         </div>
 
-                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${COMPETITION_COLORS[item.competitionLevel]}`}>
+                        <div className={`px-2 py-0.5 rounded-full text-label-sm font-bold border shrink-0 ${COMPETITION_COLORS[item.competitionLevel]}`}>
                           {item.competitionLevel.replace("_", " ")}
                         </div>
                       </div>
@@ -1044,29 +1044,29 @@ export default function KeywordResearchPage() {
                       {/* Metrics Row */}
                       <div className="grid grid-cols-4 gap-1 pt-2 border-t border-line-subtle text-center">
                         <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
-                          <div className="text-[9px] text-ink-tertiary uppercase">Search Vol</div>
+                          <div className="text-label-sm text-ink-tertiary uppercase">Search Vol</div>
                           <div className="text-xs font-mono font-extrabold text-ink tabular-nums truncate">
                             {typeof item.externalMonthlyVolume === "number" ? `${item.externalMonthlyVolume.toLocaleString()}` : "UNAVAIL"}
                           </div>
-                          <div className="text-[9px] text-ink-tertiary">{typeof item.externalMonthlyVolume === "number" ? "/mo" : "Google"}</div>
+                          <div className="text-meta text-ink-tertiary">{typeof item.externalMonthlyVolume === "number" ? "/mo" : "Google"}</div>
                         </div>
 
                         <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
-                          <div className="text-[9px] text-ink-tertiary uppercase">Frequency</div>
+                          <div className="text-label-sm text-ink-tertiary uppercase">Frequency</div>
                           <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.frequency}x</div>
-                          <div className="text-[9px] text-ink-tertiary">{item.percentage}%</div>
+                          <div className="text-meta text-ink-tertiary">{item.percentage}%</div>
                         </div>
 
                         <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
-                          <div className="text-[9px] text-ink-tertiary uppercase">Relevance</div>
+                          <div className="text-label-sm text-ink-tertiary uppercase">Relevance</div>
                           <div className="text-xs font-mono font-extrabold text-[#0E8F5D] tabular-nums">{item.relevanceScore}%</div>
-                          <div className="text-[9px] text-ink-tertiary">Match</div>
+                          <div className="text-meta text-ink-tertiary">Match</div>
                         </div>
 
                         <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
-                          <div className="text-[9px] text-ink-tertiary uppercase">Est. Demand</div>
+                          <div className="text-label-sm text-ink-tertiary uppercase">Est. Demand</div>
                           <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.estimatedDemandSignal}</div>
-                          <div className="text-[9px] text-ink-tertiary">Favs</div>
+                          <div className="text-meta text-ink-tertiary">Favs</div>
                         </div>
                       </div>
                     </div>
@@ -1102,7 +1102,7 @@ export default function KeywordResearchPage() {
                         loading={isSaving}
                         disabled={isSavedPlanner}
                         onClick={() => handleAddTermToPlanner(item)}
-                        className="text-[11px] font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
+                        className="text-label-sm font-semibold bg-[#0E8F5D] hover:bg-[#0C7A52] text-white disabled:bg-surface-muted disabled:text-ink-tertiary"
                       >
                         {isSavedPlanner ? (
                           <>
@@ -1152,14 +1152,14 @@ export default function KeywordResearchPage() {
                           className="h-12 w-12 rounded-lg border border-line object-cover shrink-0 shadow-2xs"
                         />
                       ) : (
-                        <div className="h-12 w-12 rounded-lg bg-[#F4F3EF] border border-line flex items-center justify-center text-[10px] font-bold text-ink-tertiary shrink-0">
+                        <div className="h-12 w-12 rounded-lg bg-[#F4F3EF] border border-line flex items-center justify-center text-label-sm font-bold text-ink-tertiary shrink-0">
                           {(MARKETPLACE_LABELS[searchResponse.marketplace ?? marketplace] ?? (searchResponse.marketplace ?? marketplace)).slice(0, 4).toUpperCase()}
                         </div>
                       )}
 
                       <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="font-bold text-xs text-ink truncate">{listing.title}</div>
-                        <div className="text-[11px] text-ink-tertiary flex flex-wrap items-center gap-2">
+                        <div className="text-meta text-ink-tertiary flex flex-wrap items-center gap-2">
                           <span>Shop: <strong className="text-ink">{listing.shopName}</strong></span>
                           <span>·</span>
                           <span>Price: <strong className="text-ink font-mono">${listing.price.toFixed(2)}</strong></span>
@@ -1171,7 +1171,7 @@ export default function KeywordResearchPage() {
                             {listing.tags.slice(0, 4).map((t) => (
                               <span
                                 key={t}
-                                className="px-1.5 py-0.2 rounded text-[10px] bg-[#F4F3EF] text-ink-secondary border border-line"
+                                className="px-1.5 py-0.2 rounded text-label-sm bg-[#F4F3EF] text-ink-secondary border border-line"
                               >
                                 {t}
                               </span>

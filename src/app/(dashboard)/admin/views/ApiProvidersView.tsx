@@ -179,7 +179,7 @@ export function ApiProvidersView({
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div>
                   <h3 className="font-bold text-base text-ink">{provider.name}</h3>
-                  <span className="text-[11px] font-mono text-ink-tertiary uppercase tracking-wider">
+                  <span className="text-label-sm font-mono text-ink-tertiary uppercase tracking-wider">
                     {provider.category}
                   </span>
                 </div>
@@ -205,12 +205,12 @@ export function ApiProvidersView({
 
                 {provider.models && (
                   <div className="space-y-1 pt-1">
-                    <span className="text-[10px] uppercase font-bold text-ink-tertiary">Models:</span>
+                    <span className="text-label-sm uppercase font-bold text-ink-tertiary">Models:</span>
                     <div className="flex flex-wrap gap-1">
                       {provider.models.map((m) => (
                         <span
                           key={m}
-                          className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#FAFAF8] border border-line text-ink"
+                          className="text-label-sm font-mono px-2 py-0.5 rounded-md bg-[#FAFAF8] border border-line text-ink"
                         >
                           {m}
                         </span>

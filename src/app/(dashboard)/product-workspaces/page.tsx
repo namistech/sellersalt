@@ -63,7 +63,7 @@ export default async function ProductWorkspacesPage({ searchParams }: ProductWor
         <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div>
             <span className="font-bold text-foreground">Filtering for query: &quot;{q}&quot;</span>
-            <p className="text-muted-foreground text-[11px]">
+            <p className="text-muted-foreground text-meta">
               Found {workspaces.length} workspace{workspaces.length === 1 ? "" : "s"} matching this focus.
             </p>
           </div>
@@ -106,7 +106,7 @@ export default async function ProductWorkspacesPage({ searchParams }: ProductWor
                           ? "info"
                           : "warning"
                       }
-                      className="text-[10px] font-bold"
+                      className="text-label-sm font-bold"
                     >
                       {ws.verdict}
                     </Badge>
@@ -116,7 +116,7 @@ export default async function ProductWorkspacesPage({ searchParams }: ProductWor
                   <h3 className="text-sm font-bold text-foreground line-clamp-2">{ws.title}</h3>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t text-[11px] text-muted-foreground">
+                <div className="flex items-center justify-between pt-3 border-t text-meta text-muted-foreground">
                   <span>Updated {new Date(ws.updatedAt).toLocaleDateString()}</span>
                   <span className="text-primary font-bold flex items-center">
                     Open Cockpit <ArrowRight className="w-3.5 h-3.5 ml-1" />

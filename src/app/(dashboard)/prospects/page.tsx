@@ -414,7 +414,7 @@ export default function ProspectsPage() {
                         <span className="font-bold text-sm text-ink">{sc.name}</span>
                         <Badge variant="neutral">{sc.connector?.label ?? "Etsy"}</Badge>
                         {sc.scheduleCron && (
-                          <Badge variant="success" className="text-[10px]">
+                          <Badge variant="success" className="text-label-sm">
                             ⚡ {SCHEDULE_FREQUENCY_LABELS[freq]}
                           </Badge>
                         )}
