@@ -4,6 +4,8 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { ShieldCheck, AlertCircle } from "lucide-react";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -11,11 +13,50 @@ export const metadata: Metadata = {
   description:
     "Learn how SellerSalt collects, uses, and safeguards your account data and privacy across our ecommerce intelligence services.",
   alternates: { canonical: `${SITE_URL}/privacy` },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/privacy`,
+    siteName: "SellerSalt",
+    title: "Privacy Policy | SellerSalt",
+    description:
+      "Learn how SellerSalt collects, uses, and safeguards your account data and privacy across our ecommerce intelligence services.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Privacy Policy",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | SellerSalt",
+    description: "Data protection and privacy policies for SellerSalt.",
+    images: [`${SITE_URL}/brand/og-image.png`],
+  },
 };
 
 export default function PrivacyPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Privacy Policy", url: "/privacy" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PublicHeader currentPath="/privacy" />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">

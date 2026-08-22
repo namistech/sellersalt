@@ -4,6 +4,8 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { ShieldCheck, Info } from "lucide-react";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -11,11 +13,50 @@ export const metadata: Metadata = {
   description:
     "Trademark and intellectual property disclosures for SellerSalt and referenced third-party platforms and marketplaces.",
   alternates: { canonical: `${SITE_URL}/trademarks` },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/trademarks`,
+    siteName: "SellerSalt",
+    title: "Trademark Disclosures | SellerSalt",
+    description:
+      "Trademark and intellectual property disclosures for SellerSalt and referenced third-party platforms and marketplaces.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Trademark Disclosures",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trademark Disclosures | SellerSalt",
+    description: "Third-party intellectual property and brand notices for SellerSalt.",
+    images: [`${SITE_URL}/brand/og-image.png`],
+  },
 };
 
 export default function TrademarksPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Trademark Disclosures", url: "/trademarks" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PublicHeader currentPath="/trademarks" />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">

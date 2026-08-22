@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { MarketplaceDisclaimerBox } from "@/components/governance/MarketplaceDisclaimerBox";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -31,15 +33,48 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/how-it-works`,
+    siteName: "SellerSalt",
     title: "How It Works — Ecommerce Intelligence Methodology | SellerSalt",
     description:
       "Learn how SellerSalt transforms observable marketplace signals into deterministic commercial feasibility verdicts.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt 5-Step Methodology",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "How It Works — Ecommerce Intelligence Methodology | SellerSalt",
+    description:
+      "Learn how SellerSalt transforms observable marketplace signals into deterministic commercial feasibility verdicts.",
+    images: [`${SITE_URL}/brand/og-image.png`],
   },
 };
 
 export default function HowItWorksPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "How It Works", url: "/how-it-works" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16] font-sans antialiased">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PublicHeader currentPath="/how-it-works" />
 
       <main className="flex-1">

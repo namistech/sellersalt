@@ -4,6 +4,8 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { ShieldCheck, AlertCircle } from "lucide-react";
 
+import { buildBreadcrumbListSchema } from "@/lib/seo-structured-data";
+
 const SITE_URL = process.env.NEXTAUTH_URL ?? "https://sellersalt.com";
 
 export const metadata: Metadata = {
@@ -11,11 +13,50 @@ export const metadata: Metadata = {
   description:
     "Review the terms, conditions, and subscription policies governing your use of SellerSalt's ecommerce intelligence platform.",
   alternates: { canonical: `${SITE_URL}/terms` },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/terms`,
+    siteName: "SellerSalt",
+    title: "Terms of Service | SellerSalt",
+    description:
+      "Review the terms, conditions, and subscription policies governing your use of SellerSalt's ecommerce intelligence platform.",
+    images: [
+      {
+        url: `${SITE_URL}/brand/og-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "SellerSalt Terms of Service",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms of Service | SellerSalt",
+    description: "Terms and subscription policies for SellerSalt.",
+    images: [`${SITE_URL}/brand/og-image.png`],
+  },
 };
 
 export default function TermsPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      buildBreadcrumbListSchema(
+        [
+          { name: "Home", url: "/" },
+          { name: "Terms of Service", url: "/terms" },
+        ],
+        SITE_URL
+      ),
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-[#141B16]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PublicHeader currentPath="/terms" />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
