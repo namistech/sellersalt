@@ -17,7 +17,28 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json({ keywords });
+  const kwTexts = keywords.map((k) => k.keyword.toLowerCase().trim());
+  const observations = await prisma.keywordObservation.findMany({
+    where: {
+      organizationId,
+      keyword: { in: kwTexts },
+    },
+  });
+
+  const obsMap = new Map(observations.map((o) => [o.keyword.toLowerCase().trim(), o]));
+
+  const enrichedKeywords = keywords.map((k) => {
+    const obs = obsMap.get(k.keyword.toLowerCase().trim());
+    return {
+      ...k,
+      demandProxyScore: obs?.demandProxyScore ?? null,
+      competitionProxy: obs?.competitionProxy ?? "UNAVAILABLE",
+      source: obs?.source ?? "UNAVAILABLE",
+      observedAveragePrice: obs?.observedAveragePrice ?? null,
+    };
+  });
+
+  return NextResponse.json({ keywords: enrichedKeywords });
 }
 
 export async function POST(req: Request) {

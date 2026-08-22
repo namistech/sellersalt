@@ -423,9 +423,15 @@ function KeywordObservationsView({ data }: { data: KeywordResearchSummary }) {
                   </Badge>
                 </td>
                 <td className="p-3 text-muted-foreground">
-                  <span className="text-[11px] bg-muted px-2 py-0.5 rounded font-mono">
-                    Unavailable (Zero-Fabrication)
-                  </span>
+                  {typeof (kw as any).searchVolume === "number" ? (
+                    <span className="text-[11px] font-mono font-bold text-foreground">
+                      {(kw as any).searchVolume.toLocaleString()}/mo
+                    </span>
+                  ) : (
+                    <span className="text-[11px] bg-muted px-2 py-0.5 rounded font-mono">
+                      Unavailable (Zero-Fabrication)
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

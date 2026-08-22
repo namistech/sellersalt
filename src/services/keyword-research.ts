@@ -409,7 +409,7 @@ async function fetchSingleMarketplaceKeywordResearch(
         available: false,
         marketplace,
         capability: "keywordResearch",
-        reason: marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "TEMPORARILY_UNAVAILABLE" : "CONNECTOR_NOT_IMPLEMENTED",
+        reason: marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "UPSTREAM_ERROR" : "CONNECTOR_NOT_IMPLEMENTED",
         message: harvestRes.limitations.join("; ") || `${marketplace} keyword research is temporarily unavailable.`,
       };
     }
@@ -510,7 +510,7 @@ async function fetchSingleMarketplaceKeywordResearch(
       available: false,
       marketplace,
       capability: "keywordResearch",
-      reason: marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "TEMPORARILY_UNAVAILABLE" : "CONNECTOR_NOT_IMPLEMENTED",
+      reason: marketplace === "amazon" || marketplace === "walmart" || marketplace === "ebay" ? "UPSTREAM_ERROR" : "CONNECTOR_NOT_IMPLEMENTED",
       message: err?.message || `${marketplace} keyword research failed.`,
     };
   }

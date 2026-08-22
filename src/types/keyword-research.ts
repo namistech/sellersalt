@@ -59,6 +59,11 @@ export interface KeywordSearchSummary {
   competitionLevel: KeywordCompetitionRating; // [SELLERSALT SCORE]
   competitionScore: number; // 0 - 100 [SELLERSALT SCORE]
   dominantCategoryName?: string;
+  searchVolume?: number | null;
+  externalMonthlyVolume?: number;
+  searchVolumeStatus?: string;
+  searchVolumeMessage?: string;
+  searchVolumeProvenance?: string;
   /** Batch 40 (P1 #4): explicit provenance for the two fields whose
    * availability genuinely varies by marketplace — avgPrice is a real
    * observation everywhere; avgFavorers only exists where the source
@@ -68,6 +73,7 @@ export interface KeywordSearchSummary {
   fieldProvenance?: {
     avgPrice: KeywordFieldProvenance<number>;
     avgFavorers: KeywordFieldProvenance<number | null>;
+    searchVolume?: KeywordFieldProvenance<number | null>;
   };
 }
 

@@ -584,17 +584,39 @@ export default function KeywordResearchPage() {
             const isEtsy = activeMarketplace === "etsy";
             const marketplaceLabel = MARKETPLACE_LABELS[activeMarketplace] ?? activeMarketplace;
             return (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">{marketplaceLabel} Listing Supply</span>
+                <span className="text-[11px] font-bold text-ink-tertiary uppercase">{marketplaceLabel} Supply</span>
                 <DataProvenanceBadge type={isEtsy ? "ACTUAL_ETSY_DATA" : "EXTERNAL_DATA"} />
               </div>
               <div className="text-2xl font-extrabold text-ink font-mono pt-1">
                 {searchResponse.summary.totalEtsySupply.toLocaleString()}
               </div>
               <div className="text-[11px] text-ink-tertiary">
-                Competing active listings on {marketplaceLabel}
+                Competing active listings
+              </div>
+            </Card>
+
+            <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Search Volume</span>
+                <DataProvenanceBadge type="EXTERNAL_DATA" />
+              </div>
+              <div className="text-2xl font-extrabold text-ink font-mono pt-1">
+                {typeof searchResponse.summary.searchVolume === "number" ? (
+                  <>
+                    {searchResponse.summary.searchVolume.toLocaleString()}{" "}
+                    <span className="text-xs font-sans font-normal text-ink-tertiary">/ mo</span>
+                  </>
+                ) : (
+                  <span className="text-base text-ink-tertiary font-mono font-normal">UNAVAILABLE</span>
+                )}
+              </div>
+              <div className="text-[11px] text-ink-tertiary">
+                {typeof searchResponse.summary.searchVolume === "number"
+                  ? "Google Keyword Planner data"
+                  : "Google Keyword Planner required"}
               </div>
             </Card>
 
@@ -627,13 +649,13 @@ export default function KeywordResearchPage() {
                 )}
               </div>
               <div className="text-[11px] text-ink-tertiary">
-                {isEtsy ? "Avg. buyer favorites across top results" : `${marketplaceLabel} has no observable "favorites" signal`}
+                {isEtsy ? "Avg. buyer favorites" : `${marketplaceLabel} has no "favorites"`}
               </div>
             </Card>
 
             <Card padding="md" className="border-line bg-white shadow-2xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Competition Level</span>
+                <span className="text-[11px] font-bold text-ink-tertiary uppercase">Competition</span>
                 <DataProvenanceBadge type="SELLERSALT_SCORE" />
               </div>
               <div className="flex items-center gap-2 pt-1">
@@ -645,7 +667,7 @@ export default function KeywordResearchPage() {
                 </span>
               </div>
               <div className="text-[11px] text-ink-tertiary">
-                Multi-factor page 1 ranking barrier
+                Page 1 barrier score
               </div>
             </Card>
           </div>
@@ -894,6 +916,7 @@ export default function KeywordResearchPage() {
                     </th>
                     <th className="p-3">Keyword Phrase</th>
                     <th className="p-3">Length</th>
+                    <th className="p-3">Monthly Vol.</th>
                     <th className="p-3">Frequency</th>
                     <th className="p-3">Relevance</th>
                     <th className="p-3">Est. Demand</th>
@@ -927,6 +950,16 @@ export default function KeywordResearchPage() {
                         </td>
                         <td className="p-3 text-ink-tertiary">
                           {item.wordCount}w · {item.charCount}c
+                        </td>
+                        <td className="p-3 font-mono tabular-nums">
+                          {typeof item.externalMonthlyVolume === "number" ? (
+                            <span className="font-bold text-ink">
+                              {item.externalMonthlyVolume.toLocaleString()}{" "}
+                              <span className="text-[10px] text-ink-tertiary font-sans font-normal">/mo</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-ink-tertiary font-mono">UNAVAILABLE</span>
+                          )}
                         </td>
                         <td className="p-3 font-mono font-bold text-ink tabular-nums">
                           {item.frequency}x <span className="text-[10px] text-ink-tertiary font-sans font-normal">({item.percentage}%)</span>
@@ -1009,23 +1042,31 @@ export default function KeywordResearchPage() {
                       </div>
 
                       {/* Metrics Row */}
-                      <div className="grid grid-cols-3 gap-1 pt-2 border-t border-line-subtle text-center">
-                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                      <div className="grid grid-cols-4 gap-1 pt-2 border-t border-line-subtle text-center">
+                        <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
+                          <div className="text-[9px] text-ink-tertiary uppercase">Search Vol</div>
+                          <div className="text-xs font-mono font-extrabold text-ink tabular-nums truncate">
+                            {typeof item.externalMonthlyVolume === "number" ? `${item.externalMonthlyVolume.toLocaleString()}` : "UNAVAIL"}
+                          </div>
+                          <div className="text-[9px] text-ink-tertiary">{typeof item.externalMonthlyVolume === "number" ? "/mo" : "Google"}</div>
+                        </div>
+
+                        <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
                           <div className="text-[9px] text-ink-tertiary uppercase">Frequency</div>
                           <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.frequency}x</div>
-                          <div className="text-[9px] text-ink-tertiary">{item.percentage}% of sample</div>
+                          <div className="text-[9px] text-ink-tertiary">{item.percentage}%</div>
                         </div>
 
-                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                        <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
                           <div className="text-[9px] text-ink-tertiary uppercase">Relevance</div>
                           <div className="text-xs font-mono font-extrabold text-[#0E8F5D] tabular-nums">{item.relevanceScore}%</div>
-                          <div className="text-[9px] text-ink-tertiary">Semantic match</div>
+                          <div className="text-[9px] text-ink-tertiary">Match</div>
                         </div>
 
-                        <div className="bg-[#FAFAF8] p-1.5 rounded-lg border border-line-subtle">
+                        <div className="bg-[#FAFAF8] p-1 rounded-lg border border-line-subtle">
                           <div className="text-[9px] text-ink-tertiary uppercase">Est. Demand</div>
                           <div className="text-xs font-mono font-extrabold text-ink tabular-nums">{item.estimatedDemandSignal}</div>
-                          <div className="text-[9px] text-ink-tertiary">Avg. favorites</div>
+                          <div className="text-[9px] text-ink-tertiary">Favs</div>
                         </div>
                       </div>
                     </div>

@@ -49,6 +49,9 @@ interface PlannedKeywordRow {
   keyword: string;
   sourceShopExternalId: string | null;
   sourceListingUrl: string | null;
+  source?: string | null;
+  demandProxyScore?: number | null;
+  competitionProxy?: string | null;
   createdAt: string;
 }
 
@@ -441,7 +444,11 @@ export default function FavoritesPage() {
                       <td className="p-3 font-bold text-ink">{k.keyword}</td>
                       <td className="p-3 font-mono">{k.keyword.split(/\s+/).length} words</td>
                       <td className="p-3">
-                        {k.sourceListingUrl ? (
+                        {k.source && k.source !== "UNAVAILABLE" ? (
+                          <span className="font-mono text-[11px] text-ink font-medium bg-[#FAFAF8] px-2 py-0.5 rounded border border-line-subtle">
+                            {k.source === "google_keyword_planner" ? "Google Keyword Planner" : k.source}
+                          </span>
+                        ) : k.sourceListingUrl ? (
                           <a
                             href={k.sourceListingUrl}
                             target="_blank"
@@ -451,7 +458,7 @@ export default function FavoritesPage() {
                             Evidence listing <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="text-ink-tertiary">—</span>
+                          <span className="text-ink-tertiary font-mono text-[11px]">UNAVAILABLE</span>
                         )}
                       </td>
                       <td className="p-3 font-mono text-ink-tertiary">{new Date(k.createdAt).toLocaleDateString()}</td>
