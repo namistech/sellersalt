@@ -23,9 +23,12 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
 COPY --from=builder /app/docker/entrypoint-web.sh ./docker/entrypoint-web.sh
 
 RUN chmod +x ./docker/entrypoint-web.sh
 
 EXPOSE 3000
-CMD ["./docker/entrypoint-web.sh"]
+ENTRYPOINT ["./docker/entrypoint-web.sh"]

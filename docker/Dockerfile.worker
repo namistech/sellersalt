@@ -8,5 +8,6 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 RUN npx prisma generate
+RUN chmod +x ./docker/entrypoint-worker.sh
 
-CMD ["npx", "tsx", "src/workers/index.ts"]
+ENTRYPOINT ["./docker/entrypoint-worker.sh"]
