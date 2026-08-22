@@ -27,6 +27,18 @@ async function recordAuthMethod(userId: string, method: string, currentMethods: 
   });
 }
 
+const createGoogleProvider = (typeof GoogleProvider === "function" ? GoogleProvider : (GoogleProvider as any)?.default) as typeof GoogleProvider;
+const createCredentialsProvider = (typeof CredentialsProvider === "function" ? CredentialsProvider : (CredentialsProvider as any)?.default) as typeof CredentialsProvider;
+
+function cleanEnv(val: string | null | undefined): string {
+  if (!val) return "";
+  let s = val.trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 export async function getAuthOptions(): Promise<NextAuthOptions> {
   const [googleId, googleSec, etsyId, etsySec] = await Promise.all([
     getSetting("google_client_id").catch(() => null),
@@ -35,15 +47,15 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     getSetting("etsy_seller_client_secret").catch(() => null),
   ]);
 
-  const effectiveGoogleId = (googleId || process.env.GOOGLE_CLIENT_ID || "google-client-id-placeholder").trim();
-  const effectiveGoogleSecret = (googleSec || process.env.GOOGLE_CLIENT_SECRET || "google-client-secret-placeholder").trim();
-  const effectiveEtsyId = (etsyId || process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "").trim();
-  const effectiveEtsySecret = (etsySec || process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "").trim();
+  const effectiveGoogleId = cleanEnv(googleId || process.env.GOOGLE_CLIENT_ID || "google-client-id-placeholder");
+  const effectiveGoogleSecret = cleanEnv(googleSec || process.env.GOOGLE_CLIENT_SECRET || "google-client-secret-placeholder");
+  const effectiveEtsyId = cleanEnv(etsyId || process.env.ETSY_CLIENT_ID || process.env.ETSY_KEYSTRING || "");
+  const effectiveEtsySecret = cleanEnv(etsySec || process.env.ETSY_CLIENT_SECRET || process.env.ETSY_SHARED_SECRET || "");
 
   return {
     ...authOptions,
     providers: [
-      GoogleProvider({
+      createGoogleProvider({
         clientId: effectiveGoogleId,
         clientSecret: effectiveGoogleSecret,
         allowDangerousEmailAccountLinking: true,
@@ -102,9 +114,9 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "google-client-id-placeholder",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "google-client-secret-placeholder",
+    createGoogleProvider({
+      clientId: cleanEnv(process.env.GOOGLE_CLIENT_ID || "google-client-id-placeholder"),
+      clientSecret: cleanEnv(process.env.GOOGLE_CLIENT_SECRET || "google-client-secret-placeholder"),
       allowDangerousEmailAccountLinking: true,
     }),
     {
@@ -150,7 +162,7 @@ export const authOptions: NextAuthOptions = {
         };
       },
     },
-    CredentialsProvider({
+    createCredentialsProvider({
       name: "Email and password",
       credentials: {
         email: { label: "Email", type: "email" },
@@ -195,7 +207,7 @@ export const authOptions: NextAuthOptions = {
         } as any;
       },
     }),
-    CredentialsProvider({
+    createCredentialsProvider({
       id: "passkey",
       name: "Passkey",
       credentials: {
@@ -355,6 +367,25 @@ export const authOptions: NextAuthOptions = {
           } catch (e) {
             // non-fatal
           }
+        }
+
+        // Ensure user has at least one organization membership
+        if (dbUser.memberships.length === 0) {
+          const org = await prisma.organization.create({
+            data: {
+              name: `${dbUser.name || "My"} Workspace`,
+              plan: "FREE",
+            },
+          });
+          const membership = await prisma.membership.create({
+            data: {
+              userId: dbUser.id,
+              organizationId: org.id,
+              role: "OWNER",
+            },
+            include: { organization: true },
+          });
+          dbUser.memberships = [membership];
         }
 
         const primaryOrg = dbUser.memberships[0]?.organization;
